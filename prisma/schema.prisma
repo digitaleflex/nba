@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── Better Auth Core Models ──
+
+model User {
+  id            String    @id @default(uuid()) @db.Uuid
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false) @map("email_verified")
+  image         String?   @db.Text
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // NBA custom fields
+  phone         String?
+  roleId        String    @map("role_id") @db.Uuid
+  isActive      Boolean   @default(true) @map("is_active")
+  metadata      Json?     @db.JsonB
+  deletedAt     DateTime? @map("deleted_at")
+
+  sessions            Session[]
+  accounts            Account[]
+  role                Role                   @relation(fields: [roleId], references: [id])
+  subscriptions       UserSubscription[]
+  kycDocuments        KycDocument[]          @relation("KycDocuments")
+  kycReviews          KycDocument[]          @relation("KycReviews")
+  brokerVerifications BrokerVerification[]   @relation("BrokerVerifications")
+  brokerReviews       BrokerVerification[]   @relation("BrokerReviews")
+  signals             Signal[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  settings            Setting[]
+
+  @@index([roleId])
+  @@index([isActive])
+  @@index([deletedAt])
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent") @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Account {
+  id                      String    @id @default(uuid()) @db.Uuid
+  userId                  String    @map("user_id") @db.Uuid
+  accountId               String    @map("account_id")
+  providerId              String    @map("provider_id")
+  accessToken             String?   @map("access_token") @db.Text
+  refreshToken            String?   @map("refresh_token") @db.Text
+  accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt   DateTime? @map("refresh_token_expires_at")
+  scope                   String?
+  idToken                 String?   @map("id_token") @db.Text
+  password                String?   @db.Text
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([providerId, accountId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String   @db.Text
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("verifications")
+}
+
+// ── NBA Business Models ──
+
+model Role {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?  @db.Text
+  isSystem    Boolean  @default(false) @map("is_system")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  users       User[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
+  description String?  @db.Text
+  module      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String   @map("role_id") @db.Uuid
+  permissionId String   @map("permission_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  role       Role       @relation(fields: [roleId], references: [id])
+  permission Permission @relation(fields: [permissionId], references: [id])
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model SubscriptionPlan {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  description  String?  @db.Text
+  price        Decimal  @db.Decimal(10, 2)
+  currency     String
+  durationDays Int      @map("duration_days")
+  features     Json     @default("[]") @db.JsonB
+  isActive     Boolean  @default(true) @map("is_active")
+  sortOrder    Int      @default(0) @map("sort_order")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  subscriptions UserSubscription[]
+  audience      SignalAudience[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id          String             @id @default(uuid()) @db.Uuid
+  userId      String             @map("user_id") @db.Uuid
+  planId      String             @map("plan_id") @db.Uuid
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime           @map("start_date")
+  endDate     DateTime           @map("end_date")
+  cancelledAt DateTime?          @map("cancelled_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+  updatedAt   DateTime           @updatedAt @map("updated_at")
+
+  user User             @relation(fields: [userId], references: [id])
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([planId])
+  @@index([status])
+  @@map("user_subscriptions")
+}
+
+model KycDocument {
+  id             String             @id @default(uuid()) @db.Uuid
+  userId         String             @map("user_id") @db.Uuid
+  documentType   DocumentType       @map("document_type")
+  status         VerificationStatus @default(PENDING)
+  frontFilePath  String             @map("front_file_path") @db.Text
+  backFilePath   String?            @map("back_file_path") @db.Text
+  selfieFilePath String?            @map("selfie_file_path") @db.Text
+  reviewedBy     String?            @map("reviewed_by") @db.Uuid
+  reviewNotes    String?            @map("review_notes") @db.Text
+  reviewedAt     DateTime?          @map("reviewed_at")
+  submittedAt    DateTime           @default(now()) @map("submitted_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  user     User  @relation("KycDocuments", fields: [userId], references: [id])
+  reviewer User? @relation("KycReviews", fields: [reviewedBy], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@index([submittedAt])
+  @@map("kyc_documents")
+}
+
+model BrokerVerification {
+  id            String             @id @default(uuid()) @db.Uuid
+  userId        String             @map("user_id") @db.Uuid
+  brokerName    String             @map("broker_name")
+  accountId     String             @map("account_id")
+  videoFilePath String             @map("video_file_path") @db.Text
+  status        VerificationStatus @default(PENDING)
+  reviewedBy    String?            @map("reviewed_by") @db.Uuid
+  reviewNotes   String?            @map("review_notes") @db.Text
+  reviewedAt    DateTime?          @map("reviewed_at")
+  submittedAt   DateTime           @default(now()) @map("submitted_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  user     User  @relation("BrokerVerifications", fields: [userId], references: [id])
+  reviewer User? @relation("BrokerReviews", fields: [reviewedBy], references: [id])
+
+  @@map("broker_verifications")
+}
+
+model Signal {
+  id          String           @id @default(uuid()) @db.Uuid
+  title       String
+  description String           @db.Text
+  asset       String
+  type        SignalType
+  entryPrice  Decimal          @map("entry_price") @db.Decimal(20, 8)
+  targetPrice Decimal          @map("target_price") @db.Decimal(20, 8)
+  stopLoss    Decimal?         @map("stop_loss") @db.Decimal(20, 8)
+  confidence  SignalConfidence
+  status      SignalStatus     @default(DRAFT)
+  createdBy   String           @map("created_by") @db.Uuid
+  publishedAt DateTime?        @map("published_at")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+  deletedAt   DateTime?        @map("deleted_at")
+
+  creator  User            @relation(fields: [createdBy], references: [id])
+  audience SignalAudience[]
+
+  @@index([status])
+  @@index([createdBy])
+  @@index([publishedAt])
+  @@index([type])
+  @@index([asset])
+  @@map("signals")
+}
+
+model SignalAudience {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  planId    String   @map("plan_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signal Signal           @relation(fields: [signalId], references: [id])
+  plan   SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([signalId])
+  @@index([planId])
+  @@map("signal_audience")
+}
+
+model Notification {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String   @db.Text
+  data      Json?    @db.JsonB
+  isRead    Boolean  @default(false) @map("is_read")
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user     User                   @relation(fields: [userId], references: [id])
+  deliveries NotificationDelivery[]
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
+  @@map("notifications")
+}
+
+model NotificationDelivery {
+  id             String             @id @default(uuid()) @db.Uuid
+  notificationId String             @map("notification_id") @db.Uuid
+  channel        NotificationChannel
+  status         DeliveryStatus     @default(PENDING)
+  externalId     String?            @map("external_id")
+  errorMessage   String?            @map("error_message") @db.Text
+  sentAt         DateTime?          @map("sent_at")
+  createdAt      DateTime           @default(now()) @map("created_at")
+  updatedAt      DateTime           @updatedAt @map("updated_at")
+
+  notification Notification @relation(fields: [notificationId], references: [id])
+
+  @@index([notificationId])
+  @@index([status])
+  @@map("notification_deliveries")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String?  @map("user_id") @db.Uuid
+  action       String
+  resourceType String   @map("resource_type")
+  resourceId   String?  @map("resource_id") @db.Uuid
+  details      Json?    @db.JsonB
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent") @db.Text
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([action])
+  @@index([resourceType])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Setting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       String   @db.Text
+  description String?  @db.Text
+  updatedBy   String?  @map("updated_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  updater User? @relation(fields: [updatedBy], references: [id])
+
+  @@map("settings")
+}
+
+// ── Enums ──
+
+enum DocumentType {
+  ID_CARD
+  PASSPORT
+  DRIVERS_LICENSE
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum SignalType {
+  BUY
+  SELL
+}
+
+enum SignalConfidence {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum SignalStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+  TELEGRAM
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  FAILED
+  BOUNCED
+}

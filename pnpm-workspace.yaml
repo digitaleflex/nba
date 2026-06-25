@@ -1,0 +1,13 @@
+packages:
+  - "packages/*"
+  - "workers/*"
+  - "emails"
+  - "shared"
+
+onlyBuiltDependencies:
+  - '@prisma/engines'
+  - '@prisma/adapter-pg'
+  - prisma
+  - esbuild
+  - sharp
+  - pg

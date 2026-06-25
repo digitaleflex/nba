@@ -1,0 +1,11 @@
+# Default owners for the entire repository
+* @neverbrokeagain/tech-lead
+
+# Architecture
+/docs/02-architecture/ @neverbrokeagain/architect
+
+# Security
+/docs/06-security/ @neverbrokeagain/security
+
+# DevOps
+/docs/07-devops/ @neverbrokeagain/devops
