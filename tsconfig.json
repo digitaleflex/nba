@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@nba/*": ["./src/*"],
-      "@nba/design-system": ["./packages/design-system/src"],
+      "@nba/design-system": ["./packages/design-system"],
       "@nba/shared": ["./shared/src"]
     }
   },
