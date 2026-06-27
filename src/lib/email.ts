@@ -282,6 +282,76 @@ export function emailOtp(name: string, code: string): { subject: string; html: s
   }
 }
 
+export function parseSimpleMarkdown(text: string): string {
+  if (!text) return ""
+  
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+  html = html.replace(/\*(.*?)\*/g, "<em>$1</em>")
+
+  html = html.split("\n").map(line => {
+    const trimmed = line.trim()
+    if (trimmed.startsWith("- ")) {
+      return `<div style="margin:4px 0 4px 16px;color:#1E2024">&bull; ${trimmed.substring(2)}</div>`
+    }
+    if (trimmed.startsWith("* ")) {
+      return `<div style="margin:4px 0 4px 16px;color:#1E2024">&bull; ${trimmed.substring(2)}</div>`
+    }
+    return line
+  }).join("\n")
+
+  html = html.replace(/\n/g, "<br/>")
+
+  return html
+}
+
+export function tradingSignalEmail(
+  user: TemplateUser,
+  content: string,
+  imageUrl?: string | null
+): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  const imageHtml = imageUrl
+    ? `<div style="margin:24px 0;border-radius:12px;overflow:hidden;border:1px solid #E4E7EC">
+         <img src="${APP_DOMAIN}/api/files/${imageUrl}" alt="Graphique du signal" style="max-width:100%;height:auto;display:block"/>
+       </div>`
+    : ""
+
+  const formattedContent = parseSimpleMarkdown(content)
+
+  return {
+    subject: `📈 Nouveau signal disponible — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Nouveau signal de trading 📈
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Bonjour ${prenom}, un nouveau signal vient d'être publié.
+      </p>
+
+      ${divider()}
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:12px;padding:24px;margin:24px 0;font-family:system-ui,-apple-system,sans-serif;font-size:15px;color:#1E2024;line-height:1.6">
+        ${formattedContent}
+      </div>
+
+      ${imageHtml}
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/signals`, text: "Voir sur mon tableau de bord" })}
+
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5;font-style:italic">
+        ⚠️ Attention : Le trading comporte des risques majeurs de perte de capital. Gérez votre risque de manière responsable.
+      </p>
+    `),
+  }
+}
+
 // ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
