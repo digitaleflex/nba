@@ -257,6 +257,32 @@ export function onboardingStepEmail(user: TemplateUser, stepLabel: string, nextS
   }
 }
 
+export function emailOtp(name: string, code: string): { subject: string; html: string } {
+  const prenom = getFirstName(name)
+  return {
+    subject: `Votre code de vérification — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
+        Voici votre code de vérification à 6 chiffres pour finaliser votre inscription.
+      </p>
+
+      <div style="background-color:#09090B;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:24px;text-align:center;margin:24px 0">
+        <span style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#C6FF3B">${code}</span>
+      </div>
+
+      <p style="margin:0 0 4px 0;font-size:13px;color:#71717A">
+        Ce code expire dans <strong style="color:#A1A1AA">15 minutes</strong>.
+      </p>
+      <p style="margin:0;font-size:13px;color:#71717A">
+        Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
+      </p>
+    `),
+  }
+}
+
 // ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
