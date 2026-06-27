@@ -1,8 +1,8 @@
 import { getSignals } from "@nba/modules/signals/services/get-signals"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
-import { Card, CardContent, CardHeader, CardTitle, Badge, Button } from "@nba/design-system"
-import { Radio, Calendar, Info, TrendingUp } from "lucide-react"
+import { Card, CardContent, Badge, Button } from "@nba/design-system"
+import { Radio, Calendar, Info } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import Link from "next/link"
 
@@ -11,6 +11,30 @@ export default async function SignalsPage() {
   if (!session) return null
 
   const signals = await getSignals()
+
+  // Record/update reads for the loaded signals
+  for (const sig of signals) {
+    try {
+      await prisma.signalRead.upsert({
+        where: {
+          signalId_userId: {
+            signalId: sig.id,
+            userId: session.user.id
+          }
+        },
+        create: {
+          signalId: sig.id,
+          userId: session.user.id,
+          viewCount: 1
+        },
+        update: {
+          viewCount: { increment: 1 }
+        }
+      })
+    } catch (err) {
+      console.error(`Failed to record signal read for ${sig.id}:`, err)
+    }
+  }
 
   // Check if member has active plans
   const approvedRequests = await prisma.accessRequest.findMany({
@@ -60,7 +84,7 @@ export default async function SignalsPage() {
             <div className="space-y-1">
               <p className="font-semibold text-foreground">Aucun signal disponible</p>
               <p className="text-sm">
-                Vous avez accès à <strong>{approvedRequests.map(r => r.plan.name).join(", ")}</strong>. 
+                Vous avez accès à <strong>{approvedRequests.map((r: any) => r.plan.name).join(", ")}</strong>. 
                 Les signaux apparaîtront ici dès qu'ils seront publiés.
               </p>
             </div>
@@ -68,7 +92,7 @@ export default async function SignalsPage() {
         </Card>
       ) : (
         <div className="grid gap-6 max-w-3xl">
-          {signals.map((sig) => (
+          {signals.map((sig: any) => (
             <Card key={sig.id} className="relative overflow-hidden border border-primary/10 shadow-sm bg-card">
               <div className="absolute inset-y-0 left-0 w-1 bg-primary" />
               <CardContent className="p-5 space-y-4">
@@ -91,12 +115,24 @@ export default async function SignalsPage() {
                 
                 {/* Content body */}
                 <div 
-                  className="text-sm font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-2"
+                  className="text-sm font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-2 break-words"
                   dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(sig.content) }}
                 />
                 
-                {/* Attached Graphic */}
-                {sig.imageUrl && (
+                {/* Attached Graphics Gallery */}
+                {Array.isArray(sig.imageUrls) && sig.imageUrls.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-2 pt-2">
+                    {sig.imageUrls.map((url: string, idx: number) => (
+                      <div key={idx} className="relative overflow-hidden rounded-xl border border-border bg-background/50 aspect-video">
+                        <img 
+                          src={`/api/files/${url}`} 
+                          alt="" 
+                          className="w-full h-full object-cover hover:scale-102 transition-transform duration-200" 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                ) : sig.imageUrl ? (
                   <div className="relative overflow-hidden rounded-xl border border-border bg-muted/20">
                     <img 
                       src={`/api/files/${sig.imageUrl}`} 
@@ -104,7 +140,16 @@ export default async function SignalsPage() {
                       className="w-full max-h-[360px] object-cover" 
                     />
                   </div>
-                )}
+                ) : null}
+
+                {/* Details Link */}
+                <div className="flex justify-end pt-2 border-t border-border/20">
+                  <Link href={`/dashboard/signals/${sig.id}`}>
+                    <Button variant="ghost" size="sm" className="text-xs text-primary hover:text-primary-foreground">
+                      Voir la page du signal →
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           ))}
