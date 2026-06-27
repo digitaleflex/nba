@@ -40,6 +40,8 @@ model User {
   brokerVerifications BrokerVerification[]  @relation("BrokerVerifications")
   brokerReviews       BrokerVerification[]  @relation("BrokerReviews")
   signals             Signal[]
+  signalVersions      SignalVersion[]
+  signalReads         SignalRead[]
   notifications       Notification[]
   auditLogs           AuditLog[]
   settings            Setting[]
@@ -265,22 +267,29 @@ model BrokerVerification {
 }
 
 model Signal {
-  id          String           @id @default(uuid()) @db.Uuid
-  content     String
-  imageUrl    String?          @map("image_url")
-  status      SignalStatus     @default(DRAFT)
-  createdBy   String           @map("created_by") @db.Uuid
-  publishedAt DateTime?        @map("published_at")
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  deletedAt   DateTime?        @map("deleted_at")
+  id             String           @id @default(uuid()) @db.Uuid
+  content        String
+  imageUrl       String?          @map("image_url") // Pour compatibilité ascendante (premier graphique)
+  imageUrls      Json             @default("[]") @db.JsonB // Jusqu'à 5 images
+  status         SignalStatus     @default(DRAFT)
+  createdBy      String           @map("created_by") @db.Uuid
+  publishedAt    DateTime?        @map("published_at")
+  scheduledAt    DateTime?        @map("scheduled_at") // Date programmée de publication
+  jobId          String?          @map("job_id")       // Job ID BullMQ pour la programmation
+  currentVersion Int              @default(1) @map("current_version")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+  deletedAt      DateTime?        @map("deleted_at")
 
   creator  User            @relation(fields: [createdBy], references: [id])
   audience SignalAudience[]
+  versions SignalVersion[]
+  reads    SignalRead[]
 
   @@index([status])
   @@index([createdBy])
   @@index([publishedAt])
+  @@index([scheduledAt])
   @@map("signals")
 }
 
@@ -420,4 +429,46 @@ enum DeliveryStatus {
   SENT
   FAILED
   BOUNCED
+}
+
+model SignalVersion {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  version   Int
+  content   String
+  imageUrls Json     @default("[]") @db.JsonB
+  updatedBy String   @map("updated_by") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signal  Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  updater User   @relation(fields: [updatedBy], references: [id])
+
+  @@unique([signalId, version])
+  @@map("signal_versions")
+}
+
+model SignalRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  readAt    DateTime @default(now()) @map("read_at")
+  viewCount Int      @default(1) @map("view_count")
+
+  signal Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([signalId, userId])
+  @@index([signalId])
+  @@index([userId])
+  @@map("signal_reads")
+}
+
+model SignalTemplate {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("signal_templates")
 }
