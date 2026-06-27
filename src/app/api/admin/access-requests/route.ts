@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getOnboardingState } from "@nba/lib/services/onboarding"
-import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET() {
   try {
-    await requireRole(["Admin", "SUPER_ADMIN"])
+    await requirePermission("users.read")
 
     const requests = await prisma.accessRequest.findMany({
       where: { status: "PENDING" },

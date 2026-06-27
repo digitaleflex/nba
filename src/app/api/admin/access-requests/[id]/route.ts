@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireRole(["Admin", "SUPER_ADMIN"])
+    const session = await requirePermission("users.read")
     const { id } = await params
 
     const request = await prisma.accessRequest.findUnique({
@@ -45,7 +45,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requireRole(["Admin", "SUPER_ADMIN"])
+    const session = await requirePermission("subscriptions.manage")
     const { id } = await params
     const body = await req.json()
     const { status, notes } = body
