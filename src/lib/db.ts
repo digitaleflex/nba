@@ -1,4 +1,4 @@
-import { PrismaClient } from "../generated/prisma"
+import { PrismaClient } from "@nba/generated/prisma"
 import { PrismaPg } from "@prisma/adapter-pg"
 
 const DEFAULT_ROLE_NAME = "MEMBER"
@@ -11,7 +11,7 @@ function createPrismaClient() {
   const extended = base.$extends({
     query: {
       user: {
-        async create({ args, query }) {
+        async create({ args, query }: { args: any; query: any }) {
           if (!args.data.roleId) {
             const defaultRole = await base.role.findFirst({
               where: { name: DEFAULT_ROLE_NAME },

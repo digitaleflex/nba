@@ -47,7 +47,7 @@ export async function requirePermission(permissionName: string) {
   if (!user) throw new AuthError("Accès refusé", 403)
 
   const hasPermission = user.role.permissions.some(
-    (rp) => rp.permission.name === permissionName,
+    (rp: any) => rp.permission.name === permissionName,
   )
   if (!hasPermission) throw new AuthError("Accès refusé", 403)
 
