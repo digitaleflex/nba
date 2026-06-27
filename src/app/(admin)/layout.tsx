@@ -1,4 +1,21 @@
-export default function AdminLayout({ children }: { children: React.ReactNode }) {
+import { redirect } from "next/navigation"
+import { headers } from "next/headers"
+import { auth } from "@nba/lib/auth"
+import { prisma } from "@nba/lib/db"
+
+export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() })
+  if (!session) redirect("/login")
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: { select: { name: true } } },
+  })
+
+  if (!user || (user.role.name !== "Admin" && user.role.name !== "SUPER_ADMIN")) {
+    redirect("/403")
+  }
+
   return (
     <div className="flex min-h-dvh flex-col noise">
       <header className="glass-strong sticky top-0 z-50 border-b px-6 py-3">
