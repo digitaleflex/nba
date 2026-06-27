@@ -22,9 +22,9 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      "@nba": path.resolve(__dirname, "src"),
-      "@nba/design-system": path.resolve(__dirname, "packages/design-system/src"),
-    },
+    alias: [
+      { find: "@nba/design-system", replacement: path.resolve(__dirname, "packages/design-system") },
+      { find: "@nba", replacement: path.resolve(__dirname, "src") },
+    ],
   },
 })

@@ -1,13 +1,9 @@
 packages:
-  - "packages/*"
-  - "workers/*"
-  - "emails"
-  - "shared"
+  - 'packages/*'
 
-onlyBuiltDependencies:
-  - '@prisma/engines'
-  - '@prisma/adapter-pg'
-  - prisma
-  - esbuild
-  - sharp
-  - pg
+allowBuilds:
+  '@prisma/engines': true
+  esbuild: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
