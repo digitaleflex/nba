@@ -52,6 +52,23 @@ export async function middleware(request: NextRequest) {
       loginUrl.searchParams.set("redirect", pathname)
       return NextResponse.redirect(loginUrl)
     }
+
+    // Force redirection to onboarding if user is not fully active
+    if (
+      pathname.startsWith("/dashboard") &&
+      session.user?.onboardingStatus !== "ACTIVE"
+    ) {
+      return NextResponse.redirect(new URL("/onboarding", request.url))
+    }
+
+    // Prevent access to onboarding if already active
+    if (
+      pathname.startsWith("/onboarding") &&
+      session.user?.onboardingStatus === "ACTIVE"
+    ) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+
     return NextResponse.next()
   }
 
