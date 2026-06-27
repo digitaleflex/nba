@@ -3,7 +3,6 @@ import type { OnboardingStatus } from "../../generated/prisma"
 
 export interface OnboardingChecklist {
   emailVerified: boolean
-  profileCompleted: boolean
   kycSubmitted: boolean
   brokerSubmitted: boolean
   reviewed: boolean
@@ -17,10 +16,9 @@ export interface OnboardingState {
 }
 
 const STEP_PROGRESS: Record<string, number> = {
-  emailVerified: 20,
-  profileCompleted: 40,
-  kycSubmitted: 60,
-  brokerSubmitted: 80,
+  emailVerified: 25,
+  kycSubmitted: 50,
+  brokerSubmitted: 75,
   reviewed: 100,
 }
 
@@ -36,7 +34,6 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
 
   const checklist: OnboardingChecklist = {
     emailVerified: user.emailVerified,
-    profileCompleted: !!(user.country && user.timezone),
     kycSubmitted: user.kycDocuments.length > 0,
     brokerSubmitted: user.brokerVerifications.length > 0,
     reviewed: user.onboardingStatus === "ACTIVE",
@@ -50,7 +47,6 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
 
   const steps: Record<string, string> = {
     emailVerified: "Vérifier votre email",
-    profileCompleted: "Compléter votre profil",
     kycSubmitted: "Vérification d'identité",
     brokerSubmitted: "Vérification Broker",
     reviewed: "Validation par notre équipe",

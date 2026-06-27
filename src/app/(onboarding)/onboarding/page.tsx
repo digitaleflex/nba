@@ -2,9 +2,12 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { Card, CardContent } from "@nba/design-system"
-import { Check, ArrowRight, Mail, User, FileText, Video, Shield } from "lucide-react"
+import { Check, Mail, User, FileText, Video, Shield, Loader2 } from "lucide-react"
+
+import { StepEmail } from "./components/step-email"
+import { StepKyc } from "./components/step-kyc"
+import { StepBroker } from "./components/step-broker"
 
 interface OnboardingState {
   status: string
@@ -14,37 +17,54 @@ interface OnboardingState {
 }
 
 const STEPS = [
-  { key: "emailVerified", label: "Vérifier votre email", icon: Mail, href: null },
-  { key: "profileCompleted", label: "Compléter votre profil", icon: User, href: "/onboarding/profile" },
-  { key: "kycSubmitted", label: "Vérification d'identité (KYC)", icon: FileText, href: "/onboarding/kyc" },
-  { key: "brokerSubmitted", label: "Vérification Broker", icon: Video, href: "/onboarding/broker" },
-  { key: "reviewed", label: "Validation par notre équipe", icon: Shield, href: null },
+  { key: "emailVerified", label: "Vérifier votre email", icon: Mail },
+  { key: "kycSubmitted", label: "Vérification d'identité", icon: FileText },
+  { key: "brokerSubmitted", label: "Connexion Broker", icon: Video },
 ]
 
-export default function OnboardingPage() {
+export default function OnboardingWizardPage() {
   const router = useRouter()
   const [state, setState] = useState<OnboardingState | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const fetchState = () => {
+    setLoading(true)
     fetch("/api/onboarding/state")
       .then((r) => r.json())
-      .then(setState)
-      .finally(() => setLoading(false))
+      .then((data) => {
+        if (data.status === "ACTIVE" || data.status === "COMPLETED") {
+          // L'onboarding est terminé, on redirige vers le dashboard
+          router.push("/dashboard")
+        } else {
+          setState(data)
+          setLoading(false)
+        }
+      })
+      .catch(() => {
+        setLoading(false)
+      })
+  }
+
+  useEffect(() => {
+    fetchState()
   }, [])
 
-  if (loading) {
+  if (loading || !state) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="size-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     )
   }
 
-  if (!state) return null
+  // Déterminer l'étape active basée sur la checklist
+  let activeStepIndex = 0
+  if (state.checklist.emailVerified) activeStepIndex = 1
+  if (state.checklist.emailVerified && state.checklist.kycSubmitted) activeStepIndex = 2
+  if (state.checklist.emailVerified && state.checklist.kycSubmitted && state.checklist.brokerSubmitted) activeStepIndex = 3
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div className="text-center space-y-2">
         <h1 className="text-2xl font-bold tracking-tight">
           Bienvenue <span className="text-primary">👋</span>
@@ -54,63 +74,38 @@ export default function OnboardingPage() {
         </p>
       </div>
 
-      <Card className="relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-        <CardContent className="pt-6">
-          <div className="mb-6 space-y-2">
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-medium">Progression</span>
-              <span className="text-muted-foreground">{state.progress}%</span>
-            </div>
-            <div className="h-2 overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-primary transition-all duration-700 ease-out"
-                style={{ width: `${state.progress}%` }}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            {STEPS.map((step, i) => {
-              const done = state.checklist[step.key]
-              const isNext = !done && step.href
-
+      {/* Stepper visuel */}
+      <Card className="relative overflow-hidden border-none shadow-none bg-transparent">
+        <CardContent className="p-0">
+          <div className="mb-8 flex justify-between relative">
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-full h-1 bg-muted rounded-full" />
+            <div 
+              className="absolute left-0 top-1/2 -translate-y-1/2 h-1 bg-primary rounded-full transition-all duration-500" 
+              style={{ width: `${(activeStepIndex / (STEPS.length - 1)) * 100}%` }}
+            />
+            
+            {STEPS.map((step, index) => {
+              const isCompleted = index < activeStepIndex
+              const isActive = index === activeStepIndex
+              
               return (
-                <div
-                  key={step.key}
-                  className={`flex items-center gap-3 rounded-lg p-3 transition-colors ${
-                    isNext
-                      ? "bg-primary/5 ring-1 ring-primary/20"
-                      : done
-                        ? "bg-success/5"
-                        : "bg-muted/30"
-                  }`}
-                >
-                  <div
-                    className={`flex size-8 shrink-0 items-center justify-center rounded-full ${
-                      done ? "bg-success/10 text-success" : "bg-muted text-muted-foreground"
+                <div key={step.key} className="relative z-10 flex flex-col items-center gap-2">
+                  <div 
+                    className={`flex size-8 items-center justify-center rounded-full border-2 transition-all duration-300 ${
+                      isCompleted 
+                        ? "bg-primary border-primary text-primary-foreground" 
+                        : isActive 
+                          ? "bg-background border-primary text-primary shadow-[0_0_15px_rgba(var(--primary),0.3)]"
+                          : "bg-background border-muted text-muted-foreground"
                     }`}
                   >
-                    {done ? <Check className="size-4" /> : <step.icon className="size-4" />}
+                    {isCompleted ? <Check className="size-4" /> : <step.icon className="size-4" />}
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className={`text-sm font-medium ${done ? "text-success" : "text-foreground"}`}>
-                      {step.label}
-                    </p>
-                  </div>
-                  {isNext ? (
-                    <Link
-                      href={step.href}
-                      className="flex shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
-                    >
-                      Continuer
-                      <ArrowRight className="size-3" />
-                    </Link>
-                  ) : done ? (
-                    <span className="text-xs text-success">Complété</span>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">En attente</span>
-                  )}
+                  <span className={`text-[10px] sm:text-xs font-medium absolute -bottom-6 whitespace-nowrap transition-colors duration-300 ${
+                    isActive ? "text-foreground" : "text-muted-foreground"
+                  }`}>
+                    {step.label}
+                  </span>
                 </div>
               )
             })}
@@ -118,17 +113,23 @@ export default function OnboardingPage() {
         </CardContent>
       </Card>
 
-      {state.status === "ACTIVE" && (
-        <div className="text-center">
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
-          >
-            Accéder aux signaux
-            <ArrowRight className="size-4" />
-          </Link>
-        </div>
-      )}
+      <div className="pt-4">
+        {activeStepIndex === 0 && <StepEmail onNext={fetchState} />}
+        {activeStepIndex === 1 && <StepKyc onNext={fetchState} />}
+        {activeStepIndex === 2 && <StepBroker onNext={fetchState} />}
+        {activeStepIndex >= 3 && (
+          <div className="flex flex-col items-center justify-center py-10 space-y-4 animate-in zoom-in-95 duration-500">
+            <div className="flex size-16 items-center justify-center rounded-full bg-success/10 text-success">
+              <Shield className="size-8" />
+            </div>
+            <h2 className="text-xl font-bold">Profil en cours de vérification</h2>
+            <p className="text-muted-foreground text-center">
+              Notre équipe valide actuellement vos informations. Vous allez être redirigé...
+            </p>
+            <Loader2 className="size-6 animate-spin text-muted-foreground mt-4" />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
