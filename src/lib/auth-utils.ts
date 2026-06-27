@@ -30,6 +30,30 @@ export async function requireRole(allowedRoles: string[]) {
   return session
 }
 
+export async function requirePermission(permissionName: string) {
+  const session = await requireAuth()
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      role: {
+        select: {
+          permissions: {
+            select: { permission: { select: { name: true } } },
+          },
+        },
+      },
+    },
+  })
+  if (!user) throw new AuthError("Accès refusé", 403)
+
+  const hasPermission = user.role.permissions.some(
+    (rp) => rp.permission.name === permissionName,
+  )
+  if (!hasPermission) throw new AuthError("Accès refusé", 403)
+
+  return session
+}
+
 export function handleAuthError(error: unknown) {
   if (error instanceof AuthError) {
     return NextResponse.json(
