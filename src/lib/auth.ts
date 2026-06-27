@@ -36,6 +36,16 @@ export const auth = betterAuth({
       await sendEmail(user.email, verificationEmail(user, url))
     },
   },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 3600, max: 3 },
+      "/request-password-reset": { window: 3600, max: 3 },
+    },
+  },
   advanced: {
     database: {
       generateId: () => crypto.randomUUID(),
