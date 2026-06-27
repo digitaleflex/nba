@@ -76,11 +76,29 @@ const signalWorker = new Worker(
       },
     })
 
-    if (!signal || signal.status !== "PUBLISHED") {
+    if (!signal) {
       return
     }
 
-    const planIds = signal.audience.map((a) => a.planId)
+    // Automatically publish the signal if it is a scheduled draft whose time has arrived
+    if (signal.status === "DRAFT" && signal.scheduledAt && new Date(signal.scheduledAt).getTime() <= Date.now() + 5000) {
+      await prisma.signal.update({
+        where: { id: signalId },
+        data: {
+          status: "PUBLISHED",
+          publishedAt: new Date(),
+          jobId: null,
+        },
+      })
+      signal.status = "PUBLISHED"
+      signal.publishedAt = new Date()
+    }
+
+    if (signal.status !== "PUBLISHED") {
+      return
+    }
+
+    const planIds = signal.audience.map((a: any) => a.planId)
     if (planIds.length === 0) return
 
     // Find active members with approved access requests for these plans
@@ -146,7 +164,7 @@ const signalWorker = new Worker(
       resourceId: signal.id,
       details: {
         recipientCount: members.length,
-        plans: signal.audience.map((a) => a.plan.name),
+        plans: signal.audience.map((a: any) => a.plan.name),
       },
     })
   },
