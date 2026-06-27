@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
+import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -76,6 +77,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         data: { onboardingStatus: "REVIEW_PENDING" },
       })
     }
+
+    await logAuditEvent({
+      userId: session.user.id,
+      action: `access_request.${parsed.status.toLowerCase()}`,
+      resourceType: "access_request",
+      resourceId: id,
+      details: { notes: parsed.notes },
+    })
 
     return NextResponse.json(updated)
   } catch (error) {

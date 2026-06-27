@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewDocumentSchema, validateOrThrow } from "@nba/lib/validations"
+import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,6 +19,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         reviewedAt: new Date(),
         reviewNotes: parsed.notes,
       },
+    })
+
+    await logAuditEvent({
+      userId: session.user.id,
+      action: `broker.${parsed.status.toLowerCase()}`,
+      resourceType: "broker_verification",
+      resourceId: id,
+      details: { notes: parsed.notes },
     })
 
     return NextResponse.json(updated)
