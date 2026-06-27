@@ -2,6 +2,7 @@ import { redirect } from "next/navigation"
 import { headers } from "next/headers"
 import { auth } from "@nba/lib/auth"
 import { prisma } from "@nba/lib/db"
+import { LogoutButton } from "@nba/app/components/logout-button"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await auth.api.getSession({ headers: await headers() })
@@ -27,6 +28,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <span className="rounded-md bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
               Admin
             </span>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">{session.user.name}</span>
+            <LogoutButton />
           </div>
         </div>
       </header>
