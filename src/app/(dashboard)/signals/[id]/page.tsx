@@ -64,8 +64,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
       </Link>
 
       <Card className="relative overflow-hidden border border-primary/20 shadow-md bg-card">
-        <div className="absolute inset-y-0 left-0 w-1.5 bg-primary" />
-        <CardContent className="p-6 space-y-6">
+        <div className="absolute inset-y-0 left-0 w-1 bg-primary sm:w-1.5" />
+        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
             <div className="space-y-1">

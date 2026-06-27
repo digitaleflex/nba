@@ -4,6 +4,7 @@ import type { NextRequest } from "next/server"
 const PUBLIC_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"]
 const AUTH_API_PREFIX = "/api/auth"
 const PUBLIC_API_PREFIX = "/api/public"
+const ONBOARDING_API_PREFIX = "/api/onboarding"
 
 async function getSession(request: NextRequest) {
   try {
@@ -20,10 +21,29 @@ async function getSession(request: NextRequest) {
   }
 }
 
+async function getOnboardingStatus(request: NextRequest): Promise<string | null> {
+  try {
+    const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`
+    const res = await fetch(`${baseUrl}/api/onboarding/state`, {
+      headers: { cookie: request.headers.get("cookie") ?? "" },
+      cache: "no-store",
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    return data?.status ?? null
+  } catch {
+    return null
+  }
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  if (pathname.startsWith(AUTH_API_PREFIX) || pathname.startsWith(PUBLIC_API_PREFIX)) {
+  if (
+    pathname.startsWith(AUTH_API_PREFIX) ||
+    pathname.startsWith(PUBLIC_API_PREFIX) ||
+    pathname.startsWith(ONBOARDING_API_PREFIX)
+  ) {
     return NextResponse.next()
   }
 
@@ -54,10 +74,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(loginUrl)
     }
 
+    // Vérifier le vrai statut onboarding depuis l'API (la session Better Auth n'inclut pas les champs customs)
+    const onboardingStatus = await getOnboardingStatus(request)
+
     // Force redirection to onboarding if user is not fully active
     if (
       pathname.startsWith("/dashboard") &&
-      session.user?.onboardingStatus !== "ACTIVE"
+      onboardingStatus !== "ACTIVE"
     ) {
       return NextResponse.redirect(new URL("/onboarding", request.url))
     }
@@ -65,7 +88,7 @@ export async function middleware(request: NextRequest) {
     // Prevent access to onboarding if already active
     if (
       pathname.startsWith("/onboarding") &&
-      session.user?.onboardingStatus === "ACTIVE"
+      onboardingStatus === "ACTIVE"
     ) {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
