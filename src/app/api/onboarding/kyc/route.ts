@@ -16,9 +16,14 @@ export async function POST(req: NextRequest) {
   const documentType = form.get("documentType") as string
   const front = form.get("front") as File
   const back = form.get("back") as File | null
+  const selfie = form.get("selfie") as File | null
 
   if (!documentType || !front) {
     return NextResponse.json({ error: "Type de document et fichier requis" }, { status: 400 })
+  }
+
+  if (!selfie) {
+    return NextResponse.json({ error: "Photo selfie avec document requise" }, { status: 400 })
   }
 
   const storage = getStorage()
@@ -28,6 +33,7 @@ export async function POST(req: NextRequest) {
   if (back) {
     backResult = await storage.upload(back, "kyc")
   }
+  const selfieResult = await storage.upload(selfie, "kyc")
 
   await prisma.kycDocument.create({
     data: {
@@ -35,6 +41,7 @@ export async function POST(req: NextRequest) {
       documentType: documentType as any,
       frontFilePath: frontResult.path,
       backFilePath: backResult?.path ?? null,
+      selfieFilePath: selfieResult.path,
       status: "PENDING",
     },
   })

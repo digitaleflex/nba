@@ -89,7 +89,7 @@ describe("Register Wizard", () => {
     await user.click(screen.getByRole("combobox"))
     await user.click(await screen.findByRole("option", { name: "Plan Bronze" }))
     expect(screen.getByText("Service sélectionné")).toBeInTheDocument()
-    const serviceCard = screen.getByText("Service sélectionné").closest("[class*='flex']")!
+    const serviceCard = screen.getByText("Service sélectionné").closest("[class*='flex']") as HTMLElement
     expect(within(serviceCard).getByText("Plan Bronze")).toBeInTheDocument()
     expect(screen.getByRole("button", { name: /continuer/i })).toBeEnabled()
   })
