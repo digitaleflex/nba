@@ -1,11 +1,8 @@
 #!/usr/bin/env tsx
-import { PrismaClient } from "../src/generated/prisma/client"
-import { PrismaPg } from "@prisma/adapter-pg"
-import { auth } from "../src/lib/auth"
-
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
-})
+import "dotenv/config"
+import { betterAuth } from "better-auth"
+import { prismaAdapter } from "better-auth/adapters/prisma"
+import { prisma } from "../src/lib/db"
 
 async function main() {
   const email = process.argv.find((a) => a.startsWith("--email="))?.split("=")[1]
@@ -18,7 +15,7 @@ async function main() {
 
   const superAdminRole = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } })
   if (!superAdminRole) {
-    console.error("SUPER_ADMIN role not found. Run seed first.")
+    console.error("SUPER_ADMIN role not found. Run `npx tsx scripts/seed.ts` first.")
     process.exit(1)
   }
 
@@ -28,17 +25,24 @@ async function main() {
       where: { email },
       data: { roleId: superAdminRole.id },
     })
-    console.log(`✅ Role mis à jour pour ${email}`)
+    console.log(`✅ Rôle SUPER_ADMIN assigné à ${email}`)
     return
   }
 
-  await auth.api.signUpEmail({
-    body: {
-      email,
-      password,
-      name: email.split("@")[0],
-    },
+  const auth = betterAuth({
+    database: prismaAdapter(prisma as any, { provider: "postgresql" }),
+    emailAndPassword: { enabled: true },
+    advanced: { database: { generateId: () => crypto.randomUUID() } },
   })
+
+  const { error } = await auth.api.signUpEmail({
+    body: { email, password, name: email.split("@")[0] },
+  })
+
+  if (error) {
+    console.error("Erreur création utilisateur:", error.message)
+    process.exit(1)
+  }
 
   await prisma.user.update({
     where: { email },
