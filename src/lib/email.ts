@@ -306,6 +306,7 @@ export async function sendEmail(
         return
       }
     }
-    console.error(`Failed to send email to ${to}:`, err)
+    console.error(`[EMAIL] Failed to send to ${to}:`, err)
+    throw err
   }
 }
