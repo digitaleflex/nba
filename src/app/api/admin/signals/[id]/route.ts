@@ -15,3 +15,26 @@ export async function DELETE(
     return handleAuthError(error)
   }
 }
+
+import { updateSignal } from "@nba/modules/signals/services/update-signal"
+import { getServerSession } from "@nba/lib/get-session"
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await getServerSession()
+    if (!session) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+    }
+
+    const { id } = await params
+    const body = await req.json()
+    const updated = await updateSignal(id, session.user.id, body)
+    return NextResponse.json(updated)
+  } catch (error) {
+    return handleAuthError(error)
+  }
+}
+

@@ -4,6 +4,7 @@ import { createReadStream } from "fs"
 import { stat } from "fs/promises"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
 
 export async function GET(
   req: NextRequest,
@@ -42,7 +43,7 @@ export async function GET(
   }
 
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
-  const hasPermission = (perm: string) => user.role.permissions.some(rp => rp.permission.name === perm)
+  const hasPermission = (perm: string) => user.role.permissions.some((rp: any) => rp.permission.name === perm)
 
   if (category === "kyc") {
     if (!isAdmin && !hasPermission("kyc.review")) {
@@ -74,14 +75,25 @@ export async function GET(
     }
   } else if (category === "signals") {
     if (!isAdmin) {
-      const activeAccess = await prisma.accessRequest.findFirst({
-        where: {
-          userId: session.user.id,
-          status: "APPROVED"
-        }
+      const signalsWithImage = await prisma.signal.findMany({
+        where: { deletedAt: null },
+        include: { audience: true }
       })
-      if (!activeAccess) {
-        return new NextResponse("Accès refusé", { status: 403 })
+      const matchingSignal = signalsWithImage.find((s: any) => 
+        s.imageUrl === filePath || 
+        (Array.isArray(s.imageUrls) && s.imageUrls.includes(filePath))
+      )
+      
+      if (matchingSignal) {
+        const hasAccess = await SignalPolicy.canView(session.user.id, matchingSignal.id)
+        if (!hasAccess) {
+          return new NextResponse("Accès refusé", { status: 403 })
+        }
+      } else {
+        // If it's a draft and not published yet, only creators/admins can view it
+        if (!hasPermission("signals.create")) {
+          return new NextResponse("Accès refusé", { status: 403 })
+        }
       }
     }
   } else {

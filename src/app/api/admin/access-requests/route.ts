@@ -28,7 +28,7 @@ export async function GET() {
     })
 
     const enriched = await Promise.all(
-      requests.map(async (req) => ({
+      requests.map(async (req: any) => ({
         ...req,
         onboarding: await getOnboardingState(req.userId),
       })),
