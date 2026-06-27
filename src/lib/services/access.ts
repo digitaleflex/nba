@@ -1,5 +1,5 @@
 import { prisma } from "../db"
-import type { AccessStatus } from "../../generated/prisma"
+import type { AccessStatus } from "@nba/generated/prisma"
 
 export interface CreateAccessRequestInput {
   userId: string
