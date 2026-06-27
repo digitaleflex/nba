@@ -46,7 +46,7 @@ export async function getSignals() {
     },
   })
 
-  const activePlanIds = approvedRequests.map((r) => r.planId)
+  const activePlanIds = approvedRequests.map((r: any) => r.planId)
   if (activePlanIds.length === 0) {
     return []
   }
@@ -94,3 +94,73 @@ export async function deleteSignal(id: string) {
     },
   })
 }
+
+import { SignalPolicy } from "../policies/signal-policy"
+
+export async function getSignalById(id: string) {
+  const session = await getServerSession()
+  if (!session) throw new AuthError("Non autorisé", 401)
+
+  const hasAccess = await SignalPolicy.canView(session.user.id, id)
+  if (!hasAccess) {
+    throw new AuthError("Accès refusé", 403)
+  }
+
+  const signal = await prisma.signal.findUnique({
+    where: { id, deletedAt: null },
+    include: {
+      creator: { select: { name: true } },
+    },
+  })
+
+  return signal
+}
+
+export async function getSignalVersions(id: string, userId: string) {
+  const signal = await prisma.signal.findUnique({ where: { id } })
+  if (!signal) throw new Error("Signal introuvable")
+
+  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  if (!allowed) throw new AuthError("Accès refusé", 403)
+
+  return prisma.signalVersion.findMany({
+    where: { signalId: id },
+    orderBy: { version: "desc" },
+    include: {
+      updater: { select: { name: true } },
+    },
+  })
+}
+
+export async function getSignalStats(id: string, userId: string) {
+  const signal = await prisma.signal.findUnique({ where: { id } })
+  if (!signal) throw new Error("Signal introuvable")
+
+  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  if (!allowed) throw new AuthError("Accès refusé", 403)
+
+  const reads = await prisma.signalRead.findMany({
+    where: { signalId: id },
+    include: { user: { select: { name: true, email: true } } },
+  })
+
+  const uniqueMembers = reads.length
+  const totalViews = reads.reduce((sum: number, r: any) => sum + r.viewCount, 0)
+  
+  const firstRead = reads.length > 0 
+    ? reads.reduce((min: Date, r: any) => r.readAt < min ? r.readAt : min, reads[0].readAt) 
+    : null
+
+  return {
+    uniqueMembers,
+    totalViews,
+    firstRead,
+    reads: reads.map((r: any) => ({
+      userName: r.user.name,
+      userEmail: r.user.email,
+      readAt: r.readAt,
+      views: r.viewCount,
+    })),
+  }
+}
+

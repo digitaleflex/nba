@@ -1,0 +1,150 @@
+import { prisma } from "@nba/lib/db"
+import { signalCreateSchema } from "../validators/signal-schema"
+import { AuthError } from "@nba/lib/auth-utils"
+import { SignalPolicy } from "../policies/signal-policy"
+import { logAuditEvent } from "@nba/lib/services/audit"
+import { signalDistributionQueue } from "@nba/lib/queue"
+
+export interface UpdateSignalInput {
+  content: string
+  imageUrl?: string | null
+  imageUrls?: string[]
+  planIds: string[]
+  status: "DRAFT" | "PUBLISHED"
+  scheduledAt?: string | null
+}
+
+export async function updateSignal(id: string, userId: string, input: UpdateSignalInput) {
+  const signal = await prisma.signal.findUnique({
+    where: { id },
+    include: { audience: true }
+  })
+
+  if (!signal) {
+    throw new Error("Signal introuvable")
+  }
+
+  // 1. Check permissions using SignalPolicy
+  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  if (!allowed) {
+    throw new AuthError("Accès refusé", 403)
+  }
+
+  const parsed = signalCreateSchema.parse(input)
+
+  // 2. Handle scheduled publishing / BullMQ job management
+  const isScheduled = !!parsed.scheduledAt && new Date(parsed.scheduledAt).getTime() > Date.now()
+  const nextStatus = isScheduled ? "DRAFT" : parsed.status
+
+  // Cancel existing BullMQ job if any
+  if (signal.jobId) {
+    try {
+      const job = await signalDistributionQueue.getJob(signal.jobId).catch(() => null)
+      if (job) {
+        await job.remove()
+      }
+    } catch (err) {
+      console.error("[signal] Failed to remove previous scheduled job:", err)
+    }
+  }
+
+  // Increment version number
+  const nextVersion = signal.currentVersion + 1
+
+  // Handle first image legacy url
+  const legacyImageUrl = parsed.imageUrls && parsed.imageUrls.length > 0
+    ? parsed.imageUrls[0]
+    : (parsed.imageUrl || null)
+
+  // 3. Update the database record
+  const updatedSignal = await prisma.signal.update({
+    where: { id },
+    data: {
+      content: parsed.content,
+      imageUrl: legacyImageUrl,
+      imageUrls: parsed.imageUrls || [],
+      status: nextStatus,
+      publishedAt: (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : signal.publishedAt,
+      scheduledAt: isScheduled ? new Date(parsed.scheduledAt!) : null,
+      jobId: null, // will be populated below if scheduled
+      currentVersion: nextVersion,
+      audience: {
+        deleteMany: {}, // Clear old audience plans
+        create: parsed.planIds.map((planId) => ({
+          planId,
+        })),
+      },
+    },
+    include: {
+      audience: {
+        include: {
+          plan: true,
+        },
+      },
+    },
+  })
+
+  // 4. Create new SignalVersion history entry
+  await prisma.signalVersion.create({
+    data: {
+      signalId: signal.id,
+      version: nextVersion,
+      content: parsed.content,
+      imageUrls: parsed.imageUrls || [],
+      updatedBy: userId,
+    },
+  })
+
+  let queueFailed = false
+  let newJobId: string | null = null
+
+  // 5. Schedule/Publish job if needed
+  if (isScheduled) {
+    try {
+      const delay = new Date(parsed.scheduledAt!).getTime() - Date.now()
+      const job = await signalDistributionQueue.add(
+        `distribute-${signal.id}`,
+        { signalId: signal.id },
+        { delay }
+      )
+      newJobId = job.id || null
+      
+      await prisma.signal.update({
+        where: { id: signal.id },
+        data: { jobId: newJobId },
+      })
+    } catch (err) {
+      console.error("[signal] BullMQ failed during rescheduling:", err)
+      queueFailed = true
+    }
+  } else if (parsed.status === "PUBLISHED" && signal.status !== "PUBLISHED") {
+    // Only queue distribution if publishing a previously unpublished signal
+    try {
+      await signalDistributionQueue.add(`distribute-${signal.id}`, {
+        signalId: signal.id,
+      })
+    } catch (err) {
+      console.error("[signal] BullMQ failed during update publication:", err)
+      queueFailed = true
+    }
+  }
+
+  await logAuditEvent({
+    userId,
+    action: "signal.update",
+    resourceType: "signal",
+    resourceId: signal.id,
+    details: {
+      fromStatus: signal.status,
+      toStatus: nextStatus,
+      version: nextVersion,
+      isScheduled,
+      queueFailed,
+    },
+  })
+
+  return {
+    ...updatedSignal,
+    queueFailed,
+  }
+}
