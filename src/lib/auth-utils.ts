@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "./auth"
 import { prisma } from "./db"
+import { ValidationError } from "./validations"
 
 export class AuthError extends Error {
   public statusCode: number
@@ -59,6 +60,12 @@ export function handleAuthError(error: unknown) {
     return NextResponse.json(
       { error: error.message },
       { status: error.statusCode },
+    )
+  }
+  if (error instanceof ValidationError) {
+    return NextResponse.json(
+      { error: error.message },
+      { status: 400 },
     )
   }
   throw error

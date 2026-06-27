@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
+import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const session = await requirePermission("users.read")
+    await requirePermission("users.read")
     const { id } = await params
 
     const request = await prisma.accessRequest.findUnique({
@@ -48,32 +49,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const session = await requirePermission("subscriptions.manage")
     const { id } = await params
     const body = await req.json()
-    const { status, notes } = body
-
-    if (!["APPROVED", "REJECTED", "SUSPENDED", "REVOKED"].includes(status)) {
-      return NextResponse.json({ error: "Statut invalide" }, { status: 400 })
-    }
+    const parsed = validateOrThrow(reviewAccessSchema, body)
 
     const request = await prisma.accessRequest.findUniqueOrThrow({ where: { id } })
 
     const updated = await prisma.accessRequest.update({
       where: { id },
       data: {
-        status,
+        status: parsed.status,
         reviewedBy: session.user.id,
         reviewedAt: new Date(),
-        notes,
+        notes: parsed.notes,
       },
     })
 
-    if (status === "APPROVED") {
+    if (parsed.status === "APPROVED") {
       await prisma.user.update({
         where: { id: request.userId },
         data: { onboardingStatus: "ACTIVE" },
       })
     }
 
-    if (status === "REJECTED") {
+    if (parsed.status === "REJECTED") {
       await prisma.user.update({
         where: { id: request.userId },
         data: { onboardingStatus: "REVIEW_PENDING" },

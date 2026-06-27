@@ -3,21 +3,32 @@ import { headers } from "next/headers"
 import { auth } from "@nba/lib/auth"
 import { prisma } from "@nba/lib/db"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
+import { profileSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
+import { AuthError } from "@nba/lib/auth-utils"
 
 export async function PUT(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+  try {
+    const session = await auth.api.getSession({ headers: await headers() })
+    if (!session) throw new AuthError("Non authentifié", 401)
+
+    const body = await req.json()
+    const parsed = validateOrThrow(profileSchema, body)
+
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: parsed,
+    })
+
+    await updateOnboardingStatus(session.user.id, "KYC_PENDING")
+
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    if (error instanceof AuthError) {
+      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+    }
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    throw error
   }
-
-  const { country, language, timezone } = await req.json()
-
-  await prisma.user.update({
-    where: { id: session.user.id },
-    data: { country, language, timezone },
-  })
-
-  await updateOnboardingStatus(session.user.id, "KYC_PENDING")
-
-  return NextResponse.json({ ok: true })
 }
