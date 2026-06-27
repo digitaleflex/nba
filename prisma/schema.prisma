@@ -266,14 +266,8 @@ model BrokerVerification {
 
 model Signal {
   id          String           @id @default(uuid()) @db.Uuid
-  title       String
-  description String
-  asset       String
-  type        SignalType
-  entryPrice  Decimal          @map("entry_price") @db.Decimal(20, 8)
-  targetPrice Decimal          @map("target_price") @db.Decimal(20, 8)
-  stopLoss    Decimal?         @map("stop_loss") @db.Decimal(20, 8)
-  confidence  SignalConfidence
+  content     String
+  imageUrl    String?          @map("image_url")
   status      SignalStatus     @default(DRAFT)
   createdBy   String           @map("created_by") @db.Uuid
   publishedAt DateTime?        @map("published_at")
@@ -287,8 +281,6 @@ model Signal {
   @@index([status])
   @@index([createdBy])
   @@index([publishedAt])
-  @@index([type])
-  @@index([asset])
   @@map("signals")
 }
 
@@ -409,16 +401,7 @@ enum AccessStatus {
   REVOKED
 }
 
-enum SignalType {
-  BUY
-  SELL
-}
 
-enum SignalConfidence {
-  LOW
-  MEDIUM
-  HIGH
-}
 
 enum SignalStatus {
   DRAFT
