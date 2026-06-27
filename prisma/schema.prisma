@@ -14,29 +14,37 @@ model User {
   name          String
   email         String    @unique
   emailVerified Boolean   @default(false) @map("email_verified")
-  image         String?   @db.Text
+  image         String?   @db.Uuid
   createdAt     DateTime  @default(now()) @map("created_at")
   updatedAt     DateTime  @updatedAt @map("updated_at")
 
   // NBA custom fields
-  phone         String?
-  roleId        String    @map("role_id") @db.Uuid
-  isActive      Boolean   @default(true) @map("is_active")
-  metadata      Json?     @db.JsonB
-  deletedAt     DateTime? @map("deleted_at")
+  phone             String?
+  whatsapp          String?           @map("whatsapp")
+  roleId            String            @map("role_id") @db.Uuid
+  country           String?
+  language          String            @default("fr")
+  timezone          String            @default("Europe/Paris")
+  onboardingStatus  OnboardingStatus  @default(PENDING_EMAIL) @map("onboarding_status")
+  isActive          Boolean           @default(true) @map("is_active")
+  metadata          Json?             @db.JsonB
+  deletedAt         DateTime?         @map("deleted_at")
 
   sessions            Session[]
   accounts            Account[]
-  role                Role                   @relation(fields: [roleId], references: [id])
-  subscriptions       UserSubscription[]
-  kycDocuments        KycDocument[]          @relation("KycDocuments")
-  kycReviews          KycDocument[]          @relation("KycReviews")
-  brokerVerifications BrokerVerification[]   @relation("BrokerVerifications")
-  brokerReviews       BrokerVerification[]   @relation("BrokerReviews")
+  role                Role                  @relation(fields: [roleId], references: [id])
+  accessRequests      AccessRequest[]
+  kycDocuments        KycDocument[]         @relation("KycDocuments")
+  kycReviews          KycDocument[]         @relation("KycReviews")
+  accessReviews       AccessRequest[]       @relation("AccessReviews")
+  brokerVerifications BrokerVerification[]  @relation("BrokerVerifications")
+  brokerReviews       BrokerVerification[]  @relation("BrokerReviews")
   signals             Signal[]
   notifications       Notification[]
   auditLogs           AuditLog[]
   settings            Setting[]
+  devices             Device[]
+  deviceVerifications DeviceVerification[]
 
   @@index([roleId])
   @@index([isActive])
@@ -50,7 +58,7 @@ model Session {
   token     String   @unique
   expiresAt DateTime @map("expires_at")
   ipAddress String?  @map("ip_address")
-  userAgent String?  @map("user_agent") @db.Text
+  userAgent String?  @map("user_agent") @db.Uuid
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -66,13 +74,13 @@ model Account {
   userId                  String    @map("user_id") @db.Uuid
   accountId               String    @map("account_id")
   providerId              String    @map("provider_id")
-  accessToken             String?   @map("access_token") @db.Text
-  refreshToken            String?   @map("refresh_token") @db.Text
+  accessToken             String?   @map("access_token") @db.Uuid
+  refreshToken            String?   @map("refresh_token") @db.Uuid
   accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
   refreshTokenExpiresAt   DateTime? @map("refresh_token_expires_at")
   scope                   String?
-  idToken                 String?   @map("id_token") @db.Text
-  password                String?   @db.Text
+  idToken                 String?   @map("id_token") @db.Uuid
+  password                String?   @db.Uuid
   createdAt               DateTime  @default(now()) @map("created_at")
   updatedAt               DateTime  @updatedAt @map("updated_at")
 
@@ -85,7 +93,7 @@ model Account {
 model Verification {
   id         String   @id @default(uuid()) @db.Uuid
   identifier String
-  value      String   @db.Text
+  value      String   @db.Uuid
   expiresAt  DateTime @map("expires_at")
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -98,7 +106,7 @@ model Verification {
 model Role {
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
-  description String?  @db.Text
+  description String?  @db.Uuid
   isSystem    Boolean  @default(false) @map("is_system")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -112,7 +120,7 @@ model Role {
 model Permission {
   id          String   @id @default(uuid()) @db.Uuid
   name        String   @unique
-  description String?  @db.Text
+  description String?  @db.Uuid
   module      String
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -136,7 +144,7 @@ model RolePermission {
 model SubscriptionPlan {
   id           String   @id @default(uuid()) @db.Uuid
   name         String   @unique
-  description  String?  @db.Text
+  description  String?  @db.Uuid
   price        Decimal  @db.Decimal(10, 2)
   currency     String
   durationDays Int      @map("duration_days")
@@ -147,30 +155,69 @@ model SubscriptionPlan {
   updatedAt    DateTime @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
-  subscriptions UserSubscription[]
-  audience      SignalAudience[]
+  accessRequests AccessRequest[]
+  audience       SignalAudience[]
 
   @@map("subscription_plans")
 }
 
-model UserSubscription {
-  id          String             @id @default(uuid()) @db.Uuid
-  userId      String             @map("user_id") @db.Uuid
-  planId      String             @map("plan_id") @db.Uuid
-  status      SubscriptionStatus @default(ACTIVE)
-  startDate   DateTime           @map("start_date")
-  endDate     DateTime           @map("end_date")
-  cancelledAt DateTime?          @map("cancelled_at")
-  createdAt   DateTime           @default(now()) @map("created_at")
-  updatedAt   DateTime           @updatedAt @map("updated_at")
+model AccessRequest {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  planId        String       @map("plan_id") @db.Uuid
+  status        AccessStatus @default(PENDING)
+  reviewedBy    String?      @map("reviewed_by") @db.Uuid
+  reviewedAt    DateTime?    @map("reviewed_at")
+  notes         String?      @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
 
-  user User             @relation(fields: [userId], references: [id])
-  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+  user     User             @relation(fields: [userId], references: [id])
+  plan     SubscriptionPlan @relation(fields: [planId], references: [id])
+  reviewer User?            @relation("AccessReviews", fields: [reviewedBy], references: [id])
 
   @@index([userId])
   @@index([planId])
   @@index([status])
-  @@map("user_subscriptions")
+  @@map("access_requests")
+}
+
+model Device {
+  id           String   @id @default(uuid()) @db.Uuid
+  userId       String   @map("user_id") @db.Uuid
+  name         String?
+  fingerprint  String   @map("fingerprint")
+  ipAddress    String?  @map("ip_address")
+  userAgent    String?  @map("user_agent") @db.Uuid
+  lastSeenAt   DateTime @default(now()) @map("last_seen_at")
+  trusted      Boolean  @default(true) @map("trusted")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, fingerprint])
+  @@index([userId])
+  @@index([fingerprint])
+  @@map("devices")
+}
+
+model DeviceVerification {
+  id                String    @id @default(uuid()) @db.Uuid
+  userId            String    @map("user_id") @db.Uuid
+  deviceFingerprint String    @map("device_fingerprint")
+  ipAddress         String?   @map("ip_address")
+  userAgent         String?   @map("user_agent") @db.Uuid
+  verificationCode  String    @map("verification_code")
+  expiresAt         DateTime  @map("expires_at")
+  verifiedAt        DateTime? @map("verified_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("device_verifications")
 }
 
 model KycDocument {
@@ -178,11 +225,11 @@ model KycDocument {
   userId         String             @map("user_id") @db.Uuid
   documentType   DocumentType       @map("document_type")
   status         VerificationStatus @default(PENDING)
-  frontFilePath  String             @map("front_file_path") @db.Text
-  backFilePath   String?            @map("back_file_path") @db.Text
-  selfieFilePath String?            @map("selfie_file_path") @db.Text
+  frontFilePath  String             @map("front_file_path") @db.Uuid
+  backFilePath   String?            @map("back_file_path") @db.Uuid
+  selfieFilePath String?            @map("selfie_file_path") @db.Uuid
   reviewedBy     String?            @map("reviewed_by") @db.Uuid
-  reviewNotes    String?            @map("review_notes") @db.Text
+  reviewNotes    String?            @map("review_notes") @db.Uuid
   reviewedAt     DateTime?          @map("reviewed_at")
   submittedAt    DateTime           @default(now()) @map("submitted_at")
   createdAt      DateTime           @default(now()) @map("created_at")
@@ -202,10 +249,10 @@ model BrokerVerification {
   userId        String             @map("user_id") @db.Uuid
   brokerName    String             @map("broker_name")
   accountId     String             @map("account_id")
-  videoFilePath String             @map("video_file_path") @db.Text
+  videoFilePath String             @map("video_file_path") @db.Uuid
   status        VerificationStatus @default(PENDING)
   reviewedBy    String?            @map("reviewed_by") @db.Uuid
-  reviewNotes   String?            @map("review_notes") @db.Text
+  reviewNotes   String?            @map("review_notes") @db.Uuid
   reviewedAt    DateTime?          @map("reviewed_at")
   submittedAt   DateTime           @default(now()) @map("submitted_at")
   createdAt     DateTime           @default(now()) @map("created_at")
@@ -220,7 +267,7 @@ model BrokerVerification {
 model Signal {
   id          String           @id @default(uuid()) @db.Uuid
   title       String
-  description String           @db.Text
+  description String           @db.Uuid
   asset       String
   type        SignalType
   entryPrice  Decimal          @map("entry_price") @db.Decimal(20, 8)
@@ -264,7 +311,7 @@ model Notification {
   userId    String   @map("user_id") @db.Uuid
   type      String
   title     String
-  body      String   @db.Text
+  body      String   @db.Uuid
   data      Json?    @db.JsonB
   isRead    Boolean  @default(false) @map("is_read")
   readAt    DateTime? @map("read_at")
@@ -285,7 +332,7 @@ model NotificationDelivery {
   channel        NotificationChannel
   status         DeliveryStatus     @default(PENDING)
   externalId     String?            @map("external_id")
-  errorMessage   String?            @map("error_message") @db.Text
+  errorMessage   String?            @map("error_message") @db.Uuid
   sentAt         DateTime?          @map("sent_at")
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
@@ -305,7 +352,7 @@ model AuditLog {
   resourceId   String?  @map("resource_id") @db.Uuid
   details      Json?    @db.JsonB
   ipAddress    String?  @map("ip_address")
-  userAgent    String?  @map("user_agent") @db.Text
+  userAgent    String?  @map("user_agent") @db.Uuid
   createdAt    DateTime @default(now()) @map("created_at")
 
   user User? @relation(fields: [userId], references: [id])
@@ -320,8 +367,8 @@ model AuditLog {
 model Setting {
   id          String   @id @default(uuid()) @db.Uuid
   key         String   @unique
-  value       String   @db.Text
-  description String?  @db.Text
+  value       String   @db.Uuid
+  description String?  @db.Uuid
   updatedBy   String?  @map("updated_by") @db.Uuid
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
@@ -345,6 +392,23 @@ enum VerificationStatus {
   REJECTED
 }
 
+enum OnboardingStatus {
+  PENDING_EMAIL
+  PROFILE_INCOMPLETE
+  KYC_PENDING
+  BROKER_PENDING
+  REVIEW_PENDING
+  ACTIVE
+}
+
+enum AccessStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  REVOKED
+}
+
 enum SignalType {
   BUY
   SELL
@@ -360,12 +424,6 @@ enum SignalStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
-}
-
-enum SubscriptionStatus {
-  ACTIVE
-  CANCELLED
-  EXPIRED
 }
 
 enum NotificationChannel {
