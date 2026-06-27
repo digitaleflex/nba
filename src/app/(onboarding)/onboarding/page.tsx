@@ -33,8 +33,8 @@ export default function OnboardingWizardPage() {
       .then((r) => r.json())
       .then((data) => {
         if (data.status === "ACTIVE" || data.status === "COMPLETED") {
-          // L'onboarding est terminé, on redirige vers le dashboard
-          router.push("/dashboard")
+          // L'onboarding est terminé, on redirige vers le dashboard avec rechargement pour actualiser la session
+          window.location.href = "/dashboard"
         } else {
           setState(data)
           setLoading(false)

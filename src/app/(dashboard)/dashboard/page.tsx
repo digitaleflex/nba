@@ -1,12 +1,11 @@
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent } from "@nba/design-system"
 import { TrendingUp, BarChart3, Users, Activity } from "lucide-react"
 import { SessionList } from "../components/session-list"
 
 export default async function DashboardPage() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) return null
 
   const user = await prisma.user.findUnique({

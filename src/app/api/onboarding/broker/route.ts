@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
   }
@@ -37,7 +36,7 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  await updateOnboardingStatus(userId, "REVIEW_PENDING")
+  await updateOnboardingStatus(userId, "ACTIVE")
 
   return NextResponse.json({ ok: true })
 }

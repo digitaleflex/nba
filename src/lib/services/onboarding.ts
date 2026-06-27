@@ -23,19 +23,22 @@ const STEP_PROGRESS: Record<string, number> = {
 }
 
 export async function getOnboardingState(userId: string): Promise<OnboardingState> {
-  const user = await prisma.user.findUniqueOrThrow({
-    where: { id: userId },
-    include: {
-      kycDocuments: { take: 1, orderBy: { submittedAt: "desc" } },
-      brokerVerifications: { take: 1, orderBy: { submittedAt: "desc" } },
-      accessRequests: { take: 1, orderBy: { createdAt: "desc" } },
-    },
-  })
+  const [user, kycCount, brokerCount] = await Promise.all([
+    prisma.user.findUniqueOrThrow({
+      where: { id: userId },
+      select: {
+        emailVerified: true,
+        onboardingStatus: true,
+      },
+    }),
+    prisma.kycDocument.count({ where: { userId } }),
+    prisma.brokerVerification.count({ where: { userId } }),
+  ])
 
   const checklist: OnboardingChecklist = {
     emailVerified: user.emailVerified,
-    kycSubmitted: user.kycDocuments.length > 0,
-    brokerSubmitted: user.brokerVerifications.length > 0,
+    kycSubmitted: kycCount > 0,
+    brokerSubmitted: brokerCount > 0,
     reviewed: user.onboardingStatus === "ACTIVE",
   }
 

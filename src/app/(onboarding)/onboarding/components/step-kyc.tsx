@@ -18,99 +18,179 @@ const QUALITY_GUIDELINES = [
   "Bon éclairage, fond neutre",
 ]
 
+const DB_NAME = "kyc-draft-store"
+const STORE_NAME = "drafts"
+
+function openDB(): Promise<IDBDatabase> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined" || !window.indexedDB) {
+      reject(new Error("IndexedDB non supporté"))
+      return
+    }
+    const request = indexedDB.open(DB_NAME, 1)
+    request.onupgradeneeded = () => {
+      const db = request.result
+      if (!db.objectStoreNames.contains(STORE_NAME)) {
+        db.createObjectStore(STORE_NAME)
+      }
+    }
+    request.onsuccess = () => resolve(request.result)
+    request.onerror = () => reject(request.error)
+  })
+}
+
+async function getDraft(key: string): Promise<any> {
+  try {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readonly")
+      const store = transaction.objectStore(STORE_NAME)
+      const request = store.get(key)
+      request.onsuccess = () => resolve(request.result)
+      request.onerror = () => reject(request.error)
+    })
+  } catch {
+    return null
+  }
+}
+
+async function saveDraft(key: string, value: any): Promise<void> {
+  try {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readwrite")
+      const store = transaction.objectStore(STORE_NAME)
+      const request = store.put(value, key)
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  } catch (err) {
+    console.error("Failed to save draft", err)
+  }
+}
+
+async function deleteDraft(key: string): Promise<void> {
+  try {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readwrite")
+      const store = transaction.objectStore(STORE_NAME)
+      const request = store.delete(key)
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  } catch (err) {
+    console.error("Failed to delete draft", err)
+  }
+}
+
+async function clearDrafts(): Promise<void> {
+  try {
+    const db = await openDB()
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(STORE_NAME, "readwrite")
+      const store = transaction.objectStore(STORE_NAME)
+      const request = store.clear()
+      request.onsuccess = () => resolve()
+      request.onerror = () => reject(request.error)
+    })
+  } catch (err) {
+    console.error("Failed to clear drafts", err)
+  }
+}
+
+function DocumentPreview({ file }: { file: File }) {
+  const isImage = file.type.startsWith("image/")
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!isImage) return
+    const url = URL.createObjectURL(file)
+    setPreviewUrl(url)
+    return () => URL.revokeObjectURL(url)
+  }, [file, isImage])
+
+  if (isImage && previewUrl) {
+    return (
+      <div className="relative w-full max-w-[120px] aspect-[4/3] rounded-lg overflow-hidden border border-border mx-auto shadow-sm animate-in zoom-in-95 duration-200">
+        <img src={previewUrl} alt={file.name} className="w-full h-full object-cover" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-col items-center gap-1 p-2 bg-muted/40 rounded-lg max-w-[160px] mx-auto border border-border/50 shadow-sm animate-in zoom-in-95 duration-200">
+      <FileText className="size-6 text-muted-foreground" />
+      <span className="text-[10px] font-medium text-foreground truncate max-w-[120px]">{file.name}</span>
+      <span className="text-[9px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} Mo</span>
+    </div>
+  )
+}
+
 interface StepKycProps {
   onNext: () => void
 }
-
 export function StepKyc({ onNext }: StepKycProps) {
   const [documentType, setDocumentType] = useState("ID_CARD")
   const [frontFile, setFrontFile] = useState<File | null>(null)
   const [backFile, setBackFile] = useState<File | null>(null)
-  const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null)
-  const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
-  const [cameraState, setCameraState] = useState<"idle" | "opening" | "active" | "captured">("idle")
-  const [cameraError, setCameraError] = useState<string | null>(null)
-  const [flash, setFlash] = useState(false)
   const [loading, setLoading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState("")
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const canvasRef = useRef<HTMLCanvasElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
+  const [isInitialized, setIsInitialized] = useState(false)
 
-  const startCamera = useCallback(async () => {
-    setCameraState("opening")
-    setCameraError(null)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
-      })
-      streamRef.current = stream
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
+  // 1. Charger les brouillons depuis IndexedDB au montage
+  useEffect(() => {
+    async function loadDrafts() {
+      try {
+        const type = await getDraft("documentType")
+        const front = await getDraft("frontFile")
+        const back = await getDraft("backFile")
+
+        if (type) setDocumentType(type)
+        if (front) setFrontFile(front)
+        if (back) setBackFile(back)
+      } catch (err) {
+        console.error("Erreur lors du chargement des brouillons KYC :", err)
+      } finally {
+        setIsInitialized(true)
       }
-      setCameraState("active")
-    } catch {
-      setCameraError("Impossible d'accéder à la caméra. Vérifiez les autorisations ou utilisez un fichier.")
-      setCameraState("idle")
     }
+    loadDrafts()
   }, [])
 
-  const stopCamera = useCallback(() => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop())
-      streamRef.current = null
-    }
-    setCameraState("idle")
-  }, [])
-
-  const captureSelfie = useCallback(() => {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    if (!video || !canvas) return
-
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    const ctx = canvas.getContext("2d")
-    if (!ctx) return
-
-    ctx.drawImage(video, 0, 0)
-    setFlash(true)
-    setTimeout(() => setFlash(false), 200)
-
-    canvas.toBlob((blob) => {
-      if (blob) {
-        setSelfieBlob(blob)
-        setSelfiePreview(canvas.toDataURL("image/jpeg"))
-        stopCamera()
-        setCameraState("captured")
-      }
-    }, "image/jpeg", 0.92)
-  }, [stopCamera])
-
-  const retakeSelfie = useCallback(() => {
-    setSelfieBlob(null)
-    setSelfiePreview(null)
-    setCameraState("idle")
-    startCamera()
-  }, [startCamera])
+  // 2. Synchroniser les brouillons vers IndexedDB
+  useEffect(() => {
+    if (!isInitialized) return
+    saveDraft("documentType", documentType)
+  }, [documentType, isInitialized])
 
   useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop())
-      }
+    if (!isInitialized) return
+    if (frontFile) {
+      saveDraft("frontFile", frontFile)
+    } else {
+      deleteDraft("frontFile")
     }
-  }, [])
+  }, [frontFile, isInitialized])
+
+  useEffect(() => {
+    if (!isInitialized) return
+    if (backFile) {
+      saveDraft("backFile", backFile)
+    } else {
+      deleteDraft("backFile")
+    }
+  }, [backFile, isInitialized])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!frontFile) {
-      setError("Veuillez sélectionner un document")
+      setError("Veuillez sélectionner le recto de votre document")
       return
     }
-    if (!selfieBlob) {
-      setError("Veuillez prendre une photo de vous avec votre document")
+    if (documentType !== "PASSPORT" && !backFile) {
+      setError("Veuillez sélectionner le verso de votre document")
       return
     }
 
@@ -121,10 +201,9 @@ export function StepKyc({ onNext }: StepKycProps) {
     const form = new FormData()
     form.append("documentType", documentType)
     form.append("front", frontFile)
-    setUploadProgress(50)
+    setUploadProgress(60)
     if (backFile) form.append("back", backFile)
-    form.append("selfie", selfieBlob, "selfie.jpg")
-    setUploadProgress(75)
+    setUploadProgress(80)
 
     const res = await fetch("/api/onboarding/kyc", { method: "POST", body: form })
 
@@ -137,6 +216,7 @@ export function StepKyc({ onNext }: StepKycProps) {
     }
 
     setUploadProgress(100)
+    await clearDrafts()
     setTimeout(() => {
       onNext()
     }, 400)
@@ -213,20 +293,19 @@ export function StepKyc({ onNext }: StepKycProps) {
             {/* Recto */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Recto du document</label>
-              <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-sm transition-all duration-200 ${
+              <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
                 frontFile
-                  ? "border-success/50 bg-success/[0.02] text-success"
+                  ? "border-success/30 bg-success/[0.01]"
                   : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
               }`}>
-                {frontFile ? <Check className="size-6" /> : <Upload className="size-6" />}
                 {frontFile ? (
-                  <div className="text-center">
-                    <p className="font-medium text-success text-xs">{frontFile.name}</p>
-                    <p className="text-xs text-muted-foreground/70 mt-0.5">{(frontFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+                  <div className="text-center space-y-2">
+                    <DocumentPreview file={frontFile} />
+                    <span className="text-xs text-muted-foreground underline block hover:text-foreground">Changer de fichier</span>
                   </div>
                 ) : (
                   <>
-                    <ImageUp className="size-5 -mb-1" />
+                    <ImageUp className="size-6 text-muted-foreground animate-pulse" />
                     <span>Cliquez pour télécharger</span>
                   </>
                 )}
@@ -235,7 +314,6 @@ export function StepKyc({ onNext }: StepKycProps) {
                   accept="image/jpeg,image/png,image/webp,application/pdf"
                   onChange={(e) => setFrontFile(e.target.files?.[0] ?? null)}
                   className="hidden"
-                  required
                 />
               </label>
             </div>
@@ -246,20 +324,19 @@ export function StepKyc({ onNext }: StepKycProps) {
                 <label className="text-sm font-medium text-foreground">
                   Verso du document <span className="text-muted-foreground font-normal">(obligatoire)</span>
                 </label>
-                <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-sm transition-all duration-200 ${
+                <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
                   backFile
-                    ? "border-success/50 bg-success/[0.02] text-success"
+                    ? "border-success/30 bg-success/[0.01]"
                     : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
                 }`}>
-                  {backFile ? <Check className="size-6" /> : <Upload className="size-6" />}
                   {backFile ? (
-                    <div className="text-center">
-                      <p className="font-medium text-success text-xs">{backFile.name}</p>
-                      <p className="text-xs text-muted-foreground/70 mt-0.5">{(backFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+                    <div className="text-center space-y-2">
+                      <DocumentPreview file={backFile} />
+                      <span className="text-xs text-muted-foreground underline block hover:text-foreground">Changer de fichier</span>
                     </div>
                   ) : (
                     <>
-                      <ImageUp className="size-5 -mb-1" />
+                      <ImageUp className="size-6 text-muted-foreground animate-pulse" />
                       <span>Cliquez pour télécharger</span>
                     </>
                   )}
@@ -268,105 +345,12 @@ export function StepKyc({ onNext }: StepKycProps) {
                     accept="image/jpeg,image/png,image/webp,application/pdf"
                     onChange={(e) => setBackFile(e.target.files?.[0] ?? null)}
                     className="hidden"
-                    required
                   />
                 </label>
               </div>
             )}
 
-            {/* Selfie avec document */}
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Selfie avec votre document <span className="text-destructive">*</span>
-              </label>
-              <p className="text-xs text-muted-foreground">
-                Tenez votre document ouvert à côté de votre visage, en laissant apparaître{" "}
-                <strong>trois doigts</strong> sur le document (pouce, index, majeur).
-              </p>
-
-              {cameraState === "idle" && !selfiePreview && (
-                <div className="flex gap-2 animate-in fade-in duration-300">
-                  <button
-                    type="button"
-                    onClick={startCamera}
-                    className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02] transition-all duration-200"
-                  >
-                    <Camera className="size-6" />
-                    <span>Ouvrir la caméra</span>
-                  </button>
-                  <label className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02] transition-all duration-200">
-                    <Upload className="size-6" />
-                    <span>Importer une photo</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file) {
-                          setSelfieBlob(file)
-                          setSelfiePreview(URL.createObjectURL(file))
-                          setCameraState("captured")
-                        }
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-              )}
-
-              {cameraState === "opening" && (
-                <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 animate-in fade-in duration-300">
-                  <div className="animate-pulse-glow rounded-full p-4">
-                    <Loader2 className="size-8 text-primary animate-spin" />
-                  </div>
-                  <p className="text-sm text-muted-foreground">Initialisation de la caméra…</p>
-                  <p className="text-xs text-muted-foreground/70">Autorisez l&rsquo;accès à la caméra si demandé</p>
-                </div>
-              )}
-
-              {cameraState === "active" && (
-                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="relative overflow-hidden rounded-lg bg-black">
-                    <video ref={videoRef} autoPlay playsInline muted className="w-full h-auto" />
-                    <canvas ref={canvasRef} className="hidden" />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-48 h-48 rounded-full border-2 border-white/50 animate-pulse-glow" />
-                    </div>
-                    {flash && (
-                      <div className="absolute inset-0 bg-white animate-in fade-out duration-200" />
-                    )}
-                  </div>
-                  <p className="text-xs text-center text-muted-foreground">
-                    Placez votre visage dans le cercle, document à côté, 3 doigts visibles
-                  </p>
-                  <Button type="button" onClick={captureSelfie} className="w-full h-9 animate-in fade-in duration-300">
-                    <Camera className="size-4" />
-                    Prendre la photo
-                  </Button>
-                  {cameraError && (
-                    <p className="text-xs text-destructive text-center bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in duration-200">
-                      {cameraError}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {cameraState === "captured" && selfiePreview && (
-                <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
-                  <div className="relative overflow-hidden rounded-lg ring-2 ring-success/30">
-                    <img src={selfiePreview} alt="Selfie" className="w-full h-auto" />
-                    <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-success/90 px-2.5 py-1 text-xs font-medium text-white animate-in fade-in slide-in-from-right duration-300">
-                      <Check className="size-3" />
-                      Photo prise
-                    </div>
-                  </div>
-                  <Button type="button" variant="outline" onClick={retakeSelfie} className="w-full h-9 group">
-                    <RefreshCw className="size-4 transition-transform duration-300 group-hover:rotate-180" />
-                    Reprendre la photo
-                  </Button>
-                </div>
-              )}
-            </div>
+            {/* Selfie supprimé pour validation rapide */}
 
             {error && (
               <p className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-200">

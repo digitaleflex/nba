@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 
 export async function POST(req: NextRequest) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
   }
@@ -22,10 +21,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Type de document et fichier requis" }, { status: 400 })
   }
 
-  if (!selfie) {
-    return NextResponse.json({ error: "Photo selfie avec document requise" }, { status: 400 })
-  }
-
   const storage = getStorage()
 
   const frontResult = await storage.upload(front, "kyc")
@@ -33,7 +28,12 @@ export async function POST(req: NextRequest) {
   if (back) {
     backResult = await storage.upload(back, "kyc")
   }
-  const selfieResult = await storage.upload(selfie, "kyc")
+
+  let selfieFilePath: string | null = null
+  if (selfie) {
+    const selfieResult = await storage.upload(selfie, "kyc")
+    selfieFilePath = selfieResult.path
+  }
 
   await prisma.kycDocument.create({
     data: {
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
       documentType: documentType as any,
       frontFilePath: frontResult.path,
       backFilePath: backResult?.path ?? null,
-      selfieFilePath: selfieResult.path,
+      selfieFilePath,
       status: "PENDING",
     },
   })

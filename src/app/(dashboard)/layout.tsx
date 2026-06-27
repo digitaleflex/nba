@@ -1,10 +1,9 @@
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { DashboardHeader } from "./components/dashboard-header"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) redirect("/login")
 
   return (

@@ -61,12 +61,16 @@ export default function BrokerPage() {
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Nom du broker</label>
-              <Input
-                placeholder="Ex: Deriv, Forex.com..."
+              <select
                 value={brokerName}
                 onChange={(e) => setBrokerName(e.target.value)}
                 required
-              />
+                className="h-9 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground transition-all duration-200"
+              >
+                <option value="" className="text-muted-foreground">Sélectionnez votre broker</option>
+                <option value="Deriv">Deriv</option>
+                <option value="Forex.com">Forex.com</option>
+              </select>
             </div>
 
             <div className="space-y-1.5">
@@ -89,7 +93,6 @@ export default function BrokerPage() {
                   accept="video/mp4,video/webm"
                   onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
                   className="hidden"
-                  required
                 />
               </label>
             </div>

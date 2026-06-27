@@ -16,10 +16,10 @@ const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"
 
 const LOGO_SVG = `
 <svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="4" width="32" height="32" rx="8" fill="#C6FF3B"/>
-  <path d="M12 26V14l8 8 8-8v12" stroke="#09090B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="44" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#C6FF3B" letter-spacing="-0.5">Never</text>
-  <text x="120" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="400" fill="#FFFFFF" letter-spacing="-0.3">BrokeAgain</text>
+  <rect x="4" y="4" width="32" height="32" rx="8" fill="#283B5D"/>
+  <path d="M12 26V14l8 8 8-8v12" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="44" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#283B5D" letter-spacing="-0.5">Never</text>
+  <text x="120" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="400" fill="#1E2024" letter-spacing="-0.3">BrokeAgain</text>
 </svg>`
 
 // ── Helpers ──
@@ -43,8 +43,8 @@ function layout(body: string): string {
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#09090B;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#09090B;min-height:100vh">
+<body style="margin:0;padding:0;background-color:#FAFBFC;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAFBFC;min-height:100vh">
     <tr><td align="center" style="padding:40px 16px">
       <table class="container" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
         <!-- Header -->
@@ -55,16 +55,16 @@ function layout(body: string): string {
         </tr>
         <!-- Card -->
         <tr>
-          <td style="background:linear-gradient(135deg,#121215 0%,#1a1a1f 100%);border-radius:16px;padding:40px 32px;border:1px solid rgba(255,255,255,0.06)">
+          <td style="background-color:#FFFFFF;border-radius:16px;padding:40px 32px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.03)">
             ${body}
           </td>
         </tr>
         <!-- Footer -->
         <tr>
           <td style="padding-top:24px;text-align:center">
-            <p style="margin:0;font-size:12px;color:#71717A;line-height:1.6">
+            <p style="margin:0;font-size:12px;color:#6A758B;line-height:1.6">
               ${APP_NAME} &mdash; Signaux traders premium<br/>
-              <a href="${APP_DOMAIN}/contact" style="color:#C6FF3B;text-decoration:none">Nous contacter</a>
+              <a href="${APP_DOMAIN}/contact" style="color:#283B5D;text-decoration:none;font-weight:500">Nous contacter</a>
             </p>
           </td>
         </tr>
@@ -86,8 +86,8 @@ interface ButtonOptions {
 function ctaButton({ url, text }: ButtonOptions): string {
   return `<table cellpadding="0" cellspacing="0" style="margin:24px 0">
     <tr>
-      <td align="center" style="background:linear-gradient(135deg,#C6FF3B 0%,#a8e82e 100%);border-radius:10px;padding:0">
-        <a href="${url}" class="btn" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:600;color:#09090B;text-decoration:none;border-radius:10px;letter-spacing:-0.2px">${text}</a>
+      <td align="center" style="background-color:#283B5D;border-radius:8px;padding:0">
+        <a href="${url}" class="btn" style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;letter-spacing:-0.2px">${text}</a>
       </td>
     </tr>
   </table>`
@@ -96,17 +96,18 @@ function ctaButton({ url, text }: ButtonOptions): string {
 // ── Section title ──
 
 function sectionTitle(text: string): string {
-  return `<h2 style="margin:0 0 16px 0;font-size:13px;font-weight:600;color:#C6FF3B;text-transform:uppercase;letter-spacing:1px">${text}</h2>`
+  return `<h2 style="margin:0 0 16px 0;font-size:12px;font-weight:600;color:#6A758B;text-transform:uppercase;letter-spacing:1px">${text}</h2>`
 }
 
 // ── Onboarding Steps ──
 
 function onboardingSteps(steps: { label: string; done: boolean }[]): string {
   const items = steps.map((s) => {
-    const icon = s.done ? "&#10003;" : "&#10132;"
-    const color = s.done ? "#22C55E" : "#71717A"
+    const icon = s.done ? "&#10003;" : "&#8226;"
+    const color = s.done ? "#10AF6E" : "#6A758B"
+    const fontWeight = s.done ? "600" : "400"
     return `<tr>
-      <td style="padding:8px 0;color:${color};font-size:14px;line-height:1.5">
+      <td style="padding:8px 0;color:${color};font-size:14px;line-height:1.5;font-weight:${fontWeight}">
         <span style="display:inline-block;width:20px;font-weight:700">${icon}</span>
         ${s.label}
       </td>
@@ -118,7 +119,7 @@ function onboardingSteps(steps: { label: string; done: boolean }[]): string {
 // ── Divider ──
 
 function divider(): string {
-  return `<div style="height:1px;background:linear-gradient(to right,transparent,rgba(198,255,59,0.15),transparent);margin:24px 0"></div>`
+  return `<div style="height:1px;background-color:#E4E7EC;margin:24px 0"></div>`
 }
 
 // ══════════════════════════════════════
@@ -135,32 +136,31 @@ export function verificationEmail(user: TemplateUser, url: string): { subject: s
   return {
     subject: `Confirmez votre email — ${APP_NAME}`,
     html: layout(`
-      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Bienvenue, ${prenom} 👋
       </p>
-      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
         Votre compte a été créé avec succès. Une dernière chose avant de commencer&nbsp;: confirmez votre adresse email.
       </p>
 
       ${ctaButton({ url, text: "Confirmer mon email" })}
 
-      <p style="margin:0 0 4px 0;font-size:13px;color:#71717A">
-        Ce lien est valable <strong style="color:#A1A1AA">24 heures</strong>. Si vous n'avez pas créé de compte, ignorez cet email.
+      <p style="margin:0 0 4px 0;font-size:13px;color:#6A758B">
+        Ce lien est valable <strong style="color:#1E2024">24 heures</strong>. Si vous n'avez pas créé de compte, ignorez cet email.
       </p>
 
       ${divider()}
 
       ${sectionTitle("Prochaines étapes")}
-      <p style="margin:0 0 8px 0;font-size:14px;color:#A1A1AA;line-height:1.5">
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
         Une fois votre email confirmé, vous pourrez&nbsp;:
       </p>
       ${onboardingSteps([
-        { label: "Compléter votre profil (pays, langue)", done: false },
         { label: "Soumettre vos documents KYC", done: false },
-        { label: "Vérifier votre compte broker", done: false },
+        { label: "Connecter votre compte Broker", done: false },
         { label: "Attendre la validation de notre équipe", done: false },
       ])}
-      <p style="margin:12px 0 0 0;font-size:13px;color:#71717A;font-style:italic">
+      <p style="margin:12px 0 0 0;font-size:13px;color:#6A758B;font-style:italic">
         ⚠️ Toutes les étapes sont obligatoires pour accéder aux signaux.
       </p>
     `),
@@ -172,30 +172,29 @@ export function welcomeEmail(user: TemplateUser): { subject: string; html: strin
   return {
     subject: `Email confirmé ! Préparez votre accès — ${APP_NAME}`,
     html: layout(`
-      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Félicitations, ${prenom} 🎉
       </p>
-      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
         Votre adresse email est confirmée. Vous êtes maintenant prêt à finaliser votre inscription.
       </p>
 
       ${divider()}
 
       ${sectionTitle("Votre checklist onboarding")}
-      <p style="margin:0 0 4px 0;font-size:14px;color:#A1A1AA">
-        Connectez-vous pour compléter ces étapes <strong style="color:#FFFFFF">dans l'ordre</strong>&nbsp;:
+      <p style="margin:0 0 4px 0;font-size:14px;color:#6A758B">
+        Connectez-vous pour compléter ces étapes <strong style="color:#1E2024">dans l'ordre</strong>&nbsp;:
       </p>
       ${onboardingSteps([
-        { label: "✅ Email confirmé", done: true },
-        { label: "📝 Compléter votre profil", done: false },
-        { label: "🪪 Envoyer vos documents KYC", done: false },
-        { label: "🎥 Vérifier votre compte broker", done: false },
-        { label: "👨‍💻 Validation par notre équipe", done: false },
+        { label: "Email confirmé", done: true },
+        { label: "Envoyer vos documents KYC", done: false },
+        { label: "Connecter votre compte Broker", done: false },
+        { label: "Validation par notre équipe", done: false },
       ])}
 
       ${ctaButton({ url: `${APP_DOMAIN}/onboarding`, text: "Continuer mon inscription" })}
 
-      <p style="margin:16px 0 0 0;font-size:13px;color:#71717A;line-height:1.5">
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5">
         ⏳ Chaque étape est nécessaire avant de recevoir vos premiers signaux. Notre équipe valide manuellement chaque dossier sous 24-48h.
       </p>
     `),
@@ -207,19 +206,19 @@ export function resetPasswordEmail(user: TemplateUser, url: string): { subject: 
   return {
     subject: `Réinitialisation de votre mot de passe — ${APP_NAME}`,
     html: layout(`
-      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Bonjour ${prenom}
       </p>
-      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
         Vous avez demandé la réinitialisation de votre mot de passe.
       </p>
 
       ${ctaButton({ url, text: "Réinitialiser mon mot de passe" })}
 
-      <p style="margin:0 0 4px 0;font-size:13px;color:#71717A">
-        Ce lien expire dans <strong style="color:#A1A1AA">1 heure</strong>.
+      <p style="margin:0 0 4px 0;font-size:13px;color:#6A758B">
+        Ce lien expire dans <strong style="color:#1E2024">1 heure</strong>.
       </p>
-      <p style="margin:0;font-size:13px;color:#71717A">
+      <p style="margin:0;font-size:13px;color:#6A758B">
         Si vous n'êtes pas à l'origine de cette demande, ignorez cet email. Votre mot de passe reste inchangé.
       </p>
     `),
@@ -231,26 +230,26 @@ export function onboardingStepEmail(user: TemplateUser, stepLabel: string, nextS
   return {
     subject: `Étape complétée : ${stepLabel} — ${APP_NAME}`,
     html: layout(`
-      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Bravo, ${prenom} !
       </p>
-      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
-        L'étape <strong style="color:#FFFFFF">«&nbsp;${stepLabel}&nbsp;»</strong> a bien été validée.
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        L'étape <strong style="color:#1E2024">«&nbsp;${stepLabel}&nbsp;»</strong> a bien été validée.
       </p>
 
       ${divider()}
 
       ${sectionTitle(nextStepLabel ? "Prochaine étape" : "En attente de validation")}
       ${nextStepLabel
-        ? `<p style="margin:0;font-size:15px;color:#A1A1AA;line-height:1.6">
-            Rendez-vous maintenant sur <strong style="color:#C6FF3B">«&nbsp;${nextStepLabel}&nbsp;»</strong> pour continuer.
+        ? `<p style="margin:0;font-size:15px;color:#6A758B;line-height:1.6">
+            Rendez-vous maintenant sur <strong style="color:#283B5D">«&nbsp;${nextStepLabel}&nbsp;»</strong> pour continuer.
           </p>
           ${ctaButton({ url: `${APP_DOMAIN}/onboarding`, text: "Voir mes étapes" })}`
-        : `<p style="margin:0;font-size:15px;color:#A1A1AA;line-height:1.6">
+        : `<p style="margin:0;font-size:15px;color:#6A758B;line-height:1.6">
             Votre dossier est en cours de validation par notre équipe. Vous recevrez un email dès que l'accès vous sera accordé.
           </p>
-          <p style="margin:12px 0 0 0;font-size:13px;color:#71717A">
-            Délai estimé : <strong style="color:#A1A1AA">24 à 48 heures ouvrées</strong>.
+          <p style="margin:12px 0 0 0;font-size:13px;color:#6A758B">
+            Délai estimé : <strong style="color:#1E2024">24 à 48 heures ouvrées</strong>.
           </p>`
       }
     `),
@@ -262,21 +261,21 @@ export function emailOtp(name: string, code: string): { subject: string; html: s
   return {
     subject: `Votre code de vérification — ${APP_NAME}`,
     html: layout(`
-      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#FFFFFF;letter-spacing:-0.5px">
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Bonjour ${prenom}
       </p>
-      <p style="margin:0 0 24px 0;font-size:15px;color:#A1A1AA;line-height:1.6">
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
         Voici votre code de vérification à 6 chiffres pour finaliser votre inscription.
       </p>
 
-      <div style="background-color:#09090B;border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:24px;text-align:center;margin:24px 0">
-        <span style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#C6FF3B">${code}</span>
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:24px;text-align:center;margin:24px 0">
+        <span style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#283B5D">${code}</span>
       </div>
 
-      <p style="margin:0 0 4px 0;font-size:13px;color:#71717A">
-        Ce code expire dans <strong style="color:#A1A1AA">15 minutes</strong>.
+      <p style="margin:0 0 4px 0;font-size:13px;color:#6A758B">
+        Ce code expire dans <strong style="color:#1E2024">15 minutes</strong>.
       </p>
-      <p style="margin:0;font-size:13px;color:#71717A">
+      <p style="margin:0;font-size:13px;color:#6A758B">
         Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
       </p>
     `),

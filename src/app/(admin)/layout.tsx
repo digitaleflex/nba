@@ -1,11 +1,10 @@
 import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { LogoutButton } from "@nba/app/components/logout-button"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) redirect("/login")
 
   const user = await prisma.user.findUnique({

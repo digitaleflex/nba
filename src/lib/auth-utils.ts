@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "./auth"
+import { getServerSession } from "./get-session"
 import { prisma } from "./db"
 import { ValidationError } from "./validations"
 
@@ -14,7 +13,7 @@ export class AuthError extends Error {
 }
 
 export async function requireAuth() {
-  const session = await auth.api.getSession({ headers: await headers() })
+  const session = await getServerSession()
   if (!session) throw new AuthError("Non authentifié", 401)
   return session
 }

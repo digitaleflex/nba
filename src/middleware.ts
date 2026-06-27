@@ -10,6 +10,7 @@ async function getSession(request: NextRequest) {
     const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`
     const res = await fetch(`${baseUrl}/api/auth/get-session`, {
       headers: { cookie: request.headers.get("cookie") ?? "" },
+      cache: "no-store",
     })
     if (!res.ok) return null
     const data = await res.json()

@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { Button } from "@nba/design-system"
-import { Check, ArrowLeft } from "lucide-react"
+import { Check } from "lucide-react"
 import { authClient } from "@nba/lib/auth-client"
 
 interface Plan {
@@ -43,6 +43,17 @@ export function StepConfirmation({
 }: StepConfirmationProps) {
   const currentPlan = plans.find((p) => p.id === selectedPlan)
 
+  async function handleResend() {
+    setLoading(true)
+    const { error: sendError } = await authClient.sendVerificationEmail({ email, callbackURL: "/onboarding" })
+    if (sendError) {
+      setError("Impossible de renvoyer l'email de vérification.")
+    } else {
+      setError("Email de vérification renvoyé.")
+    }
+    setLoading(false)
+  }
+
   return (
     <form onSubmit={onSubmit}>
       <div className="space-y-4">
@@ -73,31 +84,46 @@ export function StepConfirmation({
         </div>
 
         {error && (
-          <div className={`text-sm flex flex-col gap-2 rounded-lg px-3 py-2 ${error === "Email de vérification renvoyé." ? "text-success bg-success/10" : "text-destructive bg-destructive/10"}`}>
+          <div className={`text-sm flex flex-col gap-2 rounded-lg px-3 py-2 ${
+            error === "Email de vérification renvoyé."
+              ? "text-success bg-success/10"
+              : error.includes("déjà") || error.includes("existe")
+                ? "text-muted-foreground bg-muted/50"
+                : "text-destructive bg-destructive/10"
+          }`}>
             <div className="flex items-center gap-1.5">
-              <span className={`size-1.5 rounded-full shrink-0 ${error === "Email de vérification renvoyé." ? "bg-success" : "bg-destructive"}`} />
+              <span className={`size-1.5 rounded-full shrink-0 ${
+                error === "Email de vérification renvoyé."
+                  ? "bg-success"
+                  : "bg-muted-foreground"
+              }`} />
               {error}
             </div>
-            {error.includes("déjà") && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-auto py-1 px-0 justify-start text-xs underline"
-                type="button"
-                onClick={async () => {
-                  setLoading(true)
-                  try {
-                    await authClient.sendVerificationEmail({ email, callbackURL: "/onboarding" })
-                    setError("Email de vérification renvoyé.")
-                  } catch (err) {
-                    setError("Impossible de renvoyer l'email de vérification.")
-                  } finally {
-                    setLoading(false)
-                  }
-                }}
-              >
-                Renvoyer l'email de vérification
-              </Button>
+            {(error.includes("déjà") || error.includes("existe") || error.includes("renvoyé")) && (
+              <div className="flex flex-col gap-1.5 pt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-auto py-1 px-0 justify-start text-xs underline"
+                  type="button"
+                  disabled={loading}
+                  onClick={handleResend}
+                >
+                  Renvoyer l'email de vérification
+                </Button>
+                <Link
+                  href="/login"
+                  className="text-xs text-primary hover:text-primary/80 underline underline-offset-2"
+                >
+                  Se connecter
+                </Link>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs text-primary hover:text-primary/80 underline underline-offset-2"
+                >
+                  Mot de passe oublié ?
+                </Link>
+              </div>
             )}
           </div>
         )}

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { profileSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
@@ -8,7 +7,7 @@ import { AuthError } from "@nba/lib/auth-utils"
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const session = await getServerSession()
     if (!session) throw new AuthError("Non authentifié", 401)
 
     const body = await req.json()

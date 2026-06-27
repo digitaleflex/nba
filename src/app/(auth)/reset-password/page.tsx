@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { authClient } from "@nba/lib/auth-client"
@@ -8,22 +8,18 @@ import { Button, Input, Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Eye, EyeOff, CheckCircle, ArrowLeft } from "lucide-react"
 
 export default function ResetPasswordPage({
-  params,
+  searchParams,
 }: {
-  params: Promise<{ token: string }>
+  searchParams: Promise<{ token?: string }>
 }) {
   const router = useRouter()
-  const [token, setToken] = useState<string | null>(null)
+  const { token } = use(searchParams)
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [done, setDone] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
-
-  useState(() => {
-    params.then((p) => setToken(p.token))
-  })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

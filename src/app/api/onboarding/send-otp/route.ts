@@ -1,12 +1,11 @@
 import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { auth } from "@nba/lib/auth"
+import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { sendEmail, emailOtp } from "@nba/lib/email"
 
 export async function POST() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() })
+    const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
