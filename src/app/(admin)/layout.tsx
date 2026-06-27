@@ -13,7 +13,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     select: { role: { select: { name: true } } },
   })
 
-  if (!user || (user.role.name !== "Admin" && user.role.name !== "SUPER_ADMIN")) {
+  if (!user || (user.role.name !== "ADMIN" && user.role.name !== "SUPER_ADMIN")) {
     redirect("/403")
   }
 

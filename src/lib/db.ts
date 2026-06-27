@@ -1,7 +1,7 @@
 import { PrismaClient } from "../generated/prisma"
 import { PrismaPg } from "@prisma/adapter-pg"
 
-const DEFAULT_ROLE_NAME = "Membre"
+const DEFAULT_ROLE_NAME = "MEMBER"
 
 function createPrismaClient() {
   const base = new PrismaClient({
