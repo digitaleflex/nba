@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button, Card, CardContent } from "@nba/design-system"
-import { FileText, Upload, Camera, RefreshCw, Shield, Check, AlertTriangle, ArrowRight } from "lucide-react"
+import { FileText, Upload, Camera, RefreshCw, Shield, Check, AlertTriangle, ArrowRight, Loader2, Scan, ImageUp } from "lucide-react"
 
 const DOCUMENT_TYPES = [
   { value: "ID_CARD", label: "Carte Nationale" },
@@ -26,15 +26,18 @@ export default function KycPage() {
   const [backFile, setBackFile] = useState<File | null>(null)
   const [selfieBlob, setSelfieBlob] = useState<Blob | null>(null)
   const [selfiePreview, setSelfiePreview] = useState<string | null>(null)
-  const [cameraActive, setCameraActive] = useState(false)
+  const [cameraState, setCameraState] = useState<"idle" | "opening" | "active" | "captured">("idle")
   const [cameraError, setCameraError] = useState<string | null>(null)
+  const [flash, setFlash] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState("")
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
 
   const startCamera = useCallback(async () => {
+    setCameraState("opening")
     setCameraError(null)
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -44,9 +47,10 @@ export default function KycPage() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
-      setCameraActive(true)
+      setCameraState("active")
     } catch {
       setCameraError("Impossible d'accéder à la caméra. Vérifiez les autorisations ou utilisez un fichier.")
+      setCameraState("idle")
     }
   }, [])
 
@@ -55,7 +59,7 @@ export default function KycPage() {
       streamRef.current.getTracks().forEach((t) => t.stop())
       streamRef.current = null
     }
-    setCameraActive(false)
+    setCameraState("idle")
   }, [])
 
   const captureSelfie = useCallback(() => {
@@ -69,11 +73,15 @@ export default function KycPage() {
     if (!ctx) return
 
     ctx.drawImage(video, 0, 0)
+    setFlash(true)
+    setTimeout(() => setFlash(false), 200)
+
     canvas.toBlob((blob) => {
       if (blob) {
         setSelfieBlob(blob)
         setSelfiePreview(canvas.toDataURL("image/jpeg"))
         stopCamera()
+        setCameraState("captured")
       }
     }, "image/jpeg", 0.92)
   }, [stopCamera])
@@ -81,6 +89,7 @@ export default function KycPage() {
   const retakeSelfie = useCallback(() => {
     setSelfieBlob(null)
     setSelfiePreview(null)
+    setCameraState("idle")
     startCamera()
   }, [startCamera])
 
@@ -105,12 +114,15 @@ export default function KycPage() {
 
     setLoading(true)
     setError("")
+    setUploadProgress(25)
 
     const form = new FormData()
     form.append("documentType", documentType)
     form.append("front", frontFile)
+    setUploadProgress(50)
     if (backFile) form.append("back", backFile)
     form.append("selfie", selfieBlob, "selfie.jpg")
+    setUploadProgress(75)
 
     const res = await fetch("/api/onboarding/kyc", { method: "POST", body: form })
 
@@ -118,17 +130,21 @@ export default function KycPage() {
       const data = await res.json()
       setError(data.error ?? "Erreur lors de l'envoi")
       setLoading(false)
+      setUploadProgress(0)
       return
     }
 
-    router.push("/onboarding/broker")
-    router.refresh()
+    setUploadProgress(100)
+    setTimeout(() => {
+      router.push("/onboarding/broker")
+      router.refresh()
+    }, 400)
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 animate-float">
           <FileText className="size-5 text-primary" />
         </div>
         <div>
@@ -139,7 +155,7 @@ export default function KycPage() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm space-y-2">
+      <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-sm space-y-2 animate-float">
         <div className="flex items-center gap-2 text-primary font-medium">
           <Shield className="size-4" />
           <span>Protection de vos données</span>
@@ -164,10 +180,10 @@ export default function KycPage() {
                     key={dt.value}
                     type="button"
                     onClick={() => setDocumentType(dt.value)}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-all ${
+                    className={`rounded-lg border px-3 py-2 text-sm transition-all duration-200 ${
                       documentType === dt.value
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border text-muted-foreground hover:border-primary/50"
+                        ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
+                        : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
                     }`}
                   >
                     {dt.label}
@@ -177,28 +193,42 @@ export default function KycPage() {
             </div>
 
             {/* Consignes qualité */}
-            <div className="rounded-lg bg-muted/30 p-3 space-y-1.5">
+            <div className="rounded-lg bg-muted/30 p-3 space-y-1.5 border border-border/50">
               <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
-                <AlertTriangle className="size-3" />
+                <Scan className="size-3" />
                 Consignes pour une photo valide
               </p>
               <ul className="space-y-1">
                 {QUALITY_GUIDELINES.map((g) => (
                   <li key={g} className="text-xs text-muted-foreground flex items-start gap-1.5">
-                    <Check className="size-3 mt-0.5 shrink-0" />
+                    <Check className="size-3 mt-0.5 shrink-0 text-primary/60" />
                     {g}
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-muted-foreground mt-1">Taille max : 50 Mo par fichier</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">Taille max : 50 Mo par fichier</p>
             </div>
 
             {/* Recto */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Recto du document</label>
-              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
-                <Upload className="size-6" />
-                {frontFile ? frontFile.name : "Cliquez pour télécharger"}
+              <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-sm transition-all duration-200 ${
+                frontFile
+                  ? "border-success/50 bg-success/[0.02] text-success"
+                  : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
+              }`}>
+                {frontFile ? <Check className="size-6" /> : <Upload className="size-6" />}
+                {frontFile ? (
+                  <div className="text-center">
+                    <p className="font-medium text-success text-xs">{frontFile.name}</p>
+                    <p className="text-xs text-muted-foreground/70 mt-0.5">{(frontFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+                  </div>
+                ) : (
+                  <>
+                    <ImageUp className="size-5 -mb-1" />
+                    <span>Cliquez pour télécharger</span>
+                  </>
+                )}
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -215,9 +245,23 @@ export default function KycPage() {
                 <label className="text-sm font-medium text-foreground">
                   Verso du document <span className="text-muted-foreground font-normal">(obligatoire)</span>
                 </label>
-                <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
-                  <Upload className="size-6" />
-                  {backFile ? backFile.name : "Cliquez pour télécharger"}
+                <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-6 text-sm transition-all duration-200 ${
+                  backFile
+                    ? "border-success/50 bg-success/[0.02] text-success"
+                    : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
+                }`}>
+                  {backFile ? <Check className="size-6" /> : <Upload className="size-6" />}
+                  {backFile ? (
+                    <div className="text-center">
+                      <p className="font-medium text-success text-xs">{backFile.name}</p>
+                      <p className="text-xs text-muted-foreground/70 mt-0.5">{(backFile.size / 1024 / 1024).toFixed(1)} Mo</p>
+                    </div>
+                  ) : (
+                    <>
+                      <ImageUp className="size-5 -mb-1" />
+                      <span>Cliquez pour télécharger</span>
+                    </>
+                  )}
                   <input
                     type="file"
                     accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -237,22 +281,21 @@ export default function KycPage() {
               <p className="text-xs text-muted-foreground">
                 Tenez votre document ouvert à côté de votre visage, en laissant apparaître{" "}
                 <strong>trois doigts</strong> sur le document (pouce, index, majeur).
-                Cela prouve que vous êtes bien en possession physique du document.
               </p>
 
-              {!selfiePreview && !cameraActive && (
-                <div className="flex gap-2">
+              {cameraState === "idle" && !selfiePreview && (
+                <div className="flex gap-2 animate-in fade-in duration-300">
                   <button
                     type="button"
                     onClick={startCamera}
-                    className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors"
+                    className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02] transition-all duration-200"
                   >
                     <Camera className="size-6" />
-                    Ouvrir la caméra
+                    <span>Ouvrir la caméra</span>
                   </button>
-                  <label className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
+                  <label className="flex flex-1 cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02] transition-all duration-200">
                     <Upload className="size-6" />
-                    Importer une photo
+                    <span>Importer une photo</span>
                     <input
                       type="file"
                       accept="image/jpeg,image/png,image/webp"
@@ -261,6 +304,7 @@ export default function KycPage() {
                         if (file) {
                           setSelfieBlob(file)
                           setSelfiePreview(URL.createObjectURL(file))
+                          setCameraState("captured")
                         }
                       }}
                       className="hidden"
@@ -269,37 +313,54 @@ export default function KycPage() {
                 </div>
               )}
 
-              {/* Aperçu caméra */}
-              {cameraActive && (
-                <div className="space-y-3">
+              {cameraState === "opening" && (
+                <div className="flex flex-col items-center gap-3 rounded-lg border-2 border-dashed border-border p-8 animate-in fade-in duration-300">
+                  <div className="animate-pulse-glow rounded-full p-4">
+                    <Loader2 className="size-8 text-primary animate-spin" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">Initialisation de la caméra…</p>
+                  <p className="text-xs text-muted-foreground/70">Autorisez l&rsquo;accès à la caméra si demandé</p>
+                </div>
+              )}
+
+              {cameraState === "active" && (
+                <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
                   <div className="relative overflow-hidden rounded-lg bg-black">
                     <video ref={videoRef} autoPlay playsInline muted className="w-full h-auto" />
                     <canvas ref={canvasRef} className="hidden" />
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                      <div className="w-48 h-48 rounded-full border-2 border-white/60" />
+                      <div className="w-48 h-48 rounded-full border-2 border-white/50 animate-pulse-glow" />
                     </div>
+                    {flash && (
+                      <div className="absolute inset-0 bg-white animate-in fade-out duration-200" />
+                    )}
                   </div>
                   <p className="text-xs text-center text-muted-foreground">
                     Placez votre visage dans le cercle, document à côté, 3 doigts visibles
                   </p>
-                  <Button type="button" onClick={captureSelfie} className="w-full h-9">
+                  <Button type="button" onClick={captureSelfie} className="w-full h-9 animate-in fade-in duration-300">
                     <Camera className="size-4" />
                     Prendre la photo
                   </Button>
                   {cameraError && (
-                    <p className="text-xs text-destructive text-center">{cameraError}</p>
+                    <p className="text-xs text-destructive text-center bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in duration-200">
+                      {cameraError}
+                    </p>
                   )}
                 </div>
               )}
 
-              {/* Résultat selfie */}
-              {selfiePreview && !cameraActive && (
-                <div className="space-y-3">
-                  <div className="relative overflow-hidden rounded-lg">
+              {cameraState === "captured" && selfiePreview && (
+                <div className="space-y-3 animate-in fade-in zoom-in-95 duration-300">
+                  <div className="relative overflow-hidden rounded-lg ring-2 ring-success/30">
                     <img src={selfiePreview} alt="Selfie" className="w-full h-auto" />
+                    <div className="absolute top-2 right-2 flex items-center gap-1.5 rounded-full bg-success/90 px-2.5 py-1 text-xs font-medium text-white animate-in fade-in slide-in-from-right duration-300">
+                      <Check className="size-3" />
+                      Photo prise
+                    </div>
                   </div>
-                  <Button type="button" variant="outline" onClick={retakeSelfie} className="w-full h-9">
-                    <RefreshCw className="size-4" />
+                  <Button type="button" variant="outline" onClick={retakeSelfie} className="w-full h-9 group">
+                    <RefreshCw className="size-4 transition-transform duration-300 group-hover:rotate-180" />
                     Reprendre la photo
                   </Button>
                 </div>
@@ -307,15 +368,40 @@ export default function KycPage() {
             </div>
 
             {error && (
-              <p className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
+              <p className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 <span className="size-1.5 rounded-full bg-destructive shrink-0" />
                 {error}
               </p>
             )}
 
-            <Button type="submit" className="w-full h-9" disabled={loading}>
-              {loading ? "Envoi en cours…" : "Envoyer"}
-              <ArrowRight className="size-4" />
+            {/* Barre de progression upload */}
+            {loading && uploadProgress > 0 && (
+              <div className="space-y-1 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">Envoi en cours…</span>
+                  <span className="text-muted-foreground">{uploadProgress}%</span>
+                </div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            <Button type="submit" className="w-full h-9 transition-all duration-200" disabled={loading}>
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  Envoi en cours…
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  Envoyer
+                  <ArrowRight className="size-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                </span>
+              )}
             </Button>
           </CardContent>
         </form>
