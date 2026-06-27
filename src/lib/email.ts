@@ -1,6 +1,12 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY!)
+function getResend(): Resend {
+  const key = process.env.RESEND_API_KEY
+  if (!key) {
+    throw new Error("RESEND_API_KEY non configurée — les emails ne peuvent pas être envoyés")
+  }
+  return new Resend(key)
+}
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "noreply@signauxx.com"
 const APP_NAME = "NeverBrokeAgain"
@@ -260,6 +266,7 @@ export async function sendEmail(
   template: { subject: string; html: string },
 ): Promise<void> {
   try {
+    const resend = getResend()
     await resend.emails.send({
       from: FROM,
       to,
@@ -267,6 +274,12 @@ export async function sendEmail(
       html: template.html,
     })
   } catch (err) {
+    if (err instanceof Error && err.message.includes("RESEND_API_KEY")) {
+      if (process.env.NODE_ENV === "development") {
+        console.warn(`[EMAIL] Dev mode — simulated send to ${to}:`, template.subject)
+        return
+      }
+    }
     console.error(`Failed to send email to ${to}:`, err)
   }
 }
