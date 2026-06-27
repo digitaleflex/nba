@@ -247,12 +247,12 @@ describe("Register Wizard", () => {
 
   it("shows error on failed submission", async () => {
     mockFetchSuccess()
-    mockSignUpEmail.mockResolvedValue({ error: { message: "Email déjà utilisé" } })
+    mockSignUpEmail.mockResolvedValue({ error: { message: "Email already in use", status: 422 } })
     render(<RegisterPage />)
     const user = userEvent.setup()
     await fillWizard(user)
     await user.click(screen.getByRole("button", { name: /créer mon compte/i }))
-    expect(await screen.findByText("Email déjà utilisé")).toBeInTheDocument()
+    expect(await screen.findByText("Ce compte existe déjà. Veuillez vous connecter.")).toBeInTheDocument()
     expect(screen.queryByText("Inscription en cours…")).not.toBeInTheDocument()
   })
 

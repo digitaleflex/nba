@@ -1,0 +1,123 @@
+"use client"
+
+import Link from "next/link"
+import { Button } from "@nba/design-system"
+import { Check, ArrowLeft } from "lucide-react"
+import { authClient } from "@nba/lib/auth-client"
+
+interface Plan {
+  id: string
+  name: string
+  description: string | null
+  sortOrder: number
+}
+
+interface StepConfirmationProps {
+  plans: Plan[]
+  selectedPlan: string | null
+  firstName: string
+  lastName: string
+  email: string
+  whatsapp: string
+  error: string
+  setError: (err: string) => void
+  loading: boolean
+  setLoading: (load: boolean) => void
+  onSubmit: (e: React.FormEvent) => void
+  onPrev: () => void
+}
+
+export function StepConfirmation({
+  plans,
+  selectedPlan,
+  firstName,
+  lastName,
+  email,
+  whatsapp,
+  error,
+  setError,
+  loading,
+  setLoading,
+  onSubmit,
+  onPrev,
+}: StepConfirmationProps) {
+  const currentPlan = plans.find((p) => p.id === selectedPlan)
+
+  return (
+    <form onSubmit={onSubmit}>
+      <div className="space-y-4">
+        <p className="text-sm text-muted-foreground text-center">
+          Vérifiez vos informations avant de finaliser
+        </p>
+        <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-3 text-sm">
+          <div className="flex items-center gap-2">
+            <Check className="size-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">Service :</span>
+            <span className="font-medium text-foreground">{currentPlan?.name ?? "—"}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="size-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">Nom :</span>
+            <span className="font-medium text-foreground">{firstName} {lastName}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="size-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">Email :</span>
+            <span className="font-medium text-foreground">{email}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Check className="size-4 text-primary shrink-0" />
+            <span className="text-muted-foreground">WhatsApp :</span>
+            <span className="font-medium text-foreground">{whatsapp}</span>
+          </div>
+        </div>
+
+        {error && (
+          <div className={`text-sm flex flex-col gap-2 rounded-lg px-3 py-2 ${error === "Email de vérification renvoyé." ? "text-success bg-success/10" : "text-destructive bg-destructive/10"}`}>
+            <div className="flex items-center gap-1.5">
+              <span className={`size-1.5 rounded-full shrink-0 ${error === "Email de vérification renvoyé." ? "bg-success" : "bg-destructive"}`} />
+              {error}
+            </div>
+            {error.includes("déjà") && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="h-auto py-1 px-0 justify-start text-xs underline"
+                type="button"
+                onClick={async () => {
+                  setLoading(true)
+                  try {
+                    await authClient.sendVerificationEmail({ email, callbackURL: "/onboarding" })
+                    setError("Email de vérification renvoyé.")
+                  } catch (err) {
+                    setError("Impossible de renvoyer l'email de vérification.")
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+              >
+                Renvoyer l'email de vérification
+              </Button>
+            )}
+          </div>
+        )}
+
+        <Button type="submit" className="w-full h-9" disabled={loading}>
+          {loading ? "Inscription en cours…" : "Créer mon compte"}
+        </Button>
+
+        <p className="text-center text-xs text-muted-foreground">
+          En créant votre compte, vous acceptez nos{" "}
+          <Link href="/cgu" className="text-primary hover:text-primary/80">Conditions Générales</Link>{" "}
+          et notre{" "}
+          <Link href="/privacy" className="text-primary hover:text-primary/80">Politique de confidentialité</Link>
+        </p>
+      </div>
+      <div className="mt-6">
+        <Button type="button" variant="outline" onClick={onPrev} className="w-full">
+          Modifier les informations
+        </Button>
+      </div>
+    </form>
+  )
+}

@@ -1,5 +1,5 @@
 import { prisma } from "../db"
-import type { OnboardingStatus } from "@prisma/client"
+import type { OnboardingStatus } from "../../generated/prisma"
 
 export interface OnboardingChecklist {
   emailVerified: boolean
