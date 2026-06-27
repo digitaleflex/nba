@@ -12,6 +12,47 @@ interface Session {
   expiresAt: string
 }
 
+function getFriendlyDeviceName(ua?: string): string {
+  if (!ua) return "Appareil inconnu"
+  const uaLower = ua.toLowerCase()
+  
+  let browser = ""
+  if (uaLower.includes("firefox")) browser = "Firefox"
+  else if (uaLower.includes("edg/")) browser = "Edge"
+  else if (uaLower.includes("chrome") && !uaLower.includes("chromium")) browser = "Chrome"
+  else if (uaLower.includes("safari") && !uaLower.includes("chrome")) browser = "Safari"
+  else if (uaLower.includes("chromium")) browser = "Chromium"
+  else browser = ua.split("/")[0] || "Navigateur"
+
+  let os = ""
+  if (uaLower.includes("iphone")) os = "iPhone"
+  else if (uaLower.includes("ipad")) os = "iPad"
+  else if (uaLower.includes("android")) os = "Android"
+  else if (uaLower.includes("windows")) os = "Windows"
+  else if (uaLower.includes("macintosh")) os = "Mac"
+  else if (uaLower.includes("linux")) os = "Linux"
+
+  if (os && browser) {
+    return `${browser} (${os})`
+  }
+  return browser || os || "Appareil inconnu"
+}
+
+function getFriendlyIp(ip?: string): string {
+  if (!ip) return "IP inconnue"
+  const cleanIp = ip.trim()
+  if (
+    cleanIp === "::1" || 
+    cleanIp === "127.0.0.1" || 
+    cleanIp === "::" ||
+    /^0+:0+:0+:0+:0+:0+:0+:[0-9a-fA-F]$/.test(cleanIp) ||
+    /^0+:0+:0+:0+:0+:0+:0+:0$/.test(cleanIp)
+  ) {
+    return "Machine locale"
+  }
+  return cleanIp
+}
+
 export function SessionList() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
@@ -53,7 +94,7 @@ export function SessionList() {
             return (
               <div
                 key={session.id}
-                className="flex items-center justify-between rounded-lg border p-3"
+                className="flex items-center justify-between rounded-lg border p-3 bg-card"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-muted">
@@ -64,13 +105,15 @@ export function SessionList() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      {session.userAgent
-                        ? session.userAgent.split("/")[0] || "Appareil inconnu"
-                        : "Appareil inconnu"}
+                    <p className="text-sm font-medium truncate text-foreground">
+                      {getFriendlyDeviceName(session.userAgent)}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {session.ipAddress ?? "IP inconnue"} · {new Date(session.createdAt).toLocaleDateString()}
+                      {getFriendlyIp(session.ipAddress)} · {new Date(session.createdAt).toLocaleDateString("fr-FR", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric"
+                      })}
                     </p>
                   </div>
                 </div>
