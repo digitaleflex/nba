@@ -6,7 +6,7 @@ const safePath = z.string().regex(
 )
 
 export const signalCreateSchema = z.object({
-  content: z.string().min(1, "Le contenu du signal est requis"),
+  content: z.string().min(1, "Le contenu du signal est requis").max(10000),
   imageUrl: safePath.nullable().optional(),
   imageUrls: z.array(safePath).max(5, "Maximum 5 images autorisées").optional().default([]),
   suggestedStopLoss: z.number().positive().optional(),
@@ -14,15 +14,15 @@ export const signalCreateSchema = z.object({
   planIds: z.array(z.string().uuid("ID de groupe invalide")).min(1, "Veuillez sélectionner au moins un groupe de diffusion"),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
   scheduledAt: z.string().datetime("Format ISO requis (ex: 2026-07-20T14:00:00Z)").nullable().optional(),
-})
+}).strict()
 
 export const signalUpdateSchema = signalCreateSchema.partial()
 
 export type SignalCreateInput = z.infer<typeof signalCreateSchema>
 
 export const signalTemplateSchema = z.object({
-  name: z.string().min(1, "Le nom du modèle est requis"),
-  content: z.string().min(1, "Le contenu du modèle est requis"),
-})
+  name: z.string().min(1, "Le nom du modèle est requis").max(200),
+  content: z.string().min(1, "Le contenu du modèle est requis").max(10000),
+}).strict()
 
 export type SignalTemplateInput = z.infer<typeof signalTemplateSchema>
