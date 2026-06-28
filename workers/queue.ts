@@ -11,7 +11,7 @@ const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379"
 } as any)
 
 // ── File Cleanup Queue ──
-export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any })
+export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any, skipVersionCheck: true })
 
 const worker = new Worker(
   "file-cleanup",
@@ -59,20 +59,20 @@ export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
 }
 
 // ── Email / Notification Delivery Queue ──
-export const notificationDeliveryQueue = new Queue("notification-delivery", { connection: connection as any })
+export const notificationDeliveryQueue = new Queue("notification-delivery", { connection: connection as any, skipVersionCheck: true })
 
 const notificationWorker = new Worker(
   "notification-delivery",
   async (job: any) => {
-    const { deliveryId, email, templateData } = job.data
+    const { deliveryId, to, subject, html } = job.data
     try {
-      await sendEmail(email, templateData)
+      await sendEmail(to, { subject, html })
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: "SENT", sentAt: new Date() },
       })
     } catch (err: any) {
-      console.error(`[notif] Failed to send email to ${email}:`, err)
+      console.error(`[notif] Failed to send email to ${to}:`, err)
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: "FAILED", errorMessage: err.message || "Email error" },
@@ -94,7 +94,7 @@ notificationWorker.on("failed", (job: any, err: any) => {
 console.log("📧 Notification delivery worker started")
 
 // ── Signal Distribution Queue ──
-export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any })
+export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any, skipVersionCheck: true })
 
 const signalWorker = new Worker(
   "signal-distribution",
@@ -181,8 +181,9 @@ const signalWorker = new Worker(
             `delivery-${delivery.id}`,
             {
               deliveryId: delivery.id,
-              email: member.email,
-              templateData: template,
+              to: member.email,
+              subject: template.subject,
+              html: template.html,
             },
             {
               attempts: 3,

@@ -34,7 +34,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   })
 
   if (params.email) {
-    await prisma.notificationDelivery.create({
+    const delivery = await prisma.notificationDelivery.create({
       data: {
         notificationId: notification.id,
         channel: "EMAIL",
@@ -46,7 +46,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     await queue.add(
       `email-${notification.id}`,
       {
-        notificationId: notification.id,
+        deliveryId: delivery.id,
         to: params.email.to,
         subject: params.email.subject,
         html: params.email.html,

@@ -93,7 +93,7 @@ describe("notify", () => {
     expect(queue.add).toHaveBeenCalledWith(
       "email-notif-1",
       {
-        notificationId: "notif-1",
+        deliveryId: "delivery-1",
         to: "test@example.com",
         subject: "Signal important",
         html: "<p>contenu</p>",
