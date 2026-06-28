@@ -5,11 +5,13 @@ import { getStorage } from "../src/lib/storage"
 import { sendEmail, tradingSignalEmail } from "../src/lib/email"
 import { logAuditEvent } from "../src/lib/services/audit"
 
+// Stable connection initialization with proper typing (casting options to avoid TS issues)
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
-})
+} as any)
 
-export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any })
+// ── File Cleanup Queue ──
+export const cleanupQueue = new Queue("file-cleanup", { connection })
 
 const worker = new Worker(
   "file-cleanup",
@@ -35,7 +37,7 @@ const worker = new Worker(
       await storage.delete(verif.videoFilePath).catch(() => {})
     }
   },
-  { connection: connection as any }
+  { connection }
 )
 
 worker.on("completed", (job: any) => {
@@ -56,9 +58,43 @@ export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
   )
 }
 
-// ── Signal Distribution Queue & Worker ──
+// ── Email / Notification Delivery Queue ──
+export const notificationDeliveryQueue = new Queue("notification-delivery", { connection })
 
-export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any })
+const notificationWorker = new Worker(
+  "notification-delivery",
+  async (job: any) => {
+    const { deliveryId, email, templateData } = job.data
+    try {
+      await sendEmail(email, templateData)
+      await prisma.notificationDelivery.update({
+        where: { id: deliveryId },
+        data: { status: "SENT", sentAt: new Date() },
+      })
+    } catch (err: any) {
+      console.error(`[notif] Failed to send email to ${email}:`, err)
+      await prisma.notificationDelivery.update({
+        where: { id: deliveryId },
+        data: { status: "FAILED", errorMessage: err.message || "Email error" },
+      })
+      throw err
+    }
+  },
+  { connection, concurrency: 10 } // Process up to 10 emails in parallel
+)
+
+notificationWorker.on("completed", (job: any) => {
+  console.log(`[notif] ${job.id} completed`)
+})
+
+notificationWorker.on("failed", (job: any, err: any) => {
+  console.error(`[notif] ${job?.id} failed:`, err.message)
+})
+
+console.log("📧 Notification delivery worker started")
+
+// ── Signal Distribution Queue ──
+export const signalDistributionQueue = new Queue("signal-distribution", { connection })
 
 const signalWorker = new Worker(
   "signal-distribution",
@@ -76,9 +112,7 @@ const signalWorker = new Worker(
       },
     })
 
-    if (!signal) {
-      return
-    }
+    if (!signal) return
 
     // Automatically publish the signal if it is a scheduled draft whose time has arrived
     if (signal.status === "DRAFT" && signal.scheduledAt && new Date(signal.scheduledAt).getTime() <= Date.now() + 5000) {
@@ -94,9 +128,7 @@ const signalWorker = new Worker(
       signal.publishedAt = new Date()
     }
 
-    if (signal.status !== "PUBLISHED") {
-      return
-    }
+    if (signal.status !== "PUBLISHED") return
 
     const planIds = signal.audience.map((a: any) => a.planId)
     if (planIds.length === 0) return
@@ -117,43 +149,48 @@ const signalWorker = new Worker(
 
     console.log(`[signal] Distributing signal ${signalId} to ${members.length} member(s)`)
 
-    for (const member of members) {
-      // 1. Create In-App Notification
-      const notification = await prisma.notification.create({
-        data: {
-          userId: member.id,
-          type: "SIGNAL",
-          title: "Nouveau signal de trading",
-          body: `Un nouveau signal a été publié pour vos groupes.`,
-          data: { signalId: signal.id },
-        },
-      })
+    // Parallelized batch creation of notifications and queueing of email delivery jobs
+    const BATCH_SIZE = 50
+    for (let i = 0; i < members.length; i += BATCH_SIZE) {
+      const batch = members.slice(i, i + BATCH_SIZE)
+      await Promise.all(
+        batch.map(async (member) => {
+          // 1. Create In-App Notification
+          const notification = await prisma.notification.create({
+            data: {
+              userId: member.id,
+              type: "SIGNAL",
+              title: "Nouveau signal de trading",
+              body: `Un nouveau signal a été publié pour vos groupes.`,
+              data: { signalId: signal.id },
+            },
+          })
 
-      // 2. Create Email Delivery
-      const delivery = await prisma.notificationDelivery.create({
-        data: {
-          notificationId: notification.id,
-          channel: "EMAIL",
-          status: "PENDING",
-        },
-      })
+          // 2. Create Email Delivery
+          const delivery = await prisma.notificationDelivery.create({
+            data: {
+              notificationId: notification.id,
+              channel: "EMAIL",
+              status: "PENDING",
+            },
+          })
 
-      // 3. Send Email
-      try {
-        const template = tradingSignalEmail(member, signal.content, signal.imageUrl)
-        await sendEmail(member.email, template)
-        
-        await prisma.notificationDelivery.update({
-          where: { id: delivery.id },
-          data: { status: "SENT", sentAt: new Date() },
+          // 3. Enqueue Email to BullMQ
+          const template = tradingSignalEmail(member, signal.content, signal.imageUrl)
+          await notificationDeliveryQueue.add(
+            `delivery-${delivery.id}`,
+            {
+              deliveryId: delivery.id,
+              email: member.email,
+              templateData: template,
+            },
+            {
+              attempts: 3,
+              backoff: { type: "exponential", delay: 5000 },
+            }
+          )
         })
-      } catch (err: any) {
-        console.error(`[signal] Failed to send email to ${member.email}:`, err)
-        await prisma.notificationDelivery.update({
-          where: { id: delivery.id },
-          data: { status: "FAILED", errorMessage: err.message || "Email error" },
-        })
-      }
+      )
     }
 
     // 4. Log Audit Event
@@ -168,7 +205,7 @@ const signalWorker = new Worker(
       },
     })
   },
-  { connection: connection as any }
+  { connection }
 )
 
 signalWorker.on("completed", (job: any) => {
