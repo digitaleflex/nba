@@ -58,7 +58,7 @@ export default function RegisterPage() {
   const [lastName, setLastName] = useSessionState("lastName", "")
   const [email, setEmail] = useSessionState("email", "")
   const [whatsapp, setWhatsapp] = useSessionState("whatsapp", "")
-  const [password, setPassword] = useSessionState("password", "")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
