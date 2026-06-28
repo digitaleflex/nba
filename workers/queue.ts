@@ -11,7 +11,7 @@ const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379"
 } as any)
 
 // ── File Cleanup Queue ──
-export const cleanupQueue = new Queue("file-cleanup", { connection })
+export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any })
 
 const worker = new Worker(
   "file-cleanup",
@@ -37,7 +37,7 @@ const worker = new Worker(
       await storage.delete(verif.videoFilePath).catch(() => {})
     }
   },
-  { connection }
+  { connection: connection as any }
 )
 
 worker.on("completed", (job: any) => {
@@ -59,7 +59,7 @@ export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
 }
 
 // ── Email / Notification Delivery Queue ──
-export const notificationDeliveryQueue = new Queue("notification-delivery", { connection })
+export const notificationDeliveryQueue = new Queue("notification-delivery", { connection: connection as any })
 
 const notificationWorker = new Worker(
   "notification-delivery",
@@ -80,7 +80,7 @@ const notificationWorker = new Worker(
       throw err
     }
   },
-  { connection, concurrency: 10 } // Process up to 10 emails in parallel
+  { connection: connection as any, concurrency: 10 } // Process up to 10 emails in parallel
 )
 
 notificationWorker.on("completed", (job: any) => {
@@ -94,7 +94,7 @@ notificationWorker.on("failed", (job: any, err: any) => {
 console.log("📧 Notification delivery worker started")
 
 // ── Signal Distribution Queue ──
-export const signalDistributionQueue = new Queue("signal-distribution", { connection })
+export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any })
 
 const signalWorker = new Worker(
   "signal-distribution",
@@ -205,7 +205,7 @@ const signalWorker = new Worker(
       },
     })
   },
-  { connection }
+  { connection: connection as any }
 )
 
 signalWorker.on("completed", (job: any) => {
