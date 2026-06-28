@@ -1,6 +1,9 @@
 import { randomUUID } from "crypto"
 import { mkdir, unlink, access } from "fs/promises"
 import { join, extname } from "path"
+import { createWriteStream } from "fs"
+import { Readable } from "stream"
+import { finished } from "stream/promises"
 import type { StorageProvider, UploadResult } from "./types"
 
 const ALLOWED_MIME_TYPES = [
@@ -57,12 +60,11 @@ export class LocalStorageProvider implements StorageProvider {
 
     const ext = sanitizeExtension(file.type)
 
-    // Validation par magic bytes pour vérifier le vrai type du fichier
-    const arrayBuffer = await file.arrayBuffer()
-    if (!validateMagicBytes(arrayBuffer, file.type)) {
+    // Validation par magic bytes sur les 12 premiers octets uniquement pour éviter l'overhead mémoire
+    const headerBuffer = await file.slice(0, 12).arrayBuffer()
+    if (!validateMagicBytes(headerBuffer, file.type)) {
       throw new Error(`Le contenu du fichier ne correspond pas au type déclaré : ${file.type}`)
     }
-    const buffer = Buffer.from(arrayBuffer)
 
     const fileName = `${randomUUID()}${ext}`
     const dir = join(this.basePath, subDir)
@@ -70,8 +72,11 @@ export class LocalStorageProvider implements StorageProvider {
 
     await mkdir(dir, { recursive: true })
 
-    const { writeFile } = await import("fs/promises")
-    await writeFile(filePath, buffer)
+    // Stream write file to disk to prevent OOM
+    const writeStream = createWriteStream(filePath)
+    const nodeReadable = Readable.fromWeb(file.stream() as any)
+    nodeReadable.pipe(writeStream)
+    await finished(writeStream)
 
     return {
       path: join(subDir, fileName),
