@@ -9,7 +9,7 @@ import Link from "next/link"
 
 export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  
+
   const session = await getServerSession()
   if (!session) {
     redirect("/login")
@@ -64,8 +64,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
       </Link>
 
       <Card className="relative overflow-hidden border border-primary/20 shadow-md bg-card">
-        <div className="absolute inset-y-0 left-0 w-1 bg-primary sm:w-1.5" />
-        <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="absolute inset-y-0 left-0 w-1.5 bg-primary" />
+        <CardContent className="p-6 space-y-6">
           {/* Header */}
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-4">
             <div className="space-y-1">
@@ -94,7 +94,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           </div>
 
           {/* Body Content */}
-          <div 
+          <div
             className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words"
             dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
           />
@@ -106,10 +106,10 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
               <div className="grid gap-4">
                 {(signal.imageUrls as string[]).map((url, idx) => (
                   <div key={idx} className="overflow-hidden rounded-xl border bg-muted/10">
-                    <img 
-                      src={`/api/files/${url}`} 
-                      alt={`Graphique ${idx + 1}`} 
-                      className="w-full object-contain max-h-[600px]" 
+                    <img
+                      src={`/api/files/${url}`}
+                      alt={`Graphique ${idx + 1}`}
+                      className="w-full object-contain max-h-[600px]"
                     />
                   </div>
                 ))}
@@ -119,10 +119,10 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             <div className="space-y-4 pt-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Graphique joint</h3>
               <div className="overflow-hidden rounded-xl border bg-muted/10">
-                <img 
-                  src={`/api/files/${signal.imageUrl}`} 
-                  alt="Graphique du signal" 
-                  className="w-full object-contain max-h-[600px]" 
+                <img
+                  src={`/api/files/${signal.imageUrl}`}
+                  alt="Graphique du signal"
+                  className="w-full object-contain max-h-[600px]"
                 />
               </div>
             </div>
