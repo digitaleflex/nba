@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { deleteSignal } from "@nba/modules/signals/services/get-signals"
+import { updateSignal } from "@nba/modules/signals/services/update-signal"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function DELETE(
@@ -16,19 +17,12 @@ export async function DELETE(
   }
 }
 
-import { updateSignal } from "@nba/modules/signals/services/update-signal"
-import { getServerSession } from "@nba/lib/get-session"
-
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
-
+    const session = await requirePermission("signals.create")
     const { id } = await params
     const body = await req.json()
     const updated = await updateSignal(id, session.user.id, body)

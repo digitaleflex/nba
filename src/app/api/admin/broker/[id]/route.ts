@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewDocumentSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { scheduleFileCleanup } from "../../../../../../workers/queue"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +29,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       resourceId: id,
       details: { notes: parsed.notes },
     })
+
+    // Planifier le nettoyage des fichiers après 7 jours (APPROVED ou REJECTED)
+    if (parsed.status === "APPROVED" || parsed.status === "REJECTED") {
+      await scheduleFileCleanup("broker", id)
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

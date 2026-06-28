@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStorage } from "@nba/lib/storage"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const signalUploadLimit = rateLimitMiddleware({ window: 3600, max: 20 })
 
 export async function POST(req: NextRequest) {
   try {
+    const blocked = await signalUploadLimit(req, "signal-upload")
+    if (blocked) return blocked
     await requirePermission("signals.create")
     const form = await req.formData()
     const file = form.get("file") as File

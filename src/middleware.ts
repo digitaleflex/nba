@@ -15,7 +15,7 @@ async function getSession(request: NextRequest) {
     })
     if (!res.ok) return null
     const data = await res.json()
-    return data?.session ?? null
+    return data ?? null
   } catch {
     return null
   }
@@ -77,7 +77,12 @@ export async function middleware(request: NextRequest) {
     // Vérifier le vrai statut onboarding depuis l'API (la session Better Auth n'inclut pas les champs customs)
     const onboardingStatus = await getOnboardingStatus(request)
 
-    // Force redirection to onboarding if user is not fully active
+    // Forcer la vérification email avant tout accès
+    const emailVerified = session?.user?.emailVerified ?? false
+    if (!emailVerified && pathname !== "/onboarding") {
+      return NextResponse.redirect(new URL("/onboarding", request.url))
+    }
+
     if (
       pathname.startsWith("/dashboard") &&
       onboardingStatus !== "ACTIVE"

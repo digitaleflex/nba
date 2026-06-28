@@ -1,10 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { sendEmail, emailOtp } from "@nba/lib/email"
+import { sendOtpEmail } from "@nba/lib/services/notifications"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
-export async function POST() {
+const otpRateLimit = rateLimitMiddleware({ window: 60, max: 3 })
+
+export async function POST(req: NextRequest) {
   try {
+    const blocked = await otpRateLimit(req, "send-otp")
+    if (blocked) return blocked
+
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
@@ -30,7 +36,7 @@ export async function POST() {
     })
 
     // Envoyer l'email
-    await sendEmail(email, emailOtp(session.user.name, code))
+    await sendOtpEmail(session.user.name, email, code)
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
