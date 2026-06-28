@@ -2,52 +2,59 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
+import { sendVerificationEmail, sendResetPasswordEmail } from "./services/notifications"
+
+const trustedOrigins = [
+  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
+].filter(Boolean) as string[]
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
+  trustedOrigins,
   user: {
-    modelName: "users",
-    fields: {
-      emailVerified: "email_verified",
-      image: "image",
-    },
+    modelName: "user",
   },
   session: {
-    modelName: "sessions",
-    fields: {
-      userId: "user_id",
-      expiresAt: "expires_at",
-      ipAddress: "ip_address",
-      userAgent: "user_agent",
+    modelName: "session",
+    expiresIn: 60 * 60 * 24 * 7, // 7 jours
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
     },
   },
   account: {
-    modelName: "accounts",
-    fields: {
-      userId: "user_id",
-      accountId: "account_id",
-      providerId: "provider_id",
-      accessToken: "access_token",
-      refreshToken: "refresh_token",
-      accessTokenExpiresAt: "access_token_expires_at",
-      refreshTokenExpiresAt: "refresh_token_expires_at",
-      idToken: "id_token",
-    },
+    modelName: "account",
   },
   verification: {
-    modelName: "verifications",
+    modelName: "verification",
   },
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
-      console.log(`Password reset link for ${user.email}: ${url}`)
+      await sendResetPasswordEmail(user, url)
     },
   },
   emailVerification: {
     sendVerificationEmail: async ({ user, url }) => {
-      console.log(`Verification link for ${user.email}: ${url}`)
+      await sendVerificationEmail(user, url)
+    },
+  },
+  rateLimit: {
+    enabled: true,
+    window: 60,
+    max: 100,
+    customRules: {
+      "/sign-in/email": { window: 60, max: 5 },
+      "/sign-up/email": { window: 3600, max: 3 },
+      "/request-password-reset": { window: 3600, max: 3 },
+    },
+  },
+  advanced: {
+    database: {
+      generateId: () => crypto.randomUUID(),
     },
   },
   plugins: [nextCookies()],

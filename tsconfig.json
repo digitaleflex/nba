@@ -20,7 +20,7 @@
     ],
     "paths": {
       "@nba/*": ["./src/*"],
-      "@nba/design-system": ["./packages/design-system/src"],
+      "@nba/design-system": ["./packages/design-system"],
       "@nba/shared": ["./shared/src"]
     }
   },
@@ -32,5 +32,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "scripts", "workers", "emails"]
+  "exclude": ["node_modules", "scripts", "emails"]
 }
