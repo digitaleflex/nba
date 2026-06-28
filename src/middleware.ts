@@ -6,33 +6,23 @@ const AUTH_API_PREFIX = "/api/auth"
 const PUBLIC_API_PREFIX = "/api/public"
 const ONBOARDING_API_PREFIX = "/api/onboarding"
 
-async function getSession(request: NextRequest) {
-  try {
-    const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`
-    const res = await fetch(`${baseUrl}/api/auth/get-session`, {
-      headers: { cookie: request.headers.get("cookie") ?? "" },
-      cache: "no-store",
-    })
-    if (!res.ok) return null
-    const data = await res.json()
-    return data ?? null
-  } catch {
-    return null
-  }
+interface AuthStatus {
+  session: any | null
+  onboardingStatus: string | null
 }
 
-async function getOnboardingStatus(request: NextRequest): Promise<string | null> {
+async function getAuthStatus(request: NextRequest): Promise<AuthStatus> {
   try {
     const baseUrl = `${request.nextUrl.protocol}//${request.nextUrl.host}`
-    const res = await fetch(`${baseUrl}/api/onboarding/state`, {
+    const res = await fetch(`${baseUrl}/api/auth/middleware-check`, {
       headers: { cookie: request.headers.get("cookie") ?? "" },
       cache: "no-store",
     })
-    if (!res.ok) return null
+    if (!res.ok) return { session: null, onboardingStatus: null }
     const data = await res.json()
-    return data?.status ?? null
+    return data ?? { session: null, onboardingStatus: null }
   } catch {
-    return null
+    return { session: null, onboardingStatus: null }
   }
 }
 
@@ -48,14 +38,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === "/") {
-    const session = await getSession(request)
+    const { session } = await getAuthStatus(request)
     return NextResponse.redirect(
       new URL(session ? "/dashboard" : "/login", request.url),
     )
   }
 
   if (PUBLIC_ROUTES.includes(pathname)) {
-    const session = await getSession(request)
+    const { session } = await getAuthStatus(request)
     if (session) {
       return NextResponse.redirect(new URL("/dashboard", request.url))
     }
@@ -67,15 +57,12 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/dashboard") ||
     pathname.startsWith("/admin")
   ) {
-    const session = await getSession(request)
+    const { session, onboardingStatus } = await getAuthStatus(request)
     if (!session) {
       const loginUrl = new URL("/login", request.url)
       loginUrl.searchParams.set("redirect", pathname)
       return NextResponse.redirect(loginUrl)
     }
-
-    // Vérifier le vrai statut onboarding depuis l'API (la session Better Auth n'inclut pas les champs customs)
-    const onboardingStatus = await getOnboardingStatus(request)
 
     // Forcer la vérification email avant tout accès
     const emailVerified = session?.user?.emailVerified ?? false
