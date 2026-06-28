@@ -12,6 +12,23 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parsed = validateOrThrow(selectPlanSchema, body)
 
+    // Rate limiting is handled by Better Auth's customRules
+    // Additional protection: ensure no duplicate pending requests
+    const existingRequest = await prisma.accessRequest.findFirst({
+      where: {
+        userId: session.user.id,
+        planId: parsed.planId,
+        status: "PENDING",
+      },
+    })
+
+    if (existingRequest) {
+      return NextResponse.json(
+        { error: "Demande déjà en attente pour ce plan" },
+        { status: 409 }
+      )
+    }
+
     await prisma.accessRequest.create({
       data: { userId: session.user.id, planId: parsed.planId },
     })
@@ -27,3 +44,7 @@ export async function POST(req: NextRequest) {
     throw error
   }
 }
+
+// Rate limiting handled by Better Auth in src/lib/auth.ts
+// /select-plan inherits from default rate limit: 100 req/min window
+// For enhanced protection, add to customRules if needed

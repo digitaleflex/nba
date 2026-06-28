@@ -63,9 +63,35 @@ export class SignalPolicy {
 
   /**
    * Vérifie si l'utilisateur a le droit de publier un signal.
+   * Seuls le créateur (avec permission signals.create) ou un administrateur peuvent publier.
    */
-  static async canPublish(userId: string): Promise<boolean> {
-    return this.canCreate(userId)
+  static async canPublish(
+    userId: string,
+    signal: { createdBy: string }
+  ): Promise<boolean> {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        role: {
+          select: {
+            name: true,
+            permissions: {
+              select: { permission: { select: { name: true } } },
+            },
+          },
+        },
+      },
+    })
+    if (!user) return false
+
+    const isAdmin = user.role.name === "ADMIN"
+    const hasCreatePermission = user.role.permissions.some(
+      (rp: any) => rp.permission.name === "signals.create"
+    )
+    const isCreator = signal.createdBy === userId
+
+    if (isAdmin) return true
+    return isCreator && hasCreatePermission
   }
 
   /**

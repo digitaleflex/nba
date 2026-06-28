@@ -31,4 +31,4 @@ function getQueue(name: string) {
 
 export const fileCleanupQueue = getQueue("file-cleanup")
 export const signalDistributionQueue = getQueue("signal-distribution")
-export { getRedisConnection }
+export { getRedisConnection, getQueue }

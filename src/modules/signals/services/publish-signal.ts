@@ -13,8 +13,8 @@ export async function publishSignal(id: string, userId: string) {
     throw new Error("Signal introuvable")
   }
 
-  // Check publish permissions for the user
-  const allowed = await SignalPolicy.canPublish(userId)
+  // Check publish permissions AND ownership for the user
+  const allowed = await SignalPolicy.canPublish(userId, signal)
   if (!allowed) {
     throw new AuthError("Accès refusé", 403)
   }
