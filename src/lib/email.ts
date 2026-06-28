@@ -12,15 +12,15 @@ const FROM = process.env.RESEND_FROM_EMAIL ?? "noreply@signauxx.com"
 const APP_NAME = "NeverBrokeAgain"
 const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"
 
-// ── Logo SVG ──
+// ── Logo ──
 
-const LOGO_SVG = `
-<svg width="160" height="40" viewBox="0 0 160 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="4" y="4" width="32" height="32" rx="8" fill="#283B5D"/>
-  <path d="M12 26V14l8 8 8-8v12" stroke="#FFFFFF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-  <text x="44" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="800" fill="#283B5D" letter-spacing="-0.5">Never</text>
-  <text x="120" y="27" font-family="system-ui,-apple-system,sans-serif" font-size="20" font-weight="400" fill="#1E2024" letter-spacing="-0.3">BrokeAgain</text>
-</svg>`
+const LOGO_IMG = `<img
+  src="${process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"}/logo.png"
+  alt="NeverBrokeAgain"
+  width="120"
+  height="120"
+  style="display:block;margin:0 auto;border-radius:12px"
+/>`
 
 // ── Helpers ──
 
@@ -49,8 +49,16 @@ function layout(body: string): string {
       <table class="container" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
         <!-- Header -->
         <tr>
-          <td style="padding-bottom:32px;text-align:center">
-            ${LOGO_SVG}
+          <td style="padding-bottom:8px;text-align:center">
+            ${LOGO_IMG}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-bottom:24px;text-align:center">
+            <p style="margin:0;font-size:18px;font-weight:800;color:#1E2024;letter-spacing:-0.5px">
+              <span style="color:#283B5D">Never</span>BrokeAgain
+            </p>
+            <p style="margin:4px 0 0;font-size:11px;color:#6A758B;letter-spacing:1px;text-transform:uppercase">Signaux traders premium</p>
           </td>
         </tr>
         <!-- Card -->
