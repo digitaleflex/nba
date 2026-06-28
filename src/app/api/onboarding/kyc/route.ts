@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { documentTypeSchema } from "@nba/lib/validations"
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -25,6 +26,11 @@ export async function POST(req: NextRequest) {
 
   if (!documentType || !front) {
     return NextResponse.json({ error: "Type de document et fichier requis" }, { status: 400 })
+  }
+
+  const parsedDocType = documentTypeSchema.safeParse(documentType)
+  if (!parsedDocType.success) {
+    return NextResponse.json({ error: "Type de document invalide" }, { status: 400 })
   }
 
   const storage = getStorage()

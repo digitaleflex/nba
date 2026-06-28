@@ -29,6 +29,13 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (brokerName.length > 200 || accountId.length > 100) {
+    return NextResponse.json(
+      { error: "Nom du broker ou numéro de compte trop long" },
+      { status: 400 }
+    )
+  }
+
   const storage = getStorage()
   const videoResult = await storage.upload(video, "broker")
 
