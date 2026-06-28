@@ -13,6 +13,7 @@ import {
   Info,
 } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
+import NextImage from "next/image"
 
 interface SignalData {
   id: string
@@ -121,11 +122,12 @@ function SignalCard({ signal }: { signal: SignalData }) {
             <div className="flex gap-2 pt-1">
               {signal.imageUrls.slice(0, 2).map((url, idx) => (
                 <div key={idx} className="relative overflow-hidden rounded-lg border border-border/60 bg-background/50 aspect-video w-24 sm:w-28 shrink-0">
-                  <img
+                  <NextImage
                     src={`/api/files/${url}`}
                     alt=""
-                    className="size-full object-cover"
-                    loading="lazy"
+                    fill
+                    sizes="(max-width: 768px) 96px, 112px"
+                    className="object-cover"
                   />
                 </div>
               ))}
@@ -141,12 +143,13 @@ function SignalCard({ signal }: { signal: SignalData }) {
           )}
 
           {signal.imageUrl && !signal.imageUrls?.length && (
-            <div className="overflow-hidden rounded-lg border border-border/60 bg-background/50 aspect-video max-w-sm">
-              <img
+            <div className="relative overflow-hidden rounded-lg border border-border/60 bg-background/50 aspect-video max-w-sm w-full">
+              <NextImage
                 src={`/api/files/${signal.imageUrl}`}
                 alt=""
-                className="size-full object-cover"
-                loading="lazy"
+                fill
+                sizes="(max-width: 768px) 100vw, 384px"
+                className="object-cover"
               />
             </div>
           )}

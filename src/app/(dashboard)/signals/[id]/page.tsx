@@ -6,6 +6,7 @@ import { Card, CardContent, Badge } from "@nba/design-system"
 import { Calendar, User, ChevronLeft } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import Link from "next/link"
+import Image from "next/image"
 
 export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -105,11 +106,14 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Graphiques joints</h3>
               <div className="grid gap-4">
                 {(signal.imageUrls as string[]).map((url, idx) => (
-                  <div key={idx} className="overflow-hidden rounded-xl border bg-muted/10">
-                    <img
+                  <div key={idx} className="relative overflow-hidden rounded-xl border bg-muted/10 h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full">
+                    <Image
                       src={`/api/files/${url}`}
                       alt={`Graphique ${idx + 1}`}
-                      className="w-full object-contain max-h-[600px]"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                      className="object-contain"
+                      priority={idx === 0}
                     />
                   </div>
                 ))}
@@ -118,11 +122,14 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           ) : signal.imageUrl ? (
             <div className="space-y-4 pt-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Graphique joint</h3>
-              <div className="overflow-hidden rounded-xl border bg-muted/10">
-                <img
+              <div className="relative overflow-hidden rounded-xl border bg-muted/10 h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full">
+                <Image
                   src={`/api/files/${signal.imageUrl}`}
                   alt="Graphique du signal"
-                  className="w-full object-contain max-h-[600px]"
+                  fill
+                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                  className="object-contain"
+                  priority
                 />
               </div>
             </div>
