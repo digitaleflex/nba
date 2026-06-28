@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSignalStats } from "@nba/modules/signals/services/get-signals"
-import { getServerSession } from "@nba/lib/get-session"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
-
+    const session = await requirePermission("signals.create")
     const { id } = await params
     const stats = await getSignalStats(id, session.user.id)
     return NextResponse.json(stats)
