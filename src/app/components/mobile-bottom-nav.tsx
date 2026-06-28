@@ -24,6 +24,14 @@ interface MobileBottomNavProps {
   }
 }
 
+interface MobileNavLink {
+  href: string
+  label: string
+  icon: any
+  active: boolean
+  onClick?: () => void
+}
+
 export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -38,7 +46,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   }
 
   // Liens pour l'espace utilisateur mobile
-  const userLinks = [
+  const userLinks: MobileNavLink[] = [
     {
       href: "/dashboard",
       label: "Dashboard",
@@ -71,7 +79,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   ]
 
   // Liens pour l'espace admin mobile
-  const adminLinks = [
+  const adminLinks: MobileNavLink[] = [
     {
       href: "/admin?tab=requests",
       label: "Accès",
