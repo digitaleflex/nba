@@ -28,6 +28,6 @@ export async function PUT(req: NextRequest) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    throw error
+    return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
   }
 }
