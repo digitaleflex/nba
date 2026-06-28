@@ -7,15 +7,22 @@ import { authClient } from "@nba/lib/auth-client"
 import { Button, cn } from "@nba/design-system"
 import {
   LayoutDashboard,
-  TrendingUp,
+  Users,
   ListTodo,
   Radio,
-  History,
-  LogOut,
+  FileCheck,
+  Link2,
+  Bell,
+  Mail,
+  Activity,
   Shield,
+  BarChart2,
+  Settings,
+  LogOut,
   User as UserIcon,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -33,7 +40,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const activeTab = searchParams.get("tab") || "requests"
+  const activeTab = searchParams.get("tab") || "dashboard"
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -74,8 +81,20 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     },
   ]
 
-  // Liens pour la console d'administration
+  // Les 12 liens d'administration
   const adminLinks = [
+    {
+      href: "/admin?tab=dashboard",
+      label: "Tableau de bord",
+      icon: LayoutDashboard,
+      active: pathname === "/admin" && activeTab === "dashboard",
+    },
+    {
+      href: "/admin?tab=users",
+      label: "Utilisateurs",
+      icon: Users,
+      active: pathname === "/admin" && activeTab === "users",
+    },
     {
       href: "/admin?tab=requests",
       label: "Demandes d'accès",
@@ -83,16 +102,58 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       active: pathname === "/admin" && activeTab === "requests",
     },
     {
-      href: "/admin?tab=send",
-      label: "Publier un Signal",
+      href: "/admin?tab=signals",
+      label: "Signaux",
       icon: Radio,
-      active: pathname === "/admin" && activeTab === "send",
+      active: pathname === "/admin" && activeTab === "signals",
     },
     {
-      href: "/admin?tab=history",
-      label: "Historique des signaux",
-      icon: History,
-      active: pathname === "/admin" && activeTab === "history",
+      href: "/admin?tab=kyc",
+      label: "Dossiers KYC",
+      icon: FileCheck,
+      active: pathname === "/admin" && activeTab === "kyc",
+    },
+    {
+      href: "/admin?tab=broker",
+      label: "Vérification Broker",
+      icon: Link2,
+      active: pathname === "/admin" && activeTab === "broker",
+    },
+    {
+      href: "/admin?tab=notifications",
+      label: "Notifications",
+      icon: Bell,
+      active: pathname === "/admin" && activeTab === "notifications",
+    },
+    {
+      href: "/admin?tab=emails",
+      label: "Emails",
+      icon: Mail,
+      active: pathname === "/admin" && activeTab === "emails",
+    },
+    {
+      href: "/admin?tab=audit",
+      label: "Journal d'audit",
+      icon: Activity,
+      active: pathname === "/admin" && activeTab === "audit",
+    },
+    {
+      href: "/admin?tab=security",
+      label: "Centre de sécurité",
+      icon: Shield,
+      active: pathname === "/admin" && activeTab === "security",
+    },
+    {
+      href: "/admin?tab=stats",
+      label: "Statistiques",
+      icon: BarChart2,
+      active: pathname === "/admin" && activeTab === "stats",
+    },
+    {
+      href: "/admin?tab=settings",
+      label: "Paramètres",
+      icon: Settings,
+      active: pathname === "/admin" && activeTab === "settings",
     },
   ]
 

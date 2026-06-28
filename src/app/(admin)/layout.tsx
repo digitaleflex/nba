@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
+import { AdminHeader } from "./admin/components/admin-header"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -29,6 +30,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
+        {/* Desktop Header */}
+        <AdminHeader user={user} />
+
         {/* Mobile Header */}
         <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-sm">

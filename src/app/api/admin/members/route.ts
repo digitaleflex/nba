@@ -64,3 +64,29 @@ export async function GET(request: NextRequest) {
     return handleAuthError(error)
   }
 }
+
+export async function PUT(request: NextRequest) {
+  try {
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const body = await request.json()
+    const { userId, isActive } = body
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
+    }
+
+    const updated = await prisma.user.update({
+      where: { id: userId },
+      data: { isActive },
+      select: {
+        id: true,
+        name: true,
+        isActive: true,
+      },
+    })
+
+    return NextResponse.json(updated)
+  } catch (error) {
+    return handleAuthError(error)
+  }
+}
