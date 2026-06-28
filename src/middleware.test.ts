@@ -41,7 +41,7 @@ describe("middleware", () => {
       const req = createMockRequest("/login")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve(null),
       } as any)
 
       const response = await middleware(req)
@@ -53,7 +53,7 @@ describe("middleware", () => {
       const req = createMockRequest("/login", "session=valid")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } } }),
       } as any)
 
       const response = await middleware(req)
@@ -67,7 +67,7 @@ describe("middleware", () => {
       const req = createMockRequest("/")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve(null),
       } as any)
 
       const response = await middleware(req)
@@ -79,7 +79,7 @@ describe("middleware", () => {
       const req = createMockRequest("/")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } } }),
       } as any)
 
       const response = await middleware(req)
@@ -93,7 +93,7 @@ describe("middleware", () => {
       const req = createMockRequest("/dashboard/signals")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({}),
+        json: () => Promise.resolve(null),
       } as any)
 
       const response = await middleware(req)
@@ -107,7 +107,7 @@ describe("middleware", () => {
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
         } as any)
         .mockResolvedValueOnce({
           ok: true,
@@ -124,7 +124,7 @@ describe("middleware", () => {
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
         } as any)
         .mockResolvedValueOnce({
           ok: true,
@@ -141,7 +141,7 @@ describe("middleware", () => {
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
         } as any)
         .mockResolvedValueOnce({
           ok: true,
@@ -158,7 +158,7 @@ describe("middleware", () => {
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
+          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
         } as any)
         .mockResolvedValueOnce({
           ok: true,
@@ -172,10 +172,15 @@ describe("middleware", () => {
 
     it("allows authenticated ADMIN users to access /admin", async () => {
       const req = createMockRequest("/admin", "session=valid")
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
-      } as any)
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
+        } as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ status: "ACTIVE" }),
+        } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(200)
