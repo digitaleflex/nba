@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
-import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
+import { reviewAccessSchema, validateOrThrow, validateId } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     await requirePermission("users.read")
     const { id } = await params
+    const idCheck = validateId(id)
+    if (!idCheck.valid) return idCheck.response
 
     const request = await prisma.accessRequest.findUnique({
       where: { id },
@@ -49,6 +51,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const session = await requirePermission("subscriptions.manage")
     const { id } = await params
+    const idCheck = validateId(id)
+    if (!idCheck.valid) return idCheck.response
     const body = await req.json()
     const parsed = validateOrThrow(reviewAccessSchema, body)
 

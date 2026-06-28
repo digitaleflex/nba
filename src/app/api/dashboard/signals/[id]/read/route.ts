@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { validateId } from "@nba/lib/validations"
 
 export async function POST(
   req: NextRequest,
@@ -15,6 +16,8 @@ export async function POST(
     }
 
     const { id } = await params
+    const idCheck = validateId(id)
+    if (!idCheck.valid) return idCheck.response
 
     // Strict security check: must be allowed to view this signal to record a read receipt!
     const allowed = await SignalPolicy.canView(session.user.id, id)

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
-import { reviewDocumentSchema, validateOrThrow } from "@nba/lib/validations"
+import { reviewDocumentSchema, validateOrThrow, validateId } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { scheduleFileCleanup } from "../../../../../../workers/queue"
 
@@ -9,6 +9,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const session = await requirePermission("broker.review")
     const { id } = await params
+    const idCheck = validateId(id)
+    if (!idCheck.valid) return idCheck.response
     const body = await req.json()
     const parsed = validateOrThrow(reviewDocumentSchema, body)
 
