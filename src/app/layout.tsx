@@ -14,8 +14,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "NeverBrokeAgain",
+  title: {
+    default: "NeverBrokeAgain",
+    template: "%s | NeverBrokeAgain",
+  },
   description: "Plateforme de signaux de trading premium",
+  icons: {
+    icon: "/icon.png",
+    apple: "/logo.png",
+  },
+  openGraph: {
+    title: "NeverBrokeAgain",
+    description: "Plateforme de signaux de trading premium",
+    images: [{ url: "/logo.png", width: 512, height: 512 }],
+    type: "website",
+    locale: "fr_FR",
+  },
 };
 
 export default function RootLayout({
