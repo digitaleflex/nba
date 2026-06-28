@@ -21,12 +21,10 @@ async function main() {
 
   const existing = await prisma.user.findUnique({ where: { email } })
   if (existing) {
-    await prisma.user.update({
-      where: { email },
-      data: { roleId: superAdminRole.id },
-    })
-    console.log(`✅ Rôle SUPER_ADMIN assigné à ${email}`)
-    return
+    console.log(`Utilisateur ${email} existe déjà. Recréation avec le nouveau mot de passe...`)
+    await prisma.session.deleteMany({ where: { userId: existing.id } })
+    await prisma.account.deleteMany({ where: { userId: existing.id } })
+    await prisma.user.delete({ where: { id: existing.id } })
   }
 
   const auth = betterAuth({
@@ -35,12 +33,12 @@ async function main() {
     advanced: { database: { generateId: () => crypto.randomUUID() } },
   })
 
-  const { error } = await auth.api.signUpEmail({
-    body: { email, password, name: email.split("@")[0] },
-  })
-
-  if (error) {
-    console.error("Erreur création utilisateur:", error.message)
+  try {
+    await auth.api.signUpEmail({
+      body: { email, password, name: email.split("@")[0] },
+    })
+  } catch (error: any) {
+    console.error("Erreur création utilisateur:", error.message || error)
     process.exit(1)
   }
 
