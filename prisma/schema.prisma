@@ -290,6 +290,8 @@ model Signal {
   @@index([createdBy])
   @@index([publishedAt])
   @@index([scheduledAt])
+  @@index([deletedAt])
+  @@index([status, deletedAt]) // Index composite très fréquent pour le filtrage par statut et soft delete
   @@map("signals")
 }
 
