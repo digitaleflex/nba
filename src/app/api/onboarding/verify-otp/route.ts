@@ -1,9 +1,15 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
-export async function POST(req: Request) {
+const verifyRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
+
+export async function POST(req: NextRequest) {
   try {
+    const blocked = await verifyRateLimit(req, "verify-otp")
+    if (blocked) return blocked
+
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })

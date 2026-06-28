@@ -3,8 +3,14 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
 export async function POST(req: NextRequest) {
+  const blocked = await uploadRateLimit(req, "broker-upload")
+  if (blocked) return blocked
+
   const session = await getServerSession()
   if (!session) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
