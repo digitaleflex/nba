@@ -1,4 +1,17 @@
 import { z } from "zod"
+import { NextResponse } from "next/server"
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export function validateId(id: string): { valid: true } | { valid: false; response: NextResponse } {
+  if (!UUID_REGEX.test(id)) {
+    return {
+      valid: false,
+      response: NextResponse.json({ error: "ID invalide" }, { status: 400 }),
+    }
+  }
+  return { valid: true }
+}
 
 export const documentTypeSchema = z.enum(["ID_CARD", "PASSPORT", "DRIVERS_LICENSE"])
 
@@ -13,7 +26,7 @@ export const profileSchema = z.object({
   country: z.string().max(100).optional(),
   language: z.string().max(10).optional(),
   timezone: z.string().max(50).optional(),
-})
+}).strict()
 
 export const notificationPrefsSchema = z.object({
   sound: z.string().max(30).optional(),
@@ -26,7 +39,7 @@ export const notificationPrefsSchema = z.object({
 
 export const selectPlanSchema = z.object({
   planId: z.string().uuid("ID de plan invalide"),
-})
+}).strict()
 
 export const messageContentSchema = z.object({
   content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Message trop long"),
@@ -102,12 +115,21 @@ export const startMessageMemberSchema = z
 export const reviewAccessSchema = z.object({
   status: accessStatusSchema,
   notes: z.string().optional(),
-})
+}).strict()
+
+export const dashboardProfileSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  phone: z.string().max(50).optional(),
+  whatsapp: z.string().max(50).optional(),
+  country: z.string().max(100).optional(),
+  language: z.string().max(50).optional(),
+  timezone: z.string().max(100).optional(),
+}).strict()
 
 export const reviewDocumentSchema = z.object({
   status: verificationStatusSchema,
   notes: z.string().optional(),
-})
+}).strict()
 
 export const supportSchema = z.object({
   subject: z.string().trim().min(1, "Sujet requis").max(200, "Sujet trop long"),
