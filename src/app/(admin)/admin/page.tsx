@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, Suspense } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { 
   Check, X, Clock, ExternalLink, ListTodo, Radio, History, Trash2, Calendar, 
   Search, Eye, Layers, Copy, Play, Loader2, Laptop, Phone 
@@ -54,6 +55,22 @@ const STATUS_COLORS: Record<string, string> = {
 }
 
 export default function AdminPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="size-6 animate-spin text-primary" />
+      </div>
+    }>
+      <AdminConsoleContent />
+    </Suspense>
+  )
+}
+
+function AdminConsoleContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const activeTab = searchParams.get("tab") || "requests"
+
   const [requests, setRequests] = useState<AccessRequest[]>([])
   const [signals, setSignals] = useState<Signal[]>([])
   const [loadingRequests, setLoadingRequests] = useState(true)
@@ -222,7 +239,7 @@ export default function AdminPage() {
         <p className="text-sm text-muted-foreground">Gérez les demandes d'accès et publiez des signaux de trading.</p>
       </div>
 
-      <Tabs defaultValue="requests" className="space-y-6">
+      <Tabs value={activeTab} onValueChange={(val) => router.push(`/admin?tab=${val}`)} className="space-y-6">
         <TabsList className="glass-strong border p-1 rounded-xl flex gap-1 w-fit">
           <TabsTrigger value="requests" className="gap-2 px-4 py-2">
             <ListTodo className="size-4" />
