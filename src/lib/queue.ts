@@ -10,7 +10,7 @@ function getRedisConnection() {
   if (!globalForRedis.redisConnection) {
     globalForRedis.redisConnection = new IORedis(connectionString, {
       maxRetriesPerRequest: null,
-    })
+    } as any)
   }
   return globalForRedis.redisConnection
 }
@@ -24,7 +24,7 @@ function getQueue(name: string) {
   }
   if (!globalForQueues.queues[name]) {
     const connection = getRedisConnection()
-    globalForQueues.queues[name] = new Queue(name, { connection: connection as any })
+    globalForQueues.queues[name] = new Queue(name, { connection: connection as any, skipVersionCheck: true })
   }
   return globalForQueues.queues[name]
 }
