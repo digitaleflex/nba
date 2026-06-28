@@ -45,8 +45,8 @@ function getFriendlyIp(ip?: string): string {
     cleanIp === "::1" || 
     cleanIp === "127.0.0.1" || 
     cleanIp === "::" ||
-    /^0+:0+:0+:0+:0+:0+:0+:[0-9a-fA-F]$/.test(cleanIp) ||
-    /^0+:0+:0+:0+:0+:0+:0+:0$/.test(cleanIp)
+    /^[0:]+$/.test(cleanIp) ||
+    /^[0:]+1$/.test(cleanIp)
   ) {
     return "Machine locale"
   }
