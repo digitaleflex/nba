@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getOnboardingStateForUsers } from "@nba/lib/services/onboarding"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
@@ -10,6 +10,10 @@ const VALID_STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED", "REVOKED
 export async function GET(req: Request) {
   try {
     await requirePermission("users.read")
+    const url = new URL(req.url)
+    const page = Math.max(1, parseInt(url.searchParams.get("page") ?? "1"))
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get("limit") ?? "50")))
+    const skip = (page - 1) * limit
 
     const url = new URL(req.url)
     const statusParam = url.searchParams.get("status")
@@ -54,7 +58,10 @@ export async function GET(req: Request) {
       120,
     )
 
-    return NextResponse.json(enriched)
+    return NextResponse.json({
+      data: enriched,
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+    })
   } catch (error) {
     return handleAuthError(error)
   }
