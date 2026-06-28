@@ -102,38 +102,39 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex h-screen shrink-0 flex-col border-r bg-card/40 backdrop-blur-md sticky top-0 py-6 justify-between select-none transition-all duration-300 relative",
-        isCollapsed ? "w-20 px-3" : "w-64 px-4"
+        "hidden md:flex h-screen shrink-0 flex-col border-r sticky top-0 py-6 justify-between select-none transition-all duration-300 z-40",
+        "bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-xl border-neutral-200/60 dark:border-neutral-800/60 shadow-[1px_0_10px_rgba(0,0,0,0.015)]",
+        isCollapsed ? "w-20 px-3" : "w-64 px-5"
       )}
     >
       {/* Toggle Button */}
       <button
         onClick={toggleCollapse}
-        className="absolute -right-3 top-7 z-50 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground shadow-xs cursor-pointer hover:scale-105 active:scale-95 transition-all"
+        className="absolute -right-3 top-7 z-50 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground shadow-sm cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200"
         title={isCollapsed ? "Déplier la barre" : "Plier la barre"}
       >
         {isCollapsed ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
       </button>
 
-      <div className="space-y-6">
+      <div className="space-y-7">
         {/* Logo / Header */}
         <div className={cn("flex items-center gap-2 px-2", isCollapsed ? "justify-center" : "justify-between")}>
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-lg tracking-tight shrink-0">
+          <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg tracking-tight shrink-0">
             {isCollapsed ? (
-              <span className="text-primary font-extrabold text-xl tracking-tighter">NBA</span>
+              <span className="bg-primary text-primary-foreground font-black text-sm rounded-lg size-8 flex items-center justify-center shadow-xs select-none">NB</span>
             ) : (
-              <span className="text-foreground"><span className="text-primary font-extrabold">Never</span>BrokeAgain</span>
+              <span className="text-foreground tracking-tight"><span className="text-primary font-black">Never</span>BrokeAgain</span>
             )}
           </Link>
           {!isCollapsed && isAdmin && (
-            <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wider shrink-0">
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">
               Admin
             </span>
           )}
         </div>
 
         {/* Menu Navigation */}
-        <nav className="space-y-1">
+        <nav className="space-y-1.5">
           {links.map((link, idx) => {
             const Icon = link.icon
             return (
@@ -142,20 +143,20 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
                 href={link.href}
                 className={cn(
                   "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group relative",
-                  isCollapsed ? "justify-center" : "gap-3",
+                  isCollapsed ? "justify-center" : "gap-3.5",
                   link.active
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50"
                 )}
                 title={isCollapsed ? link.label : undefined}
               >
-                {link.active && (
-                  <span className="absolute left-0 top-1/4 bottom-1/4 w-1 rounded-r-md bg-primary" />
+                {link.active && !isCollapsed && (
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
                 )}
                 <Icon
                   className={cn(
-                    "size-4.5 shrink-0 transition-transform duration-200 group-hover:scale-110",
-                    link.active ? "text-primary" : "text-muted-foreground/75 group-hover:text-foreground"
+                    "size-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
+                    link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
                   )}
                 />
                 {!isCollapsed && <span className="truncate">{link.label}</span>}
@@ -168,12 +169,13 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
             <Link
               href="/admin"
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all duration-200 group mt-4 border border-dashed border-border",
-                isCollapsed ? "justify-center" : "gap-3"
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+                "border-neutral-200/85 dark:border-neutral-850/85 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+                isCollapsed ? "justify-center" : "gap-3.5"
               )}
               title={isCollapsed ? "Accéder à l'Admin" : undefined}
             >
-              <Shield className="size-4.5 text-muted-foreground/75 group-hover:text-primary transition-transform duration-200 group-hover:scale-110" />
+              <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
               {!isCollapsed && <span>Accéder à l'Admin</span>}
             </Link>
           )}
@@ -183,12 +185,13 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
             <Link
               href="/dashboard"
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-all duration-200 group mt-4 border border-dashed border-border",
-                isCollapsed ? "justify-center" : "gap-3"
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+                "border-neutral-200/85 dark:border-neutral-850/85 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+                isCollapsed ? "justify-center" : "gap-3.5"
               )}
               title={isCollapsed ? "Retour au Dashboard" : undefined}
             >
-              <LayoutDashboard className="size-4.5 text-muted-foreground/75 group-hover:text-primary transition-transform duration-200 group-hover:scale-110" />
+              <LayoutDashboard className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
               {!isCollapsed && <span>Retour au Dashboard</span>}
             </Link>
           )}
@@ -196,10 +199,16 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       </div>
 
       {/* User Section / Bottom */}
-      <div className="border-t pt-4 space-y-4">
-        <div className={cn("flex items-center justify-between px-2", isCollapsed ? "flex-col gap-4" : "gap-3")}>
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="flex items-center justify-center size-9 rounded-full bg-primary/10 border border-primary/20 shrink-0">
+      <div className="border-t border-neutral-200/60 dark:border-neutral-800/60 pt-4">
+        <div
+          className={cn(
+            "flex items-center justify-between rounded-2xl transition-all p-2",
+            !isCollapsed && "bg-neutral-100/50 dark:bg-neutral-900/50 border border-neutral-200/30 dark:border-neutral-800/30",
+            isCollapsed ? "flex-col gap-4" : "gap-3"
+          )}
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex items-center justify-center size-9 rounded-full bg-primary/10 border border-primary/20 shrink-0 shadow-inner">
               {user.image ? (
                 <img src={user.image} alt={user.name} className="size-full rounded-full object-cover" />
               ) : (
@@ -208,8 +217,8 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
             </div>
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate text-foreground">{user.name}</p>
-                <p className="text-[10px] truncate text-muted-foreground">{user.email}</p>
+                <p className="text-xs font-bold truncate text-foreground leading-none">{user.name}</p>
+                <p className="text-[10px] truncate text-muted-foreground mt-1">{user.email}</p>
               </div>
             )}
           </div>
@@ -219,12 +228,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
             size="icon"
             onClick={handleLogout}
             className={cn(
-              "rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-colors",
+              "rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-colors duration-200",
               isCollapsed ? "size-9" : "size-8"
             )}
             title="Déconnexion"
           >
-            <LogOut className="size-4.5" />
+            <LogOut className="size-4" />
           </Button>
         </div>
       </div>

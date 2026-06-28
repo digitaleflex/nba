@@ -240,7 +240,7 @@ function AdminConsoleContent() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(val) => router.push(`/admin?tab=${val}`)} className="space-y-6">
-        <TabsList className="glass-strong border p-1 rounded-xl flex gap-1 w-fit">
+        <TabsList className="hidden">
           <TabsTrigger value="requests" className="gap-2 px-4 py-2">
             <ListTodo className="size-4" />
             Demandes d'accès
