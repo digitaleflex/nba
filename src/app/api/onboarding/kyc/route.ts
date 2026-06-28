@@ -29,17 +29,14 @@ export async function POST(req: NextRequest) {
 
   const storage = getStorage()
 
-  const frontResult = await storage.upload(front, "kyc")
-  let backResult = null
-  if (back) {
-    backResult = await storage.upload(back, "kyc")
-  }
+  // Execute uploads in parallel to optimize response time and reduce blocking overhead
+  const [frontResult, backResult, selfieResult] = await Promise.all([
+    storage.upload(front, "kyc"),
+    back ? storage.upload(back, "kyc") : Promise.resolve(null),
+    selfie ? storage.upload(selfie, "kyc") : Promise.resolve(null),
+  ])
 
-  let selfieFilePath: string | null = null
-  if (selfie) {
-    const selfieResult = await storage.upload(selfie, "kyc")
-    selfieFilePath = selfieResult.path
-  }
+  const selfieFilePath = selfieResult?.path ?? null
 
   await prisma.kycDocument.create({
     data: {
