@@ -164,7 +164,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     <aside
       className={cn(
         "hidden md:flex h-screen shrink-0 flex-col border-r sticky top-0 py-6 justify-between select-none transition-all duration-300 z-40",
-        "bg-neutral-50/80 dark:bg-neutral-950/80 backdrop-blur-xl border-neutral-200/60 dark:border-neutral-800/60 shadow-[1px_0_10px_rgba(0,0,0,0.015)]",
+        "bg-card/80 backdrop-blur-xl border-border shadow-[1px_0_10px_rgba(0,0,0,0.015)]",
         isCollapsed ? "w-20 px-3" : "w-64 px-5"
       )}
     >
@@ -207,7 +207,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
                   isCollapsed ? "justify-center" : "gap-3.5",
                   link.active
                     ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-neutral-200/50 dark:hover:bg-neutral-800/50"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
                 )}
                 title={isCollapsed ? link.label : undefined}
               >
@@ -231,23 +231,23 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
               href="/admin"
               className={cn(
                 "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
-                "border-neutral-200/85 dark:border-neutral-850/85 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
-                isCollapsed ? "justify-center" : "gap-3.5"
-              )}
-              title={isCollapsed ? "Accéder à l'Admin" : undefined}
-            >
-              <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
-              {!isCollapsed && <span>Accéder à l'Admin</span>}
-            </Link>
-          )}
+              "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+              isCollapsed ? "justify-center" : "gap-3.5"
+            )}
+            title={isCollapsed ? "Accéder à l'Admin" : undefined}
+          >
+            <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
+            {!isCollapsed && <span>Accéder à l'Admin</span>}
+          </Link>
+        )}
 
-          {/* Return to Dashboard for admins */}
-          {isAdmin && (
-            <Link
-              href="/dashboard"
-              className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
-                "border-neutral-200/85 dark:border-neutral-850/85 text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+        {/* Return to Dashboard for admins */}
+        {isAdmin && (
+          <Link
+            href="/dashboard"
+            className={cn(
+              "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+              "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
                 isCollapsed ? "justify-center" : "gap-3.5"
               )}
               title={isCollapsed ? "Retour au Dashboard" : undefined}
@@ -260,11 +260,11 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       </div>
 
       {/* User Section / Bottom */}
-      <div className="border-t border-neutral-200/60 dark:border-neutral-800/60 pt-4">
+      <div className="border-t border-border pt-4">
         <div
           className={cn(
             "flex items-center justify-between rounded-2xl transition-all p-2",
-            !isCollapsed && "bg-neutral-100/50 dark:bg-neutral-900/50 border border-neutral-200/30 dark:border-neutral-800/30",
+            !isCollapsed && "bg-muted/50 border border-border",
             isCollapsed ? "flex-col gap-4" : "gap-3"
           )}
         >

@@ -12,7 +12,6 @@ services:
       redis:
         condition: service_started
     environment:
-      - DATABASE_URL=postgresql://nba:nba_secret@db:5432/nba_dev?schema=public
       - REDIS_URL=redis://redis:6379
 
   worker:
@@ -27,7 +26,7 @@ services:
       redis:
         condition: service_started
     environment:
-      - DATABASE_URL=postgresql://nba:nba_secret@db:5432/nba_dev?schema=public
+      
       - REDIS_URL=redis://redis:6379
 
   db:

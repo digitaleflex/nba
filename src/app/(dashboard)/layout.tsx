@@ -26,7 +26,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
         {/* Mobile Header */}
-        <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
+        <header className="md:hidden border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-sm">
             <span className="text-primary font-extrabold">Never</span>BrokeAgain
           </div>

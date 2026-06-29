@@ -217,6 +217,10 @@ Pending Review
 
 ↓
 
+Administrator manually reviews external payment, KYC, and Broker Video
+
+↓
+
 Approved / Rejected
 
 ↓
@@ -352,7 +356,7 @@ Members receive signal
 
 # Signal Visibility
 
-Visibility depends exclusively on subscription permissions.
+Visibility depends exclusively on the user having an active status (ACTIVE) and an approved AccessRequest (Subscription) matching the signal's targeted audience.
 
 Manual member selection is prohibited.
 
