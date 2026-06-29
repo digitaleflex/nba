@@ -3,9 +3,10 @@
 import { useEffect, useRef, useState } from "react"
 import { 
   Bold, Italic, List, Image as ImageIcon, Trash2, Send, Loader2, 
-  Save, Calendar, Check, X, Plus, FileText, Info
+  Save, Calendar, Check, X, Plus, FileText, Info, Laptop, Phone, Sparkles
 } from "lucide-react"
 import { Button, Card, CardContent, Checkbox, Badge, Input, cn } from "@nba/design-system"
+import { parseSimpleMarkdown } from "@nba/lib/utils"
 
 interface Plan {
   id: string
@@ -17,7 +18,6 @@ interface Plan {
 
 export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void }) {
   // Form fields states
-  const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [imageUrls, setImageUrls] = useState<string[]>([])
   
@@ -202,21 +202,16 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     setShowConfirmModal(false)
     setIsSubmitting(targetStatus)
 
-    // Build the content payload (Title + Message, or Message directly if title is omitted)
-    const formattedContent = title.trim() 
-      ? `### ${title.trim()}\n\n${content.trim()}`
-      : content.trim()
-
     try {
       const res = await fetch("/api/admin/signals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          content: formattedContent,
+          content: content.trim(),
           imageUrls,
           planIds: selectedPlans,
           status: targetStatus,
-          scheduledAt: null, // simplification : direct dispatch
+          scheduledAt: null, // publication immédiate
         }),
       })
 
@@ -226,7 +221,6 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       }
 
       // Success Reset
-      setTitle("")
       setContent("")
       setImageUrls([])
       alert(targetStatus === "DRAFT" ? "Brouillon enregistré avec succès." : "Signal publié avec succès.")
@@ -239,6 +233,15 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     }
   }
 
+  // Toggle selected plan
+  function togglePlan(planId: string) {
+    if (selectedPlans.includes(planId)) {
+      setSelectedPlans((prev) => prev.filter((id) => id !== planId))
+    } else {
+      setSelectedPlans((prev) => [...prev, planId])
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Title bar */}
@@ -246,7 +249,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
         <div>
           <h1 className="text-xl font-bold tracking-tight">Créer un nouveau signal</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Collez votre texte libre et choisissez les groupes de diffusion.
+            Collez votre analyse ou alerte et diffusez-la instantanément à vos abonnés.
           </p>
         </div>
       </div>
@@ -254,28 +257,15 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       {/* Main Two-Column Layout */}
       <div className="grid gap-6 lg:grid-cols-5">
         
-        {/* COLUMN LEFT - COPY PASTE TEXT FORM (3 columns wide) */}
+        {/* COLUMN LEFT - WRITING AREA (3 columns wide) */}
         <div className="lg:col-span-3 space-y-4">
           
           <Card className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm">
             <CardContent className="p-4 space-y-4">
               
-              {/* Optional Title input */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Titre du signal (Optionnel)</label>
-                <Input 
-                  placeholder="Ex: EUR/USD - Achat support clé" 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="text-xs"
-                />
-              </div>
-
               {/* Unique copy-paste message area */}
               <div className="space-y-1">
-                <div className="flex justify-between items-center">
-                  <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message ou Signal (Texte libre)</label>
-                </div>
+                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
                 
                 {/* Textarea editor with mini toolbar */}
                 <div className="border rounded-xl bg-background overflow-hidden">
@@ -293,7 +283,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
                     onChange={(e) => setContent(e.target.value)}
                     onPaste={handlePaste}
                     placeholder="Collez ou rédigez votre signal ici... (ex: BUY EUR/USD, Entry, TP, SL, analyses...)"
-                    className="w-full min-h-[160px] max-h-[400px] p-3 text-xs leading-relaxed outline-none border-0 resize-none bg-transparent"
+                    className="w-full min-h-[180px] max-h-[400px] p-3 text-xs leading-relaxed outline-none border-0 resize-none bg-transparent"
                   />
                   
                   <div className="px-3 py-1 bg-muted/20 text-[9px] text-right text-muted-foreground border-t">
@@ -302,48 +292,49 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
                 </div>
               </div>
 
-              {/* Upload section discrete button and gallery */}
-              <div className="space-y-1.5">
+              {/* Drag & Drop Upload Zone & Horizontal Gallery */}
+              <div className="space-y-2">
+                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Images et captures d'écran</label>
+                
                 <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
                 
-                {imageUrls.length > 0 && (
-                  <div className="grid grid-cols-5 gap-3 w-full border rounded-xl p-3 bg-muted/10">
-                    {imageUrls.map((url, idx) => (
-                      <div key={idx} className="relative group aspect-square rounded-lg overflow-hidden border bg-muted">
-                        <img src={`/api/files/${url}`} alt="" className="h-full w-full object-cover" />
-                        <button
-                          type="button"
-                          onClick={() => setImageUrls((prev) => prev.filter((_, i) => i !== idx))}
-                          className="absolute top-1 right-1 size-5 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </div>
-                    ))}
-                    {imageUrls.length < 5 && (
-                      <div 
-                        onClick={() => fileInputRef.current?.click()}
-                        className="aspect-square rounded-lg border border-dashed flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary cursor-pointer"
+                {/* Horizontal previews gallery */}
+                <div className="flex flex-wrap gap-2.5 items-center">
+                  {imageUrls.map((url, idx) => (
+                    <div key={idx} className="relative group size-16 rounded-xl overflow-hidden border bg-muted shrink-0">
+                      <img src={`/api/files/${url}`} alt="" className="h-full w-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setImageUrls((prev) => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-1 right-1 size-4 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
                       >
-                        <Plus className="size-4 mb-0.5" />
-                        <span className="text-[9px] font-bold">Ajouter</span>
-                      </div>
-                    )}
-                  </div>
-                )}
-                
-                {imageUrls.length === 0 && (
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-9 text-xs rounded-xl"
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    <Plus className="size-4 mr-1.5" />
-                    Associer des graphiques / images ({imageUrls.length}/5)
-                  </Button>
-                )}
+                        <X className="size-2.5" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {imageUrls.length < 5 && (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      className={cn(
+                        "size-16 rounded-xl border border-dashed flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary cursor-pointer shrink-0",
+                        isDragging && "border-primary bg-primary/5"
+                      )}
+                    >
+                      <Plus className="size-5 mb-0.5" />
+                      <span className="text-[8px] font-bold">Ajouter</span>
+                    </div>
+                  )}
+                  
+                  {imageUrls.length === 0 && (
+                    <span className="text-[10px] text-muted-foreground ml-1">
+                      Glissez vos captures d'écran directement ici (max: 5 images, PNG, JPG, WEBP).
+                    </span>
+                  )}
+                </div>
               </div>
 
             </CardContent>
@@ -351,54 +342,90 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
 
         </div>
 
-        {/* COLUMN RIGHT - DIFFUSION GROUPS & SUBMIT (2 columns wide) */}
+        {/* COLUMN RIGHT - DIFFUSION GROUPS & INBOX PREVIEW (2 columns wide) */}
         <div className="lg:col-span-2 space-y-4">
           
+          {/* APERCU INBOX MEMBRE */}
+          <div className="space-y-1.5">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+              <Sparkles className="size-3.5 text-primary" />
+              Aperçu Inbox Membre
+            </h3>
+            <Card className="relative overflow-hidden border border-primary/20 bg-primary/5/10 shadow-md">
+              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center justify-between border-b pb-2 border-border/50 text-[9px] text-muted-foreground">
+                  <span className="flex items-center gap-1 font-bold">
+                    <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
+                    NBA VIP
+                  </span>
+                  <span>Aujourd'hui, 14:30</span>
+                </div>
+                
+                {/* Message body preview */}
+                <div 
+                  className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words min-h-[40px]"
+                  dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(content.trim() || "Votre message formaté s'affichera ici...") }}
+                />
+
+                {/* Images grid preview */}
+                {imageUrls.length > 0 && (
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
+                    {imageUrls.map((url, idx) => (
+                      <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border bg-muted">
+                        <img src={`/api/files/${url}`} alt="" className="h-full w-full object-cover" />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* GROUPS OF DIFFUSION CARD LIST */}
           <Card className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm">
             <CardContent className="p-4 space-y-4">
               <h3 className="font-bold text-sm border-b pb-2">Groupes de diffusion</h3>
 
-              <div className="space-y-2">
+              <div className="grid gap-2">
                 {plans.length === 0 ? (
                   <div className="text-center py-4 text-xs text-muted-foreground">Aucun groupe trouvé.</div>
                 ) : (
-                  plans.map((plan) => (
-                    <label
-                      key={plan.id}
-                      className={cn(
-                        "flex items-center justify-between cursor-pointer text-xs p-3 rounded-xl border transition-all duration-200",
-                        selectedPlans.includes(plan.id)
-                          ? "border-primary/20 bg-primary/5 text-foreground font-semibold"
-                          : "border-border hover:bg-muted/30 text-muted-foreground"
-                      )}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Checkbox
-                          checked={selectedPlans.includes(plan.id)}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedPlans((prev) => [...prev, plan.id])
-                            } else {
-                              setSelectedPlans((prev) => prev.filter((id) => id !== plan.id))
-                            }
-                          }}
-                        />
-                        <span>Signals {plan.name}</span>
+                  plans.map((plan) => {
+                    const isSelected = selectedPlans.includes(plan.id)
+                    return (
+                      <div
+                        key={plan.id}
+                        onClick={() => togglePlan(plan.id)}
+                        className={cn(
+                          "cursor-pointer text-xs p-3 rounded-xl border transition-all duration-200 flex items-center justify-between select-none",
+                          isSelected
+                            ? "border-primary/30 bg-primary/5 text-foreground font-semibold shadow-xs"
+                            : "border-border hover:bg-muted/30 text-muted-foreground"
+                        )}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Checkbox
+                            checked={isSelected}
+                            onCheckedChange={() => {}} // handled by div onClick
+                          />
+                          <span>Signals {plan.name}</span>
+                        </div>
+                        <Badge variant="outline" className="text-[9px] font-normal border-border/80 bg-background/50">
+                          {plan._count?.users !== undefined ? `${plan._count.users} membres` : "— membres"}
+                        </Badge>
                       </div>
-                      <span className="text-[10px] text-muted-foreground/80 font-normal">
-                        {plan._count?.users !== undefined ? `${plan._count.users} membres` : "— membres"}
-                      </span>
-                    </label>
-                  ))
+                    )
+                  })
                 )}
               </div>
 
-              {/* Main Submit Actions directly inside the Card */}
+              {/* Main Submit Actions */}
               <div className="flex flex-col gap-2 pt-2 border-t">
                 <Button 
                   variant="default" 
                   size="sm" 
-                  className="w-full h-10 text-xs rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full h-10 text-xs rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                   disabled={!content.trim() || isSubmitting !== null}
                   onClick={() => openConfirmation("PUBLISHED")}
                 >
@@ -427,55 +454,56 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       {/* Confirmation Modal overlay */}
       {showConfirmModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-background border rounded-2xl max-w-md w-full shadow-2xl p-6 space-y-4 animate-in zoom-in-95 duration-200">
+          <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-semibold text-lg">Confirmation de publication</h3>
-              <button onClick={() => setShowConfirmModal(false)} className="text-muted-foreground hover:text-foreground"><X className="size-5" /></button>
+              <h3 className="font-semibold text-base">Confirmation de publication</h3>
+              <button onClick={() => setShowConfirmModal(false)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
             </div>
 
             {isEstimating ? (
               <div className="flex flex-col items-center justify-center py-6 gap-3">
                 <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Estimation des destinataires...</p>
+                <p className="text-xs text-muted-foreground">Estimation des destinataires...</p>
               </div>
             ) : (
-              <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Le message de signal sera envoyé à tous les abonnés actifs des groupes suivants :
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-normal">
+                  Ce signal sera envoyé aux membres des groupes sélectionnés :
                 </p>
 
                 {estimationResult && (
-                  <div className="space-y-2 rounded-xl bg-muted/40 p-4 border text-sm">
-                    <div className="flex justify-between font-semibold border-b pb-2 mb-2">
-                      <span>Groupe</span>
-                      <span>Destinataires</span>
-                    </div>
+                  <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 border text-xs">
                     {Object.entries(estimationResult.breakdown).map(([planName, count]) => (
-                      <div key={planName} className="flex justify-between text-xs text-muted-foreground">
-                        <span>{planName}</span>
+                      <div key={planName} className="flex justify-between text-muted-foreground">
+                        <span>Signals {planName}</span>
                         <span className="font-medium text-foreground">{count} membres</span>
                       </div>
                     ))}
-                    <div className="flex justify-between font-bold border-t pt-2 mt-2 text-primary">
+                    <div className="flex justify-between font-bold border-t pt-1.5 mt-1.5 text-primary">
                       <span>Total (uniques)</span>
-                      <span>{estimationResult.total} membres</span>
+                      <span>✓ {estimationResult.total} membres</span>
                     </div>
                   </div>
                 )}
+                
+                <p className="text-[10px] text-amber-600 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg flex items-start gap-1.5">
+                  <Info className="size-3.5 shrink-0 mt-0.5" />
+                  <span>Cette action diffusera immédiatement le signal à tous les abonnés de ces canaux.</span>
+                </p>
               </div>
             )}
 
-            <div className="flex justify-end gap-3 border-t pt-4">
-              <Button variant="outline" onClick={() => setShowConfirmModal(false)}>Annuler</Button>
-              <Button onClick={handleConfirmSubmit} disabled={isSubmitting !== null} className="gap-1.5">
+            <div className="flex justify-end gap-2 border-t pt-3">
+              <Button variant="outline" size="sm" onClick={() => setShowConfirmModal(false)}>Annuler</Button>
+              <Button onClick={handleConfirmSubmit} size="sm" disabled={isSubmitting !== null} className="gap-1.5">
                 {isSubmitting ? (
                   <>
-                    <Loader2 className="size-4 animate-spin" />
-                    Publication...
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Envoi...
                   </>
                 ) : (
                   <>
-                    <Send className="size-4" />
+                    <Send className="size-3.5" />
                     Confirmer l'envoi
                   </>
                 )}
