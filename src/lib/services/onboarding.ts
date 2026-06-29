@@ -13,6 +13,10 @@ export interface OnboardingState {
   checklist: OnboardingChecklist
   progress: number
   nextStep: string | null
+  kycStatus: string | null
+  kycFeedback: string | null
+  brokerStatus: string | null
+  brokerFeedback: string | null
 }
 
 const STEP_PROGRESS: Record<string, number> = {
@@ -23,7 +27,7 @@ const STEP_PROGRESS: Record<string, number> = {
 }
 
 export async function getOnboardingState(userId: string): Promise<OnboardingState> {
-  const [user, kycCount, brokerCount] = await Promise.all([
+  const [user, lastKyc, lastBroker] = await Promise.all([
     prisma.user.findUniqueOrThrow({
       where: { id: userId },
       select: {
@@ -31,14 +35,20 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
         onboardingStatus: true,
       },
     }),
-    prisma.kycDocument.count({ where: { userId } }),
-    prisma.brokerVerification.count({ where: { userId } }),
+    prisma.kycDocument.findFirst({
+      where: { userId },
+      orderBy: { submittedAt: "desc" }
+    }),
+    prisma.brokerVerification.findFirst({
+      where: { userId },
+      orderBy: { createdAt: "desc" }
+    }),
   ])
 
   const checklist: OnboardingChecklist = {
     emailVerified: user.emailVerified,
-    kycSubmitted: kycCount > 0,
-    brokerSubmitted: brokerCount > 0,
+    kycSubmitted: lastKyc !== null && lastKyc.status !== "REJECTED",
+    brokerSubmitted: lastBroker !== null && lastBroker.status !== "REJECTED",
     reviewed: user.onboardingStatus === "ACTIVE",
   }
 
@@ -62,6 +72,10 @@ export async function getOnboardingState(userId: string): Promise<OnboardingStat
     checklist,
     progress,
     nextStep: nextStep ? (steps[nextStep] ?? null) : null,
+    kycStatus: lastKyc?.status ?? null,
+    kycFeedback: lastKyc?.reviewNotes ?? null,
+    brokerStatus: lastBroker?.status ?? null,
+    brokerFeedback: lastBroker?.reviewNotes ?? null,
   }
 }
 

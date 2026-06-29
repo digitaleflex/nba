@@ -71,13 +71,13 @@ export async function middleware(request: NextRequest) {
     }
 
     if (
-      pathname.startsWith("/dashboard") &&
+      pathname.startsWith("/dashboard/signals") &&
       onboardingStatus !== "ACTIVE"
     ) {
-      return NextResponse.redirect(new URL("/onboarding", request.url))
+      return NextResponse.redirect(new URL("/dashboard/verification", request.url))
     }
 
-    // Prevent access to onboarding if already active
+    // Prevent access to onboarding if already active, redirecting to dashboard
     if (
       pathname.startsWith("/onboarding") &&
       onboardingStatus === "ACTIVE"

@@ -54,10 +54,16 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
       active: pathname === "/dashboard",
     },
     {
-      href: "/signals",
-      label: "Signaux",
+      href: "/dashboard/signals",
+      label: "Boîte de réc.",
       icon: TrendingUp,
-      active: pathname.startsWith("/signals"),
+      active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+    },
+    {
+      href: "/dashboard/verification",
+      label: "Vérification",
+      icon: Shield,
+      active: pathname === "/dashboard/verification",
     },
     ...(user.role === "ADMIN" || user.role === "SUPER_ADMIN"
       ? [

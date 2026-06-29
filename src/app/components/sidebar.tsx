@@ -74,10 +74,16 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       active: pathname === "/dashboard",
     },
     {
-      href: "/signals",
-      label: "Signaux de trading",
+      href: "/dashboard/signals",
+      label: "Boîte de réception",
       icon: TrendingUp,
-      active: pathname.startsWith("/signals"),
+      active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+    },
+    {
+      href: "/dashboard/verification",
+      label: "Vérification",
+      icon: Shield,
+      active: pathname === "/dashboard/verification",
     },
   ]
 

@@ -14,6 +14,10 @@ interface OnboardingState {
   checklist: Record<string, boolean>
   progress: number
   nextStep: string | null
+  kycStatus?: string | null
+  kycFeedback?: string | null
+  brokerStatus?: string | null
+  brokerFeedback?: string | null
 }
 
 const STEPS = [
@@ -111,6 +115,41 @@ export default function OnboardingWizardPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Alertes de rejet de documents */}
+      {activeStepIndex === 1 && state.kycStatus === "REJECTED" && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive flex flex-col gap-1.5 animate-in slide-in-from-top-2 duration-300">
+          <span className="font-bold flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-destructive shrink-0 animate-pulse" />
+            Votre document d'identité a été refusé par l'administrateur
+          </span>
+          {state.kycFeedback && (
+            <p className="text-muted-foreground pl-3.5 text-xs italic">
+              Raison : &ldquo;{state.kycFeedback}&rdquo;
+            </p>
+          )}
+          <p className="text-xs pl-3.5 text-muted-foreground mt-0.5">
+            Veuillez soumettre à nouveau une photo parfaitement nette et lisible.
+          </p>
+        </div>
+      )}
+
+      {activeStepIndex === 2 && state.brokerStatus === "REJECTED" && (
+        <div className="rounded-xl border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive flex flex-col gap-1.5 animate-in slide-in-from-top-2 duration-300">
+          <span className="font-bold flex items-center gap-1.5">
+            <span className="size-2 rounded-full bg-destructive shrink-0 animate-pulse" />
+            Votre vérification de compte Broker a été refusée
+          </span>
+          {state.brokerFeedback && (
+            <p className="text-muted-foreground pl-3.5 text-xs italic">
+              Raison : &ldquo;{state.brokerFeedback}&rdquo;
+            </p>
+          )}
+          <p className="text-xs pl-3.5 text-muted-foreground mt-0.5">
+            Veuillez soumettre à nouveau votre preuve de connexion (numéro de compte ou vidéo).
+          </p>
+        </div>
+      )}
 
       <div className="pt-4">
         {activeStepIndex === 0 && <StepEmail onNext={fetchState} />}
