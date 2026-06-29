@@ -23,6 +23,7 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  CreditCard,
 } from "lucide-react"
 
 interface SidebarProps {
@@ -84,6 +85,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Vérification",
       icon: Shield,
       active: pathname === "/dashboard/verification",
+    },
+    {
+      href: "/dashboard/subscription",
+      label: "Mon abonnement",
+      icon: CreditCard,
+      active: pathname === "/dashboard/subscription",
     },
   ]
 

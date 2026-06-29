@@ -12,6 +12,7 @@ import {
   History,
   LogOut,
   Shield,
+  CreditCard,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -76,11 +77,10 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
         ]
       : []),
     {
-      href: "#logout",
-      label: "Sortie",
-      icon: LogOut,
-      active: false,
-      onClick: handleLogout,
+      href: "/dashboard/subscription",
+      label: "Abonnement",
+      icon: CreditCard,
+      active: pathname === "/dashboard/subscription",
     },
   ]
 

@@ -17,8 +17,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     redirect("/login")
   }
 
-  // Fetch the signal, favorite status and archive status in parallel
-  const [signal, favorite, archive] = await Promise.all([
+  // Fetch the signal, favorite/archive status and approved access requests in parallel
+  const [signal, favorite, archive, approvedRequests, userDb] = await Promise.all([
     prisma.signal.findUnique({
       where: { id },
       include: {
@@ -41,8 +41,19 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           userId: session.user.id
         }
       }
+    }),
+    prisma.accessRequest.findMany({
+      where: { userId: session.user.id, status: "APPROVED" },
+      select: { planId: true }
+    }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: { select: { name: true } } }
     })
   ])
+
+  const isUserAdmin = userDb?.role.name === "ADMIN" || userDb?.role.name === "SUPER_ADMIN"
+  const userPlanIds = new Set(approvedRequests.map((r) => r.planId))
 
   if (!signal || signal.deletedAt) {
     notFound()
@@ -162,16 +173,28 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           ) : null}
 
           {/* Target Audience Groups */}
-          <div className="border-t border-border/20 pt-4 space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground">Groupes ciblés</h4>
-            <div className="flex flex-wrap gap-2">
-              {signal.audience.map((a: any) => (
-                <Badge key={a.plan.name} variant="secondary" className="px-2 py-0.5">
-                  {a.plan.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
+          {(() => {
+            const visibleAudience = signal
+              ? isUserAdmin
+                ? signal.audience
+                : signal.audience.filter((a: any) => userPlanIds.has(a.planId))
+              : []
+
+            if (visibleAudience.length === 0) return null
+
+            return (
+              <div className="border-t border-border/20 pt-4 space-y-2">
+                <h4 className="text-xs font-semibold text-muted-foreground">Groupes ciblés</h4>
+                <div className="flex flex-wrap gap-2">
+                  {visibleAudience.map((a: any) => (
+                    <Badge key={a.plan.name} variant="secondary" className="px-2 py-0.5">
+                      {a.plan.name}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
         </CardContent>
       </Card>
     </div>
