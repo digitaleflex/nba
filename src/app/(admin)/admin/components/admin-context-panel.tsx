@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect } from "react"
-import { X, User, Shield, Check, Ban, FileText, Image as ImageIcon, Link2, Bell } from "lucide-react"
+import { useEffect, useState } from "react"
+import { X, User, Shield, Check, Ban, FileText, Image as ImageIcon, Link2, Bell, ExternalLink } from "lucide-react"
 import { Button, Badge, cn } from "@nba/design-system"
 
 interface AdminContextPanelProps {
@@ -21,6 +21,8 @@ export function AdminContextPanel({
   data,
   onAction,
 }: AdminContextPanelProps) {
+  const [zoomedImage, setZoomedImage] = useState<string | null>(null)
+
   // Verrouiller le scroll de la page quand ouvert
   useEffect(() => {
     if (isOpen) {
@@ -202,7 +204,8 @@ export function AdminContextPanel({
                             <img
                               src={file.url}
                               alt={file.label || "KYC Fichier"}
-                              className="w-full h-auto max-h-48 object-contain"
+                              className="w-full h-auto max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
+                              onClick={() => setZoomedImage(file.url)}
                             />
                           )}
                         </div>
@@ -371,7 +374,12 @@ export function AdminContextPanel({
                 <div className="space-y-2">
                   <span className="text-[10px] text-muted-foreground uppercase font-semibold">Graphique attaché</span>
                   <div className="border rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-                    <img src={data.imageUrl} alt="Signal graphique" className="w-full h-auto max-h-56 object-contain" />
+                    <img 
+                      src={data.imageUrl} 
+                      alt="Signal graphique" 
+                      className="w-full h-auto max-h-56 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" 
+                      onClick={() => setZoomedImage(data.imageUrl)}
+                    />
                   </div>
                 </div>
               )}
@@ -379,6 +387,39 @@ export function AdminContextPanel({
           )}
         </div>
       </div>
+
+      {/* Visionneuse plein écran de photo zoomée */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200 select-none"
+          onClick={() => setZoomedImage(null)}
+        >
+          <div className="absolute top-4 right-4 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
+            <a
+              href={zoomedImage}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-9 px-3 rounded-xl bg-neutral-900/80 border border-neutral-800 text-white flex items-center gap-1.5 text-xs font-bold hover:bg-neutral-850 transition-colors cursor-pointer"
+            >
+              <ExternalLink className="size-4" />
+              Ouvrir dans un onglet
+            </a>
+            <button
+              onClick={() => setZoomedImage(null)}
+              className="size-9 rounded-xl bg-neutral-900/80 border border-neutral-800 text-white flex items-center justify-center hover:bg-neutral-850 transition-colors cursor-pointer"
+            >
+              <X className="size-5" />
+            </button>
+          </div>
+          <div className="max-w-4xl max-h-[85vh] p-2" onClick={(e) => e.stopPropagation()}>
+            <img 
+              src={zoomedImage} 
+              alt="Document KYC Zoom" 
+              className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl border border-neutral-800 animate-in zoom-in-95 duration-200" 
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
