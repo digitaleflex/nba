@@ -231,7 +231,6 @@ model KycDocument {
   status         VerificationStatus @default(PENDING)
   frontFilePath  String             @map("front_file_path")
   backFilePath   String?            @map("back_file_path")
-  selfieFilePath String?            @map("selfie_file_path")
   reviewedBy     String?            @map("reviewed_by") @db.Uuid
   reviewNotes    String?            @map("review_notes")
   reviewedAt     DateTime?          @map("reviewed_at")

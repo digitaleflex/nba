@@ -21,7 +21,6 @@ export async function POST(req: NextRequest) {
   const documentType = form.get("documentType") as string
   const front = form.get("front") as File
   const back = form.get("back") as File | null
-  const selfie = form.get("selfie") as File | null
 
   if (!documentType || !front) {
     return NextResponse.json({ error: "Type de document et fichier requis" }, { status: 400 })
@@ -30,13 +29,10 @@ export async function POST(req: NextRequest) {
   const storage = getStorage()
 
   // Execute uploads in parallel to optimize response time and reduce blocking overhead
-  const [frontResult, backResult, selfieResult] = await Promise.all([
+  const [frontResult, backResult] = await Promise.all([
     storage.upload(front, "kyc"),
     back ? storage.upload(back, "kyc") : Promise.resolve(null),
-    selfie ? storage.upload(selfie, "kyc") : Promise.resolve(null),
   ])
-
-  const selfieFilePath = selfieResult?.path ?? null
 
   await prisma.kycDocument.create({
     data: {
@@ -44,7 +40,6 @@ export async function POST(req: NextRequest) {
       documentType: documentType as any,
       frontFilePath: frontResult.path,
       backFilePath: backResult?.path ?? null,
-      selfieFilePath,
       status: "PENDING",
     },
   })

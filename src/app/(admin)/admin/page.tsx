@@ -959,7 +959,7 @@ function AdminConsoleContent() {
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">Dossiers KYC</h1>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Examinez et validez les pièces d'identité et les selfies des abonnés.
+                  Examinez et validez les pièces d'identité des abonnés.
                 </p>
               </div>
             </div>

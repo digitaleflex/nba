@@ -45,20 +45,51 @@ export async function GET(
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
   const hasPermission = (perm: string) => user.role.permissions.some((rp: any) => rp.permission.name === perm)
 
+  let actualFilePath = filePath
+
   if (category === "kyc") {
-    if (!isAdmin && !hasPermission("kyc.review")) {
-      const ownsDoc = await prisma.kycDocument.findFirst({
-        where: {
-          userId: session.user.id,
-          OR: [
-            { frontFilePath: filePath },
-            { backFilePath: filePath },
-            { selfieFilePath: filePath }
-          ]
-        }
+    // Si l'URL a 3 segments : kyc/docId/document_recto ou kyc/docId/document_verso
+    if (pathSegments.length === 3) {
+      const docId = pathSegments[1]
+      const fileType = pathSegments[2]
+
+      const doc = await prisma.kycDocument.findUnique({
+        where: { id: docId }
       })
-      if (!ownsDoc) {
+
+      if (!doc) {
+        return new NextResponse("Document non trouvé", { status: 404 })
+      }
+
+      // Sécurité : Seul le propriétaire ou les admins peuvent visualiser
+      if (!isAdmin && !hasPermission("kyc.review") && doc.userId !== session.user.id) {
         return new NextResponse("Accès refusé", { status: 403 })
+      }
+
+      if (fileType === "document_recto") {
+        actualFilePath = doc.frontFilePath
+      } else if (fileType === "document_verso") {
+        if (!doc.backFilePath) {
+          return new NextResponse("Fichier non trouvé", { status: 404 })
+        }
+        actualFilePath = doc.backFilePath
+      } else {
+        return new NextResponse("Type de fichier invalide", { status: 400 })
+      }
+    } else {
+      if (!isAdmin && !hasPermission("kyc.review")) {
+        const ownsDoc = await prisma.kycDocument.findFirst({
+          where: {
+            userId: session.user.id,
+            OR: [
+              { frontFilePath: filePath },
+              { backFilePath: filePath }
+            ]
+          }
+        })
+        if (!ownsDoc) {
+          return new NextResponse("Accès refusé", { status: 403 })
+        }
       }
     }
   } else if (category === "broker") {
@@ -101,21 +132,21 @@ export async function GET(
   }
 
   const storage = getStorage()
-  const exists = await storage.exists(filePath)
+  const exists = await storage.exists(actualFilePath)
   if (!exists) {
     return new NextResponse("Fichier non trouvé", { status: 404 })
   }
 
-  const absolutePath = storage.getUrl(filePath)
+  const absolutePath = storage.getUrl(actualFilePath)
   const fileStat = await stat(absolutePath)
   
   let contentType = "application/octet-stream"
-  if (filePath.endsWith(".jpg") || filePath.endsWith(".jpeg")) contentType = "image/jpeg"
-  else if (filePath.endsWith(".png")) contentType = "image/png"
-  else if (filePath.endsWith(".webp")) contentType = "image/webp"
-  else if (filePath.endsWith(".pdf")) contentType = "application/pdf"
-  else if (filePath.endsWith(".mp4")) contentType = "video/mp4"
-  else if (filePath.endsWith(".webm")) contentType = "video/webm"
+  if (actualFilePath.endsWith(".jpg") || actualFilePath.endsWith(".jpeg")) contentType = "image/jpeg"
+  else if (actualFilePath.endsWith(".png")) contentType = "image/png"
+  else if (actualFilePath.endsWith(".webp")) contentType = "image/webp"
+  else if (actualFilePath.endsWith(".pdf")) contentType = "application/pdf"
+  else if (actualFilePath.endsWith(".mp4")) contentType = "video/mp4"
+  else if (actualFilePath.endsWith(".webm")) contentType = "video/webm"
 
   const fileStream = createReadStream(absolutePath)
   

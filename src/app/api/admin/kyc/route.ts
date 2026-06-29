@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
       const files = [
         { label: "Recto Identité", url: `/api/files/kyc/${doc.id}/document_recto` },
         { label: "Verso Identité", url: `/api/files/kyc/${doc.id}/document_verso` },
-        { label: "Selfie", url: `/api/files/kyc/${doc.id}/selfie` },
-      ]
+      ].filter(Boolean) // filtre les valeurs optionnelles éventuelles
       return {
         ...doc,
         files,
