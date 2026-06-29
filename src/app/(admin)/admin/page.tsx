@@ -9,8 +9,25 @@ import {
   AlertTriangle, Server, ArrowUpRight, Image as ImageIcon
 } from "lucide-react"
 import { Button, Card, CardContent, Badge, Tabs, TabsList, TabsTrigger, TabsContent, Input, cn } from "@nba/design-system"
-import { SignalEditor } from "./components/signal-editor"
-import { AdminContextPanel } from "./components/admin-context-panel"
+import dynamic from "next/dynamic"
+
+const SignalEditor = dynamic(
+  () => import("./components/signal-editor").then((mod) => mod.SignalEditor),
+  {
+    loading: () => (
+      <div className="py-12 flex justify-center items-center">
+        <Loader2 className="animate-spin text-primary size-6" />
+      </div>
+    ),
+    ssr: false,
+  }
+)
+
+const AdminContextPanel = dynamic(
+  () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
+  { ssr: false }
+)
+
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 
 interface AccessRequest {
