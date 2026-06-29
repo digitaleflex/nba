@@ -11,9 +11,13 @@ import {
   Image as ImageIcon,
   Loader2,
   Info,
+  SlidersHorizontal,
+  Star,
+  Archive,
 } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import NextImage from "next/image"
+import { MobileFilterSheet } from "./mobile-filter-sheet"
 
 interface SignalData {
   id: string
@@ -26,6 +30,8 @@ interface SignalData {
   audience: string[]
   read: boolean
   viewCount: number
+  favorited: boolean
+  archived: boolean
 }
 
 interface Pagination {
@@ -48,16 +54,17 @@ interface ApiResponse {
   summary: Summary
 }
 
-type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv"
+type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv" | "favorite" | "archive"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Tous" },
   { key: "unread", label: "Non lus" },
+  { key: "favorite", label: "Favoris ⭐" },
+  { key: "archive", label: "Archives 📂" },
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Cette semaine" },
   { key: "forex", label: "Forex" },
   { key: "deriv", label: "Deriv" },
-  { key: "forex+deriv", label: "Forex + Deriv" },
 ]
 
 function formatRelativeDate(dateStr: string): string {
@@ -105,12 +112,18 @@ function SignalCard({ signal }: { signal: SignalData }) {
           </div>
         )}
         <CardContent className="p-4 sm:p-5 space-y-3">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <Clock className="size-3.5 shrink-0" />
-            <span>{formatRelativeDate(signal.publishedAt || signal.createdAt)}</span>
-            <span aria-hidden="true">•</span>
-            <span>{formatTime(signal.publishedAt || signal.createdAt)}</span>
-            {!signal.read && <span className="size-1.5 rounded-full bg-primary shrink-0" aria-hidden="true" />}
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="flex items-center gap-2">
+              <Clock className="size-3.5 shrink-0" />
+              <span>{formatRelativeDate(signal.publishedAt || signal.createdAt)}</span>
+              <span aria-hidden="true">•</span>
+              <span>{formatTime(signal.publishedAt || signal.createdAt)}</span>
+              {!signal.read && <span className="size-1.5 rounded-full bg-primary shrink-0" aria-hidden="true" />}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {signal.favorited && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
+              {signal.archived && <Archive className="size-3.5 text-primary" />}
+            </div>
           </div>
 
           <div
@@ -177,6 +190,7 @@ export function SignalsView() {
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
@@ -287,10 +301,26 @@ export function SignalsView() {
             </p>
           )}
         </div>
-        <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
-          <RefreshCw className={`size-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
-          Actualiser
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setFilterSheetOpen(true)}
+            className="sm:hidden"
+          >
+            <SlidersHorizontal className="size-4 mr-1.5" />
+            Filtres
+            {activeFilter !== "all" && (
+              <span className="ml-1.5 size-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                1
+              </span>
+            )}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={loading}>
+            <RefreshCw className={`size-4 mr-1.5 ${loading ? "animate-spin" : ""}`} />
+            Actualiser
+          </Button>
+        </div>
       </div>
 
       {summary && (summary.new > 0 || summary.unread > 0) && (
@@ -416,6 +446,12 @@ export function SignalsView() {
           )}
         </div>
       )}
+      <MobileFilterSheet
+        open={filterSheetOpen}
+        onOpenChange={setFilterSheetOpen}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+      />
     </div>
   )
 }

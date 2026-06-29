@@ -2,7 +2,7 @@ import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
 
-type SignalFilter = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv"
+type SignalFilter = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv" | "favorite" | "archive"
 
 interface GetSignalsParams {
   search?: string
@@ -22,6 +22,8 @@ interface SignalListItem {
   audience: string[]
   read: boolean
   viewCount: number
+  favorited: boolean
+  archived: boolean
 }
 
 interface GetSignalsResponse {
@@ -104,6 +106,15 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     where.publishedAt = { gte: weekAgo }
   } else if (filter === "unread") {
     where.reads = { none: { userId: session.user.id } }
+  } else if (filter === "favorite") {
+    where.favorites = { some: { userId: session.user.id } }
+  }
+
+  // Exclure les archives par défaut, sauf si on demande explicitement l'onglet archive
+  if (filter === "archive") {
+    where.archives = { some: { userId: session.user.id } }
+  } else {
+    where.archives = { none: { userId: session.user.id } }
   }
 
   let audienceFilter: Record<string, unknown> | undefined
@@ -154,10 +165,20 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
 
   const signalIds = signals.map((s) => s.id)
 
-  const reads = await prisma.signalRead.findMany({
-    where: { signalId: { in: signalIds }, userId: session.user.id },
-  })
+  const [reads, favorites, archives] = await Promise.all([
+    prisma.signalRead.findMany({
+      where: { signalId: { in: signalIds }, userId: session.user.id },
+    }),
+    prisma.signalFavorite.findMany({
+      where: { signalId: { in: signalIds }, userId: session.user.id },
+    }),
+    prisma.signalArchive.findMany({
+      where: { signalId: { in: signalIds }, userId: session.user.id },
+    }),
+  ])
   const readMap = new Map(reads.map((r) => [r.signalId, r]))
+  const favoriteSet = new Set(favorites.map((f) => f.signalId))
+  const archiveSet = new Set(archives.map((a) => a.signalId))
 
   const allAccessibleWhere: Record<string, unknown> = { deletedAt: null }
   if (!isAdmin) {
@@ -189,6 +210,8 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     audience: sig.audience.map((a) => a.plan.name),
     read: readMap.has(sig.id),
     viewCount: readMap.get(sig.id)?.viewCount ?? 0,
+    favorited: favoriteSet.has(sig.id),
+    archived: archiveSet.has(sig.id),
   }))
 
   const lastSignal = signals[0]

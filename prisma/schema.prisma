@@ -25,7 +25,7 @@ model User {
   country           String?
   language          String            @default("fr")
   timezone          String            @default("Europe/Paris")
-  onboardingStatus  OnboardingStatus  @default(PENDING_EMAIL) @map("onboarding_status")
+  onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
   isActive          Boolean           @default(true) @map("is_active")
   metadata          Json?             @db.JsonB
   deletedAt         DateTime?         @map("deleted_at")
@@ -47,6 +47,8 @@ model User {
   settings            Setting[]
   devices             Device[]
   deviceVerifications DeviceVerification[]
+  signalFavorites     SignalFavorite[]
+  signalArchives      SignalArchive[]
 
   @@index([roleId])
   @@index([isActive])
@@ -285,6 +287,8 @@ model Signal {
   audience SignalAudience[]
   versions SignalVersion[]
   reads    SignalRead[]
+  favorites SignalFavorite[]
+  archives  SignalArchive[]
 
   @@index([status])
   @@index([createdBy])
@@ -396,12 +400,18 @@ enum VerificationStatus {
 }
 
 enum OnboardingStatus {
+  REGISTERED
+  PAYMENT_PENDING
+  PAYMENT_CONFIRMED
+  KYC_PENDING
+  KYC_APPROVED
+  BROKER_PENDING
+  BROKER_APPROVED
+  ACTIVE
+  SUSPENDED
   PENDING_EMAIL
   PROFILE_INCOMPLETE
-  KYC_PENDING
-  BROKER_PENDING
   REVIEW_PENDING
-  ACTIVE
 }
 
 enum AccessStatus {
@@ -473,4 +483,34 @@ model SignalTemplate {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("signal_templates")
+}
+
+model SignalFavorite {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signal Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([signalId, userId])
+  @@index([signalId])
+  @@index([userId])
+  @@map("signal_favorites")
+}
+
+model SignalArchive {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signal Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@unique([signalId, userId])
+  @@index([signalId])
+  @@index([userId])
+  @@map("signal_archives")
 }

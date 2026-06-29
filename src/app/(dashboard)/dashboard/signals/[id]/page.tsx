@@ -7,6 +7,7 @@ import { Calendar, User, ChevronLeft } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import Link from "next/link"
 import Image from "next/image"
+import { SignalActions } from "./components/signal-actions"
 
 export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -16,14 +17,32 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     redirect("/login")
   }
 
-  // Fetch the signal
-  const signal = await prisma.signal.findUnique({
-    where: { id },
-    include: {
-      creator: { select: { name: true } },
-      audience: { include: { plan: true } }
-    }
-  })
+  // Fetch the signal, favorite status and archive status in parallel
+  const [signal, favorite, archive] = await Promise.all([
+    prisma.signal.findUnique({
+      where: { id },
+      include: {
+        creator: { select: { name: true } },
+        audience: { include: { plan: true } }
+      }
+    }),
+    prisma.signalFavorite.findUnique({
+      where: {
+        signalId_userId: {
+          signalId: id,
+          userId: session.user.id
+        }
+      }
+    }),
+    prisma.signalArchive.findUnique({
+      where: {
+        signalId_userId: {
+          signalId: id,
+          userId: session.user.id
+        }
+      }
+    })
+  ])
 
   if (!signal || signal.deletedAt) {
     notFound()
@@ -98,6 +117,13 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           <div 
             className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words"
             dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
+          />
+
+          {/* Interactive Actions for Favorite, Archive, Share, Print */}
+          <SignalActions 
+            signalId={signal.id} 
+            initialFavorited={!!favorite} 
+            initialArchived={!!archive} 
           />
 
           {/* Graphics Gallery */}
