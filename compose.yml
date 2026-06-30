@@ -3,8 +3,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    networks:
+      - default
+      - proxy
     env_file: .env
     depends_on:
       db:
@@ -14,6 +15,21 @@ services:
     environment:
       - DATABASE_URL=postgresql://nba:nba_secret@db:5432/nba_dev?schema=public
       - REDIS_URL=redis://redis:6379
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
+      - "traefik.http.routers.nba-app.entrypoints=websecure"
+      - "traefik.http.routers.nba-app.tls=true"
+      - "traefik.http.routers.nba-app.tls.certresolver=myresolver"
+      - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
 
   worker:
     build:
@@ -29,6 +45,14 @@ services:
     environment:
       - DATABASE_URL=postgresql://nba:nba_secret@db:5432/nba_dev?schema=public
       - REDIS_URL=redis://redis:6379
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
 
   db:
     image: postgres:17-alpine
@@ -45,6 +69,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
   redis:
     image: redis:7-alpine
@@ -57,7 +89,20 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 128M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
 
 volumes:
   pgdata:
   redisdata:
+
+networks:
+  default:
+  proxy:
+    external: true
