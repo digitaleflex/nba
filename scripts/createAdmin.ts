@@ -6,10 +6,17 @@ import { prisma } from "../src/lib/db"
 
 async function main() {
   const email = process.argv.find((a) => a.startsWith("--email="))?.split("=")[1]
+    || process.env.ADMIN_EMAIL
   const password = process.argv.find((a) => a.startsWith("--password="))?.split("=")[1]
+    || process.env.ADMIN_PASSWORD
+  const name = process.argv.find((a) => a.startsWith("--name="))?.split("=")[1]
+    || process.env.ADMIN_NAME
+    || email?.split("@")[0]
+    || "admin"
 
   if (!email || !password) {
     console.error("Usage: npx tsx scripts/createAdmin.ts --email=admin@example.com --password=securepass")
+    console.error("Or set ADMIN_EMAIL and ADMIN_PASSWORD environment variables.")
     process.exit(1)
   }
 
@@ -35,7 +42,7 @@ async function main() {
 
   try {
     await auth.api.signUpEmail({
-      body: { email, password, name: email.split("@")[0] },
+      body: { email, password, name },
     })
   } catch (error: any) {
     console.error("Erreur création utilisateur:", error.message || error)

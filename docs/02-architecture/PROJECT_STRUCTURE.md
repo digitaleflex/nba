@@ -97,7 +97,7 @@ nba/
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── postcss.config.js
-├── docker-compose.yml
+├── compose.yml
 ├── Dockerfile
 ├── package.json
 ├── pnpm-lock.yaml
@@ -1205,7 +1205,7 @@ docker/
 │       └── nba.conf
 │
 ├── Dockerfile              # Multi-stage build
-└── docker-compose.yml      # Root compose file
+└── compose.yml      # Root compose file
 ```
 
 ### 12.1 Docker Rules
@@ -1428,7 +1428,7 @@ nba/
 ├── tsconfig.json
 ├── tailwind.config.ts
 ├── postcss.config.js
-├── docker-compose.yml
+├── compose.yml
 ├── Dockerfile
 ├── package.json
 ├── README.md

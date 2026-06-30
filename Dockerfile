@@ -33,6 +33,9 @@ ENV HOSTNAME "0.0.0.0"
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
+# Install pg_isready for database readiness check in entrypoint
+RUN apk add --no-cache postgresql-client
+
 # Create a non-root system user for security hardening
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
@@ -44,18 +47,33 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 
-USER nextjs
+# Copy entrypoint script
+COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
+RUN chmod +x ./docker-entrypoint.sh
+
+# Copy seed and createAdmin scripts (needed at runtime)
+COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+
+# Copy pnpm-lock and package.json for pnpm install at runtime
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder --chown=nextjs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=builder --chown=nextjs:nodejs /app/packages/design-system/package.json ./packages/design-system/package.json
+
+USER root
+
 EXPOSE 3000
 
-# Next.js standalone server entry point
-CMD ["node", "server.js"]
+# Entrypoint runs migrations + seed + starts app
+ENTRYPOINT ["./docker-entrypoint.sh"]
 
 # Step 4: Production runner for BullMQ Queue Worker
 FROM base AS worker
 ENV NODE_ENV production
 
-# Install tsx globally to support running workers in TypeScript directly
+# Install tsx globally + pg_isready for entrypoint
 RUN pnpm add -g tsx
+RUN apk add --no-cache postgresql-client
 
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules
@@ -64,4 +82,8 @@ COPY . .
 # Generate Prisma client for worker access
 RUN pnpm prisma generate
 
-CMD ["tsx", "workers/queue.ts"]
+# Copy entrypoint script
+COPY docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
+RUN chmod +x ./docker-entrypoint-worker.sh
+
+ENTRYPOINT ["./docker-entrypoint-worker.sh"]

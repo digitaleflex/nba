@@ -130,7 +130,7 @@ The application is now available at `http://localhost:3000`.
 ## 4.1 Docker Compose Services
 
 ```yaml
-# docker-compose.yml
+# compose.yml
 services:
   nba-app:
     build:

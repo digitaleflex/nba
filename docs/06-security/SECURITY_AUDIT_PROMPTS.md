@@ -129,7 +129,7 @@ Vérifie :
 - CSRF — est-il configuré dans Better Auth ?
 - Trusted origins — sont-elles correctement configurées ?
 
-Fichiers clés : next.config.ts, docker-compose.yml,
+Fichiers clés : next.config.ts, compose.yml,
 .env.example, src/lib/auth.ts, Dockerfile, compose.yml
 ```
 

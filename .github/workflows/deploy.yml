@@ -1,0 +1,100 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip tests before deploy"
+        required: false
+        default: "false"
+        type: boolean
+
+env:
+  APP_DIR: ~/nba
+
+jobs:
+  test:
+    name: Tests
+    if: github.event.inputs.skip_tests != 'true'
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm prisma generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Tests
+        run: pnpm test
+
+  deploy:
+    name: Deploy
+    needs: [test]
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped')
+    runs-on: self-hosted
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Create deploy directory if not exists
+        run: mkdir -p ${{ env.APP_DIR }}
+
+      - name: Sync files to deploy directory
+        run: rsync -av --delete --exclude='.git' --exclude='node_modules' --exclude='.next' --exclude='storage' . ${{ env.APP_DIR }}/
+
+      - name: Copy environment file
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          if [ ! -f .env ]; then
+            echo "ERROR: .env file not found in ${{ env.APP_DIR }}"
+            exit 1
+          fi
+
+      - name: Build and restart containers
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          docker compose build --no-cache
+          docker compose up -d --remove-orphans
+
+      - name: Wait for app to be healthy
+        working-directory: ${{ env.APP_DIR }}
+        run: |
+          echo "Waiting for app to start..."
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:3000/api/public/health > /dev/null 2>&1; then
+              echo "App is healthy!"
+              exit 0
+            fi
+            echo "Attempt $i/30 - waiting 2s..."
+            sleep 2
+          done
+          echo "App failed to start within 60s"
+          docker compose logs --tail=50 app
+          exit 1
+
+      - name: Show container status
+        working-directory: ${{ env.APP_DIR }}
+        run: docker compose ps
+
+      - name: Cleanup old images
+        run: docker image prune -f --filter "until=72h"

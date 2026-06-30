@@ -15,6 +15,9 @@ services:
     environment:
       - DATABASE_URL=postgresql://nba:nba_secret@db:5432/nba_dev?schema=public
       - REDIS_URL=redis://redis:6379
+      - ADMIN_EMAIL=admin@signauxx.com
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme123}
+      - ADMIN_NAME=${ADMIN_NAME:-Admin}
     deploy:
       resources:
         limits:
