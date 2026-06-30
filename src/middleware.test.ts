@@ -53,7 +53,7 @@ describe("middleware", () => {
       const req = createMockRequest("/login", "session=valid")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } } }),
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "ACTIVE" }),
       } as any)
 
       const response = await middleware(req)
@@ -79,7 +79,7 @@ describe("middleware", () => {
       const req = createMockRequest("/")
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
-        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } } }),
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "ACTIVE" }),
       } as any)
 
       const response = await middleware(req)
@@ -104,15 +104,10 @@ describe("middleware", () => {
 
     it("allows authenticated users with ACTIVE onboarding to access /dashboard", async () => {
       const req = createMockRequest("/dashboard", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ status: "ACTIVE" }),
-        } as any)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "ACTIVE" }),
+      } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(200)
@@ -121,15 +116,10 @@ describe("middleware", () => {
 
     it("redirects non-ACTIVE users away from /dashboard to /onboarding", async () => {
       const req = createMockRequest("/dashboard", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ status: "KYC_PENDING" }),
-        } as any)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "KYC_PENDING" }),
+      } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(307)
@@ -138,15 +128,10 @@ describe("middleware", () => {
 
     it("redirects ACTIVE users from /onboarding to /dashboard", async () => {
       const req = createMockRequest("/onboarding", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ status: "ACTIVE" }),
-        } as any)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "ACTIVE" }),
+      } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(307)
@@ -155,15 +140,10 @@ describe("middleware", () => {
 
     it("allows non-ACTIVE users to access /onboarding", async () => {
       const req = createMockRequest("/onboarding", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ status: "PENDING_EMAIL" }),
-        } as any)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "PENDING_EMAIL" }),
+      } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(200)
@@ -172,15 +152,10 @@ describe("middleware", () => {
 
     it("allows authenticated ADMIN users to access /admin", async () => {
       const req = createMockRequest("/admin", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ user: { id: "u1", emailVerified: true } }),
-        } as any)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ status: "ACTIVE" }),
-        } as any)
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ session: { user: { id: "u1", emailVerified: true } }, onboardingStatus: "ACTIVE" }),
+      } as any)
 
       const response = await middleware(req)
       expect(response.status).toBe(200)
@@ -223,16 +198,11 @@ describe("middleware", () => {
 
     it("handles fetch failure on onboarding state check and redirects", async () => {
       const req = createMockRequest("/dashboard", "session=valid")
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ session: { user: { id: "u1" } } }),
-        } as any)
-        .mockRejectedValueOnce(new Error("Network error"))
+      vi.mocked(fetch).mockRejectedValue(new Error("Network error"))
 
       const response = await middleware(req)
       expect(response.status).toBe(307)
-      expect(response.headers.get("location")).toBe("https://app.example.com/onboarding")
+      expect(response.headers.get("location")).toBe("https://app.example.com/login?redirect=%2Fdashboard")
     })
 
     it("returns next for unknown paths", async () => {

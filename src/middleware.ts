@@ -77,6 +77,14 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(new URL("/dashboard/verification", request.url))
     }
 
+    // Prevent access to dashboard if not active, redirecting to onboarding
+    if (
+      pathname === "/dashboard" &&
+      onboardingStatus !== "ACTIVE"
+    ) {
+      return NextResponse.redirect(new URL("/onboarding", request.url))
+    }
+
     // Prevent access to onboarding if already active, redirecting to dashboard
     if (
       pathname.startsWith("/onboarding") &&
