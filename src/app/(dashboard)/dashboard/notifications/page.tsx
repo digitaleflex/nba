@@ -82,7 +82,7 @@ export default function NotificationsPage() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p role="alert" className="text-sm text-muted-foreground">{error}</p>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>
@@ -91,7 +91,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
@@ -126,14 +126,23 @@ export default function NotificationsPage() {
           {notifications.map((n) => (
             <Card
               key={n.id}
+              role="button"
+              tabIndex={0}
               className={`relative overflow-hidden transition-colors cursor-pointer hover:bg-muted/30 ${
                 !n.readAt ? "border-primary/20 bg-primary/[0.02]" : ""
               }`}
               onClick={() => !n.readAt && markAsRead(n.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  if (!n.readAt) markAsRead(n.id)
+                }
+              }}
+              aria-label={`${n.title} - ${!n.readAt ? "Non lue" : "Lue"}`}
             >
               <CardContent className="p-4 flex items-start gap-3">
                 {!n.readAt && (
-                  <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                  <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" aria-label="Non lue" />
                 )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between gap-2">
