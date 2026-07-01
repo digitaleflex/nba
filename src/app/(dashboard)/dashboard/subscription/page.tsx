@@ -71,7 +71,7 @@ export default function SubscriptionPage() {
   const rejected = accessRequests.filter((r) => r.status === "REJECTED")
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
         <p className="text-sm text-muted-foreground">Gérez vos accès aux groupes de diffusion</p>
