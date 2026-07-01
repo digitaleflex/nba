@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
                 />
               </div>
               {error && (
-                <p className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
+                <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
                   <span className="size-1.5 rounded-full bg-destructive shrink-0" />
                   {error}
                 </p>

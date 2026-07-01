@@ -361,7 +361,7 @@ export function StepKyc({ onNext }: StepKycProps) {
             {/* Selfie supprimé pour validation rapide */}
 
             {error && (
-              <p className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-200">
+              <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 <span className="size-1.5 rounded-full bg-destructive shrink-0" />
                 {error}
               </p>
