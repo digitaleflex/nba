@@ -378,6 +378,10 @@ export function StepKyc({ onNext }: StepKycProps) {
                   <div
                     className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
                     style={{ width: `${uploadProgress}%` }}
+                    role="progressbar"
+                    aria-valuenow={uploadProgress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
                   />
                 </div>
               </div>
