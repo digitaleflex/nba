@@ -571,6 +571,7 @@ function AdminConsoleContent() {
 
   // Action review (requests onboarding)
   async function handleReview(id: string, status: string) {
+    if (!confirm(status === "APPROVED" ? "Approuver cette demande d'accès ?" : "Rejeter cette demande d'accès ?")) return
     await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
