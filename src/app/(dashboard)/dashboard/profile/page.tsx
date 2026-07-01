@@ -231,7 +231,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
         <p className="text-sm text-muted-foreground">Gérez vos informations personnelles et la sécurité de votre compte</p>
@@ -255,10 +255,11 @@ export default function ProfilePage() {
 
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-medium">Nom complet</label>
+              <label htmlFor="name" className="text-sm font-medium">Nom complet</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                 <Input
+                  id="name"
                   className="pl-9"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
@@ -268,10 +269,10 @@ export default function ProfilePage() {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Email</label>
+              <label htmlFor="email-display" className="text-sm font-medium">Email</label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input className="pl-9" value={profile?.email || ""} disabled />
+                <Input id="email-display" className="pl-9" value={profile?.email || ""} disabled />
               </div>
               <p className="text-xs text-muted-foreground">
                 {profile?.emailVerified ? "Email vérifié" : "Email non vérifié"}
@@ -280,10 +281,11 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Téléphone</label>
+                <label htmlFor="phone" className="text-sm font-medium">Téléphone</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="phone"
                     className="pl-9"
                     value={form.phone}
                     onChange={(e) => setForm({ ...form, phone: e.target.value })}
@@ -293,10 +295,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">WhatsApp</label>
+                <label htmlFor="whatsapp" className="text-sm font-medium">WhatsApp</label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="whatsapp"
                     className="pl-9"
                     value={form.whatsapp}
                     onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
@@ -308,10 +311,11 @@ export default function ProfilePage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1.5">
+                <label htmlFor="country" className="text-sm font-medium flex items-center gap-1.5">
                   <MapPin className="size-3.5" /> Pays
                 </label>
                 <select
+                  id="country"
                   className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={form.country}
                   onChange={(e) => setForm({ ...form, country: e.target.value })}
@@ -324,10 +328,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1.5">
+                <label htmlFor="language" className="text-sm font-medium flex items-center gap-1.5">
                   <Languages className="size-3.5" /> Langue
                 </label>
                 <select
+                  id="language"
                   className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={form.language}
                   onChange={(e) => setForm({ ...form, language: e.target.value })}
@@ -339,10 +344,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium flex items-center gap-1.5">
+                <label htmlFor="timezone" className="text-sm font-medium flex items-center gap-1.5">
                   <Clock className="size-3.5" /> Fuseau horaire
                 </label>
                 <select
+                  id="timezone"
                   className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                   value={form.timezone}
                   onChange={(e) => setForm({ ...form, timezone: e.target.value })}
@@ -378,6 +384,7 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setShowPasswordSection(!showPasswordSection)}
             className="w-full flex items-center justify-between text-left"
+            aria-expanded={showPasswordSection}
           >
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-xl bg-warning/10">
@@ -394,10 +401,11 @@ export default function ProfilePage() {
           {showPasswordSection && (
             <form onSubmit={handleChangePassword} className="mt-6 space-y-4 border-t border-border/40 pt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Mot de passe actuel</label>
+                <label htmlFor="current-password" className="text-sm font-medium">Mot de passe actuel</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="current-password"
                     type={showPasswords.current ? "text" : "password"}
                     className="pl-9 pr-10"
                     value={passwordForm.current}
@@ -408,6 +416,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPasswords.current ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPasswords.current ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -415,10 +424,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Nouveau mot de passe</label>
+                <label htmlFor="new-password" className="text-sm font-medium">Nouveau mot de passe</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="new-password"
                     type={showPasswords.new ? "text" : "password"}
                     className="pl-9 pr-10"
                     value={passwordForm.new}
@@ -430,6 +440,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPasswords.new ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -438,10 +449,11 @@ export default function ProfilePage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Confirmer le mot de passe</label>
+                <label htmlFor="confirm-password" className="text-sm font-medium">Confirmer le mot de passe</label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="confirm-password"
                     type={showPasswords.confirm ? "text" : "password"}
                     className="pl-9 pr-10"
                     value={passwordForm.confirm}
@@ -452,6 +464,7 @@ export default function ProfilePage() {
                     type="button"
                     onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    aria-label={showPasswords.confirm ? "Masquer le mot de passe" : "Afficher le mot de passe"}
                   >
                     {showPasswords.confirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
@@ -482,6 +495,7 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setShowEmailSection(!showEmailSection)}
             className="w-full flex items-center justify-between text-left"
+            aria-expanded={showEmailSection}
           >
             <div className="flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
@@ -498,10 +512,11 @@ export default function ProfilePage() {
           {showEmailSection && (
             <form onSubmit={handleChangeEmail} className="mt-6 space-y-4 border-t border-border/40 pt-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium">Nouvel email</label>
+                <label htmlFor="new-email" className="text-sm font-medium">Nouvel email</label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                   <Input
+                    id="new-email"
                     type="email"
                     className="pl-9"
                     value={emailForm.newEmail}
@@ -569,8 +584,9 @@ export default function ProfilePage() {
             </p>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium">Entrez votre mot de passe pour confirmer</label>
+              <label htmlFor="delete-password" className="text-sm font-medium">Entrez votre mot de passe pour confirmer</label>
               <Input
+                id="delete-password"
                 type="password"
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
