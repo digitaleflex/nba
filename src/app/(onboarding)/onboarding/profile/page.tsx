@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button, Card, CardContent } from "@nba/design-system"
+import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@nba/design-system"
 import { User, ArrowRight } from "lucide-react"
 
 const COUNTRIES = [
@@ -63,43 +63,44 @@ export default function ProfilePage() {
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Pays</label>
-              <select
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-                required
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              >
-                <option value="">Sélectionnez votre pays</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+              <Select value={country} onValueChange={setCountry}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Sélectionnez votre pays" />
+                </SelectTrigger>
+                <SelectContent>
+                  {COUNTRIES.map((c) => (
+                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Langue</label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              >
-                {LANGUAGES.map((l) => (
-                  <option key={l.value} value={l.value}>{l.label}</option>
-                ))}
-              </select>
+              <Select value={language} onValueChange={setLanguage}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Sélectionnez votre langue" />
+                </SelectTrigger>
+                <SelectContent>
+                  {LANGUAGES.map((l) => (
+                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Fuseau horaire</label>
-              <select
-                value={timezone}
-                onChange={(e) => setTimezone(e.target.value)}
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus:border-ring focus:ring-3 focus:ring-ring/50"
-              >
-                {TIMEZONES.map((tz) => (
-                  <option key={tz} value={tz}>{tz}</option>
-                ))}
-              </select>
+              <Select value={timezone} onValueChange={setTimezone}>
+                <SelectTrigger className="w-full h-8">
+                  <SelectValue placeholder="Sélectionnez votre fuseau horaire" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIMEZONES.map((tz) => (
+                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <Button type="submit" className="w-full h-9" disabled={loading}>
