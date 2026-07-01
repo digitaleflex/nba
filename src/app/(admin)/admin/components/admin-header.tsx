@@ -153,12 +153,16 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 className="w-full h-12 bg-transparent text-sm border-0 focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/60"
+                role="combobox"
+                aria-expanded={!!results}
+                aria-controls="search-results"
+                aria-autocomplete="list"
               />
               {loading && <Loader2 className="size-4.5 text-muted-foreground animate-spin shrink-0" />}
             </div>
 
             {/* Results list */}
-            <div className="max-h-[350px] overflow-y-auto p-2">
+            <div id="search-results" className="max-h-[350px] overflow-y-auto p-2" role="listbox">
               {query.length < 2 ? (
                 <div className="py-8 text-center text-xs text-muted-foreground select-none">
                   Tapez au moins 2 caractères pour rechercher dans la plateforme...
@@ -176,6 +180,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                           <button
                             key={u.id}
                             onClick={() => navigateTo("users", `search=${encodeURIComponent(u.email)}`)}
+                            role="option"
                             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors text-left text-foreground cursor-pointer"
                           >
                             <div>
@@ -200,6 +205,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                           <button
                             key={s.id}
                             onClick={() => navigateTo("signals", `edit=${s.id}`)}
+                            role="option"
                             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors text-left text-foreground cursor-pointer"
                           >
                             <span className="truncate pr-4 font-medium">{s.content}</span>
@@ -223,6 +229,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                           <button
                             key={k.id}
                             onClick={() => navigateTo("kyc", `id=${k.id}`)}
+                            role="option"
                             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors text-left text-foreground cursor-pointer"
                           >
                             <div>
@@ -247,6 +254,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                           <button
                             key={a.id}
                             onClick={() => navigateTo("audit")}
+                            role="option"
                             className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors text-left text-foreground cursor-pointer"
                           >
                             <div>
