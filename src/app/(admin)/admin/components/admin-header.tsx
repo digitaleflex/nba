@@ -113,10 +113,10 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           {/* Notifications */}
           <button
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors relative cursor-pointer"
-            title="Notifications"
+            title="Notifications (bientôt disponible)"
+            disabled
           >
             <Bell className="size-4" />
-            <span className="absolute top-1 right-1 size-1.5 rounded-full bg-destructive" />
           </button>
 
           {/* Admin Profil */}
