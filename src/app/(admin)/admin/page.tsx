@@ -205,20 +205,32 @@ function AdminConsoleContent() {
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
+  // Error states
+  const [errorOps, setErrorOps] = useState<string | null>(null)
+  const [errorMembers, setErrorMembers] = useState<string | null>(null)
+  const [errorRequests, setErrorRequests] = useState<string | null>(null)
+  const [errorSignals, setErrorSignals] = useState<string | null>(null)
+  const [errorKyc, setErrorKyc] = useState<string | null>(null)
+  const [errorBroker, setErrorBroker] = useState<string | null>(null)
+
   // Search/Filters (General UI)
   const [generalSearch, setGeneralSearch] = useState("")
 
   // Fetch Operations Center data
   const fetchOperations = useCallback(async () => {
     setLoadingOps(true)
+    setErrorOps(null)
     try {
       const res = await fetch("/api/admin/operations")
       if (res.ok) {
         const data = await res.json()
         setOpsData(data)
+      } else {
+        setErrorOps("Erreur de chargement des opérations")
       }
     } catch (err) {
       console.error(err)
+      setErrorOps("Erreur de chargement des opérations")
     } finally {
       setLoadingOps(false)
     }
@@ -227,15 +239,19 @@ function AdminConsoleContent() {
   // Fetch Users
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)
+    setErrorMembers(null)
     try {
       const url = searchUser ? `/api/admin/members?q=${encodeURIComponent(searchUser)}` : "/api/admin/members"
       const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
         setMembers(data.members || [])
+      } else {
+        setErrorMembers("Erreur de chargement des membres")
       }
     } catch (err) {
       console.error(err)
+      setErrorMembers("Erreur de chargement des membres")
     } finally {
       setLoadingMembers(false)
     }
@@ -244,14 +260,18 @@ function AdminConsoleContent() {
   // Fetch Access Requests
   const fetchRequests = useCallback(async () => {
     setLoadingRequests(true)
+    setErrorRequests(null)
     try {
       const res = await fetch("/api/admin/access-requests")
       if (res.ok) {
         const data = await res.json()
         setRequests(data)
+      } else {
+        setErrorRequests("Erreur de chargement des demandes")
       }
     } catch (err) {
       console.error(err)
+      setErrorRequests("Erreur de chargement des demandes")
     } finally {
       setLoadingRequests(false)
     }
@@ -260,14 +280,18 @@ function AdminConsoleContent() {
   // Fetch Signals
   const fetchSignals = useCallback(async () => {
     setLoadingSignals(true)
+    setErrorSignals(null)
     try {
       const res = await fetch("/api/admin/signals")
       if (res.ok) {
         const data = await res.json()
         setSignals(data.signals ?? data)
+      } else {
+        setErrorSignals("Erreur de chargement des signaux")
       }
     } catch (err) {
       console.error(err)
+      setErrorSignals("Erreur de chargement des signaux")
     } finally {
       setLoadingSignals(false)
     }
@@ -276,14 +300,18 @@ function AdminConsoleContent() {
   // Fetch KYC
   const fetchKyc = useCallback(async () => {
     setLoadingKyc(true)
+    setErrorKyc(null)
     try {
       const res = await fetch("/api/admin/kyc")
       if (res.ok) {
         const data = await res.json()
         setKycDocs(data)
+      } else {
+        setErrorKyc("Erreur de chargement des dossiers KYC")
       }
     } catch (err) {
       console.error(err)
+      setErrorKyc("Erreur de chargement des dossiers KYC")
     } finally {
       setLoadingKyc(false)
     }
@@ -292,6 +320,7 @@ function AdminConsoleContent() {
   // Fetch Broker
   const fetchBroker = useCallback(async () => {
     setLoadingBroker(true)
+    setErrorBroker(null)
     try {
       const res = await fetch("/api/admin/broker")
       if (res.ok) {
