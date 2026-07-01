@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent } from "@nba/design-system"
@@ -6,7 +7,7 @@ import { SessionList } from "../components/session-list"
 
 export default async function DashboardPage() {
   const session = await getServerSession()
-  if (!session) return null
+  if (!session) redirect("/login")
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
