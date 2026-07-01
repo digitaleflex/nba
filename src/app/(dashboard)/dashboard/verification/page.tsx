@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, Button, Badge } from "@nba/design-system"
-import { Shield, FileText, CheckCircle2, AlertTriangle, Clock, Link2, Loader2, ArrowRight } from "lucide-react"
+import { Shield, FileText, CheckCircle2, AlertTriangle, Clock, Link2, Loader2, ArrowRight, AlertCircle } from "lucide-react"
 import { StepKyc } from "../../../(onboarding)/onboarding/components/step-kyc"
 import { StepBroker } from "../../../(onboarding)/onboarding/components/step-broker"
 
@@ -20,11 +20,13 @@ interface OnboardingState {
 export default function VerificationPage() {
   const [state, setState] = useState<OnboardingState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [activeKycSubmit, setActiveKycSubmit] = useState(false)
   const [activeBrokerSubmit, setActiveBrokerSubmit] = useState(false)
 
   const fetchState = () => {
     setLoading(true)
+    setError(null)
     fetch("/api/onboarding/state")
       .then((r) => r.json())
       .then((data) => {
@@ -33,6 +35,7 @@ export default function VerificationPage() {
       })
       .catch(() => {
         setLoading(false)
+        setError("Erreur de chargement de l'état de vérification")
       })
   }
 
@@ -42,8 +45,29 @@ export default function VerificationPage() {
 
   if (loading || !state) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
+      <div className="flex h-[50vh] items-center justify-center" role="status" aria-label="Chargement en cours">
         <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8 max-w-4xl mx-auto">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
+            <Shield className="size-6 text-primary" />
+            Centre de vérification
+          </h1>
+        </div>
+        <Card className="border-destructive/30">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <AlertCircle className="size-10 text-destructive" />
+            <p role="alert" className="font-semibold text-destructive">Erreur de chargement</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchState}>Réessayer</Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
