@@ -85,7 +85,11 @@ export default function BrokerPage() {
 
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Vidéo de vérification</label>
-              <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
+              <label
+                className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+              >
                 <Upload className="size-6" />
                 {videoFile ? videoFile.name : "Enregistrez ou téléchargez une courte vidéo"}
                 <input

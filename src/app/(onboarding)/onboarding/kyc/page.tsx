@@ -166,11 +166,15 @@ export default function KycPage() {
             {/* Recto */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Recto du document</label>
-              <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
-                frontFile
-                  ? "border-success/30 bg-success/[0.01]"
-                  : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
-              }`}>
+              <label
+                className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
+                  frontFile
+                    ? "border-success/30 bg-success/[0.01]"
+                    : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
+                }`}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+              >
                 {frontFile ? (
                   <div className="text-center space-y-2">
                     <DocumentPreview file={frontFile} />
@@ -197,11 +201,15 @@ export default function KycPage() {
                 <label className="text-sm font-medium text-foreground">
                   Verso du document <span className="text-muted-foreground font-normal">(obligatoire)</span>
                 </label>
-                <label className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
-                  backFile
-                    ? "border-success/30 bg-success/[0.01]"
-                    : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
-                }`}>
+                <label
+                  className={`flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-4 text-sm transition-all duration-200 ${
+                    backFile
+                      ? "border-success/30 bg-success/[0.01]"
+                      : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
+                  }`}
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
+                >
                   {backFile ? (
                     <div className="text-center space-y-2">
                       <DocumentPreview file={backFile} />
