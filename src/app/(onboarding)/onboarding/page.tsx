@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent } from "@nba/design-system"
-import { Check, Mail, User, FileText, Video, Shield, Loader2 } from "lucide-react"
+import { Card, CardContent, Button } from "@nba/design-system"
+import { Check, Mail, User, FileText, Video, Shield, Loader2, AlertCircle } from "lucide-react"
 
 import { StepEmail } from "./components/step-email"
 import { StepKyc } from "./components/step-kyc"
@@ -30,9 +30,11 @@ export default function OnboardingWizardPage() {
   const router = useRouter()
   const [state, setState] = useState<OnboardingState | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchState = () => {
     setLoading(true)
+    setError(null)
     fetch("/api/onboarding/state")
       .then((r) => r.json())
       .then((data) => {
@@ -45,6 +47,7 @@ export default function OnboardingWizardPage() {
       })
       .catch(() => {
         setLoading(false)
+        setError("Erreur de chargement de votre progression")
       })
   }
 
@@ -54,8 +57,26 @@ export default function OnboardingWizardPage() {
 
   if (loading || !state) {
     return (
-      <div className="flex h-[50vh] items-center justify-center">
+      <div className="flex h-[50vh] items-center justify-center" role="status" aria-label="Chargement en cours">
         <Loader2 className="size-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold tracking-tight">Bienvenue</h1>
+        </div>
+        <Card className="border-destructive/30">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <AlertCircle className="size-10 text-destructive" />
+            <p role="alert" className="font-semibold text-destructive">Erreur de chargement</p>
+            <p className="text-sm text-muted-foreground">{error}</p>
+            <Button variant="outline" size="sm" onClick={fetchState}>Réessayer</Button>
+          </CardContent>
+        </Card>
       </div>
     )
   }
