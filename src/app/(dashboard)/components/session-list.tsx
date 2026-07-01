@@ -65,6 +65,7 @@ export function SessionList() {
   }, [])
 
   async function revokeSession(id: string) {
+    if (!confirm("Révoquer cette session ? L'utilisateur sera déconnecté.")) return
     await fetch(`/api/sessions/${id}`, { method: "DELETE" })
     setSessions((prev) => prev.filter((s) => s.id !== id))
   }
