@@ -43,6 +43,16 @@ export function AdminContextPanel({
     }
   }, [isOpen])
 
+  // Gérer la touche Escape pour fermer
+  useEffect(() => {
+    if (!isOpen) return
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose()
+    }
+    document.addEventListener("keydown", handleEscape)
+    return () => document.removeEventListener("keydown", handleEscape)
+  }, [isOpen, onClose])
+
   if (!isOpen || !type || !data) return null
 
   return (
@@ -52,6 +62,9 @@ export function AdminContextPanel({
 
       {/* Panel */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
         className={cn(
           "w-full max-w-md h-full bg-card text-card-foreground border-l border-neutral-200/60 dark:border-neutral-800/60 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-200"
         )}
@@ -65,6 +78,7 @@ export function AdminContextPanel({
           <button
             onClick={onClose}
             className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+            aria-label="Fermer le panneau"
           >
             <X className="size-4.5" />
           </button>
