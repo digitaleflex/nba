@@ -53,7 +53,6 @@ export default function KycPage() {
   const [frontFile, setFrontFile] = useState<File | null>(null)
   const [backFile, setBackFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState(0)
   const [error, setError] = useState("")
 
   async function handleSubmit(e: React.FormEvent) {
@@ -69,14 +68,11 @@ export default function KycPage() {
 
     setLoading(true)
     setError("")
-    setUploadProgress(25)
 
     const form = new FormData()
     form.append("documentType", documentType)
     form.append("front", frontFile)
-    setUploadProgress(60)
     if (backFile) form.append("back", backFile)
-    setUploadProgress(80)
 
     const res = await fetch("/api/onboarding/kyc", { method: "POST", body: form })
 
@@ -84,11 +80,9 @@ export default function KycPage() {
       const data = await res.json()
       setError(data.error ?? "Erreur lors de l'envoi")
       setLoading(false)
-      setUploadProgress(0)
       return
     }
 
-    setUploadProgress(100)
     setTimeout(() => {
       router.push("/onboarding/broker")
       router.refresh()
@@ -241,22 +235,10 @@ export default function KycPage() {
             )}
 
             {/* Barre de progression upload */}
-            {loading && uploadProgress > 0 && (
-              <div className="space-y-1 animate-in fade-in duration-200">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Envoi en cours…</span>
-                  <span className="text-muted-foreground">{uploadProgress}%</span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
-                    style={{ width: `${uploadProgress}%` }}
-                    role="progressbar"
-                    aria-valuenow={uploadProgress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  />
-                </div>
+            {loading && (
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground animate-in fade-in duration-200">
+                <Loader2 className="size-4 animate-spin" />
+                Envoi en cours…
               </div>
             )}
 
