@@ -69,19 +69,31 @@ export async function PUT(request: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
-    const { userId, isActive } = body
+    const { userId, isActive, roleId } = body
 
     if (!userId) {
       return NextResponse.json({ error: "userId est requis" }, { status: 400 })
     }
 
+    const data: Record<string, any> = {}
+    if (typeof isActive === "boolean") data.isActive = isActive
+    if (roleId) {
+      const role = await prisma.role.findUnique({ where: { id: roleId } })
+      if (!role) {
+        return NextResponse.json({ error: "Rôle invalide" }, { status: 400 })
+      }
+      data.roleId = roleId
+    }
+
     const updated = await prisma.user.update({
       where: { id: userId },
-      data: { isActive },
+      data,
       select: {
         id: true,
         name: true,
+        email: true,
         isActive: true,
+        role: { select: { id: true, name: true } },
       },
     })
 

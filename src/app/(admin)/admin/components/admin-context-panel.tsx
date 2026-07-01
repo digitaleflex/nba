@@ -13,6 +13,14 @@ interface AdminContextPanelProps {
   onAction?: (actionType: string, extraData?: any) => Promise<void>
 }
 
+const ROLES = [
+  { name: "MEMBER", label: "Membre", description: "Accès standard" },
+  { name: "SUPPORT_AGENT", label: "Support", description: "Support utilisateur" },
+  { name: "KYC_AGENT", label: "Agent KYC", description: "Vérification KYC" },
+  { name: "ADMIN", label: "Admin", description: "Operations administratives" },
+  { name: "SUPER_ADMIN", label: "Super Admin", description: "Accès systeme complet" },
+]
+
 export function AdminContextPanel({
   isOpen,
   onClose,
@@ -141,6 +149,32 @@ export function AdminContextPanel({
                         <Check className="size-3.5" /> Réactiver
                       </Button>
                     )}
+                  </div>
+
+                  <span className="text-[10px] text-muted-foreground uppercase mt-3 block">Changer le rôle</span>
+                  <div className="grid grid-cols-1 gap-1.5">
+                    {ROLES.map((role) => (
+                      <button
+                        key={role.name}
+                        className={cn(
+                          "flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer border",
+                          data.role?.name === role.name
+                            ? "bg-primary/10 border-primary/30 text-primary"
+                            : "bg-neutral-100/40 dark:bg-neutral-900/40 border-neutral-200/40 dark:border-neutral-800/40 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40"
+                        )}
+                        onClick={() => onAction("change_role", { id: data.id, roleName: role.name })}
+                        disabled={data.role?.name === role.name}
+                      >
+                        <Shield className="size-3.5 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-semibold">{role.label}</p>
+                          <p className="text-[9px] text-muted-foreground truncate">{role.description}</p>
+                        </div>
+                        {data.role?.name === role.name && (
+                          <Check className="size-3.5 text-primary shrink-0" />
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}

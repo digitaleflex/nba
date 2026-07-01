@@ -183,6 +183,23 @@ function AdminConsoleContent() {
   const [audits, setAudits] = useState<AuditLog[]>([])
   const [loadingAudits, setLoadingAudits] = useState(false)
 
+  // Module Notifications State
+  const [notifTitle, setNotifTitle] = useState("")
+  const [notifContent, setNotifContent] = useState("")
+  const [sendingNotif, setSendingNotif] = useState(false)
+  const [notifSent, setNotifSent] = useState(false)
+
+  // Module Security State
+  const [securityData, setSecurityData] = useState<any>(null)
+  const [loadingSecurity, setLoadingSecurity] = useState(false)
+
+  // Module Settings State
+  const [smtpHost, setSmtpHost] = useState("")
+  const [smtpPort, setSmtpPort] = useState("587")
+  const [smtpTls, setSmtpTls] = useState("TLS")
+  const [savingSettings, setSavingSettings] = useState(false)
+  const [settingsSaved, setSettingsSaved] = useState(false)
+
   // Search/Filters (General UI)
   const [generalSearch, setGeneralSearch] = useState("")
 
@@ -315,6 +332,67 @@ function AdminConsoleContent() {
     }
   }, [])
 
+  // Fetch Security Data
+  const fetchSecurity = useCallback(async () => {
+    setLoadingSecurity(true)
+    try {
+      const res = await fetch("/api/admin/security")
+      if (res.ok) {
+        const data = await res.json()
+        setSecurityData(data)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingSecurity(false)
+    }
+  }, [])
+
+  // Send Notification
+  const handleSendNotification = async () => {
+    if (!notifTitle.trim() || !notifContent.trim()) return
+    setSendingNotif(true)
+    setNotifSent(false)
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: notifTitle, content: notifContent }),
+      })
+      if (res.ok) {
+        setNotifTitle("")
+        setNotifContent("")
+        setNotifSent(true)
+        setTimeout(() => setNotifSent(false), 3000)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSendingNotif(false)
+    }
+  }
+
+  // Save Settings
+  const handleSaveSettings = async () => {
+    setSavingSettings(true)
+    setSettingsSaved(false)
+    try {
+      const res = await fetch("/api/admin/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ smtpHost, smtpPort, smtpTls }),
+      })
+      if (res.ok) {
+        setSettingsSaved(true)
+        setTimeout(() => setSettingsSaved(false), 3000)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSavingSettings(false)
+    }
+  }
+
   // Effect to load data dynamically based on active tab
   useEffect(() => {
     if (activeTab === "dashboard") fetchOperations()
@@ -325,6 +403,7 @@ function AdminConsoleContent() {
     else if (activeTab === "broker") fetchBroker()
     else if (activeTab === "emails") fetchEmails()
     else if (activeTab === "audit") fetchAudits()
+    else if (activeTab === "security") fetchSecurity()
   }, [activeTab, fetchOperations, fetchMembers, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchEmails, fetchAudits])
 
       async function handleDeleteSignal(id: string) {
@@ -375,6 +454,28 @@ function AdminConsoleContent() {
           fetchOperations()
           setPanelOpen(false)
           alert("Compte broker traité.")
+        }
+      } else if (actionType === "change_role") {
+        const res = await fetch("/api/admin/members", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id, roleId: undefined }),
+        })
+        // First get the role ID by name
+        const rolesRes = await fetch("/api/admin/roles")
+        const roles = await rolesRes.json()
+        const role = roles.find((r: any) => r.name === extraData.roleName)
+        if (role) {
+          const updateRes = await fetch("/api/admin/members", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId: extraData.id, roleId: role.id }),
+          })
+          if (updateRes.ok) {
+            fetchMembers()
+            setPanelOpen(false)
+            alert(`Rôle changé en ${extraData.roleName} avec succès.`)
+          }
         }
       }
     } catch (err) {
@@ -1117,14 +1218,40 @@ function AdminConsoleContent() {
                 <div className="space-y-3">
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Titre</label>
-                    <Input placeholder="Alerte système..." className="bg-background border-border text-xs text-foreground" />
+                    <Input
+                      placeholder="Alerte système..."
+                      className="bg-background border-border text-xs text-foreground"
+                      value={notifTitle}
+                      onChange={(e) => setNotifTitle(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Contenu</label>
-                    <textarea placeholder="Votre message..." className="w-full p-3 rounded-lg border bg-background border-border text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24" />
+                    <textarea
+                      placeholder="Votre message..."
+                      className="w-full p-3 rounded-lg border bg-background border-border text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24"
+                      value={notifContent}
+                      onChange={(e) => setNotifContent(e.target.value)}
+                    />
                   </div>
-                  <Button variant="default" size="sm" className="w-full mt-2 cursor-pointer">
-                    Diffuser la notification
+                  {notifSent && (
+                    <p className="text-xs text-success font-medium">Notification envoyée avec succès !</p>
+                  )}
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full mt-2 cursor-pointer"
+                    onClick={handleSendNotification}
+                    disabled={sendingNotif || !notifTitle.trim() || !notifContent.trim()}
+                  >
+                    {sendingNotif ? (
+                      <>
+                        <Loader2 className="size-4 mr-2 animate-spin" />
+                        Envoi en cours...
+                      </>
+                    ) : (
+                      "Diffuser la notification"
+                    )}
                   </Button>
                 </div>
               </CardContent>
@@ -1265,31 +1392,71 @@ function AdminConsoleContent() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Connexions récentes */}
-              <Card className="border-border bg-card/30">
-                <CardContent className="p-6">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                    Connexions suspectes (IPs hors zone)
-                  </h3>
-                  <div className="pt-4 text-xs text-muted-foreground py-6 text-center select-none">
-                    🟢 Aucun comportement de connexion anormal enregistré aujourd'hui.
-                  </div>
-                </CardContent>
-              </Card>
+            {loadingSecurity ? (
+              <div className="py-10 flex justify-center">
+                <Loader2 className="animate-spin text-primary size-6" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Connexions récentes */}
+                <Card className="border-border bg-card/30">
+                  <CardContent className="p-6">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
+                      Sessions actives
+                    </h3>
+                    <div className="pt-4 space-y-3">
+                      {securityData?.activeSessions > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Sessions ouvertes</span>
+                            <span className="font-bold text-foreground">{securityData.activeSessions}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">IPs uniques</span>
+                            <span className="font-bold text-foreground">{securityData.uniqueIps || 0}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Dernière connexion</span>
+                            <span className="text-muted-foreground">{securityData.lastLogin || "—"}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground py-4 text-center">
+                          Aucune session active.
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
 
-              {/* Tentatives de force brute */}
-              <Card className="border-border bg-card/30">
-                <CardContent className="p-6">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                    Tentatives de force brute
-                  </h3>
-                  <div className="pt-4 text-xs text-muted-foreground py-6 text-center select-none">
-                    🟢 0 tentative de mot de passe incorrect bloquée par le limiteur de débit.
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                {/* Tentatives de force brute */}
+                <Card className="border-border bg-card/30">
+                  <CardContent className="p-6">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
+                      Tentatives de connexion échouées
+                    </h3>
+                    <div className="pt-4 space-y-3">
+                      {securityData?.failedLogins > 0 ? (
+                        <>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Échecs aujourd'hui</span>
+                            <span className="font-bold text-destructive">{securityData.failedLogins}</span>
+                          </div>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-muted-foreground">Dernière tentative</span>
+                            <span className="text-muted-foreground">{securityData.lastFailedAttempt || "—"}</span>
+                          </div>
+                        </>
+                      ) : (
+                        <p className="text-xs text-muted-foreground py-4 text-center">
+                          Aucune tentative suspecte détectée.
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
           </div>
         )}
 
@@ -1352,20 +1519,51 @@ function AdminConsoleContent() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1 col-span-2">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Serveur SMTP</label>
-                    <Input placeholder="smtp.neverbrokeagain.com" className="bg-background border-border text-xs text-foreground" />
+                    <Input
+                      placeholder="smtp.neverbrokeagain.com"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpHost}
+                      onChange={(e) => setSmtpHost(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Port SMTP</label>
-                    <Input placeholder="587" className="bg-background border-border text-xs text-foreground" />
+                    <Input
+                      placeholder="587"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpPort}
+                      onChange={(e) => setSmtpPort(e.target.value)}
+                    />
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Sécurité</label>
-                    <Input placeholder="TLS" className="bg-background border-border text-xs text-foreground" />
+                    <Input
+                      placeholder="TLS"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpTls}
+                      onChange={(e) => setSmtpTls(e.target.value)}
+                    />
                   </div>
                 </div>
+                {settingsSaved && (
+                  <p className="text-xs text-success font-medium">Configuration sauvegardée avec succès !</p>
+                )}
                 <div className="pt-2">
-                  <Button variant="default" size="sm" className="w-full cursor-pointer">
-                    Sauvegarder les configurations
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full cursor-pointer"
+                    onClick={handleSaveSettings}
+                    disabled={savingSettings}
+                  >
+                    {savingSettings ? (
+                      <>
+                        <Loader2 className="size-4 mr-2 animate-spin" />
+                        Sauvegarde en cours...
+                      </>
+                    ) : (
+                      "Sauvegarder les configurations"
+                    )}
                   </Button>
                 </div>
               </CardContent>
