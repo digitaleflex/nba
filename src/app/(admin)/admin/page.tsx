@@ -264,7 +264,7 @@ function AdminConsoleContent() {
       const res = await fetch("/api/admin/signals")
       if (res.ok) {
         const data = await res.json()
-        setSignals(data)
+        setSignals(data.signals ?? data)
       }
     } catch (err) {
       console.error(err)
@@ -1076,26 +1076,26 @@ function AdminConsoleContent() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="size-7 text-emerald-500 hover:text-emerald-600 cursor-pointer"
+                                className="size-9 text-emerald-500 hover:text-emerald-600 cursor-pointer"
                                 onClick={() => handlePublishSignal(sig.id)}
                                 title="Publier"
                               >
-                                <Play className="size-3.5" />
+                                <Play className="size-4" />
                               </Button>
                             )}
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                              className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
                               onClick={() => handleDuplicateSignal(sig.id)}
                               title="Dupliquer"
                             >
-                              <Copy className="size-3.5" />
+                              <Copy className="size-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                              className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
                               onClick={() => {
                                 setPanelTitle("Détails du Signal")
                                 setPanelType("signal")
@@ -1103,15 +1103,15 @@ function AdminConsoleContent() {
                                 setPanelOpen(true)
                               }}
                             >
-                              <Eye className="size-3.5" />
+                              <Eye className="size-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="size-7 text-muted-foreground hover:text-destructive cursor-pointer"
+                              className="size-9 text-muted-foreground hover:text-destructive cursor-pointer"
                               onClick={() => handleDeleteSignal(sig.id)}
                             >
-                              <Trash2 className="size-3.5" />
+                              <Trash2 className="size-4" />
                             </Button>
                           </div>
                         </div>
