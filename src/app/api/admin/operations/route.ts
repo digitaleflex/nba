@@ -108,10 +108,37 @@ export async function GET() {
     }).reverse()
 
     // 5. Statuts de santé des services de l'infrastructure
-    // BullMQ/Redis, SMTP et Stockage
-    const storageHealthy = true // Généralement OK en local
-    const smtpHealthy = true // SMTP mock ou fonctionnel
-    const redisHealthy = true // Connecté car prisma tourne
+    // Test Redis
+    let redisHealthy = false
+    try {
+      const { default: Redis } = await import("ioredis")
+      const redis = new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+        connectTimeout: 3000,
+        maxRetriesPerRequest: 0,
+        lazyConnect: true,
+      })
+      await redis.connect()
+      const pong = await redis.ping()
+      redisHealthy = pong === "PONG"
+      await redis.quit()
+    } catch {
+      redisHealthy = false
+    }
+
+    // Test storage (check if storage directory is writable)
+    let storageHealthy = false
+    try {
+      const fs = await import("fs")
+      const testFile = "./storage/.healthcheck"
+      fs.writeFileSync(testFile, "ok")
+      fs.unlinkSync(testFile)
+      storageHealthy = true
+    } catch {
+      storageHealthy = false
+    }
+
+    // SMTP: check if config exists (can't test without sending)
+    const smtpHealthy = !!(process.env.RESEND_API_KEY || process.env.SMTP_HOST)
 
     return NextResponse.json({
       attention: {

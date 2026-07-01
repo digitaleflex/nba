@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
+import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { AdminHeader } from "./admin/components/admin-header"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -34,12 +35,15 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <AdminHeader user={user} />
 
         {/* Mobile Header */}
-        <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <span className="text-primary font-extrabold">Never</span>BrokeAgain
-            <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase">
-              Admin
-            </span>
+        <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <MobileMenu isAdmin={true} user={user} />
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <span className="text-primary font-extrabold">Never</span>BrokeAgain
+              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase">
+                Admin
+              </span>
+            </div>
           </div>
           <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
         </header>

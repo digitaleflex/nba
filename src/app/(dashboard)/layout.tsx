@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
+import { MobileMenu } from "@nba/app/components/mobile-menu"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -26,9 +27,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
         {/* Mobile Header */}
-        <header className="md:hidden border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40 px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2 font-bold text-sm">
-            <span className="text-primary font-extrabold">Never</span>BrokeAgain
+        <header className="md:hidden border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <MobileMenu isAdmin={false} user={user} />
+            <div className="flex items-center gap-2 font-bold text-sm">
+              <span className="text-primary font-extrabold">Never</span>BrokeAgain
+            </div>
           </div>
           <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
         </header>

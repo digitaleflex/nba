@@ -89,7 +89,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="space-y-6 max-w-3xl">
-      <Link href="/dashboard/signals" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">
+      <Link href="/dashboard/signals" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] py-2 -ml-2 px-2 rounded-lg active:bg-muted">
         <ChevronLeft className="size-4" />
         Retour au flux
       </Link>
@@ -172,13 +172,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             </div>
           ) : null}
 
-          {/* Target Audience Groups */}
-          {(() => {
-            const visibleAudience = signal
-              ? isUserAdmin
-                ? signal.audience
-                : signal.audience.filter((a: any) => userPlanIds.has(a.planId))
-              : []
+          {/* Target Audience Groups - Admin only */}
+          {isUserAdmin && (() => {
+            const visibleAudience = signal?.audience ?? []
 
             if (visibleAudience.length === 0) return null
 

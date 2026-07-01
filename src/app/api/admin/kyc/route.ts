@@ -29,11 +29,11 @@ export async function GET(request: NextRequest) {
 
     // Transformer le format des fichiers si stockés en JSON/chemin
     const formattedDocs = kycDocs.map((doc) => {
-      // Reconstruire les URLs de fichiers de façon sécurisée
+      // Utiliser les chemins stockés dans la base
       const files = [
-        { label: "Recto Identité", url: `/api/files/kyc/${doc.id}/document_recto` },
-        { label: "Verso Identité", url: `/api/files/kyc/${doc.id}/document_verso` },
-      ].filter(Boolean) // filtre les valeurs optionnelles éventuelles
+        doc.frontFilePath ? { label: "Recto Identité", url: `/api/files/${doc.frontFilePath}` } : null,
+        doc.backFilePath ? { label: "Verso Identité", url: `/api/files/${doc.backFilePath}` } : null,
+      ].filter(Boolean)
       return {
         ...doc,
         files,

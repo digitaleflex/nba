@@ -295,11 +295,6 @@ export function SignalsView() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Signaux</h1>
-          {summary && summary.group && (
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {summary.group}
-            </p>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -356,20 +351,23 @@ export function SignalsView() {
         />
       </div>
 
-      <div className="flex gap-2 overflow-x-auto -mx-6 px-6 pb-1 snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-        {FILTERS.map((f) => (
-          <button
-            key={f.key}
-            onClick={() => setActiveFilter(f.key)}
-            className={`shrink-0 snap-center px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap ${
-              activeFilter === f.key
-                ? "bg-primary text-primary-foreground border-primary"
-                : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
+      <div className="relative sm:static">
+        <div className="flex gap-2 overflow-x-auto -mx-6 px-6 pb-1 snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+          {FILTERS.map((f) => (
+            <button
+              key={f.key}
+              onClick={() => setActiveFilter(f.key)}
+              className={`shrink-0 snap-center px-3 py-2 text-xs font-medium rounded-full border transition-colors whitespace-nowrap min-h-[36px] ${
+                activeFilter === f.key
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
       </div>
 
       {loading ? (

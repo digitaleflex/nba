@@ -98,7 +98,7 @@ interface KYCDoc {
 interface BrokerVerification {
   id: string
   brokerName: string
-  accountNumber: string
+  accountId: string
   status: string
   createdAt: string
   submittedAt: string
@@ -188,6 +188,8 @@ function AdminConsoleContent() {
   const [notifContent, setNotifContent] = useState("")
   const [sendingNotif, setSendingNotif] = useState(false)
   const [notifSent, setNotifSent] = useState(false)
+  const [notifHistory, setNotifHistory] = useState<any[]>([])
+  const [loadingNotifHistory, setLoadingNotifHistory] = useState(false)
 
   // Module Security State
   const [securityData, setSecurityData] = useState<any>(null)
@@ -197,6 +199,9 @@ function AdminConsoleContent() {
   const [smtpHost, setSmtpHost] = useState("")
   const [smtpPort, setSmtpPort] = useState("587")
   const [smtpTls, setSmtpTls] = useState("TLS")
+  const [smtpUser, setSmtpUser] = useState("")
+  const [smtpPass, setSmtpPass] = useState("")
+  const [smtpFrom, setSmtpFrom] = useState("")
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -360,10 +365,12 @@ function AdminConsoleContent() {
         body: JSON.stringify({ title: notifTitle, content: notifContent }),
       })
       if (res.ok) {
+        const data = await res.json()
         setNotifTitle("")
         setNotifContent("")
         setNotifSent(true)
         setTimeout(() => setNotifSent(false), 3000)
+        fetchNotifHistory()
       }
     } catch (err) {
       console.error(err)
@@ -371,6 +378,22 @@ function AdminConsoleContent() {
       setSendingNotif(false)
     }
   }
+
+  // Fetch Notification History
+  const fetchNotifHistory = useCallback(async () => {
+    setLoadingNotifHistory(true)
+    try {
+      const res = await fetch("/api/admin/notifications")
+      if (res.ok) {
+        const data = await res.json()
+        setNotifHistory(data.notifications || [])
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoadingNotifHistory(false)
+    }
+  }, [])
 
   // Save Settings
   const handleSaveSettings = async () => {
@@ -380,7 +403,7 @@ function AdminConsoleContent() {
       const res = await fetch("/api/admin/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ smtpHost, smtpPort, smtpTls }),
+        body: JSON.stringify({ smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom }),
       })
       if (res.ok) {
         setSettingsSaved(true)
@@ -393,6 +416,24 @@ function AdminConsoleContent() {
     }
   }
 
+  // Fetch Settings
+  const fetchSettings = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/settings")
+      if (res.ok) {
+        const data = await res.json()
+        if (data.smtpHost) setSmtpHost(data.smtpHost)
+        if (data.smtpPort) setSmtpPort(data.smtpPort)
+        if (data.smtpTls) setSmtpTls(data.smtpTls)
+        if (data.smtpUser) setSmtpUser(data.smtpUser)
+        if (data.smtpPass) setSmtpPass(data.smtpPass)
+        if (data.smtpFrom) setSmtpFrom(data.smtpFrom)
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }, [])
+
   // Effect to load data dynamically based on active tab
   useEffect(() => {
     if (activeTab === "dashboard") fetchOperations()
@@ -404,7 +445,10 @@ function AdminConsoleContent() {
     else if (activeTab === "emails") fetchEmails()
     else if (activeTab === "audit") fetchAudits()
     else if (activeTab === "security") fetchSecurity()
-  }, [activeTab, fetchOperations, fetchMembers, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchEmails, fetchAudits])
+    else if (activeTab === "settings") fetchSettings()
+    else if (activeTab === "stats" && !opsData) fetchOperations()
+    else if (activeTab === "notifications") fetchNotifHistory()
+  }, [activeTab, fetchOperations, fetchMembers, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchEmails, fetchAudits, fetchSecurity, fetchSettings, fetchNotifHistory])
 
       async function handleDeleteSignal(id: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
@@ -412,6 +456,24 @@ function AdminConsoleContent() {
           method: "DELETE",
         })
         setSignals((prev) => prev.filter((s) => s.id !== id))
+      }
+
+      async function handlePublishSignal(id: string) {
+        if (!confirm("Publier ce signal maintenant ?")) return
+        const res = await fetch(`/api/admin/signals/${id}/publish`, { method: "POST" })
+        if (res.ok) {
+          fetchSignals()
+          alert("Signal publié avec succès.")
+        }
+      }
+
+      async function handleDuplicateSignal(id: string) {
+        if (!confirm("Dupliquer ce signal en brouillon ?")) return
+        const res = await fetch(`/api/admin/signals/${id}/duplicate`, { method: "POST" })
+        if (res.ok) {
+          fetchSignals()
+          alert("Signal dupliqué en brouillon.")
+        }
       }
 
       // Context Panel Action Executions
@@ -456,12 +518,7 @@ function AdminConsoleContent() {
           alert("Compte broker traité.")
         }
       } else if (actionType === "change_role") {
-        const res = await fetch("/api/admin/members", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: extraData.id, roleId: undefined }),
-        })
-        // First get the role ID by name
+        // Get the role ID by name
         const rolesRes = await fetch("/api/admin/roles")
         const roles = await rolesRes.json()
         const role = roles.find((r: any) => r.name === extraData.roleName)
@@ -1015,6 +1072,26 @@ function AdminConsoleContent() {
                         <div className="flex justify-between items-center pt-2 border-t border-border/60">
                           <span className="text-[9px] text-muted-foreground">Créé par : {sig.creator?.name || "Admin"}</span>
                           <div className="flex gap-1.5">
+                            {sig.status === "DRAFT" && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="size-7 text-emerald-500 hover:text-emerald-600 cursor-pointer"
+                                onClick={() => handlePublishSignal(sig.id)}
+                                title="Publier"
+                              >
+                                <Play className="size-3.5" />
+                              </Button>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="size-7 text-muted-foreground hover:text-foreground cursor-pointer"
+                              onClick={() => handleDuplicateSignal(sig.id)}
+                              title="Dupliquer"
+                            >
+                              <Copy className="size-3.5" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -1166,7 +1243,7 @@ function AdminConsoleContent() {
                         </div>
                         <div>
                           <span className="text-[9px] text-muted-foreground block uppercase">Numéro Compte</span>
-                          <span className="font-semibold text-foreground">{doc.accountNumber}</span>
+                          <span className="font-semibold text-foreground">{doc.accountId}</span>
                         </div>
                       </div>
 
@@ -1256,6 +1333,32 @@ function AdminConsoleContent() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Historique des notifications */}
+            <div className="space-y-3">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Historique des notifications</h3>
+              {loadingNotifHistory ? (
+                <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+              ) : notifHistory.length > 0 ? (
+                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                  {notifHistory.map((notif) => (
+                    <Card key={notif.id} className="border-border bg-card/20">
+                      <CardContent className="p-3">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-semibold text-foreground">{notif.title}</span>
+                          <span className="text-[9px] text-muted-foreground">
+                            {new Date(notif.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground line-clamp-2">{notif.body}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-muted-foreground py-4 text-center">Aucune notification envoyée.</p>
+              )}
+            </div>
           </div>
         )}
 
@@ -1537,11 +1640,42 @@ function AdminConsoleContent() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] text-muted-foreground uppercase font-bold">Sécurité</label>
-                    <Input
-                      placeholder="TLS"
-                      className="bg-background border-border text-xs text-foreground"
+                    <select
+                      className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs text-foreground"
                       value={smtpTls}
                       onChange={(e) => setSmtpTls(e.target.value)}
+                    >
+                      <option value="TLS">TLS</option>
+                      <option value="SSL">SSL</option>
+                      <option value="NONE">Aucune</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Utilisateur SMTP</label>
+                    <Input
+                      placeholder="user@domain.com"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpUser}
+                      onChange={(e) => setSmtpUser(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Mot de passe SMTP</label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpPass}
+                      onChange={(e) => setSmtpPass(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1 col-span-2">
+                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Email expéditeur</label>
+                    <Input
+                      placeholder="noreply@signauxx.com"
+                      className="bg-background border-border text-xs text-foreground"
+                      value={smtpFrom}
+                      onChange={(e) => setSmtpFrom(e.target.value)}
                     />
                   </div>
                 </div>

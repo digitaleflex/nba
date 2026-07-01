@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, Button, Input, Badge } from "@nba/design-system"
-import { User, Mail, Phone, Globe, Clock, Loader2, Check, AlertCircle } from "lucide-react"
+import { Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
+import {
+  User, Mail, Phone, Globe, Clock, Loader2, Check, AlertCircle,
+  Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages
+} from "lucide-react"
 
 interface UserProfile {
   id: string
@@ -18,13 +21,70 @@ interface UserProfile {
   role: { name: string }
 }
 
+const COUNTRIES = [
+  "France", "Belgique", "Suisse", "Canada", "Côte d'Ivoire", "Sénégal",
+  "Cameroun", "République Démocratique du Congo", "Maroc", "Tunisie",
+  "Algérie", "Gabon", "Bénin", "Togo", "Burkina Faso", "Mali",
+  "Niger", "Guinée", "Madagascar", "Réunion", "Martinique", "Guadeloupe",
+  "Autre"
+]
+
+const LANGUAGES = [
+  { value: "fr", label: "Français" },
+  { value: "en", label: "English" },
+  { value: "ar", label: "العربية" },
+]
+
+const TIMEZONES = [
+  "Europe/Paris",
+  "Europe/Brussels",
+  "Europe/Zurich",
+  "America/Montreal",
+  "Africa/Abidjan",
+  "Africa/Dakar",
+  "Africa/Douala",
+  "Africa/Kinshasa",
+  "Africa/Casablanca",
+  "Africa/Tunis",
+  "Africa/Algiers",
+  "Africa/Libreville",
+  "Indian/Reunion",
+  "America/Martinique",
+  "America/Guadeloupe",
+]
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: "", phone: "", whatsapp: "" })
+
+  // Profile form
+  const [form, setForm] = useState({
+    name: "", phone: "", whatsapp: "", country: "", language: "fr", timezone: "Europe/Paris"
+  })
+
+  // Password form
+  const [showPasswordSection, setShowPasswordSection] = useState(false)
+  const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" })
+  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
+  const [changingPassword, setChangingPassword] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordSaved, setPasswordSaved] = useState(false)
+
+  // Email form
+  const [showEmailSection, setShowEmailSection] = useState(false)
+  const [emailForm, setEmailForm] = useState({ newEmail: "" })
+  const [changingEmail, setChangingEmail] = useState(false)
+  const [emailError, setEmailError] = useState<string | null>(null)
+  const [emailSaved, setEmailSaved] = useState(false)
+
+  // Delete account
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [deletePassword, setDeletePassword] = useState("")
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   useEffect(() => {
     fetch("/api/dashboard/profile")
@@ -35,13 +95,16 @@ export default function ProfilePage() {
           name: data.user.name,
           phone: data.user.phone || "",
           whatsapp: data.user.whatsapp || "",
+          country: data.user.country || "",
+          language: data.user.language || "fr",
+          timezone: data.user.timezone || "Europe/Paris",
         })
       })
       .catch(() => setError("Erreur de chargement"))
       .finally(() => setLoading(false))
   }, [])
 
-  async function handleSave(e: React.FormEvent) {
+  async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
     setSaving(true)
     setSaved(false)
@@ -60,6 +123,87 @@ export default function ProfilePage() {
       setError("Erreur lors de la sauvegarde")
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault()
+    setPasswordError(null)
+
+    if (passwordForm.new !== passwordForm.confirm) {
+      setPasswordError("Les mots de passe ne correspondent pas")
+      return
+    }
+    if (passwordForm.new.length < 8) {
+      setPasswordError("Le mot de passe doit contenir au moins 8 caractères")
+      return
+    }
+
+    setChangingPassword(true)
+    try {
+      const res = await fetch("/api/dashboard/change-password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: passwordForm.current, newPassword: passwordForm.new }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Erreur")
+      setPasswordForm({ current: "", new: "", confirm: "" })
+      setPasswordSaved(true)
+      setTimeout(() => setPasswordSaved(false), 2000)
+    } catch (err: any) {
+      setPasswordError(err.message)
+    } finally {
+      setChangingPassword(false)
+    }
+  }
+
+  async function handleChangeEmail(e: React.FormEvent) {
+    e.preventDefault()
+    setEmailError(null)
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(emailForm.newEmail)) {
+      setEmailError("Format d'email invalide")
+      return
+    }
+
+    setChangingEmail(true)
+    try {
+      const res = await fetch("/api/dashboard/change-email", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ newEmail: emailForm.newEmail }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Erreur")
+      setEmailForm({ newEmail: "" })
+      setEmailSaved(true)
+      if (data.user) setProfile((p) => p ? { ...p, email: data.user.email } : null)
+      setTimeout(() => setEmailSaved(false), 2000)
+    } catch (err: any) {
+      setEmailError(err.message)
+    } finally {
+      setChangingEmail(false)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    setDeleteError(null)
+    setDeleting(true)
+    try {
+      const res = await fetch("/api/dashboard/delete-account", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password: deletePassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Erreur")
+      window.location.href = "/login"
+    } catch (err: any) {
+      setDeleteError(err.message)
+    } finally {
+      setDeleting(false)
     }
   }
 
@@ -90,9 +234,10 @@ export default function ProfilePage() {
     <div className="space-y-6 max-w-2xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
-        <p className="text-sm text-muted-foreground">Gérez vos informations personnelles</p>
+        <p className="text-sm text-muted-foreground">Gérez vos informations personnelles et la sécurité de votre compte</p>
       </div>
 
+      {/* Profile Info Card */}
       <Card>
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center gap-4 pb-4 border-b border-border/40">
@@ -108,7 +253,7 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <form onSubmit={handleSave} className="space-y-4">
+          <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Nom complet</label>
               <div className="relative">
@@ -133,44 +278,83 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Téléphone</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  value={form.phone}
-                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  placeholder="+33 6 12 34 56 78"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Téléphone</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">WhatsApp</label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9"
+                    value={form.whatsapp}
+                    onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium">WhatsApp</label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                <Input
-                  className="pl-9"
-                  value={form.whatsapp}
-                  onChange={(e) => setForm({ ...form, whatsapp: e.target.value })}
-                  placeholder="+33 6 12 34 56 78"
-                />
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <MapPin className="size-3.5" /> Pays
+                </label>
+                <select
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={form.country}
+                  onChange={(e) => setForm({ ...form, country: e.target.value })}
+                >
+                  <option value="">Sélectionner...</option>
+                  {COUNTRIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Languages className="size-3.5" /> Langue
+                </label>
+                <select
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={form.language}
+                  onChange={(e) => setForm({ ...form, language: e.target.value })}
+                >
+                  {LANGUAGES.map((l) => (
+                    <option key={l.value} value={l.value}>{l.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium flex items-center gap-1.5">
+                  <Clock className="size-3.5" /> Fuseau horaire
+                </label>
+                <select
+                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                  value={form.timezone}
+                  onChange={(e) => setForm({ ...form, timezone: e.target.value })}
+                >
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>{tz}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Globe className="size-3.5" />
-                  {profile?.country || "Pays non défini"}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
-                  <Clock className="size-3.5" />
-                  {profile?.timezone}
-                </span>
-              </div>
+            <div className="flex items-center justify-end pt-2">
               <div className="flex items-center gap-3">
                 {saved && (
                   <span className="flex items-center gap-1 text-xs text-success">
@@ -179,13 +363,240 @@ export default function ProfilePage() {
                   </span>
                 )}
                 <Button type="submit" disabled={saving} size="sm">
-                  {saving ? "Sauvegarde…" : "Enregistrer"}
+                  {saving ? <><Loader2 className="size-4 mr-2 animate-spin" /> Sauvegarde...</> : "Enregistrer"}
                 </Button>
               </div>
             </div>
           </form>
         </CardContent>
       </Card>
+
+      {/* Change Password Card */}
+      <Card>
+        <CardContent className="p-6">
+          <button
+            type="button"
+            onClick={() => setShowPasswordSection(!showPasswordSection)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-warning/10">
+                <Lock className="size-5 text-warning" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Changer de mot de passe</p>
+                <p className="text-xs text-muted-foreground">Modifiez votre mot de passe de connexion</p>
+              </div>
+            </div>
+            <span className="text-muted-foreground text-xs">{showPasswordSection ? "▲" : "▼"}</span>
+          </button>
+
+          {showPasswordSection && (
+            <form onSubmit={handleChangePassword} className="mt-6 space-y-4 border-t border-border/40 pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Mot de passe actuel</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    type={showPasswords.current ? "text" : "password"}
+                    className="pl-9 pr-10"
+                    value={passwordForm.current}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPasswords.current ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nouveau mot de passe</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    type={showPasswords.new ? "text" : "password"}
+                    className="pl-9 pr-10"
+                    value={passwordForm.new}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    required
+                    minLength={8}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+                <p className="text-[10px] text-muted-foreground">Minimum 8 caractères</p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Confirmer le mot de passe</label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    type={showPasswords.confirm ? "text" : "password"}
+                    className="pl-9 pr-10"
+                    value={passwordForm.confirm}
+                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  >
+                    {showPasswords.confirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {passwordError && (
+                <p className="text-xs text-destructive font-medium">{passwordError}</p>
+              )}
+              {passwordSaved && (
+                <p className="text-xs text-success font-medium flex items-center gap-1">
+                  <Check className="size-3.5" /> Mot de passe modifié avec succès
+                </p>
+              )}
+
+              <Button type="submit" disabled={changingPassword} size="sm">
+                {changingPassword ? <><Loader2 className="size-4 mr-2 animate-spin" /> Modification...</> : "Modifier le mot de passe"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Change Email Card */}
+      <Card>
+        <CardContent className="p-6">
+          <button
+            type="button"
+            onClick={() => setShowEmailSection(!showEmailSection)}
+            className="w-full flex items-center justify-between text-left"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+                <Mail className="size-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Changer d'email</p>
+                <p className="text-xs text-muted-foreground">Modifiez votre adresse email de connexion</p>
+              </div>
+            </div>
+            <span className="text-muted-foreground text-xs">{showEmailSection ? "▲" : "▼"}</span>
+          </button>
+
+          {showEmailSection && (
+            <form onSubmit={handleChangeEmail} className="mt-6 space-y-4 border-t border-border/40 pt-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Nouvel email</label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    type="email"
+                    className="pl-9"
+                    value={emailForm.newEmail}
+                    onChange={(e) => setEmailForm({ newEmail: e.target.value })}
+                    required
+                  />
+                </div>
+                <p className="text-[10px] text-muted-foreground">Un email de vérification sera envoyé à la nouvelle adresse</p>
+              </div>
+
+              {emailError && (
+                <p className="text-xs text-destructive font-medium">{emailError}</p>
+              )}
+              {emailSaved && (
+                <p className="text-xs text-success font-medium flex items-center gap-1">
+                  <Check className="size-3.5" /> Email modifié avec succès
+                </p>
+              )}
+
+              <Button type="submit" disabled={changingEmail} size="sm">
+                {changingEmail ? <><Loader2 className="size-4 mr-2 animate-spin" /> Modification...</> : "Modifier l'email"}
+              </Button>
+            </form>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone Card */}
+      <Card className="border-destructive/30">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-destructive/10">
+                <Trash2 className="size-5 text-destructive" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm text-destructive">Zone dangereuse</p>
+                <p className="text-xs text-muted-foreground">Supprimer définitivement votre compte</p>
+              </div>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              Supprimer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Account Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="size-5" />
+              Supprimer mon compte
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Cette action est <strong>irréversible</strong>. Toutes vos données seront supprimées définitivement.
+            </p>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Entrez votre mot de passe pour confirmer</label>
+              <Input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                placeholder="Mot de passe"
+              />
+            </div>
+
+            {deleteError && (
+              <p className="text-xs text-destructive font-medium">{deleteError}</p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowDeleteDialog(false); setDeletePassword(""); setDeleteError(null) }}>
+              Annuler
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteAccount}
+              disabled={!deletePassword || deleting}
+            >
+              {deleting ? <><Loader2 className="size-4 mr-2 animate-spin" /> Suppression...</> : "Supprimer définitivement"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

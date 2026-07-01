@@ -3,6 +3,8 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { notify } from "@nba/lib/services/notifications"
+import { accessApprovedEmail, accessRejectedEmail } from "@nba/lib/email"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -85,6 +87,41 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       resourceId: id,
       details: { notes: parsed.notes },
     })
+
+    // Notifier l'utilisateur du résultat
+    const user = await prisma.user.findUnique({
+      where: { id: request.userId },
+      select: { name: true, email: true },
+    })
+
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: request.planId },
+      select: { name: true },
+    })
+
+    if (user) {
+      const isApproved = parsed.status === "APPROVED"
+      const planName = plan?.name || "Inconnu"
+      const template = isApproved
+        ? accessApprovedEmail(user, planName)
+        : accessRejectedEmail(user, planName, parsed.notes || "Aucun motif précisé")
+
+      await notify({
+        userId: request.userId,
+        type: "ACCESS",
+        title: isApproved ? "Accès au groupe accordé" : "Demande d'accès refusée",
+        body: isApproved
+          ? `Votre accès au groupe « ${planName} » a été approuvé.`
+          : `Votre demande d'accès au groupe « ${planName} » a été refusée. Motif : ${parsed.notes || "Non précisé"}`,
+        data: { requestId: id, planName, status: parsed.status },
+        linkUrl: "/dashboard/signals",
+        email: {
+          to: user.email,
+          subject: template.subject,
+          html: template.html,
+        },
+      })
+    }
 
     return NextResponse.json(updated)
   } catch (error) {

@@ -13,6 +13,7 @@ import {
   LogOut,
   Shield,
   CreditCard,
+  Users,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -56,7 +57,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
     },
     {
       href: "/dashboard/signals",
-      label: "Boîte de réc.",
+      label: "Signaux",
       icon: TrendingUp,
       active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
     },
@@ -93,16 +94,16 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
       active: pathname === "/admin" && activeTab === "requests",
     },
     {
-      href: "/admin?tab=send",
-      label: "Publier",
+      href: "/admin?tab=signals",
+      label: "Signaux",
       icon: Radio,
-      active: pathname === "/admin" && activeTab === "send",
+      active: pathname === "/admin" && activeTab === "signals",
     },
     {
-      href: "/admin?tab=history",
-      label: "Historique",
-      icon: History,
-      active: pathname === "/admin" && activeTab === "history",
+      href: "/admin?tab=users",
+      label: "Membres",
+      icon: Users,
+      active: pathname === "/admin" && activeTab === "users",
     },
     {
       href: "/dashboard",

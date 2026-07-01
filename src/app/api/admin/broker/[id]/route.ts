@@ -3,6 +3,8 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewDocumentSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { notify } from "@nba/lib/services/notifications"
+import { brokerApprovedEmail, brokerRejectedEmail } from "@nba/lib/email"
 import { scheduleFileCleanup } from "../../../../../../workers/queue"
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -33,6 +35,35 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     // Planifier le nettoyage des fichiers après 7 jours (APPROVED ou REJECTED)
     if (parsed.status === "APPROVED" || parsed.status === "REJECTED") {
       await scheduleFileCleanup("broker", id)
+    }
+
+    // Notifier l'utilisateur du résultat
+    const user = await prisma.user.findUnique({
+      where: { id: updated.userId },
+      select: { name: true, email: true },
+    })
+
+    if (user) {
+      const isApproved = parsed.status === "APPROVED"
+      const template = isApproved
+        ? brokerApprovedEmail(user)
+        : brokerRejectedEmail(user, parsed.notes || "Aucun motif précisé")
+
+      await notify({
+        userId: updated.userId,
+        type: "BROKER",
+        title: isApproved ? "Compte Broker vérifié" : "Vérification Broker rejetée",
+        body: isApproved
+          ? "Votre compte Broker a été vérifié avec succès."
+          : `Votre vérification Broker a été rejetée. Motif : ${parsed.notes || "Non précisé"}`,
+        data: { documentId: id, status: parsed.status },
+        linkUrl: "/dashboard/verification",
+        email: {
+          to: user.email,
+          subject: template.subject,
+          html: template.html,
+        },
+      })
     }
 
     return NextResponse.json(updated)

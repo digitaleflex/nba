@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const formattedVerifications = verifications.map((doc) => {
       return {
         ...doc,
-        videoUrl: `/api/files/broker/${doc.id}/video_proof`,
+        videoUrl: doc.videoFilePath ? `/api/files/${doc.videoFilePath}` : null,
       }
     })
 

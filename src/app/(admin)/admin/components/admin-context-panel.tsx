@@ -295,7 +295,7 @@ export function AdminContextPanel({
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground uppercase">Compte Broker</span>
-                  <p className="font-semibold text-foreground mt-0.5">{data.accountNumber}</p>
+                  <p className="font-semibold text-foreground mt-0.5">{data.accountId}</p>
                 </div>
                 <div>
                   <span className="text-[10px] text-muted-foreground uppercase">Statut</span>

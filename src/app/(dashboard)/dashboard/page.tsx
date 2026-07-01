@@ -13,6 +13,24 @@ export default async function DashboardPage() {
     select: { onboardingStatus: true, role: { select: { name: true } } },
   })
 
+  const [
+    totalSignals,
+    readSignals,
+    favoriteSignals,
+  ] = await Promise.all([
+    prisma.signal.count({
+      where: { status: "PUBLISHED", deletedAt: null },
+    }),
+    prisma.signalRead.count({
+      where: { userId: session.user.id },
+    }),
+    prisma.signalFavorite.count({
+      where: { userId: session.user.id },
+    }),
+  ])
+
+  const unreadSignals = Math.max(0, totalSignals - readSignals)
+
   return (
     <div className="space-y-8">
       <div>
@@ -34,7 +52,13 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Signaux</p>
-                <p className="text-xl font-bold">—</p>
+                <p className="text-xl font-bold">
+                  {unreadSignals > 0 ? (
+                    <span className="text-primary">{unreadSignals} non lu{unreadSignals > 1 ? "s" : ""}</span>
+                  ) : (
+                    <span>{totalSignals} reçu{totalSignals > 1 ? "s" : ""}</span>
+                  )}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -49,7 +73,9 @@ export default async function DashboardPage() {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Performance</p>
-                <p className="text-xl font-bold">—</p>
+                <p className="text-xl font-bold">
+                  {readSignals} lu{readSignals > 1 ? "s" : ""}
+                </p>
               </div>
             </div>
           </CardContent>

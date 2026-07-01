@@ -361,6 +361,247 @@ export function tradingSignalEmail(
 }
 
 // ══════════════════════════════════════
+//  KYC TEMPLATES
+// ══════════════════════════════════════
+
+export function kycApprovedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `✅ Documents KYC approuvés — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Félicitations, ${prenom} 🎉
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Vos documents d'identité ont été vérifiés et <strong style="color:#10AF6E">approuvés</strong> par notre équipe.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Prochaine étape")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si ce n'est pas déjà fait, connectez votre compte Broker pour finaliser votre inscription.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/verification`, text: "Vérifier mon Broker" })}
+
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5">
+        Une fois votre Broker validé, vous aurez accès à tous les signaux premium.
+      </p>
+    `),
+  }
+}
+
+export function kycRejectedEmail(user: TemplateUser, reason: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `❌ Documents KYC rejetés — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Vos documents d'identité ont été examinés mais <strong style="color:#DC3545">rejetés</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Motif du rejet")}
+      <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+      </div>
+
+      ${sectionTitle("Que faire ?")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Vous pouvez soumettre de nouveaux documents depuis votre tableau de bord.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/verification`, text: "Ressoumettre mes documents" })}
+
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5">
+        Assurez-vous que vos documents sont lisibles et non expirés.
+      </p>
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  BROKER TEMPLATES
+// ══════════════════════════════════════
+
+export function brokerApprovedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `✅ Compte Broker vérifié — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Tout est prêt, ${prenom} 🚀
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre compte Broker a été vérifié et <strong style="color:#10AF6E">approuvé</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Vous avez accès aux signaux")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Tous les prérequis sont remplis. Vous pouvez maintenant recevoir les signaux premium.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/signals`, text: "Voir mes signaux" })}
+
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5;font-style:italic">
+        ⚠️ Le trading comporte des risques. Gérez votre capital de manière responsable.
+      </p>
+    `),
+  }
+}
+
+export function brokerRejectedEmail(user: TemplateUser, reason: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `❌ Vérification Broker rejetée — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre vérification de compte Broker a été examinée mais <strong style="color:#DC3545">rejetée</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Motif du rejet")}
+      <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+      </div>
+
+      ${sectionTitle("Que faire ?")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Vous pouvez soumettre une nouvelle vérification depuis votre tableau de bord.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/verification`, text: "Ressoumettre ma vérification" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  ACCESS REQUEST TEMPLATES
+// ══════════════════════════════════════
+
+export function accessApprovedEmail(user: TemplateUser, planName: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `🎉 Accès au groupe "${planName}" accordé — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bienvenue, ${prenom} 🎉
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#10AF6E">approuvée</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Votre accès")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Vous recevrez désormais tous les signaux publiés pour ce groupe.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/signals`, text: "Accéder à mes signaux" })}
+
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B;line-height:1.5">
+        Consultez régulièrement votre tableau de bord pour ne manquer aucun signal.
+      </p>
+    `),
+  }
+}
+
+export function accessRejectedEmail(user: TemplateUser, planName: string, reason: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `❌ Demande d'accès refusée — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#DC3545">refusée</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Motif du refus")}
+      <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+      </div>
+
+      ${sectionTitle("Que faire ?")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Vous pouvez contacter notre équipe pour plus d'informations ou soumettre une nouvelle demande.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/subscription`, text: "Voir mes abonnements" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  SECURITY TEMPLATES
+// ══════════════════════════════════════
+
+export function passwordChangedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `🔒 Mot de passe modifié — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre mot de passe a été modifié avec succès.
+      </p>
+
+      ${divider()}
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous n'êtes pas à l'origine de cette modification, contactez immédiatement notre support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Gérer mon compte" })}
+    `),
+  }
+}
+
+export function emailChangedEmail(user: TemplateUser, newEmail: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `📧 Adresse email modifiée — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre adresse email a été modifiée. La nouvelle adresse est&nbsp;:
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0;text-align:center">
+        <span style="font-size:16px;font-weight:600;color:#283B5D">${newEmail}</span>
+      </div>
+
+      ${divider()}
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous n'êtes pas à l'origine de cette modification, contactez immédiatement notre support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Gérer mon compte" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
 
