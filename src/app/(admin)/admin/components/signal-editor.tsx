@@ -7,6 +7,7 @@ import {
 } from "lucide-react"
 import { Button, Card, CardContent, Checkbox, Badge, Input, cn } from "@nba/design-system"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { toast } from "sonner"
 
 interface Plan {
   id: string
@@ -65,7 +66,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   // Handle image upload
   async function handleImageUpload(file: File) {
     if (imageUrls.length >= 5) {
-      alert("Vous pouvez télécharger jusqu'à 5 images maximum.")
+      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
       return
     }
     setIsUploading(true)
@@ -82,7 +83,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       setImageUrls((prev) => [...prev, data.path])
     } catch (err) {
       console.error(err)
-      alert("Erreur lors du téléchargement de l'image")
+      toast.error("Erreur lors du téléchargement de l'image")
     } finally {
       setIsUploading(false)
     }
@@ -92,7 +93,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     const files = Array.from(e.target.files || [])
     const remainingSlots = 5 - imageUrls.length
     if (remainingSlots <= 0) {
-      alert("Vous pouvez télécharger jusqu'à 5 images maximum.")
+      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
       return
     }
     const toUpload = files.slice(0, remainingSlots)
@@ -119,7 +120,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
 
     const remainingSlots = 5 - imageUrls.length
     if (remainingSlots <= 0) {
-      alert("Vous pouvez télécharger jusqu'à 5 images maximum.")
+      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
       return
     }
 
@@ -137,7 +138,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     const remainingSlots = 5 - imageUrls.length
     if (remainingSlots <= 0) {
       e.preventDefault()
-      alert("Vous pouvez télécharger jusqu'à 5 images maximum.")
+      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
       return
     }
 
@@ -170,11 +171,11 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   // Open confirmation modal
   async function openConfirmation(status: "DRAFT" | "PUBLISHED") {
     if (!content.trim()) {
-      alert("Veuillez rédiger ou coller le contenu de votre signal.")
+      toast.warning("Veuillez rédiger ou coller le contenu de votre signal.")
       return
     }
     if (selectedPlans.length === 0) {
-      alert("Veuillez sélectionner au moins un groupe de diffusion.")
+      toast.warning("Veuillez sélectionner au moins un groupe de diffusion.")
       return
     }
 
@@ -223,11 +224,11 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       // Success Reset
       setContent("")
       setImageUrls([])
-      alert(targetStatus === "DRAFT" ? "Brouillon enregistré avec succès." : "Signal publié avec succès.")
+      toast.success(targetStatus === "DRAFT" ? "Brouillon enregistré avec succès." : "Signal publié avec succès.")
       if (onSignalCreated) onSignalCreated()
     } catch (err: any) {
       console.error(err)
-      alert(`Erreur : ${err.message || err}`)
+      toast.error(`Erreur : ${err.message || err}`)
     } finally {
       setIsSubmitting(null)
     }

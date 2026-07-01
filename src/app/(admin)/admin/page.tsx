@@ -8,6 +8,7 @@ import {
   FileCheck, Link2, Bell, Mail, Activity, BarChart2, Settings, Ban, ArrowRight,
   AlertTriangle, Server, ArrowUpRight, Image as ImageIcon
 } from "lucide-react"
+import { toast } from "sonner"
 import { Button, Card, CardContent, Badge, Tabs, TabsList, TabsTrigger, TabsContent, Input, cn } from "@nba/design-system"
 import dynamic from "next/dynamic"
 
@@ -485,6 +486,7 @@ function AdminConsoleContent() {
           method: "DELETE",
         })
         setSignals((prev) => prev.filter((s) => s.id !== id))
+        toast.success("Signal supprimé avec succès.")
       }
 
       async function handlePublishSignal(id: string) {
@@ -492,7 +494,7 @@ function AdminConsoleContent() {
         const res = await fetch(`/api/admin/signals/${id}/publish`, { method: "POST" })
         if (res.ok) {
           fetchSignals()
-          alert("Signal publié avec succès.")
+          toast.success("Signal publié avec succès.")
         }
       }
 
@@ -501,7 +503,7 @@ function AdminConsoleContent() {
         const res = await fetch(`/api/admin/signals/${id}/duplicate`, { method: "POST" })
         if (res.ok) {
           fetchSignals()
-          alert("Signal dupliqué en brouillon.")
+          toast.success("Signal dupliqué en brouillon.")
         }
       }
 
@@ -518,7 +520,7 @@ function AdminConsoleContent() {
         if (res.ok) {
           fetchMembers()
           setPanelOpen(false)
-          alert(`Utilisateur ${isActive ? "réactivé" : "suspendu"} avec succès.`)
+          toast.success(`Utilisateur ${isActive ? "réactivé" : "suspendu"} avec succès.`)
         }
       } else if (actionType === "kyc_approve" || actionType === "kyc_reject") {
         const status = actionType === "kyc_approve" ? "APPROVED" : "REJECTED"
@@ -531,7 +533,7 @@ function AdminConsoleContent() {
           fetchKyc()
           fetchOperations()
           setPanelOpen(false)
-          alert("Document KYC traité.")
+          toast.success("Document KYC traité.")
         }
       } else if (actionType === "broker_approve" || actionType === "broker_reject") {
         const status = actionType === "broker_approve" ? "APPROVED" : "REJECTED"
@@ -544,7 +546,7 @@ function AdminConsoleContent() {
           fetchBroker()
           fetchOperations()
           setPanelOpen(false)
-          alert("Compte broker traité.")
+          toast.success("Compte broker traité.")
         }
       } else if (actionType === "change_role") {
         // Get the role ID by name
@@ -560,7 +562,7 @@ function AdminConsoleContent() {
           if (updateRes.ok) {
             fetchMembers()
             setPanelOpen(false)
-            alert(`Rôle changé en ${extraData.roleName} avec succès.`)
+            toast.success(`Rôle changé en ${extraData.roleName} avec succès.`)
           }
         }
       }
@@ -1748,21 +1750,4 @@ function AdminConsoleContent() {
       />
     </div>
   )
-}
-
-// Keep a small helper function intact from the original code
-async function handleDuplicate(id: string, fetchSignals: () => void) {
-  try {
-    const res = await fetch(`/api/admin/signals/${id}/duplicate`, {
-      method: "POST"
-    })
-    if (res.ok) {
-      fetchSignals()
-      alert("Signal dupliqué avec succès en tant que brouillon.")
-    } else {
-      alert("Échec de la duplication.")
-    }
-  } catch (err) {
-    console.error(err)
-  }
 }
