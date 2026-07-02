@@ -1,18 +1,22 @@
-import { prisma } from "../db"
-import type { AccessStatus } from "@nba/generated/prisma"
+import { prisma } from "../db";
+import type { AccessStatus } from "@nba/generated/prisma/enums";
 
 export interface CreateAccessRequestInput {
-  userId: string
-  planId: string
+  userId: string;
+  planId: string;
 }
 
 export async function createAccessRequest(input: CreateAccessRequestInput) {
   const existing = await prisma.accessRequest.findFirst({
-    where: { userId: input.userId, planId: input.planId, status: { in: ["PENDING", "APPROVED"] } },
-  })
+    where: {
+      userId: input.userId,
+      planId: input.planId,
+      status: { in: ["PENDING", "APPROVED"] },
+    },
+  });
 
   if (existing) {
-    throw new Error("Une demande d'accès existe déjà pour ce service")
+    throw new Error("Une demande d'accès existe déjà pour ce service");
   }
 
   return prisma.accessRequest.create({
@@ -21,18 +25,18 @@ export async function createAccessRequest(input: CreateAccessRequestInput) {
       planId: input.planId,
     },
     include: { plan: true },
-  })
+  });
 }
 
 export async function reviewAccessRequest(
   requestId: string,
   reviewerId: string,
   status: AccessStatus,
-  notes?: string
+  notes?: string,
 ) {
   const request = await prisma.accessRequest.findUniqueOrThrow({
     where: { id: requestId },
-  })
+  });
 
   const updated = await prisma.accessRequest.update({
     where: { id: requestId },
@@ -42,23 +46,23 @@ export async function reviewAccessRequest(
       reviewedAt: new Date(),
       notes,
     },
-  })
+  });
 
   if (status === "APPROVED") {
     await prisma.user.update({
       where: { id: request.userId },
       data: { onboardingStatus: "ACTIVE" },
-    })
+    });
   }
 
   if (status === "REJECTED") {
     await prisma.user.update({
       where: { id: request.userId },
       data: { onboardingStatus: "REVIEW_PENDING" },
-    })
+    });
   }
 
-  return updated
+  return updated;
 }
 
 export async function getPendingAccessRequests() {
@@ -81,7 +85,7 @@ export async function getPendingAccessRequests() {
       plan: true,
     },
     orderBy: { createdAt: "asc" },
-  })
+  });
 }
 
 export async function getUserAccess(userId: string) {
@@ -89,12 +93,15 @@ export async function getUserAccess(userId: string) {
     where: { userId },
     include: { plan: true },
     orderBy: { createdAt: "desc" },
-  })
+  });
 }
 
-export async function hasActiveAccess(userId: string, planId: string): Promise<boolean> {
+export async function hasActiveAccess(
+  userId: string,
+  planId: string,
+): Promise<boolean> {
   const request = await prisma.accessRequest.findFirst({
     where: { userId, planId, status: "APPROVED" },
-  })
-  return !!request
+  });
+  return !!request;
 }
