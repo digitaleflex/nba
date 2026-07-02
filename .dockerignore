@@ -1,0 +1,95 @@
+# Dependencies
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js build output
+.next
+out
+build
+
+# Testing
+coverage
+.nyc_output
+
+# Misc
+.DS_Store
+*.pem
+
+# Debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Vercel
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation (not needed in container)
+README.md
+CONTRIBUTING.md
+CODE_OF_CONDUCT.md
+docs
+
+# CI/CD
+.github
+
+# Docker
+Dockerfile
+docker-compose.yml
+compose.yml
+.dockerignore
+
+# Other
+*.log
+.cache
+dist
+temp
+tmp
+.temp
+.tmp
+
+# Prisma (migrations not needed, only schema)
+# We DO need prisma/schema.prisma but not migrations during build
+# Uncomment if you don't need migrations in container:
+# prisma/migrations
+
+# Storage (user uploads, not needed in build)
+storage
+
+# Test files
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+__tests__
+__mocks__
+vitest.config.ts
