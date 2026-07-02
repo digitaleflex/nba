@@ -40,6 +40,12 @@ RUN apk add --no-cache postgresql-client
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy full node_modules: required because docker-entrypoint.sh runs
+# `pnpm prisma migrate deploy` and `pnpm db:seed` (tsx) at container startup.
+# These are devDependencies not traced/included by the Next.js standalone output.
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules
+
 # Copy standalone build outputs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -54,7 +60,7 @@ RUN chmod +x ./docker-entrypoint.sh
 # Copy seed and createAdmin scripts (needed at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
-# Copy pnpm-lock and package.json for pnpm install at runtime
+# Copy package.json and lockfiles so `pnpm <script>` (db:seed, prisma) resolves correctly at runtime
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
