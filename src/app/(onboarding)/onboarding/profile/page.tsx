@@ -1,19 +1,36 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@nba/design-system"
-import { User, ArrowRight } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Button,
+  Card,
+  CardContent,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@nba/design-system";
+import { User, ArrowRight } from "lucide-react";
 
 const COUNTRIES = [
-  "France", "Belgique", "Suisse", "Canada", "Luxembourg",
-  "Maroc", "Algérie", "Tunisie", "Sénégal", "Côte d'Ivoire",
-]
+  "France",
+  "Belgique",
+  "Suisse",
+  "Canada",
+  "Luxembourg",
+  "Maroc",
+  "Algérie",
+  "Tunisie",
+  "Sénégal",
+  "Côte d'Ivoire",
+];
 
 const LANGUAGES = [
   { value: "fr", label: "Français" },
   { value: "en", label: "English" },
-]
+];
 
 const TIMEZONES = [
   "Europe/Paris",
@@ -22,27 +39,27 @@ const TIMEZONES = [
   "America/Montreal",
   "Africa/Casablanca",
   "Africa/Abidjan",
-]
+];
 
 export default function ProfilePage() {
-  const router = useRouter()
-  const [country, setCountry] = useState("")
-  const [language, setLanguage] = useState("fr")
-  const [timezone, setTimezone] = useState("Europe/Paris")
-  const [loading, setLoading] = useState(false)
+  const router = useRouter();
+  const [country, setCountry] = useState("");
+  const [language, setLanguage] = useState("fr");
+  const [timezone, setTimezone] = useState("Europe/Paris");
+  const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setLoading(true)
+    e.preventDefault();
+    setLoading(true);
 
     await fetch("/api/onboarding/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ country, language, timezone }),
-    })
+    });
 
-    router.push("/onboarding/kyc")
-    router.refresh()
+    router.push("/onboarding/kyc");
+    router.refresh();
   }
 
   return (
@@ -53,7 +70,9 @@ export default function ProfilePage() {
         </div>
         <div>
           <h1 className="text-lg font-semibold">Compléter votre profil</h1>
-          <p className="text-sm text-muted-foreground">Quelques informations pour personnaliser votre expérience</p>
+          <p className="text-sm text-muted-foreground">
+            Quelques informations pour personnaliser votre expérience
+          </p>
         </div>
       </div>
 
@@ -62,42 +81,63 @@ export default function ProfilePage() {
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Pays</label>
-              <Select value={country} onValueChange={setCountry}>
+              <label className="text-sm font-medium text-foreground">
+                Pays
+              </label>
+              <Select
+                value={country}
+                onValueChange={(value) => setCountry(value ?? "")}
+              >
                 <SelectTrigger className="w-full h-8">
                   <SelectValue placeholder="Sélectionnez votre pays" />
                 </SelectTrigger>
                 <SelectContent>
                   {COUNTRIES.map((c) => (
-                    <SelectItem key={c} value={c}>{c}</SelectItem>
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Langue</label>
-              <Select value={language} onValueChange={setLanguage}>
+              <label className="text-sm font-medium text-foreground">
+                Langue
+              </label>
+              <Select
+                value={language}
+                onValueChange={(value) => setLanguage(value ?? "fr")}
+              >
                 <SelectTrigger className="w-full h-8">
                   <SelectValue placeholder="Sélectionnez votre langue" />
                 </SelectTrigger>
                 <SelectContent>
                   {LANGUAGES.map((l) => (
-                    <SelectItem key={l.value} value={l.value}>{l.label}</SelectItem>
+                    <SelectItem key={l.value} value={l.value}>
+                      {l.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Fuseau horaire</label>
-              <Select value={timezone} onValueChange={setTimezone}>
+              <label className="text-sm font-medium text-foreground">
+                Fuseau horaire
+              </label>
+              <Select
+                value={timezone}
+                onValueChange={(value) => setTimezone(value ?? "Europe/Paris")}
+              >
                 <SelectTrigger className="w-full h-8">
                   <SelectValue placeholder="Sélectionnez votre fuseau horaire" />
                 </SelectTrigger>
                 <SelectContent>
                   {TIMEZONES.map((tz) => (
-                    <SelectItem key={tz} value={tz}>{tz}</SelectItem>
+                    <SelectItem key={tz} value={tz}>
+                      {tz}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -111,5 +151,5 @@ export default function ProfilePage() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
