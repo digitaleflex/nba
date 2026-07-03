@@ -57,7 +57,14 @@ Thumbs.db
 README.md
 CONTRIBUTING.md
 CODE_OF_CONDUCT.md
+ENGINEERING_HANDBOOK.md
 docs
+
+# AI tooling / agent config (not needed in container)
+.kilo
+.context
+.interface-design
+.prompts
 
 # CI/CD
 .github

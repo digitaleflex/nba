@@ -3,9 +3,14 @@ set -e
 
 echo "=== NeverBrokeAgain - Worker Startup ==="
 
-# Wait for database to be ready
+# Wait for database to be ready. Neon is configured through DATABASE_URL.
+if [ -z "$DATABASE_URL" ]; then
+  echo "DATABASE_URL is required."
+  exit 1
+fi
+
 echo "Waiting for database..."
-until pg_isready -h "${PGHOST:-db}" -p "${PGPORT:-5432}" -U "${PGUSER:-nba}" -q 2>/dev/null; do
+until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
   sleep 1
 done
 echo "Database is ready."
@@ -19,4 +24,4 @@ echo "Seeding database..."
 pnpm db:seed
 
 echo "=== Setup complete. Starting worker... ==="
-exec tsx workers/queue.ts
+exec pnpm exec tsx workers/queue.ts

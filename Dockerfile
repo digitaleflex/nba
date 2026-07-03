@@ -11,27 +11,28 @@ COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/design-system/package.json ./packages/design-system/
 RUN pnpm install --frozen-lockfile
 
-# Step 2: Build the application
-FROM base AS builder
+# Step 2: Shared base for app and worker - source code + generated Prisma client.
+# Both the Next.js build and the worker need this; keeping it as its own stage
+# avoids running `COPY . .` and `prisma generate` twice.
+FROM base AS prepared
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules
 COPY . .
-
-# Generate Prisma client for application execution
 RUN pnpm prisma generate
 
-ENV NEXT_TELEMETRY_DISABLED 1
-ENV NODE_ENV production
+# Step 3: Build the Next.js application
+FROM prepared AS builder
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
 
 # Compile Next.js app to standalone output
 RUN pnpm build
 
-# Step 3: Production runner for Next.js Web App
+# Step 4: Production runner for Next.js Web App
 FROM base AS runner
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install pg_isready for database readiness check in entrypoint
 RUN apk add --no-cache postgresql-client
@@ -44,7 +45,6 @@ RUN adduser --system --uid 1001 nextjs
 # `pnpm prisma migrate deploy` and `pnpm db:seed` (tsx) at container startup.
 # These are devDependencies not traced/included by the Next.js standalone output.
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules
 
 # Copy standalone build outputs
 COPY --from=builder /app/public ./public
@@ -57,7 +57,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/src/generated ./src/generated
 COPY --from=builder /app/docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Copy seed and createAdmin scripts (needed at runtime)
+# Copy seed, createAdmin and healthcheck scripts (needed at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 # Copy package.json and lockfiles so `pnpm <script>` (db:seed, prisma) resolves correctly at runtime
@@ -66,27 +66,25 @@ COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/packages/design-system/package.json ./packages/design-system/package.json
 
+# USER root is required here: docker-entrypoint.sh runs migrations/seed as root,
+# then drops privileges to the `nextjs` user (via `su`) before starting the server.
 USER root
 
 EXPOSE 3000
 
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD pnpm exec tsx scripts/healthcheck.ts || exit 1
+
 # Entrypoint runs migrations + seed + starts app
 ENTRYPOINT ["./docker-entrypoint.sh"]
 
-# Step 4: Production runner for BullMQ Queue Worker
-FROM base AS worker
-ENV NODE_ENV production
+# Step 5: Production runner for BullMQ Queue Worker
+# Derives from `prepared` (source + node_modules + generated Prisma client),
+# not from `builder`, so it doesn't carry the unneeded Next.js `.next` build output.
+FROM prepared AS worker
+ENV NODE_ENV=production
 
-# Install tsx globally + pg_isready for entrypoint
-RUN pnpm add -g tsx
 RUN apk add --no-cache postgresql-client
-
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/packages/design-system/node_modules ./packages/design-system/node_modules
-COPY . .
-
-# Generate Prisma client for worker access
-RUN pnpm prisma generate
 
 # Copy entrypoint script
 COPY docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
