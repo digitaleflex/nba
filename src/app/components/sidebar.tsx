@@ -76,7 +76,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     },
     {
       href: "/dashboard/signals",
-      label: "Boîte de réception",
+      label: "Mes Signaux",
       icon: TrendingUp,
       active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
     },
