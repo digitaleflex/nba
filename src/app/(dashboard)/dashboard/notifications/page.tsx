@@ -48,6 +48,8 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetchNotifications()
+    const interval = setInterval(fetchNotifications, 30000)
+    return () => clearInterval(interval)
   }, [fetchNotifications])
 
   async function markAsRead(id: string) {

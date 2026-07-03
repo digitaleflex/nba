@@ -1424,6 +1424,23 @@ function AdminConsoleContent() {
                   Timeline de type GitHub enregistrant toutes les modifications critiques de la plateforme.
                 </p>
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={async () => {
+                  if (!confirm("Supprimer les logs d'audit de plus de 90 jours ?")) return
+                  const res = await fetch("/api/admin/audit-logs", { method: "DELETE" })
+                  if (res.ok) {
+                    const data = await res.json()
+                    alert(`${data.deleted} logs supprimés (plus de ${data.olderThanDays} jours)`)
+                    fetchAudits()
+                  }
+                }}
+              >
+                <Trash2 className="size-3 mr-1" />
+                Purger les vieux logs
+              </Button>
             </div>
 
             <Card className="border-border bg-card/10">
