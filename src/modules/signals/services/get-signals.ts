@@ -2,7 +2,13 @@ import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
 
-export async function getSignals() {
+interface SignalPagination {
+  page?: number
+  limit?: number
+  status?: string
+}
+
+export async function getSignals(options: SignalPagination = {}) {
   const session = await getServerSession()
   if (!session) throw new AuthError("Non autorisé", 401)
 
@@ -20,20 +26,54 @@ export async function getSignals() {
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
 
   if (isAdmin) {
-    return prisma.signal.findMany({
-      where: { deletedAt: null },
-      include: {
-        creator: {
-          select: { name: true, email: true },
-        },
-        audience: {
-          include: {
-            plan: true,
+    const { page = 1, limit = 50, status } = options
+    const skip = (page - 1) * limit
+
+    const where: any = { deletedAt: null }
+    if (status) where.status = status
+
+    const [signals, total] = await Promise.all([
+      prisma.signal.findMany({
+        where,
+        skip,
+        take: limit,
+        select: {
+          id: true,
+          content: true,
+          imageUrl: true,
+          imageUrls: true,
+          status: true,
+          createdBy: true,
+          publishedAt: true,
+          scheduledAt: true,
+          currentVersion: true,
+          createdAt: true,
+          updatedAt: true,
+          creator: {
+            select: { name: true, email: true },
+          },
+          audience: {
+            select: {
+              id: true,
+              planId: true,
+              plan: { select: { id: true, name: true } },
+            },
           },
         },
+        orderBy: { createdAt: "desc" },
+      }),
+      prisma.signal.count({ where }),
+    ])
+
+    return {
+      signals,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: "desc" },
-    })
+    }
   }
 
   const approvedRequests = await prisma.accessRequest.findMany({

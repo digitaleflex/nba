@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { getOnboardingState } from "@nba/lib/services/onboarding"
+import { getOnboardingStateForUsers } from "@nba/lib/services/onboarding"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET() {
@@ -27,12 +27,13 @@ export async function GET() {
       orderBy: { createdAt: "asc" },
     })
 
-    const enriched = await Promise.all(
-      requests.map(async (req: any) => ({
-        ...req,
-        onboarding: await getOnboardingState(req.userId),
-      })),
-    )
+    const userIds = requests.map((r) => r.userId)
+    const onboardingMap = await getOnboardingStateForUsers(userIds)
+
+    const enriched = requests.map((req) => ({
+      ...req,
+      onboarding: onboardingMap[req.userId] ?? null,
+    }))
 
     return NextResponse.json(enriched)
   } catch (error) {
