@@ -59,6 +59,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
   const adminLinks = [
     { href: "/admin?tab=dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: pathname === "/admin" && activeTab === "dashboard" },
     { href: "/admin?tab=users", label: "Utilisateurs", icon: Users, active: pathname === "/admin" && activeTab === "users" },
+    { href: "/admin?tab=membres", label: "Membres", icon: Users, active: pathname === "/admin" && activeTab === "membres" },
     { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, active: pathname === "/admin" && activeTab === "requests" },
     { href: "/admin?tab=signals", label: "Signaux", icon: Radio, active: pathname === "/admin" && activeTab === "signals" },
     { href: "/admin?tab=kyc", label: "Dossiers KYC", icon: FileCheck, active: pathname === "/admin" && activeTab === "kyc" },

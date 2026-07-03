@@ -108,6 +108,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       active: pathname === "/admin" && activeTab === "users",
     },
     {
+      href: "/admin?tab=membres",
+      label: "Membres",
+      icon: Users,
+      active: pathname === "/admin" && activeTab === "membres",
+    },
+    {
       href: "/admin?tab=requests",
       label: "Demandes d'accès",
       icon: ListTodo,
