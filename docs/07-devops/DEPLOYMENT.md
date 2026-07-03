@@ -1,604 +1,267 @@
 # Deployment
 
-> **Version:** 1.0
-> **Status:** Approved
-> **Last Updated:** June 2026
+> **Version :** 2.0
+> **Statut :** Approved
+> **Dernière mise à jour :** Juillet 2026
 
 ---
 
-# Table of Contents
+## 1. Architecture de production
 
-1. Introduction
-2. Architecture Overview
-3. Prerequisites
-4. Local Development
-5. Docker Setup
-6. Environment Configuration
-7. Database Setup
-8. Build and Deployment
-9. Production Deployment
-10. CI/CD Pipeline
-11. Monitoring
-12. Backup and Recovery
-13. Scaling
-14. Troubleshooting
+```
+Internet → Cloudflare → VPS1 (Traefik) → app (port 3000)
+                                            ↓
+                                       Redis (port 6379)
+                                            ↑
+                                          Tailscale
+                                            ↑
+                                       VPS2 (worker BullMQ + cron B2)
+```
+
+- **VPS1** : app Next.js + Redis + Traefik (`access.signauxx.com`)
+- **VPS2** : worker BullMQ + cron B2
+- **Tailscale** : mesh privé entre les 2 VPS
+- **Neon** : PostgreSQL cloud
+- **B2** : backups quotidiens
 
 ---
 
-# 1. Introduction
+## 2. Prérequis
 
-## 1.1 Purpose
+### VPS1 (application)
+- Ubuntu 22.04+ / Debian 12+
+- Docker 24+ + Docker Compose 2+
+- 2 vCPU, 4 GB RAM minimum
+- Tailscale installé et authentifié
+- 50 GB stockage
 
-This document defines the deployment process for the NeverBrokeAgain platform.
+### VPS2 (worker)
+- Ubuntu 22.04+ / Debian 12+
+- Docker 24+ + Docker Compose 2+
+- 2 vCPU, 1 GB RAM minimum
+- Tailscale installé et authentifié
+- Accès à l'image `ghcr.io/digitaleflex/nba-worker`
 
-It covers local development, staging, and production environments.
-
-## 1.2 Architecture
-
-```
-Cloudflare (CDN, DNS, DDoS)
-        │
-    Nginx (Reverse Proxy)
-        │
-  ┌─────┴─────┐
-  │           │
-NBA App    NBA Worker
-  │           │
-  └─────┬─────┘
-        │
-     Redis
-        │
-  Neon PostgreSQL
-```
-
-## 1.3 Environments
-
-| Environment | URL | Purpose |
-|-------------|-----|---------|
-| Development | `http://localhost:3000` | Local development |
-| Staging | `https://staging.neverbrokeagain.com` | Pre-production testing |
-| Production | `https://neverbrokeagain.com` | Live application |
+### Externes
+- Compte Neon (PostgreSQL pooled)
+- Compte Backblaze B2
+- Compte Resend
+- Domaine + Cloudflare (proxied)
 
 ---
 
-# 2. Prerequisites
+## 3. Fichiers clés
 
-## 2.1 Local Development
-
-- Node.js 22+
-- pnpm 9+
-- Docker Desktop
-- Git
-
-## 2.2 Production Server
-
-- Docker Engine 24+
-- Docker Compose 2+
-- Minimum 2 vCPU, 4GB RAM
-- 50GB NVMe SSD
-- Ubuntu 22.04 or Debian 12
+| Fichier | Rôle |
+|---------|------|
+| `compose.yml` | VPS1 (app + redis) |
+| `Dockerfile` | Build de l'image app (target: runner) |
+| `Dockerfile.worker` | Build de l'image worker (target: worker) |
+| `compose.vps2.yml` | VPS2 (worker uniquement) |
+| `docker-entrypoint.sh` | App: db push + seed + start |
+| `docker-entrypoint-worker.sh` | Worker: db push + B2 auth + cron + start |
+| `.env` | Variables d'environnement (gitignored) |
+| `prisma/schema.prisma` | Schéma BDD |
 
 ---
 
-# 3. Local Development
-
-## 3.1 Clone Repository
+## 4. Build et push
 
 ```bash
-git clone https://github.com/neverbrokeagain/nba.git
-cd nba
-```
-
-## 3.2 Install Dependencies
-
-```bash
-pnpm install
-```
-
-## 3.3 Environment Variables
-
-```bash
-cp .env.example .env.local
-# Edit .env.local with your local configuration
-```
-
-## 3.4 Start Docker Services
-
-```bash
-docker compose up -d redis
-```
-
-## 3.5 Database Setup
-
-```bash
-npx prisma migrate dev
-npx prisma db seed
-```
-
-## 3.6 Start Development Server
-
-```bash
-pnpm dev
-```
-
-The application is now available at `http://localhost:3000`.
-
----
-
-# 4. Docker Setup
-
-## 4.1 Docker Compose Services
-
-```yaml
-# compose.yml
-services:
-  nba-app:
-    build:
-      context: .
-      target: production
-    ports:
-      - "3000:3000"
-    environment:
-      - DATABASE_URL
-      - REDIS_URL
-      - BETTER_AUTH_SECRET
-      - RESEND_API_KEY
-    depends_on:
-      - redis
-
-  nba-worker:
-    build:
-      context: .
-      target: production
-    command: pnpm worker
-    environment:
-      - DATABASE_URL
-      - REDIS_URL
-      - BETTER_AUTH_SECRET
-      - RESEND_API_KEY
-    depends_on:
-      - redis
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./docker/nginx:/etc/nginx/conf.d
-    depends_on:
-      - nba-app
-
-volumes:
-  redis-data:
-```
-
-## 4.2 Dockerfile
-
-```dockerfile
-# Stage 1: Dependencies
-FROM node:22-alpine AS deps
-WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
-# Stage 2: Build
-FROM node:22-alpine AS build
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
-RUN pnpm build
-
-# Stage 3: Production
-FROM node:22-alpine AS production
-WORKDIR /app
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-COPY --from=build /app/public ./public
-COPY --from=build /app/.next/standalone ./
-COPY --from=build /app/.next/static ./.next/static
-USER nextjs
-EXPOSE 3000
-ENV PORT=3000
-CMD ["node", "server.js"]
-```
-
----
-
-# 5. Environment Configuration
-
-## 5.1 Required Variables
-
-```env
-# Application
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NODE_ENV=development
-
-# Database (Neon)
-DATABASE_URL=postgresql://user:password@ep-example-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
-
-# Redis
-REDIS_URL=redis://localhost:6379
-
-# Better Auth
-BETTER_AUTH_SECRET=your-secret-here
-BETTER_AUTH_URL=http://localhost:3000
-
-# Resend
-RESEND_API_KEY=re_xxxxxxxxxxxx
-
-# Cloudflare
-CLOUDFLARE_API_TOKEN=your-token
-```
-
-## 5.2 Environment Validation
-
-Environment variables are validated at application startup using Zod:
-
-```typescript
-import { z } from "zod"
-
-const envSchema = z.object({
-  NODE_ENV: z.enum(["development", "staging", "production"]),
-  DATABASE_URL: z.string().url(),
-  REDIS_URL: z.string().url(),
-  BETTER_AUTH_SECRET: z.string().min(32),
-  BETTER_AUTH_URL: z.string().url(),
-  RESEND_API_KEY: z.string().startsWith("re_"),
-})
-
-export const env = envSchema.parse(process.env)
-```
-
----
-
-# 6. Database Setup
-
-## 6.1 Neon PostgreSQL
-
-1. Create a Neon account at https://neon.tech.
-2. Create a new project.
-3. Copy the connection string.
-4. Add the connection string to environment variables.
-
-## 6.2 Run Migrations
-
-```bash
-# Development
-npx prisma migrate dev
-
-# Production
-npx prisma migrate deploy
-```
-
-## 6.3 Seed Database
-
-```bash
-npx prisma db seed
-```
-
----
-
-# 7. Build and Deployment
-
-## 7.1 Build
-
-```bash
-pnpm build
-```
-
-The build output is in the `.next` directory.
-
-## 7.2 Production Build with Docker
-
-```bash
+# Build
 docker compose build
+
+# Push vers ghcr.io
+docker push ghcr.io/digitaleflex/nba:latest
+docker push ghcr.io/digitaleflex/nba-worker:latest
 ```
 
-## 7.3 Start Production
+⚠️ **Séparation des Dockerfiles** : `Dockerfile` et `Dockerfile.worker` sont séparés pour éviter les problèmes de cache BuildKit qui causaient des erreurs 502.
+
+---
+
+## 5. Déploiement VPS1
+
+### 5.1 One-time setup
 
 ```bash
+# Tailscale
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --authkey=tskey-auth-XXXXX --hostname=vps1-nba --accept-routes
+
+# Cloner le repo
+git clone https://github.com/digitaleflex/nba.git /home/audest/nba
+cd /home/audest/nba
+
+# Copier .env
+cp .env.example .env
+nano .env  # éditer
+```
+
+### 5.2 Déployer
+
+```bash
+cd /home/audest/nba
+docker compose build
+docker compose up -d
+docker compose ps
+docker compose logs -f app
+```
+
+---
+
+## 6. Déploiement VPS2
+
+### 6.1 One-time setup
+
+```bash
+# Tailscale (même auth key que VPS1)
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up --authkey=tskey-auth-XXXXX --hostname=vps2-nba --accept-routes
+
+# Docker
+curl -fsSL https://get.docker.com | sh
+```
+
+### 6.2 Setup des fichiers
+
+```bash
+# Sur VPS1
+scp compose.vps2.yml user@vps2:~/nba-app/
+scp .env user@vps2:~/nba-app/.env
+
+# Sur VPS2
+mkdir -p ~/nba-app
+cd ~/nba-app
+
+# Login ghcr.io (image privée)
+echo "ghp_XXXXX" | docker login ghcr.io -u digitaleflex --password-stdin
+
+# Pull et lancer
+docker compose -f compose.vps2.yml pull
+docker compose -f compose.vps2.yml up -d
+```
+
+### 6.3 Vérifier
+
+```bash
+docker compose -f compose.vps2.yml ps
+docker compose -f compose.vps2.yml logs -f
+```
+
+Doit afficher :
+```
+🧹 File cleanup worker started
+📧 Notification delivery worker started
+📈 Signal distribution worker started
+```
+
+---
+
+## 7. Variables d'environnement
+
+Voir `ENVIRONMENT.md` pour la liste complète.
+
+Les variables **critiques** :
+- `DATABASE_URL` (Neon)
+- `REDIS_URL` (format `redis://:PASS@host:6379`)
+- `REDIS_PASSWORD` (passé au conteneur Redis)
+- `BETTER_AUTH_SECRET` (32+ chars hex)
+- `RESEND_API_KEY` (Resend)
+- `B2_*` (Backblaze)
+- `BACKUP_ALERT_EMAIL`
+
+---
+
+## 8. Base de données
+
+### Migrations
+
+L'entrypoint utilise `pnpm prisma db push` (sans `--accept-data-loss`) :
+- Crée les tables/colonnes manquantes
+- Refuse de supprimer des colonnes avec données
+- Pas de verrou advisory (contrairement à `migrate deploy` avec Neon pooler)
+
+Pour forcer un reset : ⚠️ **DESTRUCTIF** — ne jamais faire en prod.
+
+### Seed
+
+Automatique à chaque démarrage du conteneur (idempotent via `upsert`) :
+- 5 rôles
+- 11 permissions
+- 6 plans d'abonnement
+- 1 admin (si `ADMIN_EMAIL` + `ADMIN_PASSWORD` dans `.env`)
+
+---
+
+## 9. Monitoring
+
+| Métrique | Source |
+|----------|--------|
+| Healthcheck | `docker compose ps` (healthy) |
+| Logs | `docker compose logs` |
+| App healthcheck HTTP | `scripts/healthcheck.ts` |
+| Backup status | Logs cron B2 + alertes email |
+
+Pas de stack de monitoring dédiée (Sentry, Datadog, etc.) — à ajouter.
+
+---
+
+## 10. Rollback
+
+### App
+```bash
+cd /home/audest/nba
+git pull origin main  # revenir à un commit précédent
+docker compose build --no-cache
 docker compose up -d
 ```
 
-## 7.4 Verify Deployment
-
+### Worker (VPS2)
 ```bash
-curl https://neverbrokeagain.com/api/public/health
-# Response: { "status": "healthy", "timestamp": "..." }
+cd ~/nba-app
+docker compose -f compose.vps2.yml pull
+docker compose -f compose.vps2.yml up -d
 ```
+
+### Base de données
+Neon garde 7 jours d'historique (point-in-time recovery). Restaurer via console Neon.
 
 ---
 
-# 8. Production Deployment
+## 11. Healthchecks
 
-## 8.1 Initial Server Setup
-
-```bash
-# Update system
-apt update && apt upgrade -y
-
-# Install Docker
-curl -fsSL https://get.docker.com | sh
-
-# Install Docker Compose
-apt install docker-compose-plugin -y
-
-# Create application directory
-mkdir -p /opt/nba
-cd /opt/nba
-```
-
-## 8.2 Deploy Application
-
-```bash
-# Clone repository
-git clone https://github.com/neverbrokeagain/nba.git .
-
-# Create environment file
-cp .env.example .env
-nano .env  # Edit with production values
-
-# Build and start
-docker compose up -d --build
-```
-
-## 8.3 Database Migration
-
-```bash
-docker compose exec nba-app npx prisma migrate deploy
-```
-
-## 8.4 Verify
-
-```bash
-docker compose ps
-docker compose logs -f
-```
+| Service | Endpoint | Status |
+|---------|----------|--------|
+| VPS1 App | `https://access.signauxx.com/` | 200 |
+| VPS2 Worker | `docker inspect --format '{{.State.Health.Status}}' nba-app-worker-1` | healthy |
+| Redis | `redis-cli ping` (via Tailscale) | PONG |
+| Neon DB | connection dans healthcheck.ts | OK |
 
 ---
 
-# 9. CI/CD Pipeline
+## 12. Troubleshooting
 
-## 9.1 Pipeline Stages
+### 502 Bad Gateway
 
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy
+1. Vérifier que l'app tourne : `docker compose ps`
+2. Vérifier les logs : `docker compose logs app --tail 50`
+3. Si l'app a l'entrypoint du worker → `docker compose build --no-cache app`
 
-on:
-  push:
-    branches: [main]
+### Redis inaccessible depuis VPS2
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-      - run: pnpm install
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
+1. Vérifier Tailscale : `tailscale status` (sur les 2 VPS)
+2. Vérifier le port 6379 publié sur VPS1 : `nc -zv 100.122.171.84 6379` (depuis VPS2)
+3. Vérifier le mot de passe : `redis-cli -h 100.122.171.84 -a $REDIS_PASSWORD ping`
 
-  build:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - run: docker build -t nba-app .
-      - run: docker tag nba-app ghcr.io/neverbrokeagain/nba-app:${{ github.sha }}
-      - run: docker push ghcr.io/neverbrokeagain/nba-app:${{ github.sha }}
+### Worker ne traite pas les jobs
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.SERVER_HOST }}
-          username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
-          script: |
-            cd /opt/nba
-            docker compose pull
-            docker compose up -d --force-recreate
-            docker compose exec -T nba-app npx prisma migrate deploy
-```
+1. Vérifier que le worker tourne : `docker compose -f compose.vps2.yml ps`
+2. Vérifier la connexion Redis : logs du worker
+3. Vérifier les jobs en attente : ajouter Bull Board (TODO)
 
----
+### Backup échoue
 
-# 10. Monitoring
-
-## 10.1 Health Checks
-
-| Check | Endpoint | Expected |
-|-------|----------|----------|
-| Application | `GET /api/public/health` | `200 { status: "healthy" }` |
-| Database | Prisma connection | Connected |
-| Redis | Redis ping | PONG |
-| Worker | BullMQ queue status | Active |
-
-## 10.2 Logging
-
-- Application logs: Docker logs (`docker compose logs`).
-- Error tracking: Application error logging to stdout.
-- Audit logs: PostgreSQL audit_logs table.
-
-## 10.3 Alerts
-
-| Condition | Alert Method |
-|-----------|-------------|
-| Application down | Email + Telegram |
-| Worker queue backlog | Email |
-| Failed jobs | Email |
-| High error rate | Email |
-| Disk space < 20% | Email |
-
----
-
-# 11. Backup and Recovery
-
-## 11.1 Database Backups
-
-Neon PostgreSQL provides automatic backups:
-
-- Point-in-time recovery (7 days).
-- Daily backups.
-- Automatic failover.
-
-## 11.2 Application Backups
-
-Application data is stored in PostgreSQL. No persistent file storage requires backup.
-
-Temporary files (KYC, broker videos) are not backed up — they are disposable.
-
-## 11.3 Recovery Procedure
-
-```bash
-# 1. Pull latest code
-git pull origin main
-
-# 2. Rebuild containers
-docker compose up -d --build
-
-# 3. Run migrations
-docker compose exec nba-app npx prisma migrate deploy
-
-# 4. Verify health
-curl https://neverbrokeagain.com/api/public/health
-```
-
----
-
-# 12. Scaling
-
-## 12.1 Vertical Scaling
-
-- Increase VPS resources (CPU, RAM).
-- Upgrade Neon PostgreSQL compute.
-
-## 12.2 Horizontal Scaling (Future)
-
-- Multiple application instances behind the load balancer.
-- Dedicated worker instances.
-- Redis cluster.
-- PostgreSQL read replicas.
-
-## 12.3 When to Scale
-
-| Metric | Threshold | Action |
-|--------|-----------|--------|
-| CPU usage | > 80% for 10 minutes | Increase CPU allocation |
-| Memory usage | > 80% for 10 minutes | Increase RAM allocation |
-| Request latency | > 2 seconds p95 | Add application instances |
-| Database connections | > 80% of limit | Upgrade Neon compute |
-| Worker queue length | > 1000 pending | Add worker instances |
-
----
-
-# 13. Troubleshooting
-
-## 13.1 Application Won't Start
-
-```bash
-# Check logs
-docker compose logs nba-app
-
-# Verify environment variables
-docker compose exec nba-app env
-
-# Check database connection
-docker compose exec nba-app npx prisma db push --dry-run
-```
-
-## 13.2 Database Connection Failed
-
-```bash
-# Verify DATABASE_URL
-echo $DATABASE_URL
-
-# Test connection
-docker compose exec nba-app npx prisma db push --dry-run
-
-# Check Neon status
-# Visit https://console.neon.tech
-```
-
-## 13.3 Redis Connection Failed
-
-```bash
-# Check Redis is running
-docker compose ps redis
-
-# Test connection
-docker compose exec redis redis-cli ping
-# Response: PONG
-```
-
-## 13.4 Workers Not Processing
-
-```bash
-# Check worker logs
-docker compose logs nba-worker
-
-# Check queue status
-docker compose exec redis redis-cli LLEN bull:signal-distribution:wait
-
-# Restart worker
-docker compose restart nba-worker
-```
-
-## 13.5 SSL/TLS Issues
-
-```bash
-# Verify Cloudflare status
-curl -I https://neverbrokeagain.com
-
-# Check certificate
-openssl s_client -connect neverbrokeagain.com:443 -servername neverbrokeagain.com
-```
-
----
-
-# 14. Rollback Procedure
-
-## 14.1 Application Rollback
-
-```bash
-# Rollback to previous Docker image
-docker compose down
-docker compose up -d --build  # Rebuilds with previous code if git reverted
-
-# Or use specific image tag
-docker compose up -d nba-app:previous-tag
-```
-
-## 14.2 Database Rollback
-
-```bash
-# Identify the migration to rollback
-npx prisma migrate status
-
-# Rollback the last migration
-npx prisma migrate down
-```
-
----
-
-# Related Documents
-
-- ADR-007 — Docker
-- ADR-008 — Docker Compose
-- ADR-010 — Cloudflare
-- PROJECT_STRUCTURE.md
-- TECHNICAL_ARCHITECTURE.md
-- SECURITY.md
+1. Vérifier les credentials B2 dans `.env`
+2. Vérifier la connexion B2 : `b2 authorize-account`
+3. L'email d'alerte arrive dans la boîte `admin@signauxx.com`

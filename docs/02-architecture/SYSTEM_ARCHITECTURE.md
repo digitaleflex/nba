@@ -1,591 +1,253 @@
-# System Architecture
+# Architecture Système
 
-# NeverBrokeAgain (NBA)
-
-> Version: 1.0
-> Status: Approved
-> Last Updated: June 2026
-
----
-
-# Purpose
-
-This document defines the software architecture of NeverBrokeAgain.
-
-It establishes the technical standards, architectural principles, module organization, development rules, and system interactions.
-
-Every developer and AI coding agent must follow this document.
+> **Version :** 2.0
+> **Statut :** Approved
+> **Dernière mise à jour :** Juillet 2026
+> **Domaine de prod :** `access.signauxx.com`
 
 ---
 
-# Architectural Philosophy
+## 1. Vue d'ensemble
 
-NBA is built as a **Modular Monolith**.
-
-The objective is to maximize:
-
-* maintainability;
-* developer productivity;
-* deployment simplicity;
-* scalability;
-* code consistency.
-
-Microservices are intentionally avoided in Version 1.
-
----
-
-# High-Level Architecture
+NeverBrokeAgain (NBA) est un **monolithe modulaire** Next.js 16 déployé sur **deux VPS** reliés via **Tailscale** (mesh privé). Le frontend, l'API et le reverse-proxy Traefik sont sur VPS1, le worker BullMQ est isolé sur VPS2.
 
 ```text
-                    Internet
-                        │
-                  Cloudflare CDN
-                        │
-                 Reverse Proxy (Nginx)
-                        │
-                  Docker Network
-        ┌───────────────┼───────────────┐
-        │               │               │
-    NBA App         NBA Worker       Redis
-        │               │
-        └───────────────┘
-                │
-          Neon PostgreSQL
+                         Internet
+                             │
+                       Cloudflare CDN/Proxy
+                             │ (HTTPS + WAF)
+                             ▼
+   ┌──────────────────────── VPS1 (audit@axiom) ───────────────────────┐
+   │  Tailscale: 100.122.171.84                                       │
+   │                                                                  │
+   │     ┌──────────────── Traefik (reverse proxy) ──────────────┐    │
+   │     │                                                        │    │
+   │     ▼                                                        │    │
+   │  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐    │    │
+   │  │  NBA App     │    │  nba-redis   │    │  storage/    │    │    │
+   │  │  (Next.js 16)│◀──▶│  (Valkey 8)  │    │  (KYC,       │    │    │
+   │  │  2 CPU 4GB   │    │  0.5 CPU     │    │   broker)    │    │    │
+   │  │              │    │  256MB       │    │              │    │    │
+   │  └──────┬───────┘    └──────▲───────┘    └──────────────┘    │    │
+   │         │                   │                                │    │
+   └─────────┼───────────────────┼────────────────────────────────┘    │
+             │                   │                                     │
+   ┌─────────┼───────────────────┼──────── Tailscale mesh ──────────┐
+   │         │                   │                                   │
+   │  ┌──────┴──────────────────────────────────────────┐            │
+   │  │  VPS2 (72.61.90.216 — phanthome)               │            │
+   │  │  Tailscale: 100.75.74.21                      │            │
+   │  │                                               │            │
+   │  │  ┌────────────────────────────────────┐       │            │
+   │  │  │  NBA Worker (BullMQ)                │       │            │
+   │  │  │  2 CPU 1GB                         │       │            │
+   │  │  │                                    │       │            │
+   │  │  │  • file-cleanup                    │       │            │
+   │  │  │  • notification-delivery           │       │            │
+   │  │  │  • signal-distribution             │       │            │
+   │  │  │  • B2 backup cron (daily 2h)       │       │            │
+   │  │  └────────────────────────────────────┘       │            │
+   │  └───────────────────────────────────────────────┘            │
+   └────────────────────────────────────────────────────────────────┘
+                                    │
+                                    ▼
+                          ┌────────────────────┐
+                          │  Neon PostgreSQL   │
+                          │  (cloud, pooled)   │
+                          └────────────────────┘
+                                    │
+                                    ▼
+                          ┌────────────────────┐
+                          │  Backblaze B2      │
+                          │  (backups daily)   │
+                          └────────────────────┘
 ```
 
 ---
 
-# Technology Stack
+## 2. VPS1 — Application + Redis
 
-## Frontend
+| Ressource | Valeur |
+|-----------|--------|
+| Hostname | `audit@axiom` (alias `vps1-nba`) |
+| IP publique | (configurée par hébergeur) |
+| IP Tailscale | `100.122.171.84` |
+| CPU | 2 cores |
+| RAM totale | 7.8 GB |
+| RAM app | 4 GB (limite Docker) |
+| RAM Redis | 256 MB |
+| Stockage | 50 GB NVMe |
 
-* Next.js 16
-* React 19
-* TypeScript
-* Tailwind CSS
-* Shadcn UI
-
----
-
-## Backend
-
-* Next.js Route Handlers
-* Server Actions
-* Service Layer
-* Repository Pattern
-
----
-
-## Authentication
-
-* Better Auth
-* Prisma Adapter
-* RBAC
-* Two-Factor Authentication
-* Session Management
+**Conteneurs** :
+- `nba-app-1` : Next.js 16, port 3000
+- `nba-nba-redis-1` : Valkey 8 (port 6379, bind 0.0.0.0)
+- (réseau `proxy` partagé pour Traefik)
 
 ---
 
-## Database
+## 3. VPS2 — Worker BullMQ
 
-* PostgreSQL
-* Neon Managed Database
+| Ressource | Valeur |
+|-----------|--------|
+| Hostname | `phant home` (alias `vps2-nba`) |
+| IP publique | `72.61.90.216` |
+| IP Tailscale | `100.75.74.21` |
+| CPU | 2 cores |
+| RAM | 1 GB (limite Docker) |
+| Stockage | 50 GB NVMe |
 
----
-
-## ORM
-
-* Prisma
-
----
-
-## Cache & Queue
-
-* Redis
-* BullMQ
+**Conteneurs** :
+- `nba-app-worker-1` : image `ghcr.io/digitaleflex/nba-worker:latest`
 
 ---
 
-## Infrastructure
+## 4. Réseau privé Tailscale
 
-* Docker
-* Docker Compose
-* Nginx
-* Cloudflare
+Les deux VPS sont reliés via **Tailscale** (mesh WireGuard). Avantages :
+- Pas besoin d'exposer Redis sur Internet (sécurité)
+- Latence minimale (P2P)
+- Configuration zéro
+- Authentification par clé réutilisable
 
----
+**IP Tailscale** :
+- VPS1 : `100.122.171.84`
+- VPS2 : `100.75.74.21`
 
-# Architecture Layers
-
-```text
-Presentation Layer
-
-↓
-
-Application Layer
-
-↓
-
-Domain Layer
-
-↓
-
-Infrastructure Layer
-
-↓
-
-Database
-```
+**ACLs** : par défaut, tous les appareils de l'utilisateur peuvent se parler. À durcir via https://login.tailscale.com/admin/acls/file pour restreindre.
 
 ---
 
-# Presentation Layer
+## 5. Stack technique
 
-Responsibilities:
+### Frontend
+- Next.js 16 (App Router, standalone build)
+- React 19
+- TypeScript strict
+- Tailwind CSS + design-system custom (packages/design-system)
+- lucide-react (icônes)
 
-* Pages
-* Components
-* Forms
-* Layouts
-* UI State
+### Backend
+- Next.js Route Handlers (`src/app/api/**`)
+- Server Actions
+- Better Auth (sessions JWT-like + cookies)
+- Prisma 6.x (ORM)
+- BullMQ 5.x (file de jobs)
 
-Rules:
+### Base de données
+- **PostgreSQL** (Neon, pooled connection)
+- Schéma : 17 tables (User, Session, Account, Role, Permission, AccessRequest, Signal, Notification, etc.)
 
-* No business logic
-* No database access
-* No authorization logic
+### Cache & Queue
+- **Redis/Valkey 8** (cache + broker BullMQ)
+- 3 files : `file-cleanup`, `notification-delivery`, `signal-distribution`
 
----
+### Stockage fichiers
+- Local (`/app/storage/{kyc,broker,signals}`)
+- Magic bytes validation (anti-mismatch MIME)
+- Limite 50 Mo par fichier
+- Purge auto via BullMQ (7j après review KYC/Broker)
 
-# Application Layer
+### Email
+- Resend (transactionnel uniquement)
+- Templates : OTP email, KYC approval/rejection, broker approval/rejection, access approval/rejection, signal published
 
-Responsibilities:
-
-* Use Cases
-* Workflows
-* Transactions
-* Orchestration
-
-Rules:
-
-* Calls repositories
-* Calls services
-* Coordinates modules
-
----
-
-# Domain Layer
-
-Contains:
-
-* Business Rules
-* Entities
-* Value Objects
-* Domain Services
-
-This layer must remain independent of frameworks.
+### Auth
+- Better Auth + Prisma adapter
+- Cookies HttpOnly, Secure, SameSite
+- 5 rôles : SUPER_ADMIN, ADMIN, KYC_AGENT, SUPPORT_AGENT, MEMBER
+- 11 permissions granulaires
 
 ---
 
-# Infrastructure Layer
-
-Contains:
-
-* Prisma
-* Redis
-* Better Auth
-* BullMQ
-* External APIs
-* File Storage
-* Email Providers
-
----
-
-# Module Organization
-
-```text
-modules/
-
-auth/
-members/
-plans/
-kyc/
-broker/
-signals/
-notifications/
-admin/
-settings/
-audit/
-```
-
-Each module is self-contained.
-
----
-
-# Internal Module Structure
-
-```text
-module/
-
-components/
-
-pages/
-
-services/
-
-repositories/
-
-validators/
-
-types/
-
-hooks/
-
-constants/
-```
-
----
-
-# Folder Structure
-
-```text
-app/
-
-components/
-
-modules/
-
-services/
-
-repositories/
-
-workers/
-
-lib/
-
-prisma/
-
-scripts/
-
-tests/
-
-docker/
-
-docs/
-```
-
----
-
-# Data Flow
+## 6. Flux de données
 
 ```text
 User
-
-↓
-
-Page
-
-↓
-
-Server Action
-
-↓
-
-Application Service
-
-↓
-
-Repository
-
-↓
-
-Prisma
-
-↓
-
-PostgreSQL
+  ↓
+Traefik (HTTPS, rate limit Cloudflare)
+  ↓
+Next.js App (VPS1)
+  ↓
+Better Auth (session check)
+  ↓
+Route Handler / Server Action
+  ↓
+Service Layer
+  ↓
+Repository (Prisma)
+  ↓
+Neon PostgreSQL
 ```
 
-No component may access Prisma directly.
+Pour les actions asynchrones (notifications, scheduled signals, file cleanup) :
+```text
+Service → BullMQ add() → Redis → Worker (VPS2) → Resend / Prisma / Storage
+```
 
 ---
 
-# Background Jobs
+## 7. Couches applicatives
 
-BullMQ workers handle:
-
-* signal publication
-* notifications
-* scheduled jobs
-* temporary file cleanup
-* maintenance tasks
-
-Background jobs must never block user requests.
+| Couche | Responsabilité | Règle |
+|--------|----------------|-------|
+| Presentation | Pages, composants, forms, UI state | Pas de logique métier ni DB |
+| Application | Use cases, workflows, transactions | Appelle repositories + services |
+| Domain | Business rules, entités | Indépendant des frameworks |
+| Infrastructure | Prisma, Redis, BullMQ, Resend, Storage | Détails techniques |
 
 ---
 
-# Authentication Flow
+## 8. Modules
 
 ```text
-User
-
-↓
-
-Better Auth
-
-↓
-
-Session
-
-↓
-
-Authorization
-
-↓
-
-Application
+src/modules/
+├── auth/         (Better Auth config)
+├── members/      (User, Account, Session)
+├── plans/        (SubscriptionPlan, AccessRequest)
+├── kyc/          (KycDocument)
+├── broker/       (BrokerVerification)
+├── signals/      (Signal, SignalVersion, SignalRead, SignalFavorite, SignalArchive)
+├── notifications/(Notification, NotificationDelivery)
+├── admin/        (AuditLog, settings)
+└── audit/        (audit helpers)
 ```
 
-Authorization is centralized.
+---
+
+## 9. Sécurité
+
+| Mesure | Implémentation |
+|--------|----------------|
+| HTTPS | Cloudflare (proxied) + Traefik |
+| Cookies | HttpOnly, Secure, SameSite=Lax |
+| CSRF | Better Auth |
+| Rate limiting | Better Auth (5/min sur sign-in) + custom sur uploads (5/h) |
+| RBAC | 5 rôles × 11 permissions |
+| Auth API | `requirePermission()` ou `requireRole()` sur toutes routes admin |
+| Mots de passe | hashés via Better Auth (scrypt) |
+| Fichiers | Magic bytes validation, limite taille, MIME whitelist |
+| Données sensibles | Jamais dans les logs, jamais en clair |
 
 ---
 
-# Authorization Model
+## 10. Capacité
 
-Roles:
-
-* SUPER_ADMIN
-* ADMIN
-* KYC_AGENT
-* SUPPORT_AGENT
-* MEMBER
-
-Permissions are role-based.
-
-Role checks must occur in the application layer.
+| Action | Concurrent | Raison |
+|--------|------------|--------|
+| Inscription (form) | 80-120 | Léger |
+| Vérification OTP | 80-120 | Très léger |
+| KYC (upload images) | 30-50 | Mémoire + I/O |
+| Broker (upload vidéo) | 15-25 | Très lourd (50 Mo/fichier) |
 
 ---
 
-# Signal Distribution
-
-```text
-Administrator
-
-↓
-
-Create Signal
-
-↓
-
-Database
-
-↓
-
-Queue Job
-
-↓
-
-Redis
-
-↓
-
-BullMQ Worker
-
-↓
-
-Notifications
-
-↓
-
-Members
-```
-
-Distribution must be asynchronous.
-
----
-
-# File Management
-
-Temporary uploads:
-
-```text
-uploads/
-
-kyc/
-
-videos/
-```
-
-Files are deleted automatically after processing.
-
-Only metadata remains in PostgreSQL.
-
----
-
-# Database Access Rules
-
-Allowed:
-
-Repository
-
-↓
-
-Prisma
-
-↓
-
-Database
-
-Forbidden:
-
-Component
-
-↓
-
-Prisma
-
----
-
-# Error Handling
-
-Errors must be:
-
-* typed
-* meaningful
-* logged
-* user-friendly
-
-Unhandled exceptions are prohibited.
-
----
-
-# Validation
-
-Validation occurs at:
-
-Client
-
-↓
-
-Server
-
-↓
-
-Database
-
-Validation is never optional.
-
----
-
-# Logging
-
-Every important event must be logged.
-
-Examples:
-
-* Login
-* Logout
-* Registration
-* KYC Approval
-* Signal Publication
-* Subscription Changes
-
----
-
-# Security
-
-Mandatory:
-
-* HTTPS
-* Password Hashing
-* CSRF Protection
-* Rate Limiting
-* RBAC
-* Input Validation
-* Secure Sessions
-
----
-
-# Performance
-
-Target response time:
-
-Dashboard:
-
-< 2 seconds
-
-Signal publication:
-
-Immediate
-
-Heavy processing:
-
-Background workers
-
----
-
-# Scalability
-
-Current architecture supports:
-
-* thousands of members;
-* asynchronous processing;
-* modular growth.
-
-Future scalability includes:
-
-* multiple application instances;
-* dedicated workers;
-* managed Redis;
-* read replicas.
-
----
-
-# Coding Principles
-
-Always:
-
-* Use TypeScript strict mode.
-* Use Prisma for database access.
-* Use Better Auth for authentication.
-* Keep business logic inside services.
-* Keep repositories focused on persistence.
-* Prefer composition over inheritance.
-* Write reusable modules.
-
-Never:
-
-* Access the database from components.
-* Duplicate business logic.
-* Hardcode permissions.
-* Hardcode subscription plans.
-* Bypass validation.
-* Bypass authorization.
-
----
-
-# AI Development Rules
-
-AI coding assistants must:
-
-* read PRODUCT_VISION.md;
-* read PRD.md;
-* read BUSINESS_RULES.md;
-* read SYSTEM_ARCHITECTURE.md;
-* follow repository conventions;
-* preserve architectural consistency.
-
-AI agents must never redesign the architecture without explicit approval.
-
----
-
-# Definition of Done
-
-A technical implementation is complete only if:
-
-* architecture rules are respected;
-* module boundaries are preserved;
-* business rules remain intact;
-* tests pass;
-* code review is approved;
-* documentation is updated.
+## 11. Backups
+
+- **Quotidien 2h** (cron) sur VPS2
+- Dump PostgreSQL (pg_dump format custom)
+- Archive `storage/` (KYC, broker, signals)
+- `.env` (sans les secrets)
+- Upload vers **Backblaze B2** (`nba-backups` bucket)
+- **Alerte email** automatique via Resend en cas d'échec (à `admin@signauxx.com`)
+
+Rétention : indéfinie sur B2 (configurable via lifecycle policy).
