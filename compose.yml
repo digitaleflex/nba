@@ -4,13 +4,19 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      target: runner
+      args:
+        NEXT_PUBLIC_APP_URL: "https://access.signauxx.com"
     networks:
       - nba
       - proxy
     env_file: .env
     environment:
       QUEUE_ENABLED: "false"
-      REDIS_URL: ""
+      REDIS_URL: "redis://nba-redis:6379"
+    depends_on:
+      nba-redis:
+        condition: service_started
     deploy:
       resources:
         limits:
@@ -26,6 +32,17 @@ services:
       - "traefik.http.routers.nba-app.tls=true"
       - "traefik.http.routers.nba-app.tls.certresolver=myresolver"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+
+  nba-redis:
+    image: valkey/valkey:8-alpine
+    networks:
+      - nba
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
 
 networks:
   nba:
