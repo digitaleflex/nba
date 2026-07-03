@@ -1,9 +1,10 @@
 import { prisma } from "@nba/lib/db"
 import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOtp } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
+import { sendPushToUser } from "./push"
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING"
-type NotificationChannel = "IN_APP" | "EMAIL"
+type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH"
 
 interface NotifyParams {
   userId: string
@@ -20,7 +21,7 @@ interface NotifyParams {
 }
 
 /**
- * Crée une notification in-app et optionnellement planifie un email via BullMQ.
+ * Crée une notification in-app, envoie un push (web), et planifie un email via BullMQ.
  */
 export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const notification = await prisma.notification.create({
@@ -31,6 +32,16 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
       body: params.body,
       data: (params.data ?? {}) as any,
     },
+  })
+
+  // Envoi push web (fire-and-forget, ne bloque pas la réponse)
+  sendPushToUser(params.userId, {
+    title: params.title,
+    body: params.body,
+    url: params.linkUrl || "/dashboard",
+    tag: notification.id,
+  }).catch((err) => {
+    console.error("[notify] push failed:", err)
   })
 
   if (params.email) {

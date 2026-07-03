@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
 import { Bell, Loader2, Info, CheckCheck, Clock } from "lucide-react"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import Link from "next/link"
 
 interface Notification {
@@ -103,12 +104,15 @@ export default function NotificationsPage() {
               : "Tout est à jour"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllAsRead}>
-            <CheckCheck className="size-4 mr-1.5" />
-            Tout marquer lu
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <PushNotificationToggle />
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <CheckCheck className="size-4 mr-1.5" />
+              Tout marquer lu
+            </Button>
+          )}
+        </div>
       </div>
 
       {notifications.length === 0 ? (
