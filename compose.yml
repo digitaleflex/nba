@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     networks:
-      - default
+      - nba
       - proxy
     env_file: .env
     environment:
@@ -27,6 +27,6 @@ services:
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
 
 networks:
-  default:
+  nba:
   proxy:
     external: true
