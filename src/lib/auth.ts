@@ -56,6 +56,9 @@ export const auth = betterAuth({
     database: {
       generateId: () => crypto.randomUUID(),
     },
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
+    },
   },
   plugins: [nextCookies()],
 })
