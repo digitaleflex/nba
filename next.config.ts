@@ -21,6 +21,7 @@ const nextConfig: NextConfig = {
               "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com",
+              "media-src 'self' data: blob: https:",
               "connect-src 'self' https://access.signauxx.com https://*.sentry.io https://*.cloudflare.com",
               "frame-src 'self' https://challenges.cloudflare.com https://*.cloudflare.com",
               "frame-ancestors 'none'",
