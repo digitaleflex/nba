@@ -183,6 +183,7 @@ model AccessRequest {
   @@index([userId])
   @@index([planId])
   @@index([status])
+  @@index([userId, planId, status]) // Composite for access check
   @@map("access_requests")
 }
 
@@ -264,6 +265,7 @@ model BrokerVerification {
   user     User  @relation("BrokerVerifications", fields: [userId], references: [id])
   reviewer User? @relation("BrokerReviews", fields: [reviewedBy], references: [id])
 
+  @@index([status])
   @@map("broker_verifications")
 }
 
@@ -295,6 +297,7 @@ model Signal {
   @@index([scheduledAt])
   @@index([deletedAt])
   @@index([status, deletedAt]) // Index composite très fréquent pour le filtrage par statut et soft delete
+  @@index([status, createdAt]) // Admin list: filter by status + sort by date
   @@map("signals")
 }
 
@@ -329,6 +332,7 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([userId, readAt]) // Composite for unread count
   @@map("notifications")
 }
 
