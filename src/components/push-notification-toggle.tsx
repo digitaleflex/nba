@@ -30,16 +30,25 @@ export function PushNotificationToggle() {
       return
     }
     setSupported(true)
-    setPermission(Notification.permission)
+    setPermission(typeof Notification !== "undefined" ? Notification.permission : "default")
 
-    // Vérifier si déjà abonné
-    navigator.serviceWorker.getRegistration(SW_URL).then((reg) => {
-      if (reg) {
-        reg.pushManager.getSubscription().then((sub) => {
-          if (sub) setSubscribed(true)
-        })
-      }
-    })
+    // Vérifier si déjà abonné (silencieusement, ne pas faire crasher en mode privé)
+    navigator.serviceWorker
+      .getRegistration(SW_URL)
+      .then((reg) => {
+        if (reg) {
+          return reg.pushManager.getSubscription()
+        }
+        return null
+      })
+      .then((sub) => {
+        if (sub) setSubscribed(true)
+      })
+      .catch((err) => {
+        // Mode privé ou restriction navigateur: on désactive silencieusement
+        console.warn("Push check failed (private mode?):", err)
+        setSupported(false)
+      })
   }, [])
 
   async function subscribe() {

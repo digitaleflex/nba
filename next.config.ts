@@ -10,7 +10,23 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self'; connect-src 'self' https://access.signauxx.com; frame-ancestors 'none';",
+            // script-src: 'self' + unsafe-inline/eval (Next.js), Cloudflare insights, Cloudflare challenge bot protection
+            // connect-src: 'self' + access.signauxx.com + Sentry + Cloudflare
+            // frame-src: Cloudflare challenge needs to load in an iframe
+            // style-src-elem/font-src: Google Fonts via Cloudflare
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.cloudflareinsights.com https://*.cloudflare.com",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "img-src 'self' data: blob: https:",
+              "font-src 'self' data: https://fonts.gstatic.com",
+              "connect-src 'self' https://access.signauxx.com https://*.sentry.io https://*.cloudflare.com",
+              "frame-src 'self' https://challenges.cloudflare.com https://*.cloudflare.com",
+              "frame-ancestors 'none'",
+              "base-uri 'self'",
+              "form-action 'self'",
+            ].join("; "),
           },
           {
             key: "X-Content-Type-Options",
