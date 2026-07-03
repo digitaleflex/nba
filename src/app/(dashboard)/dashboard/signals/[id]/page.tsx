@@ -132,7 +132,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
           {/* Interactive Actions for Favorite, Archive, Share, Print */}
           <SignalActions 
-            signalId={signal.id} 
+            signalId={signal.id}
+            signalContent={signal.content}
             initialFavorited={!!favorite} 
             initialArchived={!!archive} 
           />

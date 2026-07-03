@@ -1,21 +1,23 @@
 "use client"
 
 import { useState } from "react"
-import { Star, Archive, Share2, Printer, Check, Loader2 } from "lucide-react"
+import { Star, Archive, Share2, Printer, Check, Loader2, Copy } from "lucide-react"
 import { Button, cn } from "@nba/design-system"
 
 interface SignalActionsProps {
   signalId: string
+  signalContent: string
   initialFavorited: boolean
   initialArchived: boolean
 }
 
-export function SignalActions({ signalId, initialFavorited, initialArchived }: SignalActionsProps) {
+export function SignalActions({ signalId, signalContent, initialFavorited, initialArchived }: SignalActionsProps) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [archived, setArchived] = useState(initialArchived)
   const [isLiking, setIsLiking] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [contentCopied, setContentCopied] = useState(false)
 
   async function toggleFavorite() {
     setIsLiking(true)
@@ -52,6 +54,12 @@ export function SignalActions({ signalId, initialFavorited, initialArchived }: S
     navigator.clipboard.writeText(url)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  function handleCopyContent() {
+    navigator.clipboard.writeText(signalContent)
+    setContentCopied(true)
+    setTimeout(() => setContentCopied(false), 2000)
   }
 
   function handlePrint() {
@@ -99,6 +107,16 @@ export function SignalActions({ signalId, initialFavorited, initialArchived }: S
       <Button
         variant="ghost"
         size="sm"
+        onClick={handleCopyContent}
+        className="h-9 text-xs rounded-xl text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer"
+      >
+        {contentCopied ? <Check className="size-4 text-emerald-500" /> : <Copy className="size-4" />}
+        <span>{contentCopied ? "Copié !" : "Copier"}</span>
+      </Button>
+
+      <Button
+        variant="ghost"
+        size="sm"
         onClick={handleShare}
         className="h-9 text-xs rounded-xl text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer"
       >
@@ -113,7 +131,7 @@ export function SignalActions({ signalId, initialFavorited, initialArchived }: S
         className="h-9 text-xs rounded-xl text-muted-foreground hover:text-foreground flex items-center gap-1.5 cursor-pointer"
       >
         <Printer className="size-4" />
-        <span>Télécharger / Imprimer</span>
+        <span>Imprimer</span>
       </Button>
     </div>
   )
