@@ -59,6 +59,9 @@ services:
     image: valkey/valkey:8-alpine
     networks:
       - nba
+    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0"]
+    # Bind sur 0.0.0.0 (sécurisé par --requirepass)
+    # Tailscale ACLs bloquent l'accès public non-autorisé par défaut
     restart: unless-stopped
     deploy:
       resources:

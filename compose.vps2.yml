@@ -2,10 +2,9 @@
 # Usage: docker compose -f compose.vps2.yml up -d
 #
 # Prérequis:
-#   1. Tailscale installé sur VPS1 ET VPS2 (même compte)
-#   2. Sur VPS1, récupérer l'IP Tailscale: tailscale ip -4
-#   3. Remplacer VPS1_TAILSCALE_IP ci-dessous
-#   4. Le fichier .env doit être identique à celui de VPS1 (ou sync via B2/scp)
+#   1. Tailscale installé sur VPS1 ET VPS2 (même compte, auth key)
+#   2. .env identique à celui de VPS1 (DATABASE_URL, REDIS_URL, etc.)
+#   3. VPS1 a Redis publié sur tailscale0:6379 (via Tailscale + config)
 
 services:
   worker:
@@ -14,13 +13,11 @@ services:
       context: .
       dockerfile: Dockerfile
       target: worker
-    networks:
-      - nba
     env_file: .env
     environment:
       QUEUE_ENABLED: "true"
-      # Connexion à Redis via le réseau privé Tailscale de VPS1
-      REDIS_URL: "redis://VPS1_TAILSCALE_IP:6379"
+      # Connexion à Redis de VPS1 via le réseau privé Tailscale
+      REDIS_URL: "redis://:p1aacNszU44FGDmrg4GL8fueudKOc0uG@100.122.171.84:6379"
     deploy:
       resources:
         limits:
@@ -30,7 +27,3 @@ services:
           cpus: "0.5"
           memory: 256M
     restart: unless-stopped
-
-networks:
-  nba:
-    driver: bridge
