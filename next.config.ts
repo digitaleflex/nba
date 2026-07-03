@@ -44,6 +44,18 @@ const nextConfig: NextConfig = {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
           },
+          {
+            // Force HTTP/2 (disable HTTP/3 advertisement).
+            // Cloudflare HTTP/3 (QUIC) edge is returning 502 on RSC prefetch requests.
+            // Empty alt-svc prevents the browser from upgrading to HTTP/3.
+            key: "Alt-Svc",
+            value: 'h2c=":443"; ma=1',
+          },
+          {
+            // Permissions-Policy: disable unused features for better security
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
+          },
         ],
       },
     ];
