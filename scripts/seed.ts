@@ -68,59 +68,82 @@ const ROLE_PERMISSIONS: Record<RoleName, string[]> = {
 }
 
 async function main() {
-  console.log("Seeding roles...")
-  const roleMap = new Map<string, string>()
-  for (const role of ROLES) {
-    const created = await prisma.role.upsert({
-      where: { name: role.name },
-      update: { description: role.description },
-      create: { ...role, isSystem: true },
-    })
-    roleMap.set(role.name, created.id)
-    console.log(`  ✅ Rôle: ${role.name}`)
-  }
+  const t0 = Date.now()
 
-  console.log("Seeding permissions...")
-  const permissionMap = new Map<string, string>()
-  for (const perm of PERMISSIONS) {
-    const created = await prisma.permission.upsert({
-      where: { name: perm.name },
-      update: { description: perm.description, module: perm.module },
-      create: perm,
-    })
-    permissionMap.set(perm.name, created.id)
-    console.log(`  ✅ Permission: ${perm.name}`)
+  // --- 1. Permissions (parallel createMany) ---
+  const existingPerms = await prisma.permission.findMany({ select: { name: true } })
+  const existingPermNames = new Set(existingPerms.map(p => p.name))
+  const newPerms = PERMISSIONS.filter(p => !existingPermNames.has(p.name))
+  if (newPerms.length > 0) {
+    await prisma.permission.createMany({ data: newPerms, skipDuplicates: true })
   }
+  console.log(`  ✅ Permissions: ${PERMISSIONS.length} total (${newPerms.length} added)`)
 
-  console.log("Assigning permissions to roles...")
+  // --- 2. Roles (parallel createMany + set isSystem) ---
+  const existingRoles = await prisma.role.findMany({ select: { name: true, id: true, isSystem: true } })
+  const existingRoleMap = new Map(existingRoles.map(r => [r.name, r]))
+  const newRoles = ROLES.filter(r => !existingRoleMap.has(r.name))
+  if (newRoles.length > 0) {
+    await prisma.role.createMany({
+      data: newRoles.map(r => ({ ...r, isSystem: true })),
+    })
+  }
+  // Set isSystem=true on existing roles that don't have it
+  const rolesNeedingSystemFlag = existingRoles.filter(r => !r.isSystem).map(r => r.id)
+  if (rolesNeedingSystemFlag.length > 0) {
+    await prisma.role.updateMany({
+      where: { id: { in: rolesNeedingSystemFlag } },
+      data: { isSystem: true },
+    })
+  }
+  console.log(`  ✅ Roles: ${ROLES.length} total (${newRoles.length} added)`)
+
+  // --- 3. RolePermissions (bulk) ---
+  const allRoles = await prisma.role.findMany({ select: { id: true, name: true } })
+  const allPerms = await prisma.permission.findMany({ select: { id: true, name: true } })
+  const roleIdByName = new Map(allRoles.map(r => [r.name, r.id]))
+  const permIdByName = new Map(allPerms.map(p => [p.name, p.id]))
+
+  // Get existing role-permissions
+  const existingRP = await prisma.rolePermission.findMany({ select: { roleId: true, permissionId: true } })
+  const existingRPSet = new Set(existingRP.map(rp => `${rp.roleId}:${rp.permissionId}`))
+
+  const newRPs: { roleId: string; permissionId: string }[] = []
   for (const [roleName, permNames] of Object.entries(ROLE_PERMISSIONS)) {
-    const roleId = roleMap.get(roleName)
+    const roleId = roleIdByName.get(roleName as RoleName)
     if (!roleId) continue
-
     for (const permName of permNames) {
-      const permissionId = permissionMap.get(permName)
+      const permissionId = permIdByName.get(permName)
       if (!permissionId) continue
-
-      await prisma.rolePermission.upsert({
-        where: { roleId_permissionId: { roleId, permissionId } },
-        update: {},
-        create: { roleId, permissionId },
+      if (!existingRPSet.has(`${roleId}:${permissionId}`)) {
+        newRPs.push({ roleId, permissionId })
+      }
+    }
+  }
+  if (newRPs.length > 0) {
+    // createMany in batches of 1000 to avoid query size limits
+    for (let i = 0; i < newRPs.length; i += 1000) {
+      await prisma.rolePermission.createMany({
+        data: newRPs.slice(i, i + 1000),
+        skipDuplicates: true,
       })
     }
-    console.log(`  ✅ ${roleName}: ${permNames.length} permissions`)
   }
+  const totalRPs = Object.values(ROLE_PERMISSIONS).reduce((sum, p) => sum + p.length, 0)
+  console.log(`  ✅ Role-Permissions: ${totalRPs} total (${newRPs.length} added)`)
 
-  console.log("Seeding subscription plans...")
-  for (const plan of PLANS) {
-    await prisma.subscriptionPlan.upsert({
-      where: { name: plan.name },
-      update: plan,
-      create: { ...plan, currency: "F CFA", features: [] },
+  // --- 4. Subscription Plans (parallel createMany) ---
+  const existingPlans = await prisma.subscriptionPlan.findMany({ select: { name: true } })
+  const existingPlanNames = new Set(existingPlans.map(p => p.name))
+  const newPlans = PLANS.filter(p => !existingPlanNames.has(p.name))
+  if (newPlans.length > 0) {
+    await prisma.subscriptionPlan.createMany({
+      data: newPlans.map(p => ({ ...p, currency: "F CFA", features: [] })),
     })
-    console.log(`  ✅ ${plan.name}`)
   }
+  console.log(`  ✅ Plans: ${PLANS.length} total (${newPlans.length} added)`)
 
-  console.log("Done!")
+  console.log(`Done! (${Date.now() - t0}ms)`)
 }
 
 main()
