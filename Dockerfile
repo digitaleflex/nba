@@ -21,8 +21,10 @@ RUN pnpm prisma generate
 
 # Step 3: Build the Next.js application
 FROM prepared AS builder
+ARG NEXT_PUBLIC_APP_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 
 # Compile Next.js app to standalone output
 RUN pnpm build
