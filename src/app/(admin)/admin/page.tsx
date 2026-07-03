@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation"
 import {
   Check, X, Clock, ExternalLink, ListTodo, Radio, History, Trash2, Calendar,
   Search, Eye, Layers, Copy, Play, Loader2, Laptop, Phone, Users, Shield,
-  FileCheck, Link2, Bell, Mail, Activity, BarChart2, Settings, Ban, ArrowRight,
+  FileCheck, Link2, Bell, Activity, BarChart2, Settings, Ban, ArrowRight,
   AlertTriangle, Server, ArrowUpRight, Image as ImageIcon
 } from "lucide-react"
 import { toast } from "sonner"
@@ -116,18 +116,6 @@ interface AuditLog {
   user: { name: string; email: string } | null
 }
 
-interface EmailLog {
-  id: string
-  status: string
-  createdAt: string
-  sentAt: string | null
-  errorMessage: string | null
-  notification: {
-    title: string
-    user: { name: string; email: string }
-  }
-}
-
 export default function AdminPage() {
   return (
     <Suspense fallback={
@@ -176,10 +164,6 @@ function AdminConsoleContent() {
   const [brokerDocs, setBrokerDocs] = useState<BrokerVerification[]>([])
   const [loadingBroker, setLoadingBroker] = useState(false)
 
-  // Module Emails State
-  const [emails, setEmails] = useState<EmailLog[]>([])
-  const [loadingEmails, setLoadingEmails] = useState(false)
-
   // Module Audit State
   const [audits, setAudits] = useState<AuditLog[]>([])
   const [loadingAudits, setLoadingAudits] = useState(false)
@@ -196,15 +180,7 @@ function AdminConsoleContent() {
   const [securityData, setSecurityData] = useState<any>(null)
   const [loadingSecurity, setLoadingSecurity] = useState(false)
 
-  // Module Settings State
-  const [smtpHost, setSmtpHost] = useState("")
-  const [smtpPort, setSmtpPort] = useState("587")
-  const [smtpTls, setSmtpTls] = useState("TLS")
-  const [smtpUser, setSmtpUser] = useState("")
-  const [smtpPass, setSmtpPass] = useState("")
-  const [smtpFrom, setSmtpFrom] = useState("")
-  const [savingSettings, setSavingSettings] = useState(false)
-  const [settingsSaved, setSettingsSaved] = useState(false)
+  // Module Settings State (empty - SMTP removed, using Resend)
 
   // Error states
   const [errorOps, setErrorOps] = useState<string | null>(null)
@@ -335,22 +311,6 @@ function AdminConsoleContent() {
     }
   }, [])
 
-  // Fetch Emails
-  const fetchEmails = useCallback(async () => {
-    setLoadingEmails(true)
-    try {
-      const res = await fetch("/api/admin/emails")
-      if (res.ok) {
-        const data = await res.json()
-        setEmails(data)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoadingEmails(false)
-    }
-  }, [])
-
   // Fetch Audits
   const fetchAudits = useCallback(async () => {
     setLoadingAudits(true)
@@ -425,45 +385,6 @@ function AdminConsoleContent() {
     }
   }, [])
 
-  // Save Settings
-  const handleSaveSettings = async () => {
-    setSavingSettings(true)
-    setSettingsSaved(false)
-    try {
-      const res = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom }),
-      })
-      if (res.ok) {
-        setSettingsSaved(true)
-        setTimeout(() => setSettingsSaved(false), 3000)
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setSavingSettings(false)
-    }
-  }
-
-  // Fetch Settings
-  const fetchSettings = useCallback(async () => {
-    try {
-      const res = await fetch("/api/admin/settings")
-      if (res.ok) {
-        const data = await res.json()
-        if (data.smtpHost) setSmtpHost(data.smtpHost)
-        if (data.smtpPort) setSmtpPort(data.smtpPort)
-        if (data.smtpTls) setSmtpTls(data.smtpTls)
-        if (data.smtpUser) setSmtpUser(data.smtpUser)
-        if (data.smtpPass) setSmtpPass(data.smtpPass)
-        if (data.smtpFrom) setSmtpFrom(data.smtpFrom)
-      }
-    } catch (err) {
-      console.error(err)
-    }
-  }, [])
-
   // Effect to load data dynamically based on active tab
   useEffect(() => {
     if (activeTab === "dashboard") fetchOperations()
@@ -472,13 +393,11 @@ function AdminConsoleContent() {
     else if (activeTab === "signals") fetchSignals()
     else if (activeTab === "kyc") fetchKyc()
     else if (activeTab === "broker") fetchBroker()
-    else if (activeTab === "emails") fetchEmails()
     else if (activeTab === "audit") fetchAudits()
     else if (activeTab === "security") fetchSecurity()
-    else if (activeTab === "settings") fetchSettings()
     else if (activeTab === "stats" && !opsData) fetchOperations()
     else if (activeTab === "notifications") fetchNotifHistory()
-  }, [activeTab, fetchOperations, fetchMembers, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchEmails, fetchAudits, fetchSecurity, fetchSettings, fetchNotifHistory])
+  }, [activeTab, fetchOperations, fetchMembers, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchAudits, fetchSecurity, fetchNotifHistory])
 
       async function handleDeleteSignal(id: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
@@ -692,30 +611,10 @@ function AdminConsoleContent() {
                         </div>
                       ) : null}
 
-                      {/* Failed Emails Alert */}
-                      {opsData?.attention?.failedEmailsCount > 0 ? (
-                        <div
-                          onClick={() => router.push("/admin?tab=emails")}
-                          className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group"
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="size-2 rounded-full bg-yellow-500 animate-bounce" />
-                            <span className="font-semibold text-xs text-foreground">
-                              {opsData.attention.failedEmailsCount} emails en échec nécessitent une relance
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                            <span>Consulter</span>
-                            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                          </div>
-                        </div>
-                      ) : null}
-
                       {/* All Clear state */}
                       {opsData?.attention?.kycPendingCount === 0 &&
                         opsData?.attention?.brokerPendingCount === 0 &&
-                        opsData?.attention?.requestsPendingCount === 0 &&
-                        opsData?.attention?.failedEmailsCount === 0 && (
+                        opsData?.attention?.requestsPendingCount === 0 && (
                           <div className="py-6 text-center text-xs text-muted-foreground select-none">
                             🟢 Aucune intervention urgente requise. Système nominal.
                           </div>
@@ -849,16 +748,6 @@ function AdminConsoleContent() {
                           <p className="font-bold text-foreground">BullMQ Workers</p>
                           <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", opsData.systemStatus.bullmq === "healthy" ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-amber-600 bg-amber-500/5 border-amber-500/20")}>
                             {opsData.systemStatus.bullmq === "healthy" ? "Actifs (Concurrence 10)" : "Ralentis"}
-                          </Badge>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        <Mail className="size-4 text-muted-foreground" />
-                        <div>
-                          <p className="font-bold text-foreground">SMTP Gateway</p>
-                          <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", opsData.systemStatus.smtp === "healthy" ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-amber-600 bg-amber-500/5 border-amber-500/20")}>
-                            {opsData.systemStatus.smtp === "healthy" ? "Opérationnel" : "Erreurs"}
                           </Badge>
                         </div>
                       </div>
@@ -1395,76 +1284,6 @@ function AdminConsoleContent() {
         )}
 
         {/* ============================================================== */}
-        {/* EMAILS HISTORIQUE */}
-        {/* ============================================================== */}
-        {activeTab === "emails" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-5">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground">Historique d'envoi SMTP</h1>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Surveillez la délivrabilité des emails transactionnels de la plateforme.
-                </p>
-              </div>
-            </div>
-
-            <Card className="border-border bg-card/10">
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
-                      <th className="px-6 py-3">Destinataire</th>
-                      <th className="px-6 py-3">Objet</th>
-                      <th className="px-6 py-3">Canal</th>
-                      <th className="px-6 py-3">Date d'envoi</th>
-                      <th className="px-6 py-3 text-right">Statut</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {loadingEmails ? (
-                      <tr>
-                        <td colSpan={5} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td>
-                      </tr>
-                    ) : emails.length > 0 ? (
-                      emails.map((delivery) => (
-                        <tr key={delivery.id} className="hover:bg-card/30 transition-colors">
-                          <td className="px-6 py-4 font-semibold text-foreground">
-                            {delivery.notification?.user?.email || "—"}
-                          </td>
-                          <td className="px-6 py-4 text-muted-foreground truncate max-w-[200px]">
-                            {delivery.notification?.title || "—"}
-                          </td>
-                          <td className="px-6 py-4 text-muted-foreground">SMTP (BullMQ)</td>
-                          <td className="px-6 py-4 text-muted-foreground">
-                            {delivery.sentAt ? new Date(delivery.sentAt).toLocaleString("fr-FR") : "En file d'attente"}
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                delivery.status === "SENT" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                                (delivery.status === "FAILED" || delivery.status === "BOUNCED") && "bg-rose-500/10 text-rose-600 border-rose-500/20",
-                                delivery.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                              )}
-                            >
-                              {delivery.status}
-                            </Badge>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={5} className="py-12 text-center text-muted-foreground">Aucun email envoyé.</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </Card>
-          </div>
-        )}
-
-        {/* ============================================================== */}
         {/* AUDIT LOGS */}
         {/* ============================================================== */}
         {activeTab === "audit" && (
@@ -1641,99 +1460,10 @@ function AdminConsoleContent() {
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">Paramètres système</h1>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Configurez le serveur SMTP, Redis et la queue BullMQ.
+                  Configuration du système (emails gérés via Resend).
                 </p>
               </div>
             </div>
-
-            <Card className="border-border bg-card/30">
-              <CardContent className="p-6 space-y-4">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-2 border-b border-border">
-                  SMTP Mailer configuration
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Serveur SMTP</label>
-                    <Input
-                      placeholder="smtp.neverbrokeagain.com"
-                      className="bg-background border-border text-xs text-foreground"
-                      value={smtpHost}
-                      onChange={(e) => setSmtpHost(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Port SMTP</label>
-                    <Input
-                      placeholder="587"
-                      className="bg-background border-border text-xs text-foreground"
-                      value={smtpPort}
-                      onChange={(e) => setSmtpPort(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Sécurité</label>
-                    <select
-                      className="w-full h-9 rounded-md border border-border bg-background px-3 text-xs text-foreground"
-                      value={smtpTls}
-                      onChange={(e) => setSmtpTls(e.target.value)}
-                    >
-                      <option value="TLS">TLS</option>
-                      <option value="SSL">SSL</option>
-                      <option value="NONE">Aucune</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Utilisateur SMTP</label>
-                    <Input
-                      placeholder="user@domain.com"
-                      className="bg-background border-border text-xs text-foreground"
-                      value={smtpUser}
-                      onChange={(e) => setSmtpUser(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Mot de passe SMTP</label>
-                    <Input
-                      type="password"
-                      placeholder="••••••••"
-                      className="bg-background border-border text-xs text-foreground"
-                      value={smtpPass}
-                      onChange={(e) => setSmtpPass(e.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-1 col-span-2">
-                    <label className="text-[10px] text-muted-foreground uppercase font-bold">Email expéditeur</label>
-                    <Input
-                      placeholder="noreply@signauxx.com"
-                      className="bg-background border-border text-xs text-foreground"
-                      value={smtpFrom}
-                      onChange={(e) => setSmtpFrom(e.target.value)}
-                    />
-                  </div>
-                </div>
-                {settingsSaved && (
-                  <p className="text-xs text-success font-medium">Configuration sauvegardée avec succès !</p>
-                )}
-                <div className="pt-2">
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-full cursor-pointer"
-                    onClick={handleSaveSettings}
-                    disabled={savingSettings}
-                  >
-                    {savingSettings ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                        Sauvegarde en cours...
-                      </>
-                    ) : (
-                      "Sauvegarder les configurations"
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         )}
 

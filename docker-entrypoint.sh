@@ -15,9 +15,9 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Apply migrations (requires root)
-echo "Applying database migrations..."
-pnpm prisma migrate deploy
+# Sync database schema (advisory-lock-safe, idempotent)
+echo "Syncing database schema..."
+pnpm prisma db push --accept-data-loss
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."

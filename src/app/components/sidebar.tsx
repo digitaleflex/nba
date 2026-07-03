@@ -13,7 +13,6 @@ import {
   FileCheck,
   Link2,
   Bell,
-  Mail,
   Activity,
   Shield,
   BarChart2,
@@ -137,12 +136,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Notifications",
       icon: Bell,
       active: pathname === "/admin" && activeTab === "notifications",
-    },
-    {
-      href: "/admin?tab=emails",
-      label: "Emails",
-      icon: Mail,
-      active: pathname === "/admin" && activeTab === "emails",
     },
     {
       href: "/admin?tab=audit",

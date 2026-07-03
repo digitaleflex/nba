@@ -3,7 +3,6 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent } from "@nba/design-system"
 import { TrendingUp, BarChart3, Users, Activity } from "lucide-react"
-import { SessionList } from "../components/session-list"
 
 export default async function DashboardPage() {
   const session = await getServerSession()
@@ -100,7 +99,6 @@ export default async function DashboardPage() {
         </Card>
       </div>
 
-      <SessionList />
     </div>
   )
 }
