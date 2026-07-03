@@ -239,13 +239,8 @@ export default function VerificationPage() {
               </div>
             )}
 
-            {/* Conditions to submit Broker */}
-            {!isKycApproved ? (
-              <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/40 p-3 rounded-lg border border-border/40 select-none">
-                <AlertTriangle className="size-4 shrink-0 text-amber-500" />
-                <span>Vous devez préalablement faire approuver votre identité (étape 1) pour pouvoir lier votre compte Broker.</span>
-              </div>
-            ) : isBrokerApproved ? (
+            {/* Broker status / submission */}
+            {isBrokerApproved ? (
               <div className="flex items-center gap-2 text-xs text-emerald-500 font-medium bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10 animate-in fade-in duration-200">
                 <CheckCircle2 className="size-4 shrink-0" />
                 <span>Votre compte Broker a été connecté et validé avec succès.</span>
