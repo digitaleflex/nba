@@ -32,26 +32,6 @@ services:
       - "traefik.http.routers.nba-app.tls.certresolver=myresolver"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
 
-  worker:
-    image: ghcr.io/digitaleflex/nba-worker
-    build:
-      context: .
-      dockerfile: Dockerfile.worker
-    networks:
-      - nba
-    env_file: .env
-    environment:
-      QUEUE_ENABLED: "true"
-    depends_on:
-      app:
-        condition: service_started
-    deploy:
-      resources:
-        limits:
-          cpus: "1.0"
-          memory: 512M
-    restart: unless-stopped
-
   nba-redis:
     image: valkey/valkey:8-alpine
     networks:
