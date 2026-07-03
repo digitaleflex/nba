@@ -34,7 +34,7 @@ LATEST_ID=$(docker inspect --format='{{.Id}}' "$DOCKER_IMAGE" 2>/dev/null || ech
 if [ -z "$RUNNING_ID" ] || [ "$RUNNING_ID" != "$LATEST_ID" ]; then
   echo "$(date) - New image detected, updating $SERVICE_NAME..." >> "$LOG"
   docker compose -f "$COMPOSE_FILE" up -d 2>&1 | tee -a "$LOG"
-  echo "$(date) - Update complete" >> "$LOG"
+  echo "$(date) - Update complete ($LATEST_ID)" >> "$LOG"
 else
   echo "$(date) - No update needed (running $RUNNING_ID)" >> "$LOG"
 fi
