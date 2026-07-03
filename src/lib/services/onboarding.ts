@@ -20,10 +20,10 @@ export interface OnboardingState {
 }
 
 const STEP_PROGRESS: Record<string, number> = {
-  emailVerified: 25,
-  kycSubmitted: 50,
-  brokerSubmitted: 75,
-  reviewed: 100,
+  emailVerified: 100,
+  kycSubmitted: 0,
+  brokerSubmitted: 0,
+  reviewed: 0,
 };
 
 export async function getOnboardingState(

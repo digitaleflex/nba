@@ -10,6 +10,7 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") ?? ""
     const status = searchParams.get("status") ?? ""
     const onboarding = searchParams.get("onboarding") ?? ""
+    const planId = searchParams.get("planId") ?? ""
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20")))
     const skip = (page - 1) * limit
@@ -31,6 +32,15 @@ export async function GET(request: NextRequest) {
       where.onboardingStatus = onboarding
     }
 
+    if (planId) {
+      where.accessRequests = {
+        some: {
+          planId,
+          status: "APPROVED",
+        },
+      }
+    }
+
     const [members, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -44,6 +54,12 @@ export async function GET(request: NextRequest) {
           isActive: true,
           createdAt: true,
           role: { select: { name: true } },
+          accessRequests: {
+            where: { status: "APPROVED" },
+            select: {
+              plan: { select: { id: true, name: true } },
+            },
+          },
           _count: {
             select: {
               accessRequests: true,

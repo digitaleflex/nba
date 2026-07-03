@@ -74,3 +74,20 @@ export async function GET(request: NextRequest) {
     return handleAuthError(error)
   }
 }
+
+export async function DELETE() {
+  try {
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
+
+    const days = 90
+    const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+
+    const deleted = await prisma.auditLog.deleteMany({
+      where: { createdAt: { lt: cutoff } },
+    })
+
+    return NextResponse.json({ deleted: deleted.count, olderThanDays: days })
+  } catch (error) {
+    return handleAuthError(error)
+  }
+}

@@ -44,8 +44,7 @@ export async function POST(req: NextRequest) {
       where: { id },
       data: {
         emailVerified: true,
-        // On passe directement à KYC_PENDING vu que le profil est supprimé
-        onboardingStatus: "KYC_PENDING"
+        onboardingStatus: "ACTIVE"
       }
     })
 

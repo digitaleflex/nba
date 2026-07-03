@@ -12,7 +12,7 @@ services:
       - proxy
     env_file: .env
     environment:
-      QUEUE_ENABLED: "false"
+      QUEUE_ENABLED: "true"
       REDIS_URL: "redis://nba-redis:6379"
     depends_on:
       nba-redis:
@@ -21,10 +21,10 @@ services:
       resources:
         limits:
           cpus: "2.0"
-          memory: 1536M
+          memory: 4096M
         reservations:
-          cpus: "0.5"
-          memory: 512M
+          cpus: "1.0"
+          memory: 1024M
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
@@ -32,6 +32,28 @@ services:
       - "traefik.http.routers.nba-app.tls=true"
       - "traefik.http.routers.nba-app.tls.certresolver=myresolver"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+
+  worker:
+    image: ghcr.io/digitaleflex/nba-worker
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    networks:
+      - nba
+    env_file: .env
+    environment:
+      QUEUE_ENABLED: "true"
+      REDIS_URL: "redis://nba-redis:6379"
+    depends_on:
+      nba-redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: unless-stopped
 
   nba-redis:
     image: valkey/valkey:8-alpine

@@ -15,13 +15,24 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Apply migrations (worker also ensures schema is up to date)
-echo "Applying database migrations..."
-pnpm prisma migrate deploy
+# Sync schema (safe: creates tables/columns only, never drops data)
+echo "Syncing database schema..."
+pnpm prisma db push
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."
 pnpm db:seed
+
+# Configure B2 CLI
+if [ -n "$B2_APPLICATION_KEY_ID" ] && [ -n "$B2_APPLICATION_KEY" ]; then
+  b2 authorize-account "$B2_APPLICATION_KEY_ID" "$B2_APPLICATION_KEY" >/dev/null 2>&1
+  echo "B2 backup configured"
+
+  # Daily backup at 2am
+  echo "0 2 * * * /app/scripts/backup.sh >> /var/log/backup.log 2>&1" | crontab -
+  crond -b
+  echo "Backup cron installed (daily at 02:00)"
+fi
 
 echo "=== Setup complete. Starting worker... ==="
 exec pnpm exec tsx workers/queue.ts
