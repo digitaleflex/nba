@@ -5,6 +5,11 @@
 #   1. Tailscale installé sur VPS1 ET VPS2 (même compte, auth key)
 #   2. .env identique à celui de VPS1 (DATABASE_URL, REDIS_URL, etc.)
 #   3. VPS1 a Redis publié sur tailscale0:6379 (via Tailscale + config)
+#
+# Auto-update: un cron tourne toutes les 5 min sur VPS2 (script dans
+# scripts/nba-auto-update.sh) et pull automatiquement la dernière image.
+# Pour l'installer:
+#   echo "*/5 * * * * /home/fantome/nba-app/nba-auto-update.sh" | crontab -
 
 services:
   worker:
