@@ -1,0 +1,36 @@
+# Compose file pour VPS2 - Worker uniquement
+# Usage: docker compose -f compose.vps2.yml up -d
+#
+# Prérequis:
+#   1. Tailscale installé sur VPS1 ET VPS2 (même compte)
+#   2. Sur VPS1, récupérer l'IP Tailscale: tailscale ip -4
+#   3. Remplacer VPS1_TAILSCALE_IP ci-dessous
+#   4. Le fichier .env doit être identique à celui de VPS1 (ou sync via B2/scp)
+
+services:
+  worker:
+    image: ghcr.io/digitaleflex/nba-worker:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker
+    networks:
+      - nba
+    env_file: .env
+    environment:
+      QUEUE_ENABLED: "true"
+      # Connexion à Redis via le réseau privé Tailscale de VPS1
+      REDIS_URL: "redis://VPS1_TAILSCALE_IP:6379"
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 1024M
+        reservations:
+          cpus: "0.5"
+          memory: 256M
+    restart: unless-stopped
+
+networks:
+  nba:
+    driver: bridge
