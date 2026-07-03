@@ -154,6 +154,17 @@ function redirectToLogin(request: NextRequest, pathname: string) {
   return NextResponse.redirect(loginUrl);
 }
 
+function redirectToLoginAndClearSession(request: NextRequest, pathname: string) {
+  const loginUrl = new URL("/login", request.url);
+  loginUrl.searchParams.set("redirect", pathname);
+  const response = NextResponse.redirect(loginUrl);
+  // Clear invalid session cookies to prevent redirect loops
+  for (const cookieName of SESSION_COOKIE_NAMES) {
+    response.cookies.delete(cookieName);
+  }
+  return response;
+}
+
 function redirectTo(target: string, request: NextRequest) {
   return NextResponse.redirect(new URL(target, request.url));
 }
@@ -210,7 +221,14 @@ export default async function middleware(request: NextRequest) {
     return redirectToLogin(request, pathname);
   }
 
-  // Trust the cookie; let the page/layout handle session validation & redirects
+  // Validate the session to prevent redirect loops with invalid cookies
+  // (e.g., after a BETTER_AUTH_SECRET rotation invalidates all sessions)
+  const authStatus = await validateSessionAndGetStatus(request, sessionId, null);
+  if (!authStatus.hasSession) {
+    return redirectToLoginAndClearSession(request, pathname);
+  }
+
+  // Valid session: pass through
   const response = NextResponse.next();
   response.headers.set("x-auth-cookie", "present");
 
