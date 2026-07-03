@@ -13,8 +13,8 @@ const AUTH_API_PREFIX = "/api/auth";
 const PUBLIC_API_PREFIX = "/api/public";
 const ONBOARDING_API_PREFIX = "/api/onboarding";
 
-// Better Auth cookie name
-const SESSION_COOKIE_NAME = "better-auth.session_token";
+// Better Auth cookie name (Secure prefix used in production/HTTPS)
+const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"];
 
 // ─── Cached Auth Status (In-Memory per Edge Runtime Instance) ───────────────
 // This avoids repeated DB calls for the same user within a short window
@@ -45,7 +45,7 @@ function parseSessionCookie(request: NextRequest): {
   tokenValue: string | null;
 } {
   const cookies = request.cookies.getAll();
-  const sessionCookie = cookies.find((c) => c.name === SESSION_COOKIE_NAME);
+  const sessionCookie = cookies.find((c) => SESSION_COOKIE_NAMES.includes(c.name));
 
   if (!sessionCookie?.value) {
     return { sessionId: null, tokenValue: null };
@@ -159,7 +159,7 @@ function redirectTo(target: string, request: NextRequest) {
 }
 
 // ─── Main Proxy ──────────────────────────────────────────────────────────────
-export async function proxy(request: NextRequest) {
+export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // ─── 1. Skip auth for public routes ──────────────────────────────────────
@@ -195,7 +195,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ─── 5. Protected routes: validate auth ────────────────────────────────
+  // ─── 5. Protected routes: passthrough with cookie check ────────────────
   const isProtectedRoute =
     pathname.startsWith("/onboarding") ||
     pathname.startsWith("/dashboard") ||
@@ -205,55 +205,14 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // No session cookie = redirect to login (fail fast)
+  // No session cookie = redirect to login
   if (!hasSessionCookie) {
     return redirectToLogin(request, pathname);
   }
 
-  // ─── 6. Get auth status (with caching) ─────────────────────────────────
-  const authStatus = await validateSessionAndGetStatus(
-    request,
-    sessionId,
-    null,
-  );
-
-  if (!authStatus.hasSession) {
-    return redirectToLogin(request, pathname);
-  }
-
-  // ─── 7. Email verification check ────────────────────────────────────────
-  if (!authStatus.emailVerified && pathname !== "/onboarding") {
-    return redirectTo("/onboarding", request);
-  }
-
-  // ─── 8. Onboarding status checks ────────────────────────────────────────
-  const status = authStatus.onboardingStatus;
-
-  // Signals require ACTIVE status
-  if (pathname.startsWith("/dashboard/signals") && status !== "ACTIVE") {
-    return redirectTo("/dashboard/verification", request);
-  }
-
-  // Dashboard requires ACTIVE status
-  if (pathname === "/dashboard" && status !== "ACTIVE") {
-    return redirectTo("/onboarding", request);
-  }
-
-  // Onboarding should redirect to dashboard if already active
-  if (pathname.startsWith("/onboarding") && status === "ACTIVE") {
-    return redirectTo("/dashboard", request);
-  }
-
-  // ─── 9. Add caching headers for subsequent requests ─────────────────────
+  // Trust the cookie; let the page/layout handle session validation & redirects
   const response = NextResponse.next();
-  response.headers.set("x-auth-status", status ?? "UNKNOWN");
-  response.headers.set("x-auth-verified", String(authStatus.emailVerified));
-
-  // Enable stale-while-revalidate for subsequent requests
-  response.headers.set(
-    "Cache-Control",
-    "private, max-age=30, stale-while-revalidate=60",
-  );
+  response.headers.set("x-auth-cookie", "present");
 
   return response;
 }
