@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
-import { CreditCard, Check, Loader2, AlertCircle, Radio } from "lucide-react"
+import { Check, Loader2, AlertCircle, Radio } from "lucide-react"
 import Link from "next/link"
 
 interface Plan {
@@ -26,19 +26,13 @@ interface AccessRequest {
 
 export default function SubscriptionPage() {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
-  const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/public/plans").then((r) => r.json()),
-      fetch("/api/dashboard/subscription").then((r) => r.json()).catch(() => ({ requests: [] })),
-    ])
-      .then(([plansData, subData]) => {
-        setPlans(Array.isArray(plansData) ? plansData : [])
-        setAccessRequests(subData.requests || [])
-      })
+    fetch("/api/dashboard/subscription")
+      .then((r) => r.json())
+      .then((subData) => setAccessRequests(subData.requests || []))
       .catch(() => setError("Erreur de chargement"))
       .finally(() => setLoading(false))
   }, [])
@@ -68,7 +62,6 @@ export default function SubscriptionPage() {
 
   const approved = accessRequests.filter((r) => r.status === "APPROVED")
   const pending = accessRequests.filter((r) => r.status === "PENDING")
-  const rejected = accessRequests.filter((r) => r.status === "REJECTED")
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
@@ -138,50 +131,7 @@ export default function SubscriptionPage() {
         </Card>
       )}
 
-      <div className="space-y-3">
-        <h2 className="text-lg font-semibold tracking-tight">Offres disponibles</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {plans.filter((p) => p.isActive).map((plan) => {
-            const isSubscribed = approved.some((r) => r.planId === plan.id) || pending.some((r) => r.planId === plan.id)
-            return (
-              <Card key={plan.id} className={`relative overflow-hidden ${isSubscribed ? "border-primary/20" : ""}`}>
-                {isSubscribed && (
-                  <div className="absolute right-3 top-3">
-                    <Badge variant="default" className="bg-primary text-[10px]">
-                      {approved.some((r: any) => r.planId === plan.id) ? "Actif" : "En attente"}
-                    </Badge>
-                  </div>
-                )}
-                <CardContent className="p-5 space-y-3">
-                  <div className="flex items-center gap-2">
-                    <CreditCard className="size-4 text-primary" />
-                    <h3 className="font-semibold">{plan.name}</h3>
-                  </div>
-                  <p className="text-2xl font-bold">
-                    {plan.currency} {Number(plan.price).toFixed(2)}
-                    <span className="text-sm font-normal text-muted-foreground">
-                      /{plan.durationDays}j
-                    </span>
-                  </p>
-                  {plan.description && (
-                    <p className="text-xs text-muted-foreground">{plan.description}</p>
-                  )}
-                  {Array.isArray(plan.features) && plan.features.length > 0 && (
-                    <ul className="space-y-1">
-                      {plan.features.map((f: string, i: number) => (
-                        <li key={i} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Check className="size-3 text-primary shrink-0" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </CardContent>
-              </Card>
-            )
-          })}
-        </div>
-      </div>
+
     </div>
   )
 }
