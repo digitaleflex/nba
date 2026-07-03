@@ -106,15 +106,21 @@ export async function GET(
     }
   } else if (category === "signals") {
     if (!isAdmin) {
-      const signalsWithImage = await prisma.signal.findMany({
-        where: { deletedAt: null },
-        include: { audience: true }
+      // Check imageUrl first (most common case), then check imageUrls JSONB array
+      const matchingSignal = await prisma.signal.findFirst({
+        where: {
+          deletedAt: null,
+          imageUrl: filePath,
+        },
+        select: { id: true },
+      }) ?? await prisma.signal.findFirst({
+        where: {
+          deletedAt: null,
+          imageUrls: { path: "$", array_contains: filePath } as any,
+        },
+        select: { id: true },
       })
-      const matchingSignal = signalsWithImage.find((s: any) => 
-        s.imageUrl === filePath || 
-        (Array.isArray(s.imageUrls) && s.imageUrls.includes(filePath))
-      )
-      
+
       if (matchingSignal) {
         const hasAccess = await SignalPolicy.canView(session.user.id, matchingSignal.id)
         if (!hasAccess) {
