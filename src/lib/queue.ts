@@ -1,35 +1,88 @@
-import { Queue } from "bullmq"
-import IORedis from "ioredis"
+import { Queue } from "bullmq";
+import IORedis from "ioredis";
 
-const connectionString = process.env.REDIS_URL ?? "redis://localhost:6379"
+const redisUrl = process.env.REDIS_URL?.trim();
+const queueEnabled = process.env.QUEUE_ENABLED
+  ? process.env.QUEUE_ENABLED === "true"
+  : Boolean(redisUrl);
+
+type JobLike = {
+  remove: () => Promise<void>;
+};
+
+type QueueLike = {
+  add: (
+    name: string,
+    data: unknown,
+    opts?: unknown,
+  ) => Promise<{ id: string | null }>;
+  getJob: (id: string) => Promise<JobLike | null>;
+};
+
+function createNoopQueue(queueName: string): QueueLike {
+  return {
+    async add() {
+      console.warn(`[queue:${queueName}] Redis/queue désactivé, job ignoré.`);
+      return { id: null };
+    },
+    async getJob() {
+      return null;
+    },
+  };
+}
 
 function getRedisConnection() {
+  if (!queueEnabled || !redisUrl) {
+    return null;
+  }
+
   const globalForRedis = globalThis as unknown as {
-    redisConnection: IORedis | undefined
-  }
+    redisConnection: IORedis | undefined;
+  };
+
   if (!globalForRedis.redisConnection) {
-    globalForRedis.redisConnection = new IORedis(connectionString, {
+    globalForRedis.redisConnection = new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
-    } as any)
+    });
   }
-  return globalForRedis.redisConnection
+
+  return globalForRedis.redisConnection;
 }
 
-function getQueue(name: string) {
+function getQueue(name: string): QueueLike {
   const globalForQueues = globalThis as unknown as {
-    queues: Record<string, Queue> | undefined
-  }
+    queues: Record<string, QueueLike> | undefined;
+  };
+
   if (!globalForQueues.queues) {
-    globalForQueues.queues = {}
+    globalForQueues.queues = {};
   }
+
   if (!globalForQueues.queues[name]) {
-    const connection = getRedisConnection()
-    globalForQueues.queues[name] = new Queue(name, { connection: connection as any, skipVersionCheck: true })
+    const connection = getRedisConnection();
+
+    if (!connection) {
+      globalForQueues.queues[name] = createNoopQueue(name);
+    } else {
+      globalForQueues.queues[name] = new Queue(name, {
+        connection: connection as unknown as never,
+        skipVersionCheck: true,
+      }) as unknown as QueueLike;
+    }
   }
-  return globalForQueues.queues[name]
+
+  return globalForQueues.queues[name];
 }
 
-export const fileCleanupQueue = getQueue("file-cleanup")
-export const signalDistributionQueue = getQueue("signal-distribution")
-export const notificationDeliveryQueue = getQueue("notification-delivery")
-export { getRedisConnection, getQueue }
+export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
+  await fileCleanupQueue.add(
+    `cleanup-${type}-${id}`,
+    { type, id },
+    { delay: 7 * 24 * 60 * 60 * 1000 },
+  );
+}
+
+export const fileCleanupQueue = getQueue("file-cleanup");
+export const signalDistributionQueue = getQueue("signal-distribution");
+export const notificationDeliveryQueue = getQueue("notification-delivery");
+export { getRedisConnection, getQueue, queueEnabled };
