@@ -15,9 +15,9 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Sync database schema (advisory-lock-safe, idempotent)
+# Sync schema (safe: creates tables/columns only, never drops data)
 echo "Syncing database schema..."
-pnpm prisma db push --accept-data-loss
+pnpm prisma db push
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."
