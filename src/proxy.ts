@@ -160,9 +160,20 @@ function redirectToLoginAndClearSession(request: NextRequest, pathname: string) 
   const response = NextResponse.redirect(loginUrl);
   // Clear invalid session cookies to prevent redirect loops
   // Note: response.cookies.delete() doesn't work reliably in Next.js middleware (Edge runtime).
-  // We use set() with maxAge: 0 to explicitly expire the cookie, which works everywhere.
+  // We use set() with maxAge: 0 AND all the original cookie attributes so the browser
+  // recognizes and deletes the right cookie (especially important for __Secure- prefix
+  // which REQUIRES the Secure flag or browsers reject the Set-Cookie).
+  const isSecure = process.env.NODE_ENV === "production";
   for (const cookieName of SESSION_COOKIE_NAMES) {
-    response.cookies.set(cookieName, "", { maxAge: 0, path: "/" });
+    response.cookies.set(cookieName, "", {
+      maxAge: 0,
+      path: "/",
+      httpOnly: true,
+      sameSite: "lax",
+      // For __Secure- prefixed cookies, Secure is MANDATORY.
+      // For non-prefixed, only set Secure in production (HTTPS).
+      secure: cookieName.startsWith("__Secure-") ? true : isSecure,
+    });
   }
   return response;
 }
