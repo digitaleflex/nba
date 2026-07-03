@@ -79,22 +79,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Entrypoint runs migrations + seed + starts app
 ENTRYPOINT ["./docker-entrypoint.sh"]
-
-# Step 5: Production runner for BullMQ Queue Worker
-# Derives from `prepared` (source + node_modules + generated Prisma client),
-# not from `builder`, so it doesn't carry the unneeded Next.js `.next` build output.
-FROM prepared AS worker
-ENV NODE_ENV=production
-
-RUN apk add --no-cache postgresql-client python3 py3-pip dcron && \
-    pip3 install --break-system-packages b2
-
-# Copy entrypoint script
-COPY docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
-RUN chmod +x ./docker-entrypoint-worker.sh
-
-# Backup script
-COPY scripts/backup.sh ./scripts/backup.sh
-RUN chmod +x ./scripts/backup.sh
-
-ENTRYPOINT ["./docker-entrypoint-worker.sh"]

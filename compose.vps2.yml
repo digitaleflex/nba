@@ -11,8 +11,7 @@ services:
     image: ghcr.io/digitaleflex/nba-worker:latest
     build:
       context: .
-      dockerfile: Dockerfile
-      target: worker
+      dockerfile: Dockerfile.worker
     env_file: .env
     environment:
       QUEUE_ENABLED: "true"

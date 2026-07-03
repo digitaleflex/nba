@@ -1,0 +1,48 @@
+# Dockerfile.worker - Standalone image for the BullMQ queue worker
+# Separate from Dockerfile to avoid BuildKit cache confusion between targets.
+#
+# Build:
+#   docker build -f Dockerfile.worker -t ghcr.io/digitaleflex/nba-worker .
+#
+# Run:
+#   docker compose -f compose.yml up -d worker
+
+FROM node:22-alpine AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable && corepack prepare pnpm@9 --activate
+WORKDIR /app
+
+# Install dependencies
+FROM base AS deps
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/design-system/package.json ./packages/design-system/
+RUN pnpm install --frozen-lockfile
+
+# Source + Prisma client
+FROM base AS prepared
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+RUN pnpm prisma generate
+
+# Final worker image
+FROM prepared
+ENV NODE_ENV=production
+RUN apk add --no-cache postgresql-client python3 py3-pip dcron && \
+    pip3 install --break-system-packages b2
+
+# Entrypoint script
+COPY docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
+RUN chmod +x ./docker-entrypoint-worker.sh
+
+# Backup script
+COPY scripts/backup.sh ./scripts/backup.sh
+RUN chmod +x ./scripts/backup.sh
+
+USER root
+
+# Healthcheck - the worker exposes a BullMQ health endpoint
+HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
+  CMD pgrep -f "tsx workers/queue.ts" > /dev/null || exit 1
+
+ENTRYPOINT ["./docker-entrypoint-worker.sh"]
