@@ -194,18 +194,27 @@ export default function SubscriptionPage() {
         <p className="text-sm text-muted-foreground">Gérez vos accès aux groupes de diffusion</p>
       </div>
 
-      {!hasAny && (
+      {/* CTA : quand aucun abonnement actif (pas d'APPROVED) */}
+      {approved.length === 0 && (
         <Card className="border-warning/30 bg-warning/5">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
             <Radio className="size-10 text-warning" />
             <div className="space-y-1">
-              <p className="font-semibold text-warning">Aucun abonnement actif</p>
-              <p className="text-sm text-muted-foreground">
-                Vous n&apos;avez pas encore sélectionné d&apos;abonnement.
+              <p className="font-semibold text-warning">
+                {hasAny ? "Aucun abonnement actif" : "Aucun abonnement sélectionné"}
+              </p>
+              <p className="text-sm text-muted-foreground max-w-md">
+                {rejected.length > 0
+                  ? "Votre demande précédente a été refusée. Sélectionnez un autre plan."
+                  : pending.length > 0
+                    ? "Votre demande est en cours de traitement. Vous pouvez modifier votre choix."
+                    : "Sélectionnez un plan pour accéder aux groupes de diffusion."}
               </p>
             </div>
-            <Link href="/onboarding">
-              <Button variant="outline" size="sm">Choisir un abonnement</Button>
+            <Link href="/dashboard/subscription/select">
+              <Button variant="default" size="sm">
+                {pending.length > 0 ? "Modifier mon choix" : rejected.length > 0 ? "Choisir un autre plan" : "Choisir un abonnement"}
+              </Button>
             </Link>
           </CardContent>
         </Card>

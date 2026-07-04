@@ -12,28 +12,49 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const parsed = validateOrThrow(selectPlanSchema, body)
 
-    // Rate limiting is handled by Better Auth's customRules
-    // Additional protection: ensure no duplicate pending requests
-    const existingRequest = await prisma.accessRequest.findFirst({
+    // Reselection logic:
+    // 1. Delete any existing PENDING request (user is changing their choice)
+    // 2. Keep APPROVED requests (admin already approved, reselecting shouldn't cancel)
+    //    unless user is explicitly switching after approval
+    const existingPending = await prisma.accessRequest.findMany({
       where: {
         userId: session.user.id,
-        planId: parsed.planId,
         status: "PENDING",
       },
     })
 
-    if (existingRequest) {
-      return NextResponse.json(
-        { error: "Demande déjà en attente pour ce plan" },
-        { status: 409 }
-      )
+    if (existingPending.length > 0) {
+      // Cancel previous PENDING requests (user changed their mind)
+      await prisma.accessRequest.deleteMany({
+        where: {
+          id: { in: existingPending.map((r) => r.id) },
+        },
+      })
     }
 
-    await prisma.accessRequest.create({
+    // Create the new request
+    const newRequest = await prisma.accessRequest.create({
       data: { userId: session.user.id, planId: parsed.planId },
     })
 
-    return NextResponse.json({ ok: true })
+    // Log audit event
+    const { logAuditEvent } = await import("@nba/lib/services/audit")
+    await logAuditEvent({
+      userId: session.user.id,
+      action: "subscription.reselect",
+      resourceType: "access_request",
+      resourceId: newRequest.id,
+      details: {
+        planId: parsed.planId,
+        cancelledPending: existingPending.length,
+      },
+    })
+
+    return NextResponse.json({
+      ok: true,
+      requestId: newRequest.id,
+      cancelledPrevious: existingPending.length,
+    })
   } catch (error) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.statusCode })
@@ -44,7 +65,3 @@ export async function POST(req: NextRequest) {
     throw error
   }
 }
-
-// Rate limiting handled by Better Auth in src/lib/auth.ts
-// /select-plan inherits from default rate limit: 100 req/min window
-// For enhanced protection, add to customRules if needed
