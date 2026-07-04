@@ -1,14 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { authClient } from "@nba/lib/auth-client"
 import { Button, Input, Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
-  const router = useRouter()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -19,7 +16,6 @@ export default function LoginPage() {
     e.preventDefault()
     setError("")
 
-    // Validation côté client (le `required` HTML peut être bypassé)
     if (!email.trim()) {
       setError("Veuillez saisir votre email.")
       return
@@ -31,16 +27,30 @@ export default function LoginPage() {
 
     setLoading(true)
 
-    const { error: err } = await authClient.signIn.email({ email, password })
+    try {
+      // Fetch direct vers l'API Better Auth (le client authClient avait des soucis de navigation)
+      const res = await fetch("/api/auth/sign-in/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+        credentials: "include",
+      })
 
-    if (err) {
-      setError(err.message ?? err.statusText)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(data.message ?? "Identifiants invalides")
+        setLoading(false)
+        return
+      }
+
+      // Le Set-Cookie est posé par le serveur. On navigue directement.
+      // window.location.href force un full reload pour s'assurer que
+      // le middleware lit le nouveau cookie.
+      window.location.href = "/dashboard"
+    } catch (e) {
+      setError("Erreur de connexion. Veuillez réessayer.")
       setLoading(false)
-      return
     }
-
-    router.push("/")
-    router.refresh()
   }
 
   return (
