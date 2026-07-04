@@ -18,6 +18,17 @@ export default function LoginPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+
+    // Validation côté client (le `required` HTML peut être bypassé)
+    if (!email.trim()) {
+      setError("Veuillez saisir votre email.")
+      return
+    }
+    if (!password) {
+      setError("Veuillez saisir votre mot de passe.")
+      return
+    }
+
     setLoading(true)
 
     const { error: err } = await authClient.signIn.email({ email, password })
