@@ -51,19 +51,22 @@ function parseSessionCookie(request: NextRequest): {
     return { sessionId: null, tokenValue: null };
   }
 
-  try {
-    // Better Auth encodes as base64: base64(JSON.stringify({ token, expiresAt }))
-    const decoded = atob(sessionCookie.value);
-    const sessionData = JSON.parse(decoded) as { token?: string };
+  const raw = sessionCookie.value;
 
-    return {
-      sessionId: sessionData.token || null,
-      tokenValue: sessionCookie.value,
-    };
+  // Format 1: base64(JSON.stringify({ token, expiresAt })) — ancien format Better Auth
+  try {
+    const decoded = atob(raw);
+    const sessionData = JSON.parse(decoded) as { token?: string };
+    if (sessionData.token) {
+      return { sessionId: sessionData.token, tokenValue: raw };
+    }
   } catch {
-    // Fallback: try as plain token
-    return { sessionId: sessionCookie.value, tokenValue: sessionCookie.value };
+    // Pas du base64/JSON → fallback
   }
+
+  // Format 2: token brut (Better Auth actuel: sessionId.signature)
+  // Ex: "oq7aTYKUf3qP9WDYNiBw4rW1eU2yxNgi.jTtTmKgVLA173xqOoqrzkk0ELhCjLbR5vI1Nb11wW9w%3D"
+  return { sessionId: raw, tokenValue: raw };
 }
 
 // ─── Lightweight Session Validation ─────────────────────────────────────────
@@ -106,8 +109,12 @@ async function validateSessionAndGetStatus(
         // Tell API to use lightweight response
         "x-auth-check": "lightweight",
       },
-      // Cache for 30 seconds at the fetch level
-      next: { revalidate: 30 },
+      // IMPORTANT: pas de cache Next.js ici !
+      // Le cache Next.js ne distingue pas par header "cookie", donc
+      // une réponse cached "session: null" serait servie pour 30s
+      // même avec un nouveau cookie valide. On utilise notre propre
+      // cache in-memory (authStatusCache) qui est key-aware.
+      cache: "no-store",
     });
 
     if (!res.ok) {
@@ -234,14 +241,11 @@ export default async function middleware(request: NextRequest) {
     return redirectToLogin(request, pathname);
   }
 
-  // Validate the session to prevent redirect loops with invalid cookies
-  // (e.g., after a BETTER_AUTH_SECRET rotation invalidates all sessions)
-  const authStatus = await validateSessionAndGetStatus(request, sessionId, null);
-  if (!authStatus.hasSession) {
-    return redirectToLoginAndClearSession(request, pathname);
-  }
-
-  // Valid session: pass through
+  // Cookie present: pass through. The protected pages (dashboard, admin)
+  // do their own session validation via getServerSession(), which handles
+  // the __Secure- cookie correctly. The middleware no longer needs to
+  // validate the session itself (which requires a nodejs fetch that
+  // doesn't reliably pass __Secure- cookies through the Edge runtime).
   const response = NextResponse.next();
   response.headers.set("x-auth-cookie", "present");
 
