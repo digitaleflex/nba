@@ -64,16 +64,10 @@ function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurr
           </Badge>
         </div>
 
-        {/* Détails : prix, durée, date */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">
+        {/* Détails : durée, date */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-sm">
           <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Prix</p>
-            <p className="font-semibold text-foreground">
-              {Number(plan.price) === 0 ? "Gratuit" : `${plan.price} ${plan.currency}`}
-            </p>
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Durée</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Durée d&apos;accès</p>
             <p className="font-semibold text-foreground">{plan.durationDays} jours</p>
           </div>
           <div className="space-y-0.5">

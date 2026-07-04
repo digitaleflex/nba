@@ -126,22 +126,13 @@ export default function SelectPlanPage() {
               className="text-left rounded-xl border-2 border-border bg-card p-5 transition-all hover:border-primary/50 hover:shadow-md focus:outline-none focus:border-primary"
             >
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-foreground">{plan.name}</h3>
-                  {Number(plan.price) === 0 && (
-                    <Badge variant="secondary" className="text-[10px]">Gratuit</Badge>
-                  )}
-                </div>
+                <h3 className="font-semibold text-foreground text-lg">{plan.name}</h3>
                 {plan.description && (
                   <p className="text-sm text-muted-foreground">{plan.description}</p>
                 )}
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-foreground">
-                    {Number(plan.price) === 0 ? "Gratuit" : plan.price}
-                  </span>
-                  {Number(plan.price) > 0 && (
-                    <span className="text-sm text-muted-foreground">{plan.currency} / {plan.durationDays}j</span>
-                  )}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Calendar className="size-3.5" />
+                  <span>{plan.durationDays} jours d&apos;accès</span>
                 </div>
                 {plan.features && plan.features.length > 0 && (
                   <ul className="space-y-1 pt-2 border-t border-border/50">
@@ -174,19 +165,13 @@ export default function SelectPlanPage() {
                   <p className="font-semibold text-foreground">{selectedPlan.name}</p>
                 </div>
                 <div className="space-y-0.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Prix</p>
-                  <p className="font-semibold text-foreground">
-                    {Number(selectedPlan.price) === 0 ? "Gratuit" : `${selectedPlan.price} ${selectedPlan.currency}`}
-                  </p>
-                </div>
-                <div className="space-y-0.5">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Durée</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Durée d&apos;accès</p>
                   <p className="font-semibold text-foreground">{selectedPlan.durationDays} jours</p>
                 </div>
-                <div className="space-y-0.5">
+                <div className="space-y-0.5 col-span-2">
                   <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Statut</p>
                   <Badge variant="outline" className="text-amber-600 border-amber-500/30 bg-amber-500/10 w-fit">
-                    En attente d&apos;approbation
+                    En attente d&apos;approbation par notre équipe
                   </Badge>
                 </div>
               </div>
