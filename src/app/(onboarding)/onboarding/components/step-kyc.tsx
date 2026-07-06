@@ -255,13 +255,13 @@ export function StepKyc({ onNext }: StepKycProps) {
             {/* Type de document */}
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Type de document</label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {DOCUMENT_TYPES.map((dt) => (
                   <button
                     key={dt.value}
                     type="button"
                     onClick={() => setDocumentType(dt.value)}
-                    className={`rounded-lg border px-3 py-2 text-sm transition-all duration-200 ${
+                    className={`rounded-lg border px-3 py-2 text-xs sm:text-sm transition-all duration-200 ${
                       documentType === dt.value
                         ? "border-primary bg-primary/5 text-primary ring-1 ring-primary/20"
                         : "border-border text-muted-foreground hover:border-primary/50 hover:bg-primary/[0.02]"
