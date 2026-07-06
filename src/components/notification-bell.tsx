@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { Bell, Loader2, CheckCheck, Clock } from "lucide-react";
+import { Bell, Loader2, CheckCheck, Clock, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
+import { useSocket } from "@nba/lib/hooks/use-socket";
 
 interface Notification {
   id: string;
@@ -57,7 +58,9 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastTopIdRef = useRef<string | null>(null);
   const soundRef = useRef("default");
+  const wsActiveRef = useRef(false);
 
+  // Charge la préférence de son
   useEffect(() => {
     fetch("/api/dashboard/notification-preferences")
       .then((r) => r.json())
@@ -67,20 +70,53 @@ export function NotificationBell() {
       .catch(() => {});
   }, []);
 
-  const fetchData = useCallback(async () => {
+  // ── WebSocket : notifs temps réel ──
+  const { status: wsStatus } = useSocket({
+    onNotification: (raw) => {
+      const n = raw as Notification
+      wsActiveRef.current = true
+      // Vérifier qu'on n'a pas déjà cette notif
+      if (lastTopIdRef.current && lastTopIdRef.current === n.id) return
+      lastTopIdRef.current = n.id
+
+      setRecentNotifications((prev) => {
+        if (prev.some((p) => p.id === n.id)) return prev
+        return [n, ...prev].slice(0, 5)
+      })
+      setUnreadCount((c) => c + 1)
+      // Joue le son
+      const audio = new Audio(`/sounds/${soundRef.current}.wav`)
+      audio.volume = getVolume()
+      audio.play().catch(() => {})
+    },
+    onDisconnect: () => {
+      wsActiveRef.current = false
+    },
+  })
+
+  // ── Fetch initial + fallback polling si WS déconnecté ──
+  const fetchData = useCallback(async (silent = false) => {
     try {
       const res = await fetch("/api/dashboard/notifications?limit=5");
       if (!res.ok) throw new Error("Erreur");
       const data = await res.json();
-      const prevTop = lastTopIdRef.current;
-      if (data.notifications.length > 0) {
-        lastTopIdRef.current = data.notifications[0].id;
-      }
+      const prevTop = lastTopIdRef.current
+      const topId = data.notifications[0]?.id ?? null
+      if (topId) lastTopIdRef.current = topId
+
       setRecentNotifications(data.notifications);
-      if (data.unreadCount > unreadCount && prevTop && data.notifications[0]?.id !== prevTop) {
-        const audio = new Audio(`/sounds/${soundRef.current}.wav`);
-        audio.volume = getVolume();
-        audio.play().catch(() => {});
+
+      // Joue le son si nouvelle notif (et pas via WebSocket)
+      if (
+        !silent &&
+        !wsActiveRef.current &&
+        data.unreadCount > unreadCount &&
+        prevTop &&
+        topId !== prevTop
+      ) {
+        const audio = new Audio(`/sounds/${soundRef.current}.wav`)
+        audio.volume = getVolume()
+        audio.play().catch(() => {})
       }
       setUnreadCount(data.unreadCount);
     } catch {
@@ -90,13 +126,20 @@ export function NotificationBell() {
     }
   }, [unreadCount]);
 
+  // Fetch initial au mount
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchData();
-    const interval = setInterval(fetchData, 30000);
-    return () => clearInterval(interval);
-  }, [fetchData]);
+    fetchData()
+  }, [fetchData])
 
+  // Polling fallback UNIQUEMENT si WebSocket déconnecté
+  useEffect(() => {
+    if (wsStatus === "connected") return
+    const interval = setInterval(() => fetchData(true), 30000)
+    return () => clearInterval(interval)
+  }, [wsStatus, fetchData])
+
+  // Click outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (
@@ -127,7 +170,11 @@ export function NotificationBell() {
       <button
         onClick={() => setOpen(!open)}
         className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
-        title="Notifications"
+        title={
+          wsStatus === "connected"
+            ? "Notifications (temps réel actif)"
+            : "Notifications (polling de secours)"
+        }
         aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} non lues)` : ""}`}
       >
         <Bell className="size-4" />
@@ -136,19 +183,49 @@ export function NotificationBell() {
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
+        {/* Indicateur de connexion WS (dot dans le coin) */}
+        {wsStatus === "connected" ? (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-emerald-500 ring-2 ring-background"
+            aria-hidden="true"
+          />
+        ) : wsStatus === "connecting" ? (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-amber-500 ring-2 ring-background animate-pulse"
+            aria-hidden="true"
+          />
+        ) : (
+          <span
+            className="absolute -bottom-0.5 -right-0.5 size-2 rounded-full bg-muted ring-2 ring-background"
+            aria-hidden="true"
+          />
+        )}
       </button>
 
       {open && (
         <div className="absolute right-0 top-full mt-2 w-80 rounded-xl border bg-popover text-popover-foreground shadow-lg z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b">
             <span className="text-sm font-semibold">Notifications</span>
-            <Link
-              href="/dashboard/notifications"
-              onClick={() => setOpen(false)}
-              className="text-xs text-primary hover:underline"
-            >
-              Voir tout
-            </Link>
+            <div className="flex items-center gap-3">
+              {wsStatus === "connected" ? (
+                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1" title="Notifications en temps réel">
+                  <Wifi className="size-3" />
+                  live
+                </span>
+              ) : (
+                <span className="text-[10px] text-muted-foreground flex items-center gap-1" title="Fallback polling 30s">
+                  <WifiOff className="size-3" />
+                  polling
+                </span>
+              )}
+              <Link
+                href="/dashboard/notifications"
+                onClick={() => setOpen(false)}
+                className="text-xs text-primary hover:underline"
+              >
+                Voir tout
+              </Link>
+            </div>
           </div>
 
           <div className="max-h-80 overflow-y-auto">

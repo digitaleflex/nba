@@ -36,5 +36,34 @@ chown -R nextjs:nodejs /app/storage
 
 echo "=== Setup complete. Starting app... ==="
 
-# Drop privileges to nextjs user for running the server
-exec su -s /bin/sh -c 'exec node server.js' nextjs
+# Build the PM2 ecosystem dynamically based on WS_ENABLED
+if [ "$WS_ENABLED" = "true" ]; then
+  echo "Building PM2 ecosystem with WebSocket + Next.js..."
+  cat > /tmp/ecosystem.runtime.cjs <<'EOF'
+module.exports = {
+  apps: [
+    {
+      name: "nextjs",
+      script: "server.js",
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: "1500M",
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+    },
+    {
+      name: "websocket",
+      script: "workers/websocket.ts",
+      interpreter: "npx",
+      interpreter_args: "tsx",
+      instances: 1,
+      autorestart: true,
+      max_memory_restart: "256M",
+      log_date_format: "YYYY-MM-DD HH:mm:ss",
+    },
+  ],
+}
+EOF
+  exec su -s /bin/sh -c 'exec npx pm2-runtime start /tmp/ecosystem.runtime.cjs' nextjs
+else
+  exec su -s /bin/sh -c 'exec node server.js' nextjs
+fi

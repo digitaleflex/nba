@@ -13,6 +13,8 @@ services:
     env_file: .env
     environment:
       QUEUE_ENABLED: "true"
+      WS_ENABLED: "true"
+      WS_PORT: "3001"
     depends_on:
       nba-redis:
         condition: service_started
@@ -33,6 +35,14 @@ services:
       - "traefik.http.routers.nba-app.tls=true"
       - "traefik.http.routers.nba-app.tls.certresolver=letsencrypt"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+      # WebSocket routing: /socket.io/* goes to port 3001
+      - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && PathPrefix(`/socket.io`)"
+      - "traefik.http.routers.nba-ws.entrypoints=websecure"
+      - "traefik.http.routers.nba-ws.tls=true"
+      - "traefik.http.routers.nba-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nba-ws.loadbalancer.server.port=3001"
+      - "traefik.http.middlewares.nba-ws.headers.customresponseheaders.Connection=upgrade"
+      - "traefik.http.middlewares.nba-ws.headers.customresponseheaders.Upgrade=websocket"
 
   nba-redis:
     image: valkey/valkey:8-alpine

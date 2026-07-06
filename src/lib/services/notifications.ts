@@ -2,6 +2,7 @@ import { prisma } from "@nba/lib/db"
 import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOtp } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 import { sendPushToUser } from "./push"
+import { publishNotification } from "@nba/lib/redis-pubsub"
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING"
 type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH"
@@ -22,6 +23,7 @@ interface NotifyParams {
 
 /**
  * Crée une notification in-app, envoie un push (web), et planifie un email via BullMQ.
+ * Publie aussi sur Redis Pub/Sub pour notifier en temps réel via WebSocket.
  */
 export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const notification = await prisma.notification.create({
@@ -42,6 +44,19 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     tag: notification.id,
   }).catch((err) => {
     console.error("[notify] push failed:", err)
+  })
+
+  // WebSocket temps réel via Redis Pub/Sub
+  publishNotification(params.userId, {
+    id: notification.id,
+    type: notification.type,
+    title: notification.title,
+    body: notification.body,
+    data: notification.data,
+    linkUrl: params.linkUrl,
+    createdAt: notification.createdAt,
+  }).catch((err) => {
+    console.error("[notify] pubsub failed:", err)
   })
 
   if (params.email) {

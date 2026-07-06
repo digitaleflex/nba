@@ -79,6 +79,9 @@ RUN chmod +x ./docker-entrypoint.sh
 # Copy seed, createAdmin and healthcheck scripts (needed at runtime)
 COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
+# Copy WebSocket server
+COPY --from=builder --chown=nextjs:nodejs /app/workers ./workers
+
 # Copy package.json and lockfiles so `pnpm <script>` (db:seed, prisma) resolves correctly at runtime
 COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
