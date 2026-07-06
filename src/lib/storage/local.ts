@@ -1,10 +1,8 @@
 import { randomUUID } from "crypto"
-import { mkdir, unlink, access } from "fs/promises"
-import { join, extname } from "path"
-import { createWriteStream } from "fs"
-import { Readable } from "stream"
-import { finished } from "stream/promises"
-import type { StorageProvider, UploadResult } from "./types"
+import { mkdir, unlink, access, writeFile, stat } from "fs/promises"
+import { join } from "path"
+import { createReadStream } from "fs"
+import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
 
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
@@ -72,14 +70,12 @@ export class LocalStorageProvider implements StorageProvider {
 
     await mkdir(dir, { recursive: true })
 
-    // Stream write file to disk to prevent OOM
-    const writeStream = createWriteStream(filePath)
-    const nodeReadable = Readable.fromWeb(file.stream() as any)
-    nodeReadable.pipe(writeStream)
-    await finished(writeStream)
+    // Écriture directe via buffer pour éviter les blocages de flux Web API dans Next.js
+    const buffer = Buffer.from(await file.arrayBuffer())
+    await writeFile(filePath, buffer)
 
     return {
-      path: join(subDir, fileName),
+      path: `${subDir}/${fileName}`,
       fileName,
       mimeType: file.type,
       size: file.size,
@@ -102,6 +98,26 @@ export class LocalStorageProvider implements StorageProvider {
       return true
     } catch {
       return false
+    }
+  }
+
+  async read(path: string): Promise<FileStreamResult> {
+    const fullPath = join(this.basePath, path)
+    const fileStat = await stat(fullPath)
+    const fileStream = createReadStream(fullPath)
+    const webStream = new ReadableStream({
+      start(controller) {
+        fileStream.on("data", (chunk) => controller.enqueue(chunk))
+        fileStream.on("end", () => controller.close())
+        fileStream.on("error", (err) => controller.error(err))
+      },
+      cancel() {
+        fileStream.destroy()
+      }
+    })
+    return {
+      stream: webStream,
+      size: fileStat.size,
     }
   }
 }
