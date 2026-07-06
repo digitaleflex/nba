@@ -23,6 +23,7 @@ import {
   ChevronRight,
   TrendingUp,
   CreditCard,
+  MessageCircle,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -89,6 +90,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Mon abonnement",
       icon: CreditCard,
       active: pathname === "/dashboard/subscription",
+    },
+    {
+      href: "/dashboard/support",
+      label: "Support",
+      icon: MessageCircle,
+      active: pathname === "/dashboard/support",
     },
   ]
 
