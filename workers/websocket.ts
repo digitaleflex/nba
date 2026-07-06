@@ -1,7 +1,7 @@
 import { createServer } from "http"
 import { Server as SocketIOServer, Socket } from "socket.io"
 import IORedis from "ioredis"
-import { prisma } from "../src/lib/db"
+import { prisma } from "./ws-prisma"
 import { verifySignedCookie, extractSessionToken } from "./ws-auth"
 
 const PORT = parseInt(process.env.WS_PORT || "3001", 10)
