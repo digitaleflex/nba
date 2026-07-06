@@ -24,8 +24,6 @@ import {
   TrendingUp,
   CreditCard,
 } from "lucide-react"
-import { NotificationBell } from "@nba/components/notification-bell"
-
 interface SidebarProps {
   isAdmin?: boolean
   user: {
@@ -200,14 +198,11 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
               <span className="text-foreground tracking-tight"><span className="text-primary font-black">Never</span>BrokeAgain</span>
             )}
           </Link>
-          <div className="flex items-center gap-1">
-            {!isAdmin && <NotificationBell />}
-            {!isCollapsed && isAdmin && (
-              <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">
-                Admin
-              </span>
-            )}
-          </div>
+          {!isCollapsed && isAdmin && (
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">
+              Admin
+            </span>
+          )}
         </div>
 
         {/* Menu Navigation */}
