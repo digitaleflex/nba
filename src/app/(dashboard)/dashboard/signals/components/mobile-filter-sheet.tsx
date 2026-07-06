@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import {
   Dialog,
   DialogContent,
@@ -50,6 +50,7 @@ interface MobileFilterSheetProps {
   onOpenChange: (open: boolean) => void
   activeFilter: FilterKey
   onFilterChange: (filter: FilterKey) => void
+  group?: string | null
 }
 
 export function MobileFilterSheet({
@@ -57,8 +58,33 @@ export function MobileFilterSheet({
   onOpenChange,
   activeFilter,
   onFilterChange,
+  group = null,
 }: MobileFilterSheetProps) {
   const [tempFilter, setTempFilter] = useState<FilterKey>(activeFilter)
+
+  const filterGroups = useMemo(() => {
+    if (!group || group === "Tous les signaux") {
+      return FILTER_GROUPS
+    }
+
+    const groupStr = group.toLowerCase()
+    const hasForex = groupStr.includes("forex")
+    const hasDeriv = groupStr.includes("deriv")
+
+    return FILTER_GROUPS.map((g) => {
+      if (g.label !== "Marché") return g
+
+      return {
+        ...g,
+        filters: g.filters.filter((f) => {
+          if (f.key === "forex" && !hasForex) return false
+          if (f.key === "deriv" && !hasDeriv) return false
+          if (f.key === "forex+deriv" && (!hasForex || !hasDeriv)) return false
+          return true
+        }),
+      }
+    }).filter((g) => g.filters.length > 0)
+  }, [group])
 
   const handleApply = () => {
     onFilterChange(tempFilter)
@@ -98,7 +124,7 @@ export function MobileFilterSheet({
         </DialogHeader>
 
         <div className="space-y-5 py-4 max-h-[50vh] overflow-y-auto">
-          {FILTER_GROUPS.map((group) => (
+          {filterGroups.map((group) => (
             <div key={group.label} className="space-y-2.5">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                 {group.label}

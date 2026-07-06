@@ -194,6 +194,22 @@ export function SignalsView() {
 
   const debouncedSearch = useDebounce(searchQuery, 300)
 
+  const availableFilters = useMemo(() => {
+    if (!summary || !summary.group || summary.group === "Tous les signaux") {
+      return FILTERS
+    }
+
+    const groupStr = summary.group.toLowerCase()
+    const hasForex = groupStr.includes("forex")
+    const hasDeriv = groupStr.includes("deriv")
+
+    return FILTERS.filter((f) => {
+      if (f.key === "forex" && !hasForex) return false
+      if (f.key === "deriv" && !hasDeriv) return false
+      return true
+    })
+  }, [summary])
+
   const fetchSignals = useCallback(async (pageNum: number, append: boolean) => {
     const params = new URLSearchParams()
     params.set("page", String(pageNum))
@@ -353,7 +369,7 @@ export function SignalsView() {
 
       <div className="relative sm:static">
         <div className="flex gap-2 overflow-x-auto -mx-6 px-6 pb-1 snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-          {FILTERS.map((f) => (
+          {availableFilters.map((f) => (
             <button
               key={f.key}
               onClick={() => setActiveFilter(f.key)}
@@ -449,6 +465,7 @@ export function SignalsView() {
         onOpenChange={setFilterSheetOpen}
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
+        group={summary?.group}
       />
     </div>
   )

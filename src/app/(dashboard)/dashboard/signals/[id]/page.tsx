@@ -114,7 +114,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
                 <span>•</span>
                 <span className="flex items-center gap-1">
                   <User className="size-3.5" />
-                  Par : {signal.creator.name}
+                  Par : Never Broke Again
                 </span>
               </div>
             </div>
