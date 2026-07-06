@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
+import { NotificationBell } from "@nba/components/notification-bell"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -34,7 +35,10 @@ export default async function DashboardLayout({ children }: { children: React.Re
               <span className="text-primary font-extrabold">Never</span>BrokeAgain
             </div>
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
+          </div>
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
