@@ -2,7 +2,7 @@ import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
-import { sendVerificationEmail, sendResetPasswordEmail } from "./services/notifications"
+import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
 
 const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
@@ -58,6 +58,15 @@ export const auth = betterAuth({
     },
     ipAddress: {
       ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
+        },
+      },
     },
   },
   plugins: [nextCookies()],
