@@ -79,6 +79,9 @@ export function DashboardHeader({ user }: { user: { name: string; email: string 
 
         <div className="flex items-center gap-3">
           <PushNotificationToggle compact />
+          <Link href="/dashboard/profile" title="Modifier mon profil" className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all duration-200">
+            <User className="size-4" />
+          </Link>
           <span className="text-sm text-muted-foreground hidden sm:block">{user.name}</span>
           <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex">
             <LogOut className="size-3.5 mr-1.5" />
