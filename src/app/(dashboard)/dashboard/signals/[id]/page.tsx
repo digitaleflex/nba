@@ -6,7 +6,6 @@ import { Card, CardContent, Badge } from "@nba/design-system"
 import { Calendar, User, ChevronLeft } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import Link from "next/link"
-import Image from "next/image"
 import { SignalActions } from "./components/signal-actions"
 
 export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -145,13 +144,12 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
               <div className="grid gap-4">
                 {(signal.imageUrls as string[]).map((url, idx) => (
                   <div key={idx} className="relative overflow-hidden rounded-xl border bg-muted/10 h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full">
-                    <Image
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
                       src={`/api/files/${url}`}
                       alt={`Graphique ${idx + 1}`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-                      className="object-contain"
-                      priority={idx === 0}
+                      loading={idx === 0 ? "eager" : "lazy"}
+                      className="absolute inset-0 w-full h-full object-contain"
                     />
                   </div>
                 ))}
@@ -161,13 +159,12 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             <div className="space-y-4 pt-2">
               <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">Graphique joint</h3>
               <div className="relative overflow-hidden rounded-xl border bg-muted/10 h-[300px] sm:h-[400px] md:h-[500px] lg:h-[600px] w-full">
-                <Image
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
                   src={`/api/files/${signal.imageUrl}`}
                   alt="Graphique du signal"
-                  fill
-                  sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-                  className="object-contain"
-                  priority
+                  loading="eager"
+                  className="absolute inset-0 w-full h-full object-contain"
                 />
               </div>
             </div>

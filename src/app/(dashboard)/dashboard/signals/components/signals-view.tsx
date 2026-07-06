@@ -16,7 +16,6 @@ import {
   Archive,
 } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
-import NextImage from "next/image"
 import { MobileFilterSheet } from "./mobile-filter-sheet"
 
 interface SignalData {
@@ -136,12 +135,12 @@ function SignalCard({ signal }: { signal: SignalData }) {
             <div className="flex gap-2 pt-1">
               {signal.imageUrls.slice(0, 2).map((url, idx) => (
                 <div key={idx} className="relative overflow-hidden rounded-lg border border-border/60 bg-background/50 aspect-video w-24 sm:w-28 shrink-0">
-                  <NextImage
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
                     src={`/api/files/${url}`}
                     alt=""
-                    fill
-                    sizes="(max-width: 768px) 96px, 112px"
-                    className="object-cover"
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
                 </div>
               ))}
@@ -158,12 +157,12 @@ function SignalCard({ signal }: { signal: SignalData }) {
 
           {signal.imageUrl && !signal.imageUrls?.length && (
             <div className="relative overflow-hidden rounded-lg border border-border/60 bg-background/50 aspect-video max-w-sm w-full">
-              <NextImage
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
                 src={`/api/files/${signal.imageUrl}`}
                 alt=""
-                fill
-                sizes="(max-width: 768px) 100vw, 384px"
-                className="object-cover"
+                loading="lazy"
+                className="absolute inset-0 w-full h-full object-cover"
               />
             </div>
           )}

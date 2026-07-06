@@ -10,8 +10,21 @@ interface Notification {
   body: string;
   type: string;
   readAt: string | null;
-  data: { linkUrl?: string } | null;
+  data: {
+    linkUrl?: string;
+    signalId?: string;
+    imageUrl?: string | null;
+    imageUrls?: string[] | null;
+  } | null;
   createdAt: string;
+}
+
+const VOLUME_KEY = "nba-notification-volume"
+
+function getVolume(): number {
+  if (typeof window === "undefined") return 0.5
+  const v = localStorage.getItem(VOLUME_KEY)
+  return v ? parseFloat(v) : 0.5
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -23,6 +36,15 @@ function formatTimeAgo(dateStr: string): string {
   if (hours < 24) return `il y a ${hours}h`;
   const days = Math.floor(hours / 24);
   return `il y a ${days}j`;
+}
+
+function getThumbnail(notif: Notification): string | null {
+  if (!notif.data) return null
+  if (notif.data.imageUrl) return `/api/files/${notif.data.imageUrl}`
+  if (Array.isArray(notif.data.imageUrls) && notif.data.imageUrls.length > 0) {
+    return `/api/files/${notif.data.imageUrls[0]}`
+  }
+  return null
 }
 
 export function NotificationBell() {
@@ -57,7 +79,7 @@ export function NotificationBell() {
       setRecentNotifications(data.notifications);
       if (data.unreadCount > unreadCount && prevTop && data.notifications[0]?.id !== prevTop) {
         const audio = new Audio(`/sounds/${soundRef.current}.wav`);
-        audio.volume = 0.5;
+        audio.volume = getVolume();
         audio.play().catch(() => {});
       }
       setUnreadCount(data.unreadCount);
@@ -139,50 +161,64 @@ export function NotificationBell() {
                 Aucune notification
               </div>
             ) : (
-              recentNotifications.map((n) => (
-                <div
-                  key={n.id}
-                  className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/30 ${
-                    !n.readAt ? "bg-primary/[0.02]" : ""
-                  }`}
-                >
-                  {!n.readAt && (
-                    <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p
-                        className={`text-sm font-medium truncate ${
-                          !n.readAt
-                            ? "text-foreground"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {n.title}
-                      </p>
-                      <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                        <Clock className="size-3" />
-                        {formatTimeAgo(n.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                      {n.body}
-                    </p>
+              recentNotifications.map((n) => {
+                const thumb = getThumbnail(n)
+                return (
+                  <div
+                    key={n.id}
+                    className={`flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted/30 ${
+                      !n.readAt ? "bg-primary/[0.02]" : ""
+                    }`}
+                  >
                     {!n.readAt && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          markAsRead(n.id);
-                        }}
-                        className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
-                      >
-                        <CheckCheck className="size-3" />
-                        Marquer comme lue
-                      </button>
+                      <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" />
                     )}
+                    {thumb ? (
+                      <div className="relative w-12 h-12 rounded-md overflow-hidden border border-border/60 bg-muted shrink-0">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={thumb}
+                          alt=""
+                          loading="lazy"
+                          className="absolute inset-0 w-full h-full object-cover"
+                        />
+                      </div>
+                    ) : null}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between gap-2">
+                        <p
+                          className={`text-sm font-medium truncate ${
+                            !n.readAt
+                              ? "text-foreground"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          {n.title}
+                        </p>
+                        <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                          <Clock className="size-3" />
+                          {formatTimeAgo(n.createdAt)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                        {n.body}
+                      </p>
+                      {!n.readAt && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            markAsRead(n.id);
+                          }}
+                          className="text-xs text-primary hover:underline mt-1 inline-flex items-center gap-1"
+                        >
+                          <CheckCheck className="size-3" />
+                          Marquer comme lue
+                        </button>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         </div>

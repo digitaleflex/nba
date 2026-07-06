@@ -1,9 +1,29 @@
 import { Queue, Worker } from "bullmq"
 import IORedis from "ioredis"
+import { readFile } from "fs/promises"
+import { join } from "path"
 import { prisma } from "../src/lib/db"
 import { getStorage } from "../src/lib/storage"
 import { sendEmail, tradingSignalEmail } from "../src/lib/email"
 import { logAuditEvent } from "../src/lib/services/audit"
+
+const STORAGE_BASE_PATH = process.cwd() + "/storage"
+
+async function readImageAsDataUri(path: string): Promise<string | null> {
+  try {
+    const fullPath = join(STORAGE_BASE_PATH, path)
+    const buffer = await readFile(fullPath)
+    const ext = path.split(".").pop()?.toLowerCase()
+    const mime =
+      ext === "png" ? "image/png" :
+      ext === "webp" ? "image/webp" :
+      "image/jpeg"
+    return `data:${mime};base64,${buffer.toString("base64")}`
+  } catch (err) {
+    console.error(`[signal] Failed to read image ${path}:`, err)
+    return null
+  }
+}
 
 // Stable connection initialization with proper typing (casting options to avoid TS issues)
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
@@ -162,7 +182,11 @@ const signalWorker = new Worker(
               type: "SIGNAL",
               title: "Nouveau signal de trading",
               body: `Un nouveau signal a été publié pour vos groupes.`,
-              data: { signalId: signal.id },
+              data: {
+                signalId: signal.id,
+                imageUrl: signal.imageUrl,
+                imageUrls: signal.imageUrls,
+              },
             },
           })
 
@@ -175,8 +199,14 @@ const signalWorker = new Worker(
             },
           })
 
-          // 3. Enqueue Email to BullMQ
-          const template = tradingSignalEmail(member, signal.content, signal.imageUrl)
+          // 3. Préparer le template email (image embarquée en base64)
+          let imageDataUri: string | null = null
+          if (signal.imageUrl) {
+            imageDataUri = await readImageAsDataUri(signal.imageUrl)
+          }
+          const template = tradingSignalEmail(member, signal.content, imageDataUri)
+
+          // 4. Enqueue Email to BullMQ
           await notificationDeliveryQueue.add(
             `delivery-${delivery.id}`,
             {

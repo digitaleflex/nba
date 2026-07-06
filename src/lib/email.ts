@@ -322,12 +322,18 @@ export function parseSimpleMarkdown(text: string): string {
 export function tradingSignalEmail(
   user: TemplateUser,
   content: string,
-  imageUrl?: string | null
+  imageDataUri?: string | null
 ): { subject: string; html: string } {
   const prenom = getFirstName(user.name)
-  const imageHtml = imageUrl
+  // imageDataUri est soit un data URI complet (data:image/png;base64,...)
+  // soit une URL /api/files/... (fallback, ne fonctionnera pas depuis un client mail
+  // car /api/files requiert l'authentification)
+  const imageSrc = imageDataUri?.startsWith("data:") || imageDataUri?.startsWith("http")
+    ? imageDataUri
+    : null
+  const imageHtml = imageSrc
     ? `<div style="margin:24px 0;border-radius:12px;overflow:hidden;border:1px solid #E4E7EC">
-         <img src="${APP_DOMAIN}/api/files/${imageUrl}" alt="Graphique du signal" style="max-width:100%;height:auto;display:block"/>
+         <img src="${imageSrc}" alt="Graphique du signal" style="max-width:100%;height:auto;display:block;width:100%"/>
        </div>`
     : ""
 

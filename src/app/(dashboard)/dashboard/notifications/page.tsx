@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, Button } from "@nba/design-system"
 import {
-  Bell,
   BellOff,
   BellRing,
   Loader2,
@@ -29,6 +28,20 @@ interface Notification {
   readAt: string | null
   linkUrl: string | null
   createdAt: string
+  data?: {
+    signalId?: string
+    imageUrl?: string | null
+    imageUrls?: string[] | null
+  } | null
+}
+
+function getThumbnail(n: Notification): string | null {
+  if (!n.data) return null
+  if (n.data.imageUrl) return `/api/files/${n.data.imageUrl}`
+  if (Array.isArray(n.data.imageUrls) && n.data.imageUrls.length > 0) {
+    return `/api/files/${n.data.imageUrls[0]}`
+  }
+  return null
 }
 
 const SOUNDS = [
@@ -77,6 +90,7 @@ export default function NotificationsPage() {
       .catch(() => setSoundLoaded(true))
 
     const savedVolume = localStorage.getItem(VOLUME_KEY)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (savedVolume) setVolume(parseFloat(savedVolume))
 
     if (typeof window === "undefined") return
@@ -162,6 +176,7 @@ export default function NotificationsPage() {
   }, [])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications()
     const interval = setInterval(fetchNotifications, 30000)
     return () => clearInterval(interval)
@@ -315,7 +330,7 @@ export default function NotificationsPage() {
                 )}
                 {permStatus === "denied" && (
                   <p className="text-xs text-muted-foreground">
-                    Pour réactiver : icône 🔒 dans la barre d'adresse → Notifications → Autoriser
+                    Pour réactiver : icône 🔒 dans la barre d&apos;adresse → Notifications → Autoriser
                   </p>
                 )}
               </div>
@@ -408,51 +423,65 @@ export default function NotificationsPage() {
         </Card>
       ) : (
         <div className="space-y-2">
-          {notifications.map((n) => (
-            <Card
-              key={n.id}
-              role="button"
-              tabIndex={0}
-              className={`relative overflow-hidden transition-colors cursor-pointer hover:bg-muted/30 ${
-                !n.readAt ? "border-primary/20 bg-primary/[0.02]" : ""
-              }`}
-              onClick={() => !n.readAt && markAsRead(n.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault()
-                  if (!n.readAt) markAsRead(n.id)
-                }
-              }}
-              aria-label={`${n.title} - ${!n.readAt ? "Non lue" : "Lue"}`}
-            >
-              <CardContent className="p-4 flex items-start gap-3">
-                {!n.readAt && (
-                  <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" aria-label="Non lue" />
-                )}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={`text-sm font-medium truncate ${!n.readAt ? "text-foreground" : "text-muted-foreground"}`}>
-                      {n.title}
-                    </p>
-                    <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
-                      <Clock className="size-3" />
-                      {formatTimeAgo(n.createdAt)}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                  {n.linkUrl && (
-                    <Link
-                      href={n.linkUrl}
-                      className="text-xs text-primary mt-1 inline-block hover:underline"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      Voir le détail
-                    </Link>
+          {notifications.map((n) => {
+            const thumb = getThumbnail(n)
+            return (
+              <Card
+                key={n.id}
+                role="button"
+                tabIndex={0}
+                className={`relative overflow-hidden transition-colors cursor-pointer hover:bg-muted/30 ${
+                  !n.readAt ? "border-primary/20 bg-primary/[0.02]" : ""
+                }`}
+                onClick={() => !n.readAt && markAsRead(n.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    if (!n.readAt) markAsRead(n.id)
+                  }
+                }}
+                aria-label={`${n.title} - ${!n.readAt ? "Non lue" : "Lue"}`}
+              >
+                <CardContent className="p-4 flex items-start gap-3">
+                  {!n.readAt && (
+                    <span className="size-2 rounded-full bg-primary shrink-0 mt-1.5" aria-label="Non lue" />
                   )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                  {thumb && (
+                    <div className="relative w-16 h-16 rounded-lg overflow-hidden border border-border/60 bg-muted shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={thumb}
+                        alt=""
+                        loading="lazy"
+                        className="absolute inset-0 w-full h-full object-cover"
+                      />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={`text-sm font-medium truncate ${!n.readAt ? "text-foreground" : "text-muted-foreground"}`}>
+                        {n.title}
+                      </p>
+                      <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1">
+                        <Clock className="size-3" />
+                        {formatTimeAgo(n.createdAt)}
+                      </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
+                    {n.linkUrl && (
+                      <Link
+                        href={n.linkUrl}
+                        className="text-xs text-primary mt-1 inline-block hover:underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        Voir le détail
+                      </Link>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
     </div>
