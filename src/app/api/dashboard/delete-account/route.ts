@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 
 export async function DELETE(request: Request) {
   try {
@@ -18,8 +19,8 @@ export async function DELETE(request: Request) {
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
-      select: { email: true },
-    })
+      select: { name: true, email: true },
+    }) as { name: string; email: string } | null
 
     if (!user) {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
@@ -34,6 +35,11 @@ export async function DELETE(request: Request) {
         password: password,
       },
     })
+
+    // Envoyer un email de confirmation avant suppression
+    await sendAccountDeletionEmail(user).catch((err) =>
+      console.error("[delete-account] email failed:", err)
+    )
 
     // Soft delete - set deletedAt
     await prisma.user.update({

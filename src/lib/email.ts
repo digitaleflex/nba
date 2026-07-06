@@ -602,6 +602,286 @@ export function emailChangedEmail(user: TemplateUser, newEmail: string): { subje
 }
 
 // ══════════════════════════════════════
+//  SUBMISSION CONFIRMATION TEMPLATES
+// ══════════════════════════════════════
+
+export function kycSubmittedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `📄 Documents KYC reçus — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Merci, ${prenom} ✓
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Nous avons bien reçu vos documents d'identité.
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:12px;padding:24px;margin:24px 0">
+        <p style="margin:0;font-size:14px;color:#6A758B;line-height:1.6">
+          Notre équipe vérifie vos documents. Vous recevrez une notification dès que la vérification sera terminée.
+        </p>
+        <p style="margin:12px 0 0 0;font-size:13px;color:#6A758B">
+          Délai estimé : <strong style="color:#1E2024">24 à 48 heures ouvrées</strong>.
+        </p>
+      </div>
+
+      ${divider()}
+
+      ${sectionTitle("Prochaine étape")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Pendant ce temps, vous pouvez préparer votre vérification Broker.
+      </p>
+    `),
+  }
+}
+
+export function brokerSubmittedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `🎥 Vérification Broker reçue — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bien joué, ${prenom} !
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Nous avons bien reçu votre vidéo de vérification Broker.
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:12px;padding:24px;margin:24px 0">
+        <p style="margin:0;font-size:14px;color:#6A758B;line-height:1.6">
+          Notre équipe examine votre vérification. Vous serez notifié dès que tout sera validé.
+        </p>
+        <p style="margin:12px 0 0 0;font-size:13px;color:#6A758B">
+          Délai estimé : <strong style="color:#1E2024">24 à 48 heures ouvrées</strong>.
+        </p>
+      </div>
+
+      ${divider()}
+
+      ${sectionTitle("Plus qu'une étape")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Une fois votre Broker vérifié, vous aurez accès à tous les signaux premium.
+      </p>
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  ACCESS REVOKED & SUSPENSION TEMPLATES
+// ══════════════════════════════════════
+
+export function accessRevokedEmail(user: TemplateUser, planName: string, reason: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `⚠️ Accès au groupe révoqué — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#DC3545">révoqué</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Motif")}
+      <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+      </div>
+
+      ${sectionTitle("Que faire ?")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Contactez notre équipe support pour plus d'informations.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+    `),
+  }
+}
+
+export function accountSuspendedEmail(user: TemplateUser, reason: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `🔒 Compte suspendu — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre compte a été <strong style="color:#DC3545">suspendu</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Motif")}
+      <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+      </div>
+
+      ${sectionTitle("Contester cette décision")}
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous pensez qu'il s'agit d'une erreur, contactez notre équipe support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  ACCOUNT DELETION
+// ══════════════════════════════════════
+
+export function accountDeletionConfirmationEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `👋 Compte supprimé — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Au revoir, ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Conformément à votre demande, votre compte a été supprimé.
+      </p>
+
+      ${divider()}
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Vos données personnelles ont été anonymisées conformément à notre politique de confidentialité.
+      </p>
+      <p style="margin:0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous souhaitez revenir, vous pouvez créer un nouveau compte à tout moment.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}`, text: "Retour à l'accueil" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  ADMIN NOTIFICATION
+// ══════════════════════════════════════
+
+interface TemplateAdmin {
+  name: string
+}
+
+export function newAccessRequestAdminEmail(
+  admin: TemplateAdmin,
+  requester: { name: string; email: string },
+  planName: string,
+): { subject: string; html: string } {
+  return {
+    subject: `📋 Nouvelle demande d'accès — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${getFirstName(admin.name)}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Un utilisateur a soumis une nouvelle demande d'accès.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Détails de la demande")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Utilisateur</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${requester.name}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${requester.email}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Groupe</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${planName}</td>
+        </tr>
+      </table>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/admin/access-requests`, text: "Voir la demande" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  DEVICE VERIFICATION
+// ══════════════════════════════════════
+
+export function deviceVerificationEmail(name: string, code: string): { subject: string; html: string } {
+  const prenom = getFirstName(name)
+  return {
+    subject: `🔐 Code de vérification appareil — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Un nouvel appareil a été détecté sur votre compte. Utilisez le code ci-dessous pour le vérifier.
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:24px;text-align:center;margin:24px 0">
+        <span style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:8px;color:#283B5D">${code}</span>
+      </div>
+
+      <p style="margin:0 0 4px 0;font-size:13px;color:#6A758B">
+        Ce code expire dans <strong style="color:#1E2024">10 minutes</strong>.
+      </p>
+      <p style="margin:0;font-size:13px;color:#6A758B">
+        Si vous n'êtes pas à l'origine de cette connexion, ignorez cet email et sécurisez votre compte.
+      </p>
+    `),
+  }
+}
+
+// ══════════════════════════════════════
+//  SUPPORT TICKET (email to support team)
+// ══════════════════════════════════════
+
+export function supportTicketEmail(
+  user: { name: string; email: string },
+  subject: string,
+  message: string
+): { subject: string; html: string } {
+  return {
+    subject: `[Support NBA] ${subject}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Nouveau ticket support
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Expéditeur")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Nom</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${user.email}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Sujet</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${subject}</td>
+        </tr>
+      </table>
+
+      ${divider()}
+
+      ${sectionTitle("Message")}
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${message}</p>
+      </div>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/admin/support`, text: "Voir dans le dashboard" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
 

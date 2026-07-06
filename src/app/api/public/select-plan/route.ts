@@ -3,6 +3,8 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { selectPlanSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
 import { AuthError } from "@nba/lib/auth-utils"
+import { newAccessRequestAdminEmail } from "@nba/lib/email"
+import { sendEmail } from "@nba/lib/email"
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +51,30 @@ export async function POST(req: NextRequest) {
         cancelledPending: existingPending.length,
       },
     })
+
+    // Notifier les admins de la nouvelle demande
+    const plan = await prisma.subscriptionPlan.findUnique({
+      where: { id: parsed.planId },
+      select: { name: true },
+    })
+
+    if (plan) {
+      const admins = await prisma.user.findMany({
+        where: { role: { name: { in: ["ADMIN", "SUPER_ADMIN"] } } },
+        select: { name: true, email: true },
+      })
+
+      await Promise.allSettled(
+        admins.map((admin) => {
+          const template = newAccessRequestAdminEmail(
+            admin,
+            { name: session.user.name ?? "Utilisateur", email: session.user.email },
+            plan.name,
+          )
+          return sendEmail(admin.email, template)
+        }),
+      )
+    }
 
     return NextResponse.json({
       ok: true,

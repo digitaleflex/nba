@@ -1,0 +1,27 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1E293B"/>
+      <stop offset="100%" stop-color="#0F172A"/>
+    </linearGradient>
+    <linearGradient id="arrowGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+
+  <!-- N - Left vertical bar -->
+  <rect x="148" y="128" width="40" height="256" rx="8" fill="white"/>
+
+  <!-- N - Diagonal (parallelogram connecting top-left to bottom-right) -->
+  <path d="M188 128 L216 128 L328 384 L300 384 Z" fill="white"/>
+
+  <!-- N - Right vertical bar (shorter, starts mid-way) -->
+  <rect x="312" y="240" width="40" height="144" rx="8" fill="white"/>
+
+  <!-- Upward arrow accent (green) - arrowhead at top of diagonal -->
+  <path d="M196 136 L248 136 L248 164 L220 164 L248 192 L196 192 Z" fill="url(#arrowGrad)"/>
+</svg>

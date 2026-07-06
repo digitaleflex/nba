@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { sendBrokerSubmittedEmail, sendOnboardingStepEmail } from "@nba/lib/services/notifications"
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -43,6 +44,25 @@ export async function POST(req: NextRequest) {
   })
 
   await updateOnboardingStatus(userId, "ACTIVE")
+
+  // Notifier l'utilisateur
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true, email: true },
+  })
+
+  if (user) {
+    await sendBrokerSubmittedEmail(user).catch((err) =>
+      console.error("[broker] email failed:", err)
+    )
+    await sendOnboardingStepEmail(
+      user,
+      "Vérification Broker",
+      null,
+    ).catch((err) =>
+      console.error("[broker] onboarding email failed:", err)
+    )
+  }
 
   return NextResponse.json({ ok: true })
 }

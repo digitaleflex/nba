@@ -103,3 +103,39 @@ export async function sendOtpEmail(name: string, email: string, code: string) {
   const template = emailOtp(name, code)
   await sendEmailSync(email, template.subject, template.html)
 }
+
+export async function sendDeviceVerificationEmail(name: string, email: string, code: string) {
+  const { deviceVerificationEmail } = await import("@nba/lib/email")
+  const template = deviceVerificationEmail(name, code)
+  await sendEmailSync(email, template.subject, template.html)
+}
+
+export async function sendAccountDeletionEmail(user: { name: string; email: string }) {
+  const { accountDeletionConfirmationEmail } = await import("@nba/lib/email")
+  const template = accountDeletionConfirmationEmail(user)
+  await sendEmailSync(user.email, template.subject, template.html)
+}
+
+export async function sendOnboardingStepEmail(
+  user: { name: string; email: string },
+  stepLabel: string,
+  nextStepLabel: string | null,
+) {
+  const { onboardingStepEmail } = await import("@nba/lib/email")
+  const template = onboardingStepEmail(user, stepLabel, nextStepLabel)
+  await sendEmailSync(user.email, template.subject, template.html)
+}
+
+export async function sendKycSubmittedEmail(user: { name: string; email: string }) {
+  const { kycSubmittedEmail } = await import("@nba/lib/email")
+  const template = kycSubmittedEmail(user)
+  await sendEmailSync(user.email, template.subject, template.html)
+}
+
+export async function sendBrokerSubmittedEmail(user: { name: string; email: string }) {
+  const { brokerSubmittedEmail } = await import("@nba/lib/email")
+  const template = brokerSubmittedEmail(user)
+  await sendEmailSync(user.email, template.subject, template.html)
+}
+
+

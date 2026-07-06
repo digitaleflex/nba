@@ -4,7 +4,7 @@ import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
-import { accessApprovedEmail, accessRejectedEmail } from "@nba/lib/email"
+import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -80,6 +80,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       })
     }
 
+    if (parsed.status === "SUSPENDED" || parsed.status === "REVOKED") {
+      await prisma.user.update({
+        where: { id: request.userId },
+        data: { onboardingStatus: "SUSPENDED" },
+      })
+    }
+
     await logAuditEvent({
       userId: session.user.id,
       action: `access_request.${parsed.status.toLowerCase()}`,
@@ -100,21 +107,36 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
 
     if (user) {
-      const isApproved = parsed.status === "APPROVED"
       const planName = plan?.name || "Inconnu"
-      const template = isApproved
-        ? accessApprovedEmail(user, planName)
-        : accessRejectedEmail(user, planName, parsed.notes || "Aucun motif précisé")
+      let template: { subject: string; html: string }
+      let title: string
+      let body: string
+
+      if (parsed.status === "APPROVED") {
+        template = accessApprovedEmail(user, planName)
+        title = "Accès au groupe accordé"
+        body = `Votre accès au groupe « ${planName} » a été approuvé.`
+      } else if (parsed.status === "REVOKED") {
+        template = accessRevokedEmail(user, planName, parsed.notes || "Aucun motif précisé")
+        title = "Accès au groupe révoqué"
+        body = `Votre accès au groupe « ${planName} » a été révoqué. Motif : ${parsed.notes || "Non précisé"}`
+      } else if (parsed.status === "SUSPENDED") {
+        template = accountSuspendedEmail(user, parsed.notes || "Aucun motif précisé")
+        title = "Compte suspendu"
+        body = `Votre compte a été suspendu. Motif : ${parsed.notes || "Non précisé"}`
+      } else {
+        template = accessRejectedEmail(user, planName, parsed.notes || "Aucun motif précisé")
+        title = "Demande d'accès refusée"
+        body = `Votre demande d'accès au groupe « ${planName} » a été refusée. Motif : ${parsed.notes || "Non précisé"}`
+      }
 
       await notify({
         userId: request.userId,
         type: "ACCESS",
-        title: isApproved ? "Accès au groupe accordé" : "Demande d'accès refusée",
-        body: isApproved
-          ? `Votre accès au groupe « ${planName} » a été approuvé.`
-          : `Votre demande d'accès au groupe « ${planName} » a été refusée. Motif : ${parsed.notes || "Non précisé"}`,
+        title,
+        body,
         data: { requestId: id, planName, status: parsed.status },
-        linkUrl: "/dashboard/signals",
+        linkUrl: parsed.status === "APPROVED" ? "/dashboard/signals" : "/dashboard/subscription",
         email: {
           to: user.email,
           subject: template.subject,

@@ -1,6 +1,6 @@
 import { randomInt } from "crypto"
 import { prisma } from "../db"
-import { Resend } from "resend"
+import { sendDeviceVerificationEmail } from "./notifications"
 
 function generateCode(): string {
   return String(randomInt(100_000, 999_999))
@@ -46,25 +46,13 @@ export async function sendVerificationCode(userId: string, email: string, req: R
     },
   })
 
-  const resendApiKey = process.env.RESEND_API_KEY
-  if (resendApiKey && resendApiKey !== "re_xxxxxxxxxxxx") {
-    const resend = new Resend(resendApiKey)
-    await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL ?? "noreply@signauxx.com",
-      to: email,
-      subject: "Vérification de votre appareil — NeverBrokeAgain",
-      html: `
-        <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto;">
-          <h2>Nouvel appareil détecté</h2>
-          <p>Utilisez le code ci-dessous pour vérifier votre appareil :</p>
-          <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 16px; background: #f4f4f5; border-radius: 8px; margin: 16px 0;">
-            ${code}
-          </div>
-          <p style="color: #71717a;">Ce code expire dans 10 minutes.</p>
-          <p style="color: #71717a;">Si vous n'êtes pas à l'origine de cette connexion, ignorez cet email.</p>
-        </div>
-      `,
-    })
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { name: true },
+  })
+
+  if (user) {
+    await sendDeviceVerificationEmail(user.name, email, code)
   }
 }
 
