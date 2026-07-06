@@ -1,53 +1,113 @@
-// Service Worker pour les notifications push navigateur
-// Robuste: gère les erreurs, ne s'active pas sur les pages non-HTTPS,
-// et n'intercepte jamais les requêtes fetch (sauf si on l'ajoute explicitement).
-
-const SW_VERSION = "1.0.0";
+// Service Worker — Notifications push + Cache offline
+const SW_VERSION = "2.0.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
+const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
-// Skip l'enregistrement en HTTP (dev local) ou en mode privé buggé
-function isSWSupported() {
-  return (
-    "serviceWorker" in navigator &&
-    typeof window !== "undefined" &&
-    window.isSecureContext !== false // true ou undefined (HTTP local)
-  );
-}
+const PRECACHE_URLS = [
+  "/",
+  "/dashboard",
+  "/manifest.webmanifest",
+  "/icon.png",
+  "/logo.png",
+  "/icons/icon-192x192.png",
+  "/icons/icon-512x512.png",
+];
 
+// Installation : pré-cache des assets critiques
 self.addEventListener("install", (event) => {
   console.log(`${SW_LOG_PREFIX} install`);
-  // skipWaiting: prend le contrôle immédiatement (ok car pas de fetch handler)
-  self.skipWaiting().catch((err) => {
-    console.error(`${SW_LOG_PREFIX} skipWaiting failed:`, err);
-  });
+  event.waitUntil(
+    (async () => {
+      const cache = await caches.open(CACHE_NAME);
+      await cache.addAll(PRECACHE_URLS);
+      await self.skipWaiting();
+    })(),
+  );
 });
 
+// Activation : nettoyage des anciens caches + prise de contrôle
 self.addEventListener("activate", (event) => {
   console.log(`${SW_LOG_PREFIX} activate`);
   event.waitUntil(
-    clients
-      .claim()
-      .then(() => {
-        console.log(`${SW_LOG_PREFIX} clients claimed`);
-      })
-      .catch((err) => {
-        console.error(`${SW_LOG_PREFIX} claim failed:`, err);
-      })
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
+      );
+      await clients.claim();
+      console.log(`${SW_LOG_PREFIX} ready (cache: ${CACHE_NAME})`);
+    })(),
   );
 });
 
-// Push: réception d'une notification push
-self.addEventListener("push", (event) => {
-  if (!event.data) {
-    console.warn(`${SW_LOG_PREFIX} push event without data`);
+// Fetch : stratégie cache-first pour les statiques, network-first pour les navigations
+self.addEventListener("fetch", (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // API : toujours réseau (pas de cache)
+  if (url.pathname.startsWith("/api/")) {
     return;
   }
+
+  // Navigations (HTML) : network-first avec fallback cache
+  if (request.mode === "navigate") {
+    event.respondWith(networkFirstWithFallback(request));
+    return;
+  }
+
+  // Assets statiques (JS, CSS, images, polices, etc.) : cache-first
+  if (
+    url.pathname.match(
+      /\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot|json|webmanifest)$/,
+    )
+  ) {
+    event.respondWith(cacheFirst(request));
+    return;
+  }
+
+  // Autre (ex: RSC, prefetch) : network-only
+});
+
+async function cacheFirst(request) {
+  const cached = await caches.match(request);
+  if (cached) return cached;
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    return new Response("Offline", { status: 503 });
+  }
+}
+
+async function networkFirstWithFallback(request) {
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      const cache = await caches.open(CACHE_NAME);
+      cache.put(request, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await caches.match(request);
+    if (cached) return cached;
+    return new Response("Offline", { status: 503 });
+  }
+}
+
+// Push : réception des notifications push
+self.addEventListener("push", (event) => {
+  if (!event.data) return;
 
   let payload = {
     title: "Nouveau signal",
     body: "Un nouveau contenu a été publié",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: "/icons/icon-192x192.png",
+    badge: "/icons/icon-192x192.png",
     url: "/dashboard/signals",
     tag: undefined,
   };
@@ -62,30 +122,23 @@ self.addEventListener("push", (event) => {
       url: data.url || payload.url,
       tag: data.tag,
     };
-  } catch (e) {
-    // Si le payload n'est pas du JSON valide, on utilise le texte brut
+  } catch {
     try {
       payload.body = event.data.text();
-    } catch (_) {
-      // Fallback silencieux
-    }
+    } catch {}
   }
 
-  event
-    .waitUntil(
-      self.registration.showNotification(payload.title, {
-        body: payload.body,
-        icon: payload.icon,
-        badge: payload.badge,
-        data: { url: payload.url },
-        tag: payload.tag,
-        requireInteraction: false,
-        vibrate: [200, 100, 200],
-      })
-    )
-    .catch((err) => {
-      console.error(`${SW_LOG_PREFIX} showNotification failed:`, err);
-    });
+  event.waitUntil(
+    self.registration.showNotification(payload.title, {
+      body: payload.body,
+      icon: payload.icon,
+      badge: payload.badge,
+      data: { url: payload.url },
+      tag: payload.tag,
+      requireInteraction: false,
+      vibrate: [200, 100, 200],
+    }),
+  );
 });
 
 // Click sur la notification
@@ -97,7 +150,6 @@ self.addEventListener("notificationclick", (event) => {
     clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((windowClients) => {
-        // Si un onglet est déjà ouvert, focus-le
         for (const client of windowClients) {
           if ("focus" in client) {
             return client.focus().then(() => {
@@ -105,18 +157,17 @@ self.addEventListener("notificationclick", (event) => {
             });
           }
         }
-        // Sinon, ouvre un nouvel onglet
         if (clients.openWindow) return clients.openWindow(url);
-      })
-      .catch((err) => {
-        console.error(`${SW_LOG_PREFIX} notificationclick failed:`, err);
-      })
+      }),
   );
 });
 
-// Error handler global
+// Error handlers globaux
 self.addEventListener("error", (event) => {
-  console.error(`${SW_LOG_PREFIX} unhandled error:`, event.error || event.message);
+  console.error(
+    `${SW_LOG_PREFIX} unhandled error:`,
+    event.error || event.message,
+  );
 });
 
 self.addEventListener("unhandledrejection", (event) => {

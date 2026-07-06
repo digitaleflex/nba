@@ -28,9 +28,27 @@ export const metadata: Metadata = {
     template: "%s | NeverBrokeAgain",
   },
   description: "Plateforme de signaux de trading premium",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#030711" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  manifest: "/manifest.webmanifest",
   icons: {
-    icon: "/icon.png",
+    icon: [{ url: "/icon.png", sizes: "32x32", type: "image/png" }],
     apple: "/logo.png",
+    other: [
+      { rel: "apple-touch-icon-precomposed", url: "/icons/icon-192x192.png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    title: "NeverBrokeAgain",
+    statusBarStyle: "black-translucent",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+    "msapplication-TileImage": "/icons/icon-192x192.png",
+    "msapplication-TileColor": "#030711",
   },
   openGraph: {
     title: "NeverBrokeAgain",

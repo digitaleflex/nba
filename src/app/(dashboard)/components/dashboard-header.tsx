@@ -17,6 +17,7 @@ import {
 } from "lucide-react"
 import { useState } from "react"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { NotificationBell } from "@nba/components/notification-bell"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, matchExact: true },
@@ -79,6 +80,7 @@ export function DashboardHeader({ user }: { user: { name: string; email: string 
 
         <div className="flex items-center gap-3">
           <PushNotificationToggle compact />
+          <NotificationBell />
           <Link href="/dashboard/profile" title="Modifier mon profil" className="p-2 rounded-lg border border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-all duration-200">
             <User className="size-4" />
           </Link>
