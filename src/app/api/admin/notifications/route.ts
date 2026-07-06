@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { notify } from "@nba/lib/services/notifications"
 
 export async function POST(request: Request) {
   try {
@@ -19,10 +20,35 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json()
-    const { title, content } = body
+    const { title, content, userId } = body
 
     if (!title || !content) {
       return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 })
+    }
+
+    if (userId) {
+      const targetUser = await prisma.user.findUnique({
+        where: { id: userId, deletedAt: null },
+        select: { email: true, name: true },
+      })
+
+      if (!targetUser) {
+        return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      }
+
+      await notify({
+        userId,
+        type: "SYSTEM",
+        title,
+        body: content,
+        email: {
+          to: targetUser.email,
+          subject: title,
+          html: `<p>Bonjour ${targetUser.name},</p><p>${content}</p>`,
+        },
+      })
+
+      return NextResponse.json({ success: true, count: 1 })
     }
 
     // Get all active, non-deleted users

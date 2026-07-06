@@ -60,6 +60,29 @@ export async function GET(request: NextRequest) {
               plan: { select: { id: true, name: true } },
             },
           },
+          kycDocuments: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              type: true,
+              status: true,
+              createdAt: true,
+              files: true,
+            },
+          },
+          brokerVerifications: {
+            orderBy: { createdAt: "desc" },
+            take: 1,
+            select: {
+              id: true,
+              brokerName: true,
+              accountId: true,
+              status: true,
+              createdAt: true,
+              videoUrl: true,
+            },
+          },
           _count: {
             select: {
               accessRequests: true,
@@ -85,7 +108,7 @@ export async function PUT(request: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
-    const { userId, isActive, roleId } = body
+    const { userId, isActive, roleId, onboardingStatus } = body
 
     if (!userId) {
       return NextResponse.json({ error: "userId est requis" }, { status: 400 })
@@ -93,6 +116,7 @@ export async function PUT(request: NextRequest) {
 
     const data: Record<string, any> = {}
     if (typeof isActive === "boolean") data.isActive = isActive
+    if (onboardingStatus) data.onboardingStatus = onboardingStatus
     if (roleId) {
       const role = await prisma.role.findUnique({ where: { id: roleId } })
       if (!role) {
@@ -109,11 +133,34 @@ export async function PUT(request: NextRequest) {
         name: true,
         email: true,
         isActive: true,
+        onboardingStatus: true,
         role: { select: { id: true, name: true } },
       },
     })
 
     return NextResponse.json(updated)
+  } catch (error) {
+    return handleAuthError(error)
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get("userId")
+
+    if (!userId) {
+      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
+    }
+
+    // Suppression logique
+    const deleted = await prisma.user.update({
+      where: { id: userId },
+      data: { deletedAt: new Date() },
+    })
+
+    return NextResponse.json({ success: true, message: "Utilisateur supprimé" })
   } catch (error) {
     return handleAuthError(error)
   }
