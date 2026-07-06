@@ -8,6 +8,12 @@ interface SignalPanelContentProps {
 }
 
 export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProps) {
+  const imageList: string[] = Array.isArray(data.imageUrls) && data.imageUrls.length > 0
+    ? data.imageUrls
+    : data.imageUrl
+      ? [data.imageUrl]
+      : []
+
   return (
     <div className="space-y-6 text-xs">
       <div className="grid grid-cols-2 gap-4 border-b pb-4">
@@ -51,16 +57,25 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
         </div>
       </div>
 
-      {data.imageUrl && (
+      {imageList.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[10px] text-muted-foreground uppercase font-semibold">Graphique attaché</span>
-          <div className="border rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
-            <img 
-              src={data.imageUrl} 
-              alt="Signal graphique" 
-              className="w-full h-auto max-h-56 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" 
-              onClick={() => onZoomImage(data.imageUrl)}
-            />
+          <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+            {imageList.length > 1 ? "Graphiques attachés" : "Graphique attaché"}
+          </span>
+          <div className={cn(
+            "grid gap-2",
+            imageList.length === 1 ? "grid-cols-1" : "grid-cols-2"
+          )}>
+            {imageList.map((url, idx) => (
+              <div key={idx} className="border rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
+                <img 
+                  src={`/api/files/${url}`} 
+                  alt={`Signal graphique ${idx + 1}`} 
+                  className="w-full h-auto max-h-56 object-contain cursor-zoom-in hover:opacity-90 transition-opacity" 
+                  onClick={() => onZoomImage(`/api/files/${url}`)}
+                />
+              </div>
+            ))}
           </div>
         </div>
       )}
