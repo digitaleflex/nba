@@ -411,7 +411,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
                             checked={isSelected}
                             onCheckedChange={() => {}} // handled by div onClick
                           />
-                          <span>Signals {plan.name}</span>
+                          <span>{plan.name}</span>
                         </div>
                         <Badge variant="outline" className="text-[9px] font-normal border-border/80 bg-background/50">
                           {(() => {
