@@ -60,6 +60,9 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     where: { id: session.user.id },
     select: {
       role: { select: { name: true } },
+      country: true,
+      phone: true,
+      whatsapp: true,
     },
   })
 
@@ -68,6 +71,37 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   }
 
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
+
+  if (!isAdmin) {
+    const isProfileComplete = 
+      user.country && user.country.trim() !== "" &&
+      user.phone && user.phone.trim() !== "" &&
+      user.whatsapp && user.whatsapp.trim() !== ""
+
+    if (!isProfileComplete) {
+      throw new AuthError("Veuillez compléter votre profil à 100% pour accéder aux signaux", 403)
+    }
+
+    const [kycDoc, brokerVerif] = await Promise.all([
+      prisma.kycDocument.findFirst({
+        where: { userId: session.user.id },
+        orderBy: { submittedAt: "desc" },
+        select: { status: true },
+      }),
+      prisma.brokerVerification.findFirst({
+        where: { userId: session.user.id },
+        orderBy: { createdAt: "desc" },
+        select: { status: true },
+      }),
+    ])
+
+    const isKycApproved = kycDoc?.status === "APPROVED"
+    const isBrokerApproved = brokerVerif?.status === "APPROVED"
+
+    if (!isKycApproved || !isBrokerApproved) {
+      throw new AuthError("Votre compte est en attente d'activation. KYC ou vérification Broker non validés.", 403)
+    }
+  }
 
   let activePlanIds: string[] = []
   if (!isAdmin) {
