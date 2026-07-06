@@ -4,6 +4,13 @@ import { useState } from "react"
 import { Button, Card, CardContent, Input } from "@nba/design-system"
 import { Video, Upload, ArrowRight } from "lucide-react"
 
+const VIDEO_GUIDELINES = [
+  "Montrez votre visage clairement face caméra",
+  "Énoncez distinctement votre nom et le numéro de compte broker",
+  "Durée recommandée : entre 5 et 15 secondes",
+  "Vidéo de bonne qualité, nette et bien éclairée",
+]
+
 interface StepBrokerProps {
   onNext: () => void
 }
@@ -82,6 +89,25 @@ export function StepBroker({ onNext }: StepBrokerProps) {
                 onChange={(e) => setAccountId(e.target.value)}
                 required
               />
+            </div>
+
+            {/* Consignes qualité vidéo */}
+            <div className="rounded-lg bg-muted/30 p-3 space-y-1.5 border border-border/50">
+              <p className="text-xs font-medium text-foreground flex items-center gap-1.5">
+                <Video className="size-3 text-primary" />
+                Consignes pour une vidéo valide
+              </p>
+              <ul className="space-y-1">
+                {VIDEO_GUIDELINES.map((g) => (
+                  <li key={g} className="text-xs text-muted-foreground flex items-start gap-1.5">
+                    <span className="text-primary/60 mt-0.5">•</span>
+                    {g}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[10px] text-muted-foreground/70 mt-1">
+                Formats autorisés : MP4, WebM | Taille max : 50 Mo
+              </p>
             </div>
 
             <div className="space-y-1.5">
