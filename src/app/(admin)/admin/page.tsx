@@ -484,10 +484,11 @@ function AdminConsoleContent() {
         const res = await fetch(`/api/admin/kyc/${extraData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, notes: "Approuvé/Refusé via le panneau d'opérations" }),
+          body: JSON.stringify({ status, notes: extraData.notes || "Approuvé/Refusé via le panneau d'opérations" }),
         })
         if (res.ok) {
           fetchKyc()
+          fetchMembers()
           fetchOperations()
           setPanelOpen(false)
           toast.success("Document KYC traité.")
@@ -497,10 +498,11 @@ function AdminConsoleContent() {
         const res = await fetch(`/api/admin/broker/${extraData.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, notes: "Traité via le panneau d'opérations" }),
+          body: JSON.stringify({ status, notes: extraData.notes || "Traité via le panneau d'opérations" }),
         })
         if (res.ok) {
           fetchBroker()
+          fetchMembers()
           fetchOperations()
           setPanelOpen(false)
           toast.success("Compte broker traité.")
@@ -521,6 +523,45 @@ function AdminConsoleContent() {
             setPanelOpen(false)
             toast.success(`Rôle changé en ${extraData.roleName} avec succès.`)
           }
+        }
+      } else if (actionType === "force_onboarding") {
+        const res = await fetch("/api/admin/members", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id, onboardingStatus: "ACTIVE" }),
+        })
+        if (res.ok) {
+          fetchMembers()
+          setPanelOpen(false)
+          toast.success("Statut d'onboarding forcé à ACTIVE avec succès.")
+        } else {
+          toast.error("Erreur lors de la validation manuelle.")
+        }
+      } else if (actionType === "delete_user") {
+        const res = await fetch(`/api/admin/members?userId=${extraData.id}`, {
+          method: "DELETE",
+        })
+        if (res.ok) {
+          fetchMembers()
+          setPanelOpen(false)
+          toast.success("Utilisateur supprimé avec succès.")
+        } else {
+          toast.error("Erreur lors de la suppression de l'utilisateur.")
+        }
+      } else if (actionType === "send_user_notification") {
+        const res = await fetch("/api/admin/notifications", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            userId: extraData.id,
+            title: extraData.title,
+            content: extraData.content,
+          }),
+        })
+        if (res.ok) {
+          toast.success("Notification individuelle envoyée avec succès.")
+        } else {
+          toast.error("Erreur lors de l'envoi de la notification.")
         }
       }
     } catch (err) {
