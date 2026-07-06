@@ -63,10 +63,10 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
                   </div>
                 ) : (
                   <img
-                    src={data.frontFilePath}
+                    src={`/api/files/${data.frontFilePath}`}
                     alt="KYC Recto"
                     className="w-full h-auto max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
-                    onClick={() => onZoomImage(data.frontFilePath)}
+                    onClick={() => onZoomImage(`/api/files/${data.frontFilePath}`)}
                   />
                 )}
               </div>
@@ -86,10 +86,10 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
                   </div>
                 ) : (
                   <img
-                    src={data.backFilePath}
+                    src={`/api/files/${data.backFilePath}`}
                     alt="KYC Verso"
                     className="w-full h-auto max-h-48 object-contain cursor-zoom-in hover:opacity-90 transition-opacity"
-                    onClick={() => onZoomImage(data.backFilePath)}
+                    onClick={() => onZoomImage(`/api/files/${data.backFilePath}`)}
                   />
                 )}
               </div>

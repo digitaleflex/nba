@@ -31,7 +31,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
       <div className="flex items-center gap-4 p-4 rounded-xl bg-neutral-100/40 dark:bg-neutral-900/40 border border-neutral-200/40 dark:border-neutral-800/40">
         <div className="size-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
           {data.image ? (
-            <img src={data.image} alt={data.name} className="size-full rounded-full object-cover" />
+            <img src={data.image?.startsWith("http") || data.image?.startsWith("/") ? data.image : `/api/files/${data.image}`} alt={data.name} className="size-full rounded-full object-cover" />
           ) : (
             <User className="size-5 text-primary" />
           )}
@@ -184,7 +184,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               <div className="flex gap-1.5 flex-wrap">
                 {data.kycDocuments[0].frontFilePath && (
                   <a
-                    href={data.kycDocuments[0].frontFilePath}
+                    href={`/api/files/${data.kycDocuments[0].frontFilePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
@@ -194,7 +194,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 )}
                 {data.kycDocuments[0].backFilePath && (
                   <a
-                    href={data.kycDocuments[0].backFilePath}
+                    href={`/api/files/${data.kycDocuments[0].backFilePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
@@ -261,7 +261,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
 
               {data.brokerVerifications[0].videoFilePath && (
                 <a
-                  href={data.brokerVerifications[0].videoFilePath}
+                  href={`/api/files/${data.brokerVerifications[0].videoFilePath}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20 w-fit"
