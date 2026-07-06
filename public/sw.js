@@ -1,11 +1,9 @@
-// Service Worker — Notifications push + Cache offline
-const SW_VERSION = "2.0.0";
+// Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
+const SW_VERSION = "2.1.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
 const PRECACHE_URLS = [
-  "/",
-  "/dashboard",
   "/manifest.webmanifest",
   "/icon.png",
   "/logo.png",
@@ -13,19 +11,23 @@ const PRECACHE_URLS = [
   "/icons/icon-512x512.png",
 ];
 
-// Installation : pré-cache des assets critiques
+// Installation : précache des icônes et du manifest
 self.addEventListener("install", (event) => {
   console.log(`${SW_LOG_PREFIX} install`);
   event.waitUntil(
     (async () => {
-      const cache = await caches.open(CACHE_NAME);
-      await cache.addAll(PRECACHE_URLS);
+      try {
+        const cache = await caches.open(CACHE_NAME);
+        await cache.addAll(PRECACHE_URLS);
+      } catch (err) {
+        console.error(`${SW_LOG_PREFIX} precache failed:`, err);
+      }
       await self.skipWaiting();
     })(),
   );
 });
 
-// Activation : nettoyage des anciens caches + prise de contrôle
+// Activation : nettoyage des anciens caches
 self.addEventListener("activate", (event) => {
   console.log(`${SW_LOG_PREFIX} activate`);
   event.waitUntil(
@@ -35,69 +37,12 @@ self.addEventListener("activate", (event) => {
         keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k)),
       );
       await clients.claim();
-      console.log(`${SW_LOG_PREFIX} ready (cache: ${CACHE_NAME})`);
     })(),
   );
 });
 
-// Fetch : stratégie cache-first pour les statiques, network-first pour les navigations
-self.addEventListener("fetch", (event) => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // API : toujours réseau (pas de cache)
-  if (url.pathname.startsWith("/api/")) {
-    return;
-  }
-
-  // Navigations (HTML) : network-first avec fallback cache
-  if (request.mode === "navigate") {
-    event.respondWith(networkFirstWithFallback(request));
-    return;
-  }
-
-  // Assets statiques (JS, CSS, images, polices, etc.) : cache-first
-  if (
-    url.pathname.match(
-      /\.(js|css|png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|eot|json|webmanifest)$/,
-    )
-  ) {
-    event.respondWith(cacheFirst(request));
-    return;
-  }
-
-  // Autre (ex: RSC, prefetch) : network-only
-});
-
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    return new Response("Offline", { status: 503 });
-  }
-}
-
-async function networkFirstWithFallback(request) {
-  try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(CACHE_NAME);
-      cache.put(request, response.clone());
-    }
-    return response;
-  } catch {
-    const cached = await caches.match(request);
-    if (cached) return cached;
-    return new Response("Offline", { status: 503 });
-  }
-}
+// PAS de fetch handler : on laisse Next.js gérer le réseau normalement.
+// Le précache sert uniquement à ce que les icônes PWA soient disponibles immédiatement.
 
 // Push : réception des notifications push
 self.addEventListener("push", (event) => {
@@ -141,7 +86,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-// Click sur la notification
+// Click sur notification
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const url = event.notification.data?.url || "/dashboard";
@@ -162,14 +107,11 @@ self.addEventListener("notificationclick", (event) => {
   );
 });
 
-// Error handlers globaux
+// Error handlers
 self.addEventListener("error", (event) => {
-  console.error(
-    `${SW_LOG_PREFIX} unhandled error:`,
-    event.error || event.message,
-  );
+  console.error(`${SW_LOG_PREFIX} error:`, event.error || event.message);
 });
 
 self.addEventListener("unhandledrejection", (event) => {
-  console.error(`${SW_LOG_PREFIX} unhandled promise rejection:`, event.reason);
+  console.error(`${SW_LOG_PREFIX} unhandled rejection:`, event.reason);
 });
