@@ -24,8 +24,8 @@ const FILTER_GROUPS: FilterGroup[] = [
     filters: [
       { key: "all", label: "Tous" },
       { key: "unread", label: "Non lus" },
-      { key: "favorite", label: "Favoris ⭐" },
-      { key: "archive", label: "Archives 📂" },
+      { key: "favorite", label: "Favoris" },
+      { key: "archive", label: "Archives" },
     ],
   },
   {
@@ -134,11 +134,10 @@ export function MobileFilterSheet({
                   <button
                     key={f.key}
                     onClick={() => setTempFilter(f.key)}
-                    className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-150 ${
-                      tempFilter === f.key
+                    className={`px-3 py-2 text-sm font-medium rounded-lg border transition-all duration-150 ${tempFilter === f.key
                         ? "bg-primary text-primary-foreground border-primary shadow-xs"
                         : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     {f.label}
                   </button>

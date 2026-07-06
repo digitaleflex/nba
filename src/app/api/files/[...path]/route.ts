@@ -14,13 +14,24 @@ export async function GET(
   }
 
   const { path: pathSegments } = await params
-  const filePath = pathSegments.join("/")
+  // Décoder les segments pour attraper les variantes URL-encodées (%2F, %2e%2e, etc.)
+  const decodedSegments = pathSegments.map((s) => {
+    try { return decodeURIComponent(s) } catch { return s }
+  })
+  const filePath = decodedSegments.join("/")
 
-  if (filePath.includes("..") || filePath.startsWith("/") || filePath.includes("\\")) {
+  if (
+    filePath.includes("..") ||
+    filePath.startsWith("/") ||
+    filePath.includes("\\") ||
+    filePath.includes("\0") ||
+    filePath.toLowerCase().includes("%2e") ||
+    filePath.toLowerCase().includes("%2f")
+  ) {
     return new NextResponse("Chemin invalide", { status: 400 })
   }
 
-  const category = pathSegments[0]
+  const category = decodedSegments[0]
   
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -47,9 +58,9 @@ export async function GET(
 
   if (category === "kyc") {
     // Si l'URL a 3 segments : kyc/docId/document_recto ou kyc/docId/document_verso
-    if (pathSegments.length === 3) {
-      const docId = pathSegments[1]
-      const fileType = pathSegments[2]
+    if (decodedSegments.length === 3) {
+      const docId = decodedSegments[1]
+      const fileType = decodedSegments[2]
 
       const doc = await prisma.kycDocument.findUnique({
         where: { id: docId }

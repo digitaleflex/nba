@@ -3,6 +3,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  images: {
+    // Les images sont servies via /api/files/* (proxy interne) — on bypass l'optimizer Next.js
+    // pour éviter les erreurs 400 sur les chemins locaux
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "access.signauxx.com",
+        pathname: "/api/files/**",
+      },
+    ],
+    // En dev local (stockage fichier), les images passent par l'API interne
+    unoptimized: process.env.STORAGE_PROVIDER !== "s3",
+  },
   async headers() {
     return [
       {

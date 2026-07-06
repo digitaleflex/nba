@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { 
   Bold, Italic, List, Image as ImageIcon, Trash2, Send, Loader2, 
   Save, Calendar, Check, X, Plus, FileText, Info, Laptop, Phone, Sparkles
@@ -28,7 +28,8 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   const [selectedPlans, setSelectedPlans] = useState<string[]>([])
 
   // Global states
-  const [isUploading, setIsUploading] = useState(false)
+  const [uploadingCount, setUploadingCount] = useState(0)
+  const isUploading = uploadingCount > 0
   const [isSubmitting, setIsSubmitting] = useState<"DRAFT" | "PUBLISHED" | null>(null)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -64,13 +65,9 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     }
   }, [content])
 
-  // Handle image upload
-  async function handleImageUpload(file: File) {
-    if (imageUrls.length >= 5) {
-      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
-      return
-    }
-    setIsUploading(true)
+  // Handle single image upload — uses counter to track concurrent uploads (fix race condition)
+  const uploadSingleImage = useCallback(async (file: File): Promise<string | null> => {
+    setUploadingCount((c) => c + 1)
     const formData = new FormData()
     formData.append("file", file)
 
@@ -81,17 +78,27 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       })
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || "Upload failed")
+        throw new Error(errData.error || "Upload échoué")
       }
       const data = await res.json()
-      setImageUrls((prev) => [...prev, data.path])
+      return data.path as string
     } catch (err) {
-      console.error(err)
       const msg = err instanceof Error ? err.message : "Erreur lors du téléchargement de l'image"
       toast.error(msg)
+      return null
     } finally {
-      setIsUploading(false)
+      setUploadingCount((c) => c - 1)
     }
+  }, [])
+
+  // Handle image upload — single or batch
+  async function handleImageUpload(file: File) {
+    if (imageUrls.length >= 5) {
+      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
+      return
+    }
+    const path = await uploadSingleImage(file)
+    if (path) setImageUrls((prev) => [...prev, path])
   }
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -102,9 +109,11 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       return
     }
     const toUpload = files.slice(0, remainingSlots)
-    for (const file of toUpload) {
-      handleImageUpload(file)
-    }
+    // Upload all in parallel — counter handles loading state correctly
+    void Promise.all(toUpload.map(async (file) => {
+      const path = await uploadSingleImage(file)
+      if (path) setImageUrls((prev) => [...prev, path])
+    }))
   }
 
   function handleDragOver(e: React.DragEvent) {
@@ -130,9 +139,11 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     }
 
     const toUpload = images.slice(0, remainingSlots)
-    for (const img of toUpload) {
-      await handleImageUpload(img)
-    }
+    // Upload all dropped images in parallel
+    await Promise.all(toUpload.map(async (img) => {
+      const path = await uploadSingleImage(img)
+      if (path) setImageUrls((prev) => [...prev, path])
+    }))
   }
 
   async function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
@@ -226,10 +237,18 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
         throw new Error(err.error || "Submission failed")
       }
 
+      const result = await res.json()
+
       // Success Reset
       setContent("")
       setImageUrls([])
-      toast.success(targetStatus === "DRAFT" ? "Brouillon enregistré avec succès." : "Signal publié avec succès.")
+      if (targetStatus === "DRAFT") {
+        toast.success("Brouillon enregistré avec succès.")
+      } else if (result.queueFailed) {
+        toast.warning("Signal publié mais les notifications push ont échoué (Redis/BullMQ indisponible). Les membres ne seront pas notifiés automatiquement.", { duration: 8000 })
+      } else {
+        toast.success("Signal publié avec succès.")
+      }
       if (onSignalCreated) onSignalCreated()
     } catch (err: any) {
       console.error(err)

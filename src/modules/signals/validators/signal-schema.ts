@@ -1,9 +1,14 @@
 import { z } from "zod"
 
+const safePath = z.string().regex(
+  /^signals\/[a-f0-9-]{36}\.(jpg|jpeg|png|webp)$/i,
+  "Chemin d'image invalide"
+)
+
 export const signalCreateSchema = z.object({
   content: z.string().min(1, "Le contenu du signal est requis"),
   imageUrl: z.string().nullable().optional(), // Keep for legacy
-  imageUrls: z.array(z.string()).max(5, "Maximum 5 images autorisées").optional().default([]),
+  imageUrls: z.array(safePath).max(5, "Maximum 5 images autorisées").optional().default([]),
   planIds: z.array(z.string().uuid("ID de groupe invalide")).min(1, "Veuillez sélectionner au moins un groupe de diffusion"),
   status: z.enum(["DRAFT", "PUBLISHED"]).default("DRAFT"),
   scheduledAt: z.string().nullable().optional(), // ISO string or empty

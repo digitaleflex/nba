@@ -237,7 +237,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     id: sig.id,
     content: sig.content,
     imageUrl: sig.imageUrl,
-    imageUrls: sig.imageUrls,
+    imageUrls: Array.isArray(sig.imageUrls) ? (sig.imageUrls as string[]) : [],
     publishedAt: sig.publishedAt,
     createdAt: sig.createdAt,
     creatorName: sig.creator.name,

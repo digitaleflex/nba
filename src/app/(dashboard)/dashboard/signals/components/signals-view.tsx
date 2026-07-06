@@ -65,6 +65,7 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "week", label: "Cette semaine" },
   { key: "forex", label: "Forex" },
   { key: "deriv", label: "Deriv" },
+  { key: "forex+deriv", label: "Forex + Deriv" },
 ]
 
 function formatRelativeDate(dateStr: string): string {
