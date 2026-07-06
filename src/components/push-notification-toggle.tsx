@@ -17,7 +17,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray
 }
 
-export function PushNotificationToggle() {
+export function PushNotificationToggle({ compact = false }: { compact?: boolean }) {
   const [supported, setSupported] = useState(false)
   const [subscribed, setSubscribed] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -127,6 +127,38 @@ export function PushNotificationToggle() {
   }
 
   if (!supported) return null
+
+  if (compact) {
+    return (
+      <button
+        onClick={subscribed ? unsubscribe : subscribe}
+        disabled={loading || (!subscribed && permission === "denied")}
+        type="button"
+        title={
+          subscribed 
+            ? "Désactiver les notifications push" 
+            : permission === "denied" 
+              ? "Notifications push bloquées par le navigateur" 
+              : "Activer les notifications push"
+        }
+        className={`p-2 rounded-lg border transition-all duration-200 ${
+          subscribed
+            ? "border-primary/30 bg-primary/10 text-primary hover:bg-primary/20"
+            : permission === "denied"
+              ? "border-destructive/20 bg-destructive/5 text-destructive cursor-not-allowed opacity-50"
+              : "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+        }`}
+      >
+        {loading ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : subscribed ? (
+          <Bell className="size-4" />
+        ) : (
+          <BellOff className="size-4" />
+        )}
+      </button>
+    )
+  }
 
   return (
     <div className="flex items-center gap-2">

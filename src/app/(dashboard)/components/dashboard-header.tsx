@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react"
 import { useState } from "react"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 
 const NAV_ITEMS = [
   { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, matchExact: true },
@@ -77,6 +78,7 @@ export function DashboardHeader({ user }: { user: { name: string; email: string 
         </div>
 
         <div className="flex items-center gap-3">
+          <PushNotificationToggle compact />
           <span className="text-sm text-muted-foreground hidden sm:block">{user.name}</span>
           <Button variant="outline" size="sm" onClick={handleLogout} className="hidden sm:inline-flex">
             <LogOut className="size-3.5 mr-1.5" />
