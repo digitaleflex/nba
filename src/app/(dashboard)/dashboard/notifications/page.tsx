@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
-import { Bell, Loader2, Info, CheckCheck, Clock } from "lucide-react"
+import { Bell, Loader2, Info, CheckCheck, Clock, Volume2, Save } from "lucide-react"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import Link from "next/link"
 
@@ -16,6 +16,14 @@ interface Notification {
   createdAt: string
 }
 
+const SOUNDS = [
+  { id: "default", label: "Classique" },
+  { id: "chime", label: "Douce" },
+  { id: "urgent", label: "Urgente" },
+  { id: "signal", label: "Signal" },
+  { id: "pop", label: "Pop" },
+] as const
+
 function formatTimeAgo(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60000)
@@ -27,11 +35,43 @@ function formatTimeAgo(dateStr: string): string {
   return `il y a ${days}j`
 }
 
+function playSound(soundId: string) {
+  const audio = new Audio(`/sounds/${soundId}.wav`)
+  audio.volume = 0.5
+  audio.play().catch(() => {})
+}
+
 export default function NotificationsPage() {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [selectedSound, setSelectedSound] = useState("default")
+  const [soundLoaded, setSoundLoaded] = useState(false)
+  const [soundSaved, setSoundSaved] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/dashboard/notification-preferences")
+      .then((r) => r.json())
+      .then((data) => {
+        setSelectedSound(data.sound)
+        setSoundLoaded(true)
+      })
+      .catch(() => setSoundLoaded(true))
+  }, [])
+
+  async function saveSound() {
+    try {
+      await fetch("/api/dashboard/notification-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sound: selectedSound }),
+      })
+      setSoundSaved(true)
+      setTimeout(() => setSoundSaved(false), 2000)
+    } catch {}
+  }
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -114,6 +154,48 @@ export default function NotificationsPage() {
           )}
         </div>
       </div>
+
+      {/* Son de notification */}
+      {soundLoaded && (
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <Volume2 className="size-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Son de notification</h2>
+              </div>
+              <Button
+                variant={soundSaved ? "default" : "outline"}
+                size="sm"
+                onClick={saveSound}
+                disabled={soundSaved}
+              >
+                <Save className="size-3.5 mr-1.5" />
+                {soundSaved ? "Enregistré" : "Enregistrer"}
+              </Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {SOUNDS.map((s) => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    setSelectedSound(s.id)
+                    playSound(s.id)
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium border transition-all ${
+                    selectedSound === s.id
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:bg-muted/50"
+                  }`}
+                >
+                  <Volume2 className="size-3" />
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {notifications.length === 0 ? (
         <Card className="border-border">

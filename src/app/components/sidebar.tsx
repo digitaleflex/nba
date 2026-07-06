@@ -24,6 +24,7 @@ import {
   TrendingUp,
   CreditCard,
   MessageCircle,
+  Volume2,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -90,6 +91,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Mon abonnement",
       icon: CreditCard,
       active: pathname === "/dashboard/subscription",
+    },
+    {
+      href: "/dashboard/notifications",
+      label: "Notifications",
+      icon: Bell,
+      active: pathname.startsWith("/dashboard/notifications"),
     },
     {
       href: "/dashboard/support",

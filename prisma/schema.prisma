@@ -29,6 +29,7 @@ model User {
   isActive          Boolean           @default(true) @map("is_active")
   metadata          Json?             @db.JsonB
   deletedAt         DateTime?         @map("deleted_at")
+  notificationSound String           @default("default") @map("notification_sound")
 
   sessions            Session[]
   accounts            Account[]

@@ -33,20 +33,40 @@ export function NotificationBell() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const lastTopIdRef = useRef<string | null>(null);
+  const soundRef = useRef("default");
+
+  useEffect(() => {
+    fetch("/api/dashboard/notification-preferences")
+      .then((r) => r.json())
+      .then((data) => {
+        soundRef.current = data.sound;
+      })
+      .catch(() => {});
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
       const res = await fetch("/api/dashboard/notifications?limit=5");
       if (!res.ok) throw new Error("Erreur");
       const data = await res.json();
+      const prevTop = lastTopIdRef.current;
+      if (data.notifications.length > 0) {
+        lastTopIdRef.current = data.notifications[0].id;
+      }
       setRecentNotifications(data.notifications);
+      if (data.unreadCount > unreadCount && prevTop && data.notifications[0]?.id !== prevTop) {
+        const audio = new Audio(`/sounds/${soundRef.current}.wav`);
+        audio.volume = 0.5;
+        audio.play().catch(() => {});
+      }
       setUnreadCount(data.unreadCount);
     } catch {
       // silencieux
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [unreadCount]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

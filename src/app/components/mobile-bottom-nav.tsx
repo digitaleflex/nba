@@ -14,6 +14,7 @@ import {
   Shield,
   CreditCard,
   Users,
+  Bell,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -78,10 +79,10 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
         ]
       : []),
     {
-      href: "/dashboard/subscription",
-      label: "Abonnement",
-      icon: CreditCard,
-      active: pathname === "/dashboard/subscription",
+      href: "/dashboard/notifications",
+      label: "Notifs",
+      icon: Bell,
+      active: pathname.startsWith("/dashboard/notifications"),
     },
   ]
 
