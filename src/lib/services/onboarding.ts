@@ -20,9 +20,9 @@ export interface OnboardingState {
 }
 
 const STEP_PROGRESS: Record<string, number> = {
-  emailVerified: 100,
-  kycSubmitted: 0,
-  brokerSubmitted: 0,
+  emailVerified: 20,
+  kycSubmitted: 40,
+  brokerSubmitted: 40,
   reviewed: 0,
 };
 
@@ -58,7 +58,7 @@ export async function getOnboardingState(
     .filter(([, done]) => done)
     .reduce((sum, [key]) => sum + (STEP_PROGRESS[key] ?? 0), 0);
 
-  const progress = Math.min(100, completedWeight);
+  const progress = user.onboardingStatus === "ACTIVE" ? 100 : Math.min(100, completedWeight);
 
   const steps: Record<string, string> = {
     emailVerified: "Vérifier votre email",
@@ -137,7 +137,7 @@ export async function getOnboardingStateForUsers(
       .filter(([, done]) => done)
       .reduce((sum, [key]) => sum + (STEP_PROGRESS[key] ?? 0), 0);
 
-    const progress = Math.min(100, completedWeight);
+    const progress = user.onboardingStatus === "ACTIVE" ? 100 : Math.min(100, completedWeight);
 
     const steps: Record<string, string> = {
       emailVerified: "Vérifier votre email",
