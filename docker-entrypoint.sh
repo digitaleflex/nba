@@ -30,6 +30,10 @@ if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
   pnpm tsx scripts/createAdmin.ts --email="$ADMIN_EMAIL" --password="$ADMIN_PASSWORD" --name="$ADMIN_NAME" || true
 fi
 
+# Ensure storage directory exists and is owned by nextjs user
+mkdir -p /app/storage
+chown -R nextjs:nodejs /app/storage
+
 echo "=== Setup complete. Starting app... ==="
 
 # Drop privileges to nextjs user for running the server

@@ -24,6 +24,8 @@ services:
         reservations:
           cpus: "1.0"
           memory: 1024M
+    volumes:
+      - nba-storage:/app/storage
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
@@ -36,11 +38,13 @@ services:
     image: valkey/valkey:8-alpine
     networks:
       - nba
-    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0"]
+    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0", "--dir", "/data", "--save", "60", "1", "--appendonly", "yes"]
     # Bind sur 0.0.0.0 (sécurisé par --requirepass)
     # Tailscale ACLs bloquent l'accès public non-autorisé par défaut
     ports:
       - "6379:6379"
+    volumes:
+      - nba-redis-data:/data
     restart: unless-stopped
     deploy:
       resources:
@@ -48,7 +52,46 @@ services:
           cpus: "0.5"
           memory: 256M
 
+  nba-minio:
+    image: minio/minio:latest
+    container_name: nba-minio
+    volumes:
+      - nba-minio-data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000" # API S3
+      - "9001:9001" # Console d'administration
+    restart: unless-stopped
+    networks:
+      - nba
+
+  nba-imgproxy:
+    image: darthsim/imgproxy:latest
+    container_name: nba-imgproxy
+    environment:
+      IMGPROXY_KEY: ${IMGPROXY_KEY}
+      IMGPROXY_SALT: ${IMGPROXY_SALT}
+      IMGPROXY_USE_S3: "true"
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      IMGPROXY_S3_ENDPOINT: "http://nba-minio:9000"
+    ports:
+      - "8080:8080" # imgproxy API
+    depends_on:
+      - nba-minio
+    restart: unless-stopped
+    networks:
+      - nba
+
 networks:
   nba:
   proxy:
     external: true
+
+volumes:
+  nba-storage:
+  nba-redis-data:
+  nba-minio-data:

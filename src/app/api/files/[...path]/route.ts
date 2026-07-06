@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getStorage } from "@nba/lib/storage"
-import { createReadStream } from "fs"
-import { stat } from "fs/promises"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
@@ -143,35 +141,28 @@ export async function GET(
     return new NextResponse("Fichier non trouvé", { status: 404 })
   }
 
-  const absolutePath = storage.getUrl(actualFilePath)
-  const fileStat = await stat(absolutePath)
-  
-  let contentType = "application/octet-stream"
-  if (actualFilePath.endsWith(".jpg") || actualFilePath.endsWith(".jpeg")) contentType = "image/jpeg"
-  else if (actualFilePath.endsWith(".png")) contentType = "image/png"
-  else if (actualFilePath.endsWith(".webp")) contentType = "image/webp"
-  else if (actualFilePath.endsWith(".pdf")) contentType = "application/pdf"
-  else if (actualFilePath.endsWith(".mp4")) contentType = "video/mp4"
-  else if (actualFilePath.endsWith(".webm")) contentType = "video/webm"
-
-  const fileStream = createReadStream(absolutePath)
-  
-  const webStream = new ReadableStream({
-    start(controller) {
-      fileStream.on("data", (chunk) => controller.enqueue(chunk))
-      fileStream.on("end", () => controller.close())
-      fileStream.on("error", (err) => controller.error(err))
-    },
-    cancel() {
-      fileStream.destroy()
+  try {
+    const { stream, size, mimeType } = await storage.read(actualFilePath)
+    
+    let contentType = mimeType ?? "application/octet-stream"
+    if (!mimeType) {
+      if (actualFilePath.endsWith(".jpg") || actualFilePath.endsWith(".jpeg")) contentType = "image/jpeg"
+      else if (actualFilePath.endsWith(".png")) contentType = "image/png"
+      else if (actualFilePath.endsWith(".webp")) contentType = "image/webp"
+      else if (actualFilePath.endsWith(".pdf")) contentType = "application/pdf"
+      else if (actualFilePath.endsWith(".mp4")) contentType = "video/mp4"
+      else if (actualFilePath.endsWith(".webm")) contentType = "video/webm"
     }
-  })
 
-  return new NextResponse(webStream, {
-    headers: {
-      "Content-Type": contentType,
-      "Content-Length": fileStat.size.toString(),
-      "Cache-Control": "private, max-age=31536000, immutable",
-    }
-  })
+    return new NextResponse(stream, {
+      headers: {
+        "Content-Type": contentType,
+        "Content-Length": size.toString(),
+        "Cache-Control": "private, max-age=31536000, immutable",
+      }
+    })
+  } catch (error) {
+    console.error("Erreur lors de la lecture du fichier :", error)
+    return new NextResponse("Erreur lors de la lecture du fichier", { status: 500 })
+  }
 }
