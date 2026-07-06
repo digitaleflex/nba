@@ -79,12 +79,16 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
         method: "POST",
         body: formData,
       })
-      if (!res.ok) throw new Error("Upload failed")
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || "Upload failed")
+      }
       const data = await res.json()
       setImageUrls((prev) => [...prev, data.path])
     } catch (err) {
       console.error(err)
-      toast.error("Erreur lors du téléchargement de l'image")
+      const msg = err instanceof Error ? err.message : "Erreur lors du téléchargement de l'image"
+      toast.error(msg)
     } finally {
       setIsUploading(false)
     }
