@@ -14,6 +14,7 @@ interface Plan {
   name: string
   _count?: {
     users?: number
+    accessRequests?: number
   }
 }
 
@@ -413,7 +414,12 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
                           <span>Signals {plan.name}</span>
                         </div>
                         <Badge variant="outline" className="text-[9px] font-normal border-border/80 bg-background/50">
-                          {plan._count?.users !== undefined ? `${plan._count.users} membres` : "— membres"}
+                          {(() => {
+                            const count = plan._count?.accessRequests ?? plan._count?.users
+                            return count !== undefined
+                              ? `${count} membre${count > 1 ? "s" : ""}`
+                              : "— membres"
+                          })()}
                         </Badge>
                       </div>
                     )
