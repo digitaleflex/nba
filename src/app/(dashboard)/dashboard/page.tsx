@@ -42,17 +42,17 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         <Card className="relative overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <CardContent className="pt-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 shrink-0">
                 <Activity className="size-5 text-primary" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Signaux</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Signaux</p>
+                <p className="text-base sm:text-xl font-bold truncate">
                   {unreadSignals > 0 ? (
                     <span className="text-primary">{unreadSignals} non lu{unreadSignals > 1 ? "s" : ""}</span>
                   ) : (
@@ -66,14 +66,14 @@ export default async function DashboardPage() {
 
         <Card className="relative overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <CardContent className="pt-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-chart-1/10">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-chart-1/10 shrink-0">
                 <BarChart3 className="size-5 text-chart-1" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Performance</p>
-                <p className="text-xl font-bold">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Performance</p>
+                <p className="text-base sm:text-xl font-bold truncate">
                   {readSignals} lu{readSignals > 1 ? "s" : ""}
                 </p>
               </div>
@@ -81,16 +81,16 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="relative overflow-hidden">
+        <Card className="relative overflow-hidden col-span-2 lg:col-span-1">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <CardContent className="pt-6">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center gap-3">
-              <div className="flex size-10 items-center justify-center rounded-xl bg-success/10">
+              <div className="flex size-10 items-center justify-center rounded-xl bg-success/10 shrink-0">
                 <Users className="size-5 text-success" />
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Statut</p>
-                <p className="text-xl font-bold capitalize">
+              <div className="min-w-0">
+                <p className="text-xs sm:text-sm text-muted-foreground truncate">Statut</p>
+                <p className="text-base sm:text-xl font-bold capitalize truncate">
                   {user?.onboardingStatus.toLowerCase().replace(/_/g, " ")}
                 </p>
               </div>
