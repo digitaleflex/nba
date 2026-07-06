@@ -65,10 +65,11 @@ export async function GET(request: NextRequest) {
             take: 1,
             select: {
               id: true,
-              type: true,
+              documentType: true,
               status: true,
               createdAt: true,
-              files: true,
+              frontFilePath: true,
+              backFilePath: true,
             },
           },
           brokerVerifications: {
@@ -80,7 +81,7 @@ export async function GET(request: NextRequest) {
               accountId: true,
               status: true,
               createdAt: true,
-              videoUrl: true,
+              videoFilePath: true,
             },
           },
           _count: {
