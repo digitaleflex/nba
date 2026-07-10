@@ -190,7 +190,26 @@ const signalWorker = new Worker(
             },
           })
 
-          // 2. Create Email Delivery
+          // 2. Real-time WebSocket via Redis Pub/Sub
+          try {
+            const channel = `nba:notif:user:${member.id}`
+            await connection.publish(channel, JSON.stringify({
+              id: notification.id,
+              type: "SIGNAL",
+              title: "Nouveau signal de trading",
+              body: `Un nouveau signal a été publié pour vos groupes.`,
+              data: {
+                signalId: signal.id,
+                imageUrl: signal.imageUrl,
+                imageUrls: signal.imageUrls,
+              },
+              createdAt: notification.createdAt,
+            }))
+          } catch (err) {
+            console.error("[signal] pubsub failed:", err)
+          }
+
+          // 3. Create Email Delivery
           const delivery = await prisma.notificationDelivery.create({
             data: {
               notificationId: notification.id,
@@ -199,14 +218,14 @@ const signalWorker = new Worker(
             },
           })
 
-          // 3. Préparer le template email (image embarquée en base64)
+          // 4. Préparer le template email (image embarquée en base64)
           let imageDataUri: string | null = null
           if (signal.imageUrl) {
             imageDataUri = await readImageAsDataUri(signal.imageUrl)
           }
           const template = tradingSignalEmail(member, signal.content, imageDataUri)
 
-          // 4. Enqueue Email to BullMQ
+          // 5. Enqueue Email to BullMQ
           await notificationDeliveryQueue.add(
             `delivery-${delivery.id}`,
             {
@@ -224,7 +243,7 @@ const signalWorker = new Worker(
       )
     }
 
-    // 4. Log Audit Event
+    // 6. Log Audit Event
     await logAuditEvent({
       userId: signal.createdBy,
       action: "signal.publish",

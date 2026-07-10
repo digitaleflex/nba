@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { notify } from "@nba/lib/services/notifications"
+import { getQueue } from "@nba/lib/queue"
+import { publishNotification } from "@nba/lib/redis-pubsub"
+import { sendPushToUser } from "@nba/lib/services/push"
 
 export async function POST(request: Request) {
   try {
@@ -54,21 +57,57 @@ export async function POST(request: Request) {
     // Get all active, non-deleted users
     const users = await prisma.user.findMany({
       where: { isActive: true, deletedAt: null },
-      select: { id: true },
+      select: { id: true, email: true, name: true },
     })
 
-    // Create notification for each user
-    const notifications = await prisma.notification.createMany({
-      data: users.map((user) => ({
-        userId: user.id,
-        type: "SYSTEM" as const,
+    // Create notification + push + email for each user
+    const queue = getQueue("notification-delivery")
+
+    for (const user of users) {
+      const notification = await prisma.notification.create({
+        data: {
+          userId: user.id,
+          type: "SYSTEM" as const,
+          title,
+          body: content,
+        },
+      })
+
+      // Redis pub/sub for real-time
+      publishNotification(user.id, {
+        id: notification.id,
+        type: "SYSTEM",
         title,
         body: content,
-        isRead: false,
-      })),
-    })
+        createdAt: notification.createdAt,
+      }).catch(() => {})
 
-    return NextResponse.json({ success: true, count: notifications.count })
+      // Push notification
+      sendPushToUser(user.id, { title, body: content, url: "/dashboard", tag: notification.id })
+        .catch(() => {})
+
+      // Email delivery
+      const delivery = await prisma.notificationDelivery.create({
+        data: {
+          notificationId: notification.id,
+          channel: "EMAIL" as const,
+          status: "PENDING" as const,
+        },
+      })
+
+      await queue.add(
+        `broadcast-${delivery.id}`,
+        {
+          deliveryId: delivery.id,
+          to: user.email,
+          subject: title,
+          html: `<p>Bonjour ${user.name},</p><p>${content}</p>`,
+        },
+        { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
+      )
+    }
+
+    return NextResponse.json({ success: true, count: users.length })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

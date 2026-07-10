@@ -6,46 +6,30 @@ import {
   Button,
   Card,
   CardContent,
+  Input,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@nba/design-system";
-import { User, ArrowRight } from "lucide-react";
+import { User, ArrowRight, Phone } from "lucide-react";
+import countries from "@nba/lib/countries.json";
 
-const COUNTRIES = [
-  "France",
-  "Belgique",
-  "Suisse",
-  "Canada",
-  "Luxembourg",
-  "Maroc",
-  "Algérie",
-  "Tunisie",
-  "Sénégal",
-  "Côte d'Ivoire",
-];
+const COUNTRIES = countries.map((c) => c.name);
 
 const LANGUAGES = [
   { value: "fr", label: "Français" },
   { value: "en", label: "English" },
 ];
 
-const TIMEZONES = [
-  "Europe/Paris",
-  "Europe/Brussels",
-  "Europe/Zurich",
-  "America/Montreal",
-  "Africa/Casablanca",
-  "Africa/Abidjan",
-];
-
 export default function ProfilePage() {
   const router = useRouter();
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [country, setCountry] = useState("");
   const [language, setLanguage] = useState("fr");
-  const [timezone, setTimezone] = useState("Europe/Paris");
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,7 +39,7 @@ export default function ProfilePage() {
     await fetch("/api/onboarding/profile", {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ country, language, timezone }),
+      body: JSON.stringify({ name, phone, whatsapp, country, language }),
     });
 
     router.push("/onboarding/kyc");
@@ -80,6 +64,54 @@ export default function ProfilePage() {
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4 pt-6">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-foreground">
+                Nom complet
+              </label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                <Input
+                  className="pl-9 h-8"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Votre nom"
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  Téléphone
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9 h-8"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">
+                  WhatsApp
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                  <Input
+                    className="pl-9 h-8"
+                    value={whatsapp}
+                    onChange={(e) => setWhatsapp(e.target.value)}
+                    placeholder="+33 6 12 34 56 78"
+                  />
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">
                 Pays
@@ -116,27 +148,6 @@ export default function ProfilePage() {
                   {LANGUAGES.map((l) => (
                     <SelectItem key={l.value} value={l.value}>
                       {l.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">
-                Fuseau horaire
-              </label>
-              <Select
-                value={timezone}
-                onValueChange={(value) => setTimezone(value ?? "Europe/Paris")}
-              >
-                <SelectTrigger className="w-full h-8">
-                  <SelectValue placeholder="Sélectionnez votre fuseau horaire" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIMEZONES.map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                      {tz}
                     </SelectItem>
                   ))}
                 </SelectContent>

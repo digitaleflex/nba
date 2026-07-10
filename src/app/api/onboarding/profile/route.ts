@@ -15,7 +15,13 @@ export async function PUT(req: NextRequest) {
 
     await prisma.user.update({
       where: { id: session.user.id },
-      data: parsed,
+      data: {
+        ...(parsed.name !== undefined && { name: parsed.name }),
+        ...(parsed.phone !== undefined && { phone: parsed.phone }),
+        ...(parsed.whatsapp !== undefined && { whatsapp: parsed.whatsapp }),
+        country: parsed.country,
+        language: parsed.language,
+      },
     })
 
     await updateOnboardingStatus(session.user.id, "KYC_PENDING")

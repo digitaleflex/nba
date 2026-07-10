@@ -3,9 +3,11 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
 import {
-  User, Mail, Phone, Globe, Clock, Loader2, Check, AlertCircle,
-  Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages
+  User, Mail, Phone, Globe, Loader2, Check, AlertCircle,
+  Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages, Camera
 } from "lucide-react"
+import countries from "@nba/lib/countries.json"
+import { Avatar, AvatarImage, AvatarFallback } from "@nba/design-system"
 
 interface UserProfile {
   id: string
@@ -14,43 +16,19 @@ interface UserProfile {
   emailVerified: boolean
   phone: string | null
   whatsapp: string | null
+  image: string | null
   country: string | null
   language: string
-  timezone: string
   onboardingStatus: string
   role: { name: string }
 }
 
-const COUNTRIES = [
-  "France", "Belgique", "Suisse", "Canada", "Côte d'Ivoire", "Sénégal",
-  "Cameroun", "République Démocratique du Congo", "Maroc", "Tunisie",
-  "Algérie", "Gabon", "Bénin", "Togo", "Burkina Faso", "Mali",
-  "Niger", "Guinée", "Madagascar", "Réunion", "Martinique", "Guadeloupe",
-  "Autre"
-]
+const COUNTRIES = countries.map((c) => c.name)
 
 const LANGUAGES = [
   { value: "fr", label: "Français" },
   { value: "en", label: "English" },
   { value: "ar", label: "العربية" },
-]
-
-const TIMEZONES = [
-  "Europe/Paris",
-  "Europe/Brussels",
-  "Europe/Zurich",
-  "America/Montreal",
-  "Africa/Abidjan",
-  "Africa/Dakar",
-  "Africa/Douala",
-  "Africa/Kinshasa",
-  "Africa/Casablanca",
-  "Africa/Tunis",
-  "Africa/Algiers",
-  "Africa/Libreville",
-  "Indian/Reunion",
-  "America/Martinique",
-  "America/Guadeloupe",
 ]
 
 export default function ProfilePage() {
@@ -60,9 +38,12 @@ export default function ProfilePage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Avatar
+  const [avatarUploading, setAvatarUploading] = useState(false)
+
   // Profile form
   const [form, setForm] = useState({
-    name: "", phone: "", whatsapp: "", country: "", language: "fr", timezone: "Europe/Paris"
+    name: "", phone: "", whatsapp: "", country: "", language: "fr"
   })
 
   // Password form
@@ -97,12 +78,43 @@ export default function ProfilePage() {
           whatsapp: data.user.whatsapp || "",
           country: data.user.country || "",
           language: data.user.language || "fr",
-          timezone: data.user.timezone || "Europe/Paris",
         })
       })
       .catch(() => setError("Erreur de chargement"))
       .finally(() => setLoading(false))
   }, [])
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setAvatarUploading(true)
+    try {
+      const formData = new FormData()
+      formData.append("avatar", file)
+      const res = await fetch("/api/dashboard/avatar", {
+        method: "POST",
+        body: formData,
+      })
+      if (!res.ok) throw new Error("Erreur")
+      const data = await res.json()
+      setProfile((p) => p ? { ...p, image: data.path } : null)
+    } catch {
+      setError("Erreur lors du téléchargement")
+    } finally {
+      setAvatarUploading(false)
+    }
+  }
+
+  async function handleAvatarDelete() {
+    try {
+      const res = await fetch("/api/dashboard/avatar", { method: "DELETE" })
+      if (!res.ok) throw new Error("Erreur")
+      setProfile((p) => p ? { ...p, image: null } : null)
+    } catch {
+      setError("Erreur lors de la suppression")
+    }
+  }
 
   async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
@@ -241,8 +253,43 @@ export default function ProfilePage() {
       <Card>
         <CardContent className="p-6 space-y-6">
           <div className="flex items-center gap-4 pb-4 border-b border-border/40">
-            <div className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
-              <User className="size-7" />
+            <div className="relative group">
+              <Avatar size="lg">
+                {profile?.image ? (
+                  <AvatarImage src={`/api/files/${profile.image}`} alt={profile.name} />
+                ) : null}
+                <AvatarFallback>
+                  {profile?.name?.charAt(0).toUpperCase() || <User className="size-5" />}
+                </AvatarFallback>
+              </Avatar>
+              <label
+                htmlFor="avatar-upload"
+                className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity"
+              >
+                {avatarUploading ? (
+                  <Loader2 className="size-4 animate-spin text-white" />
+                ) : (
+                  <Camera className="size-4 text-white" />
+                )}
+              </label>
+              <input
+                id="avatar-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+                disabled={avatarUploading}
+              />
+              {profile?.image && (
+                <button
+                  type="button"
+                  onClick={handleAvatarDelete}
+                  className="absolute -top-1 -right-1 flex size-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs hover:bg-destructive/90 transition-colors"
+                  title="Supprimer l'avatar"
+                >
+                  ×
+                </button>
+              )}
             </div>
             <div className="space-y-0.5">
               <p className="font-semibold text-lg">{profile?.name}</p>
@@ -309,7 +356,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label htmlFor="country" className="text-sm font-medium flex items-center gap-1.5">
                   <MapPin className="size-3.5" /> Pays
@@ -339,22 +386,6 @@ export default function ProfilePage() {
                 >
                   {LANGUAGES.map((l) => (
                     <option key={l.value} value={l.value}>{l.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="timezone" className="text-sm font-medium flex items-center gap-1.5">
-                  <Clock className="size-3.5" /> Fuseau horaire
-                </label>
-                <select
-                  id="timezone"
-                  className="w-full h-9 rounded-lg border border-input bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={form.timezone}
-                  onChange={(e) => setForm({ ...form, timezone: e.target.value })}
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>{tz}</option>
                   ))}
                 </select>
               </div>

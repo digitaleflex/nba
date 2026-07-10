@@ -23,7 +23,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
             whatsapp: true,
             country: true,
             language: true,
-            timezone: true,
             image: true,
             onboardingStatus: true,
             createdAt: true,

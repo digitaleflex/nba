@@ -1,16 +1,22 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
-import { notify, sendEmailSync, sendVerificationEmail, sendWelcomeEmail, sendResetPasswordEmail, sendOtpEmail } from "./notifications"
+
+const { mockNotifCreate, mockDeliveryCreate } = vi.hoisted(() => {
+  const mockDeliveryCreate = vi.fn()
+  const mockNotifCreate = vi.fn()
+  return { mockNotifCreate, mockDeliveryCreate }
+})
 
 vi.mock("@nba/lib/db", () => ({
   prisma: {
-    notification: {
-      create: vi.fn(),
-    },
-    notificationDelivery: {
-      create: vi.fn(),
-    },
+    notification: { create: mockNotifCreate },
+    notificationDelivery: { create: mockDeliveryCreate },
+    $transaction: vi.fn(async (cb: (tx: any) => any) => cb({
+      notificationDelivery: { create: mockDeliveryCreate },
+    })),
   },
 }))
+
+import { notify, sendEmailSync, sendVerificationEmail, sendWelcomeEmail, sendResetPasswordEmail, sendOtpEmail } from "./notifications"
 
 vi.mock("@nba/lib/email", () => ({
   sendEmail: vi.fn(),
@@ -26,15 +32,14 @@ vi.mock("@nba/lib/queue", () => ({
   }),
 }))
 
-import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 
 describe("notify", () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    vi.mocked(prisma.notification.create).mockResolvedValue({ id: "notif-1" } as any)
-    vi.mocked(prisma.notificationDelivery.create).mockResolvedValue({ id: "delivery-1" } as any)
+    mockNotifCreate.mockResolvedValue({ id: "notif-1" } as any)
+    mockDeliveryCreate.mockResolvedValue({ id: "delivery-1" } as any)
   })
 
   it("creates an in-app notification", async () => {
@@ -45,7 +50,7 @@ describe("notify", () => {
       body: "Un signal vient d'être publié",
     })
 
-    expect(prisma.notification.create).toHaveBeenCalledWith({
+    expect(mockNotifCreate).toHaveBeenCalledWith({
       data: {
         userId: "user-1",
         type: "SIGNAL",
@@ -64,7 +69,7 @@ describe("notify", () => {
       body: "Test",
     })
 
-    expect(prisma.notificationDelivery.create).not.toHaveBeenCalled()
+    expect(mockDeliveryCreate).not.toHaveBeenCalled()
     expect(getQueue).not.toHaveBeenCalled()
   })
 
@@ -81,7 +86,7 @@ describe("notify", () => {
       },
     })
 
-    expect(prisma.notificationDelivery.create).toHaveBeenCalledWith({
+    expect(mockDeliveryCreate).toHaveBeenCalledWith({
       data: {
         notificationId: "notif-1",
         channel: "EMAIL",
@@ -114,7 +119,7 @@ describe("notify", () => {
       data: { documentId: "doc-1", status: "APPROVED" },
     })
 
-    expect(prisma.notification.create).toHaveBeenCalledWith(
+    expect(mockNotifCreate).toHaveBeenCalledWith(
       expect.objectContaining({
         data: expect.objectContaining({
           data: { documentId: "doc-1", status: "APPROVED" },

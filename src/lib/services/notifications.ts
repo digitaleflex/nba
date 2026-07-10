@@ -60,28 +60,32 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   })
 
   if (params.email) {
-    const delivery = await prisma.notificationDelivery.create({
-      data: {
-        notificationId: notification.id,
-        channel: "EMAIL",
-        status: "PENDING",
-      },
-    })
-
     const queue = getQueue("notification-delivery")
-    await queue.add(
-      `email-${notification.id}`,
-      {
-        deliveryId: delivery.id,
-        to: params.email.to,
-        subject: params.email.subject,
-        html: params.email.html,
-      },
-      {
-        attempts: 3,
-        backoff: { type: "exponential", delay: 5000 },
-      }
-    )
+    const { to, subject, html } = params.email
+
+    await prisma.$transaction(async (tx) => {
+      const delivery = await tx.notificationDelivery.create({
+        data: {
+          notificationId: notification.id,
+          channel: "EMAIL",
+          status: "PENDING",
+        },
+      })
+
+      await queue.add(
+        `email-${notification.id}`,
+        {
+          deliveryId: delivery.id,
+          to,
+          subject,
+          html,
+        },
+        {
+          attempts: 3,
+          backoff: { type: "exponential", delay: 5000 },
+        }
+      )
+    })
   }
 
   return { id: notification.id }
