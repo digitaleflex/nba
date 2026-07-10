@@ -142,6 +142,10 @@ export async function GET(
         }
       }
     }
+  } else if (category === "avatars") {
+    if (!isAdmin && decodedSegments[1] !== session.user.id) {
+      return new NextResponse("Accès refusé", { status: 403 })
+    }
   } else {
     return new NextResponse("Catégorie de fichier inconnue", { status: 400 })
   }

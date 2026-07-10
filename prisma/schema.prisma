@@ -24,7 +24,6 @@ model User {
   roleId            String            @map("role_id") @db.Uuid
   country           String?
   language          String            @default("fr")
-  timezone          String            @default("Europe/Paris")
   onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
   isActive          Boolean           @default(true) @map("is_active")
   metadata          Json?             @db.JsonB

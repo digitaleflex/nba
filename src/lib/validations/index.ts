@@ -7,9 +7,11 @@ export const accessStatusSchema = z.enum(["APPROVED", "REJECTED", "SUSPENDED", "
 export const verificationStatusSchema = z.enum(["APPROVED", "REJECTED"])
 
 export const profileSchema = z.object({
+  name: z.string().min(1, "Le nom est requis").optional(),
+  phone: z.string().optional(),
+  whatsapp: z.string().optional(),
   country: z.string().min(2, "Le pays est requis"),
   language: z.string().min(2, "La langue est requise"),
-  timezone: z.string().min(1, "Le fuseau horaire est requis"),
 })
 
 export const selectPlanSchema = z.object({

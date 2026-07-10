@@ -9,7 +9,7 @@ export { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 export { Checkbox } from "./components/ui/checkbox"
 export { Switch } from "./components/ui/switch"
 export { Badge } from "./components/ui/badge"
-export { Avatar } from "./components/ui/avatar"
+export { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar"
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs"
 export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./components/ui/dropdown-menu"
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/ui/tooltip"

@@ -3,17 +3,17 @@ import { profileSchema, selectPlanSchema, reviewAccessSchema, reviewDocumentSche
 
 describe("profileSchema", () => {
   it("accepts valid profile", () => {
-    const result = profileSchema.safeParse({ country: "France", language: "fr", timezone: "Europe/Paris" })
+    const result = profileSchema.safeParse({ country: "France", language: "fr" })
     expect(result.success).toBe(true)
   })
 
   it("rejects missing country", () => {
-    const result = profileSchema.safeParse({ language: "fr", timezone: "Europe/Paris" })
+    const result = profileSchema.safeParse({ language: "fr" })
     expect(result.success).toBe(false)
   })
 
   it("rejects empty country", () => {
-    const result = profileSchema.safeParse({ country: "", language: "fr", timezone: "Europe/Paris" })
+    const result = profileSchema.safeParse({ country: "", language: "fr" })
     expect(result.success).toBe(false)
   })
 })
@@ -61,7 +61,7 @@ describe("reviewDocumentSchema", () => {
 
 describe("validateOrThrow", () => {
   it("returns parsed data on success", () => {
-    const data = validateOrThrow(profileSchema, { country: "France", language: "fr", timezone: "Europe/Paris" })
+    const data = validateOrThrow(profileSchema, { country: "France", language: "fr" })
     expect(data.country).toBe("France")
   })
 
