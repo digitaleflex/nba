@@ -42,6 +42,25 @@ function useDebounce<T>(value: T, delay: number): T {
   return debounced
 }
 
+// Cache client léger pour éviter les refetch redondants entre onglets admin.
+const adminCache = new Map<string, { time: number; data: unknown }>()
+
+async function cachedGet(url: string, ttlMs = 20000): Promise<{ ok: boolean; data: any }> {
+  const hit = adminCache.get(url)
+  if (hit && Date.now() - hit.time < ttlMs) {
+    return { ok: true, data: hit.data }
+  }
+  const res = await fetch(url)
+  if (!res.ok) return { ok: false, data: null }
+  const data = await res.json()
+  adminCache.set(url, { time: Date.now(), data })
+  return { ok: true, data }
+}
+
+function invalidateAdminCache() {
+  adminCache.clear()
+}
+
 interface AccessRequest {
   id: string
   status: string
@@ -227,9 +246,8 @@ function AdminConsoleContent() {
     setLoadingOps(true)
     setErrorOps(null)
     try {
-      const res = await fetch("/api/admin/operations")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/operations")
+      if (ok) {
         setOpsData(data)
       } else {
         setErrorOps("Erreur de chargement des opérations")
@@ -248,9 +266,8 @@ function AdminConsoleContent() {
     setErrorMembers(null)
     try {
       const url = debouncedSearchUser ? `/api/admin/members?q=${encodeURIComponent(debouncedSearchUser)}` : "/api/admin/members"
-      const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet(url)
+      if (ok) {
         setMembers(data.members || [])
       } else {
         setErrorMembers("Erreur de chargement des membres")
@@ -270,9 +287,8 @@ function AdminConsoleContent() {
       const params = new URLSearchParams()
       if (membrePlanFilter) params.set("planId", membrePlanFilter)
       const url = `/api/admin/members?${params}`
-      const res = await fetch(url)
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet(url)
+      if (ok) {
         setMembres(data.members || [])
       }
     } catch (err) {
@@ -284,9 +300,8 @@ function AdminConsoleContent() {
 
   const fetchMembrePlans = useCallback(async () => {
     try {
-      const res = await fetch("/api/public/plans")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/public/plans")
+      if (ok) {
         setMembrePlans(Array.isArray(data) ? data : [])
       }
     } catch (err) {
@@ -299,9 +314,8 @@ function AdminConsoleContent() {
     setLoadingRequests(true)
     setErrorRequests(null)
     try {
-      const res = await fetch("/api/admin/access-requests")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/access-requests")
+      if (ok) {
         setRequests(data)
       } else {
         setErrorRequests("Erreur de chargement des demandes")
@@ -319,9 +333,8 @@ function AdminConsoleContent() {
     setLoadingSignals(true)
     setErrorSignals(null)
     try {
-      const res = await fetch("/api/admin/signals")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/signals")
+      if (ok) {
         setSignals(data.signals ?? data)
       } else {
         setErrorSignals("Erreur de chargement des signaux")
@@ -342,9 +355,8 @@ function AdminConsoleContent() {
       const params = new URLSearchParams()
       if (kycStatusFilter !== "ALL") params.set("status", kycStatusFilter)
       params.set("page", String(kycPage))
-      const res = await fetch(`/api/admin/kyc?${params}`)
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet(`/api/admin/kyc?${params}`)
+      if (ok) {
         setKycDocs(data.docs ?? data)
         setKycTotalPages(data.pagination?.totalPages ?? 1)
       } else {
@@ -366,9 +378,8 @@ function AdminConsoleContent() {
       const params = new URLSearchParams()
       if (brokerStatusFilter !== "ALL") params.set("status", brokerStatusFilter)
       params.set("page", String(brokerPage))
-      const res = await fetch(`/api/admin/broker?${params}`)
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet(`/api/admin/broker?${params}`)
+      if (ok) {
         setBrokerDocs(data.docs ?? data)
         setBrokerTotalPages(data.pagination?.totalPages ?? 1)
       }
@@ -383,9 +394,8 @@ function AdminConsoleContent() {
   const fetchAudits = useCallback(async () => {
     setLoadingAudits(true)
     try {
-      const res = await fetch("/api/admin/audit-logs")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/audit-logs")
+      if (ok) {
         setAudits(data.logs || [])
       }
     } catch (err) {
@@ -399,9 +409,8 @@ function AdminConsoleContent() {
   const fetchSecurity = useCallback(async () => {
     setLoadingSecurity(true)
     try {
-      const res = await fetch("/api/admin/security")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/security")
+      if (ok) {
         setSecurityData(data)
       }
     } catch (err) {
@@ -416,6 +425,7 @@ function AdminConsoleContent() {
     if (!notifTitle.trim() || !notifContent.trim()) return
     setSendingNotif(true)
     setNotifSent(false)
+    invalidateAdminCache()
     try {
       const res = await fetch("/api/admin/notifications", {
         method: "POST",
@@ -463,9 +473,8 @@ function AdminConsoleContent() {
   const fetchNotifHistory = useCallback(async () => {
     setLoadingNotifHistory(true)
     try {
-      const res = await fetch("/api/admin/notifications")
-      if (res.ok) {
-        const data = await res.json()
+      const { ok, data } = await cachedGet("/api/admin/notifications")
+      if (ok) {
         setNotifHistory(data.notifications || [])
       }
     } catch (err) {
@@ -492,6 +501,7 @@ function AdminConsoleContent() {
 
       async function handleDeleteSignal(id: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
+        invalidateAdminCache()
         await fetch(`/api/admin/signals/${id}`, {
           method: "DELETE",
         })
@@ -501,6 +511,7 @@ function AdminConsoleContent() {
 
       async function handlePublishSignal(id: string) {
         if (!confirm("Publier ce signal maintenant ?")) return
+        invalidateAdminCache()
         const res = await fetch(`/api/admin/signals/${id}/publish`, { method: "POST" })
         if (res.ok) {
           fetchSignals()
@@ -510,6 +521,7 @@ function AdminConsoleContent() {
 
       async function handleDuplicateSignal(id: string) {
         if (!confirm("Dupliquer ce signal en brouillon ?")) return
+        invalidateAdminCache()
         const res = await fetch(`/api/admin/signals/${id}/duplicate`, { method: "POST" })
         if (res.ok) {
           fetchSignals()
@@ -519,6 +531,7 @@ function AdminConsoleContent() {
 
       // Context Panel Action Executions
   const handlePanelAction = async (actionType: string, extraData?: any) => {
+    invalidateAdminCache()
     try {
       if (actionType === "suspend" || actionType === "reactivate") {
         const isActive = actionType === "reactivate"
@@ -625,6 +638,7 @@ function AdminConsoleContent() {
   // Action review (requests onboarding)
   async function handleReview(id: string, status: string) {
     if (!confirm(status === "APPROVED" ? "Approuver cette demande d'accès ?" : "Rejeter cette demande d'accès ?")) return
+    invalidateAdminCache()
     await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -1180,7 +1194,7 @@ function AdminConsoleContent() {
           <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
             <div className="xl:col-span-3 space-y-6">
               <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Publier un signal</h2>
-              <SignalEditor onSignalCreated={fetchSignals} />
+              <SignalEditor onSignalCreated={() => { invalidateAdminCache(); fetchSignals() }} />
             </div>
 
             <div className="xl:col-span-2 space-y-6">
@@ -1630,6 +1644,7 @@ function AdminConsoleContent() {
                 className="text-xs"
                 onClick={async () => {
                   if (!confirm("Supprimer les logs d'audit de plus de 90 jours ?")) return
+                  invalidateAdminCache()
                   const res = await fetch("/api/admin/audit-logs", { method: "DELETE" })
                   if (res.ok) {
                     const data = await res.json()

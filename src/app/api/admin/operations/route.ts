@@ -20,14 +20,23 @@ export async function GET() {
     }
 
     const now = new Date()
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
 
-    // 1. Actions prioritaires « À traiter maintenant »
+    // Toutes les requêtes DB en un seul batch parallèle
     const [
       kycPendingCount,
       brokerPendingCount,
       requestsPendingCount,
       nextScheduledSignal,
       failedEmailsCount,
+      totalMembers,
+      publishedSignalsCount,
+      approvedKycCount,
+      totalEmailsSent,
+      totalNotificationsSent,
+      recentActivities,
+      registrations,
     ] = await Promise.all([
       prisma.kycDocument.count({ where: { status: "PENDING" } }),
       prisma.brokerVerification.count({ where: { status: "PENDING" } }),
@@ -50,47 +59,30 @@ export async function GET() {
           channel: "EMAIL",
         },
       }),
-    ])
-
-    // 2. Statistiques clés
-    const [
-      totalMembers,
-      publishedSignalsCount,
-      approvedKycCount,
-      totalEmailsSent,
-      totalNotificationsSent,
-    ] = await Promise.all([
       prisma.user.count(),
       prisma.signal.count({ where: { status: "PUBLISHED" } }),
       prisma.kycDocument.count({ where: { status: "APPROVED" } }),
       prisma.notificationDelivery.count({ where: { channel: "EMAIL", status: "SENT" } }),
       prisma.notification.count(),
-    ])
-
-    // 3. Activités récentes
-    const recentActivities = await prisma.auditLog.findMany({
-      take: 6,
-      orderBy: { createdAt: "desc" },
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
+      prisma.auditLog.findMany({
+        take: 6,
+        orderBy: { createdAt: "desc" },
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-    })
-
-    // 4. Données d'activité des 7 derniers jours (membres inscrits par jour)
-    const sevenDaysAgo = new Date()
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
-    
-    const registrations = await prisma.user.groupBy({
-      by: ["createdAt"],
-      where: {
-        createdAt: { gte: sevenDaysAgo },
-      },
-    })
+      }),
+      prisma.user.groupBy({
+        by: ["createdAt"],
+        where: {
+          createdAt: { gte: sevenDaysAgo },
+        },
+      }),
+    ])
 
     // Aggrégation par jour pour le graphe
     const dailyRegistrations = Array.from({ length: 7 }, (_, i) => {
