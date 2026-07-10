@@ -33,6 +33,15 @@ const AdminContextPanel = dynamic(
 import { parseSimpleMarkdown } from "@nba/lib/utils"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 
+function useDebounce<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
+
 interface AccessRequest {
   id: string
   status: string
@@ -152,6 +161,7 @@ function AdminConsoleContent() {
   const [members, setMembers] = useState<Member[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [searchUser, setSearchUser] = useState(searchParams.get("search") || "")
+  const debouncedSearchUser = useDebounce(searchUser, 300)
 
   // Module Membres State (approuvés par abonnement)
   const [membres, setMembres] = useState<any[]>([])
@@ -237,7 +247,7 @@ function AdminConsoleContent() {
     setLoadingMembers(true)
     setErrorMembers(null)
     try {
-      const url = searchUser ? `/api/admin/members?q=${encodeURIComponent(searchUser)}` : "/api/admin/members"
+      const url = debouncedSearchUser ? `/api/admin/members?q=${encodeURIComponent(debouncedSearchUser)}` : "/api/admin/members"
       const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
@@ -251,7 +261,7 @@ function AdminConsoleContent() {
     } finally {
       setLoadingMembers(false)
     }
-  }, [searchUser])
+  }, [debouncedSearchUser])
 
   // Fetch Membres (approuvés, filtrables par abonnement)
   const fetchMembres = useCallback(async () => {

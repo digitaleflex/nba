@@ -179,23 +179,30 @@ export async function getSignalStats(id: string, userId: string) {
   const allowed = await SignalPolicy.canUpdate(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
-  const reads = await prisma.signalRead.findMany({
-    where: { signalId: id },
-    include: { user: { select: { name: true, email: true } } },
-  })
-
-  const uniqueMembers = reads.length
-  const totalViews = reads.reduce((sum: number, r: any) => sum + r.viewCount, 0)
-  
-  const firstRead = reads.length > 0 
-    ? reads.reduce((min: Date, r: any) => r.readAt < min ? r.readAt : min, reads[0].readAt) 
-    : null
+  const [uniqueMembers, aggregate, firstReadRow, reads] = await Promise.all([
+    prisma.signalRead.count({ where: { signalId: id } }),
+    prisma.signalRead.aggregate({
+      where: { signalId: id },
+      _sum: { viewCount: true },
+    }),
+    prisma.signalRead.findFirst({
+      where: { signalId: id },
+      orderBy: { readAt: "asc" },
+      select: { readAt: true },
+    }),
+    prisma.signalRead.findMany({
+      where: { signalId: id },
+      orderBy: { readAt: "desc" },
+      take: 50,
+      include: { user: { select: { name: true, email: true } } },
+    }),
+  ])
 
   return {
     uniqueMembers,
-    totalViews,
-    firstRead,
-    reads: reads.map((r: any) => ({
+    totalViews: aggregate._sum.viewCount ?? 0,
+    firstRead: firstReadRow?.readAt ?? null,
+    reads: reads.map((r) => ({
       userName: r.user.name,
       userEmail: r.user.email,
       readAt: r.readAt,

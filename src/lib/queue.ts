@@ -16,6 +16,9 @@ type QueueLike = {
     data: unknown,
     opts?: unknown,
   ) => Promise<{ id: string | null }>;
+  addBulk: (
+    jobs: { name: string; data: unknown; opts?: unknown }[],
+  ) => Promise<{ id: string | null }[]>;
   getJob: (id: string) => Promise<JobLike | null>;
 };
 
@@ -24,6 +27,10 @@ function createNoopQueue(queueName: string): QueueLike {
     async add() {
       console.warn(`[queue:${queueName}] Redis/queue désactivé, job ignoré.`);
       return { id: null };
+    },
+    async addBulk(jobs) {
+      console.warn(`[queue:${queueName}] Redis/queue désactivé, ${jobs.length} job(s) ignoré(s).`);
+      return jobs.map(() => ({ id: null }));
     },
     async getJob() {
       return null;

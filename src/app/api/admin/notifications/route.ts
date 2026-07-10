@@ -60,52 +60,64 @@ export async function POST(request: Request) {
       select: { id: true, email: true, name: true },
     })
 
-    // Create notification + push + email for each user
+    if (users.length === 0) {
+      return NextResponse.json({ success: true, count: 0 })
+    }
+
     const queue = getQueue("notification-delivery")
 
-    for (const user of users) {
-      const notification = await prisma.notification.create({
-        data: {
-          userId: user.id,
-          type: "SYSTEM" as const,
-          title,
-          body: content,
-        },
-      })
+    // 1. Bulk insert notifications (une seule requête)
+    const notifications = await prisma.notification.createManyAndReturn({
+      data: users.map((user) => ({
+        userId: user.id,
+        type: "SYSTEM" as const,
+        title,
+        body: content,
+      })),
+      select: { id: true, userId: true, createdAt: true },
+    })
 
-      // Redis pub/sub for real-time
-      publishNotification(user.id, {
-        id: notification.id,
+    // 2. Bulk insert deliveries email (une seule requête)
+    const deliveries = await prisma.notificationDelivery.createManyAndReturn({
+      data: notifications.map((n) => ({
+        notificationId: n.id,
+        channel: "EMAIL" as const,
+        status: "PENDING" as const,
+      })),
+      select: { id: true, notificationId: true },
+    })
+
+    // 3. Temps réel (pub/sub + push) en parallèle
+    const userById = new Map(users.map((u) => [u.id, u]))
+    for (const n of notifications) {
+      publishNotification(n.userId, {
+        id: n.id,
         type: "SYSTEM",
         title,
         body: content,
-        createdAt: notification.createdAt,
+        createdAt: n.createdAt,
       }).catch(() => {})
-
-      // Push notification
-      sendPushToUser(user.id, { title, body: content, url: "/dashboard", tag: notification.id })
+      sendPushToUser(n.userId, { title, body: content, url: "/dashboard", tag: n.id })
         .catch(() => {})
-
-      // Email delivery
-      const delivery = await prisma.notificationDelivery.create({
-        data: {
-          notificationId: notification.id,
-          channel: "EMAIL" as const,
-          status: "PENDING" as const,
-        },
-      })
-
-      await queue.add(
-        `broadcast-${delivery.id}`,
-        {
-          deliveryId: delivery.id,
-          to: user.email,
-          subject: title,
-          html: `<p>Bonjour ${user.name},</p><p>${content}</p>`,
-        },
-        { attempts: 3, backoff: { type: "exponential", delay: 5000 } }
-      )
     }
+
+    // 4. Jobs email en lot (une seule opération de queue)
+    const notifUserId = new Map(notifications.map((n) => [n.id, n.userId]))
+    await queue.addBulk(
+      deliveries.map((delivery) => {
+        const user = userById.get(notifUserId.get(delivery.notificationId)!)!
+        return {
+          name: `broadcast-${delivery.id}`,
+          data: {
+            deliveryId: delivery.id,
+            to: user.email,
+            subject: title,
+            html: `<p>Bonjour ${user.name},</p><p>${content}</p>`,
+          },
+          opts: { attempts: 3, backoff: { type: "exponential" as const, delay: 5000 } },
+        }
+      })
+    )
 
     return NextResponse.json({ success: true, count: users.length })
   } catch (error: any) {
