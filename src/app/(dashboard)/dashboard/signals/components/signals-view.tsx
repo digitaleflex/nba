@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback, useMemo } from "react"
+import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent, Badge, Input, Button } from "@nba/design-system"
 import {
@@ -193,6 +193,7 @@ export function SignalsView() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   const debouncedSearch = useDebounce(searchQuery, 300)
+  const lastFetchRef = useRef(0)
 
   const availableFilters = useMemo(() => {
     if (!summary || !summary.group || summary.group === "Tous les signaux") {
@@ -239,6 +240,7 @@ export function SignalsView() {
       }
       setPagination(data.pagination)
       setSummary(data.summary)
+      lastFetchRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
@@ -253,7 +255,7 @@ export function SignalsView() {
 
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === "visible") {
+      if (document.visibilityState === "visible" && Date.now() - lastFetchRef.current > 30000) {
         fetchSignals(1, false)
       }
     }

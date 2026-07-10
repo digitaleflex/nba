@@ -91,6 +91,9 @@ export async function getSignals(options: SignalPagination = {}) {
     return []
   }
 
+  const { page = 1, limit = 50 } = options
+  const skip = (page - 1) * limit
+
   return prisma.signal.findMany({
     where: {
       status: "PUBLISHED",
@@ -107,6 +110,8 @@ export async function getSignals(options: SignalPagination = {}) {
       },
     },
     orderBy: { publishedAt: "desc" },
+    skip,
+    take: limit,
   })
 }
 

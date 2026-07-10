@@ -296,7 +296,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="flex items-center justify-center size-9 rounded-full bg-primary/10 border border-primary/20 shrink-0 shadow-inner">
               {user.image ? (
-                <img src={user.image} alt={user.name} className="size-full rounded-full object-cover" />
+                <img src={user.image} alt={user.name} loading="lazy" decoding="async" className="size-full rounded-full object-cover" />
               ) : (
                 <UserIcon className="size-4 text-primary" />
               )}

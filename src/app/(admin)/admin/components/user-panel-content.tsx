@@ -31,7 +31,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
       <div className="flex items-center gap-4 p-4 rounded-xl bg-neutral-100/40 dark:bg-neutral-900/40 border border-neutral-200/40 dark:border-neutral-800/40">
         <div className="size-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
           {data.image ? (
-            <img src={data.image?.startsWith("http") || data.image?.startsWith("/") ? data.image : `/api/files/${data.image}`} alt={data.name} className="size-full rounded-full object-cover" />
+            <img src={data.image?.startsWith("http") || data.image?.startsWith("/") ? data.image : `/api/files/${data.image}`} alt={data.name} loading="lazy" decoding="async" className="size-full rounded-full object-cover" />
           ) : (
             <User className="size-5 text-primary" />
           )}

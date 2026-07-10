@@ -1,6 +1,30 @@
 import { NextRequest, NextResponse } from "next/server"
+import { unstable_cache } from "next/cache"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+
+const getAuditFilters = unstable_cache(
+  async () => {
+    const [distinctActions, distinctResourceTypes] = await Promise.all([
+      prisma.auditLog.findMany({
+        select: { action: true },
+        distinct: ["action"],
+        orderBy: { action: "asc" },
+      }),
+      prisma.auditLog.findMany({
+        select: { resourceType: true },
+        distinct: ["resourceType"],
+        orderBy: { resourceType: "asc" },
+      }),
+    ])
+    return {
+      actions: distinctActions.map((a) => a.action),
+      resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
+    }
+  },
+  ["audit-log-filters"],
+  { revalidate: 300 }
+)
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +52,7 @@ export async function GET(request: NextRequest) {
     if (action) where.action = action
     if (resourceType) where.resourceType = resourceType
 
-    const [logs, total] = await Promise.all([
+    const [logs, total, filters] = await Promise.all([
       prisma.auditLog.findMany({
         where,
         select: {
@@ -46,29 +70,15 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.auditLog.count({ where }),
+      getAuditFilters(),
     ])
-
-    const distinctActions = await prisma.auditLog.findMany({
-      select: { action: true },
-      distinct: ["action"],
-      orderBy: { action: "asc" },
-    })
-
-    const distinctResourceTypes = await prisma.auditLog.findMany({
-      select: { resourceType: true },
-      distinct: ["resourceType"],
-      orderBy: { resourceType: "asc" },
-    })
 
     return NextResponse.json({
       logs,
       total,
       page,
       limit,
-      filters: {
-        actions: distinctActions.map((a) => a.action),
-        resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
-      },
+      filters,
     })
   } catch (error) {
     return handleAuthError(error)
