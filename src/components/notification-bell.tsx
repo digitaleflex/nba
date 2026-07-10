@@ -51,6 +51,7 @@ export function NotificationBell() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastTopIdRef = useRef<string | null>(null);
   const wsActiveRef = useRef(false);
+  const cacheRef = useRef<{ time: number; data: { notifications: Notification[]; unreadCount: number } } | null>(null);
 
   const { play: playSound, changeSound } = useNotificationSound()
 
@@ -67,6 +68,7 @@ export function NotificationBell() {
         if (prev.some((p) => p.id === n.id)) return prev
         return [n, ...prev].slice(0, 5)
       })
+      if (cacheRef.current) cacheRef.current = null
       setUnreadCount((c) => c + 1)
       playSound()
     },
@@ -77,10 +79,19 @@ export function NotificationBell() {
 
   // ── Fetch initial + fallback polling si WS déconnecté ──
   const fetchData = useCallback(async (silent = false) => {
+    const now = Date.now()
+    if (cacheRef.current && now - cacheRef.current.time < 5000) {
+      const cached = cacheRef.current.data
+      setRecentNotifications(cached.notifications)
+      setUnreadCount(cached.unreadCount)
+      setLoading(false)
+      return
+    }
     try {
       const res = await fetch("/api/dashboard/notifications?limit=5");
       if (!res.ok) throw new Error("Erreur");
       const data = await res.json();
+      cacheRef.current = { time: now, data: { notifications: data.notifications, unreadCount: data.unreadCount } }
       const prevTop = lastTopIdRef.current
       const topId = data.notifications[0]?.id ?? null
       if (topId) lastTopIdRef.current = topId

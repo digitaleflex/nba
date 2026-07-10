@@ -15,10 +15,9 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")))
     const skip = (page - 1) * limit
 
-    const [total, notifications] = await Promise.all([
-      prisma.notification.count({
-        where: { userId: session.user.id },
-      }),
+    const [total, unreadCount, notifications] = await prisma.$transaction([
+      prisma.notification.count({ where: { userId: session.user.id } }),
+      prisma.notification.count({ where: { userId: session.user.id, readAt: null } }),
       prisma.notification.findMany({
         where: { userId: session.user.id },
         orderBy: { createdAt: "desc" },
@@ -26,10 +25,6 @@ export async function GET(req: NextRequest) {
         take: limit,
       }),
     ])
-
-    const unreadCount = await prisma.notification.count({
-      where: { userId: session.user.id, readAt: null },
-    })
 
     return NextResponse.json({
       notifications,
