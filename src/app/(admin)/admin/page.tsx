@@ -31,6 +31,7 @@ const AdminContextPanel = dynamic(
 )
 
 import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 
 interface AccessRequest {
   id: string
@@ -135,6 +136,7 @@ function AdminConsoleContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") || "dashboard"
   const { data: currentSession } = authClient.useSession()
+  const { play: playNotifSound } = useNotificationSound()
 
   // Context Panel State
   const [panelOpen, setPanelOpen] = useState(false)
@@ -437,6 +439,7 @@ function AdminConsoleContent() {
       })
       if (res.ok) {
         setNotifTested(true)
+        playNotifSound()
         setTimeout(() => setNotifTested(false), 3000)
       }
     } catch (err) {

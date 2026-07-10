@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { Bell, Loader2, CheckCheck, Clock, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
 import { useSocket } from "@nba/lib/hooks/use-socket";
+import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound";
 
 interface Notification {
   id: string;
@@ -18,14 +19,6 @@ interface Notification {
     imageUrls?: string[] | null;
   } | null;
   createdAt: string;
-}
-
-const VOLUME_KEY = "nba-notification-volume"
-
-function getVolume(): number {
-  if (typeof window === "undefined") return 0.5
-  const v = localStorage.getItem(VOLUME_KEY)
-  return v ? parseFloat(v) : 0.5
 }
 
 function formatTimeAgo(dateStr: string): string {
@@ -57,18 +50,9 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastTopIdRef = useRef<string | null>(null);
-  const soundRef = useRef("default");
   const wsActiveRef = useRef(false);
 
-  // Charge la préférence de son
-  useEffect(() => {
-    fetch("/api/dashboard/notification-preferences")
-      .then((r) => r.json())
-      .then((data) => {
-        soundRef.current = data.sound;
-      })
-      .catch(() => {});
-  }, []);
+  const { play: playSound, changeSound } = useNotificationSound()
 
   // ── WebSocket : notifs temps réel ──
   const { status: wsStatus } = useSocket({
@@ -84,10 +68,7 @@ export function NotificationBell() {
         return [n, ...prev].slice(0, 5)
       })
       setUnreadCount((c) => c + 1)
-      // Joue le son
-      const audio = new Audio(`/sounds/${soundRef.current}.wav`)
-      audio.volume = getVolume()
-      audio.play().catch(() => {})
+      playSound()
     },
     onDisconnect: () => {
       wsActiveRef.current = false
@@ -106,7 +87,6 @@ export function NotificationBell() {
 
       setRecentNotifications(data.notifications);
 
-      // Joue le son si nouvelle notif (et pas via WebSocket)
       if (
         !silent &&
         !wsActiveRef.current &&
@@ -114,9 +94,7 @@ export function NotificationBell() {
         prevTop &&
         topId !== prevTop
       ) {
-        const audio = new Audio(`/sounds/${soundRef.current}.wav`)
-        audio.volume = getVolume()
-        audio.play().catch(() => {})
+        playSound()
       }
       setUnreadCount(data.unreadCount);
     } catch {

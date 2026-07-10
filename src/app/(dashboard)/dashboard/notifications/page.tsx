@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { Card, CardContent, Button } from "@nba/design-system"
 import {
   BellOff,
@@ -17,13 +17,16 @@ import {
   ShieldX,
   PartyPopper,
   TestTube2,
+  Trash2,
+  ChevronDown,
 } from "lucide-react"
 import Link from "next/link"
+import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 
 interface Notification {
   id: string
   title: string
-  message: string
+  body: string
   type: string
   readAt: string | null
   linkUrl: string | null
@@ -66,10 +69,15 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
+  const { play: playSound, changeVolume: changeVolumeNofit } = useNotificationSound()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  const [hasMore, setHasMore] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const pageRef = useRef(1)
 
   const [selectedSound, setSelectedSound] = useState("default")
   const [volume, setVolume] = useState(0.5)
@@ -101,15 +109,9 @@ export default function NotificationsPage() {
     }
   }, [])
 
-  function playSound(soundId: string, vol?: number) {
-    const audio = new Audio(`/sounds/${soundId}.wav`)
-    audio.volume = vol ?? volume
-    audio.play().catch(() => {})
-  }
-
   function changeVolume(v: number) {
     setVolume(v)
-    localStorage.setItem(VOLUME_KEY, String(v))
+    changeVolumeNofit(v)
   }
 
   async function saveSound() {
@@ -161,19 +163,32 @@ export default function NotificationsPage() {
     }, 100)
   }
 
-  const fetchNotifications = useCallback(async () => {
+  const fetchNotifications = useCallback(async (loadMore = false) => {
     try {
-      const res = await fetch("/api/dashboard/notifications")
+      const nextPage = loadMore ? pageRef.current + 1 : 1
+      const res = await fetch(`/api/dashboard/notifications?page=${nextPage}&limit=10`)
       if (!res.ok) throw new Error("Erreur")
       const data = await res.json()
-      setNotifications(data.notifications)
+      if (loadMore) {
+        setNotifications((prev) => [...prev, ...data.notifications])
+      } else {
+        setNotifications(data.notifications)
+      }
+      pageRef.current = nextPage
+      setHasMore(nextPage < data.pagination.totalPages)
       setUnreadCount(data.unreadCount)
     } catch {
       setError("Erreur de chargement")
     } finally {
       setLoading(false)
+      setLoadingMore(false)
     }
   }, [])
+
+  async function loadMore() {
+    setLoadingMore(true)
+    await fetchNotifications(true)
+  }
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -195,6 +210,14 @@ export default function NotificationsPage() {
   async function markAllAsRead() {
     const unread = notifications.filter((n) => !n.readAt)
     await Promise.all(unread.map((n) => markAsRead(n.id)))
+  }
+
+  async function deleteNotification(id: string) {
+    try {
+      await fetch(`/api/dashboard/notifications/${id}`, { method: "DELETE" })
+      setNotifications((prev) => prev.filter((n) => n.id !== id))
+      setUnreadCount((prev) => Math.max(0, prev - (notifications.find((n) => n.id === id)?.readAt ? 0 : 1)))
+    } catch {}
   }
 
   if (loading) {
@@ -467,21 +490,49 @@ export default function NotificationsPage() {
                         {formatTimeAgo(n.createdAt)}
                       </span>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.message}</p>
-                    {n.linkUrl && (
-                      <Link
-                        href={n.linkUrl}
-                        className="text-xs text-primary mt-1 inline-block hover:underline"
-                        onClick={(e) => e.stopPropagation()}
+                    <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      {n.linkUrl && (
+                        <Link
+                          href={n.linkUrl}
+                          className="text-xs text-primary hover:underline"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Voir le détail
+                        </Link>
+                      )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          deleteNotification(n.id)
+                        }}
+                        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                        title="Supprimer"
                       >
-                        Voir le détail
-                      </Link>
-                    )}
+                        <Trash2 className="size-3" />
+                      </button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )
           })}
+          {hasMore && (
+            <div className="flex justify-center pt-2 pb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={loadMore}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <><Loader2 className="size-3.5 mr-1.5 animate-spin" /> Chargement...</>
+                ) : (
+                  <><ChevronDown className="size-3.5 mr-1.5" /> Voir plus</>
+                )}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>
