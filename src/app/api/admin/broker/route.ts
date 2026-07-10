@@ -8,24 +8,32 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") || ""
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)))
+    const skip = (page - 1) * limit
 
     const where: any = {}
     if (status && status !== "ALL") {
       where.status = status
     }
 
-    const verifications = await prisma.brokerVerification.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
+    const [verifications, total] = await Promise.all([
+      prisma.brokerVerification.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: { submittedAt: "desc" },
-    })
+        orderBy: { submittedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.brokerVerification.count({ where }),
+    ])
 
     const formattedVerifications = verifications.map((doc) => {
       return {
@@ -34,7 +42,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(formattedVerifications)
+    return NextResponse.json({
+      docs: formattedVerifications,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
     return handleAuthError(error)
   }

@@ -6,6 +6,7 @@ import { logAuditEvent } from "@nba/lib/services/audit";
 import { notify } from "@nba/lib/services/notifications";
 import { brokerApprovedEmail, brokerRejectedEmail } from "@nba/lib/email";
 import { scheduleFileCleanup } from "@nba/lib/queue";
+import { updateOnboardingStatus } from "@nba/lib/services/onboarding";
 
 export async function PUT(
   req: NextRequest,
@@ -34,6 +35,16 @@ export async function PUT(
       resourceId: id,
       details: { notes: parsed.notes },
     });
+
+    // Si broker approuvé, vérifier si le KYC est aussi approuvé pour activer l'utilisateur
+    if (parsed.status === "APPROVED") {
+      const kycApproved = await prisma.kycDocument.findFirst({
+        where: { userId: updated.userId, status: "APPROVED" },
+      })
+      if (kycApproved) {
+        await updateOnboardingStatus(updated.userId, "ACTIVE")
+      }
+    }
 
     // Planifier le nettoyage des fichiers après 7 jours (APPROVED ou REJECTED)
     if (parsed.status === "APPROVED" || parsed.status === "REJECTED") {

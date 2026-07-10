@@ -8,28 +8,34 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const status = searchParams.get("status") || ""
+    const page = Math.max(1, parseInt(searchParams.get("page") ?? "1", 10))
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "20", 10)))
+    const skip = (page - 1) * limit
 
     const where: any = {}
     if (status && status !== "ALL") {
       where.status = status
     }
 
-    const kycDocs = await prisma.kycDocument.findMany({
-      where,
-      include: {
-        user: {
-          select: {
-            name: true,
-            email: true,
+    const [kycDocs, total] = await Promise.all([
+      prisma.kycDocument.findMany({
+        where,
+        include: {
+          user: {
+            select: {
+              name: true,
+              email: true,
+            },
           },
         },
-      },
-      orderBy: { submittedAt: "desc" },
-    })
+        orderBy: { submittedAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.kycDocument.count({ where }),
+    ])
 
-    // Transformer le format des fichiers si stockés en JSON/chemin
     const formattedDocs = kycDocs.map((doc) => {
-      // Utiliser les chemins stockés dans la base
       const files = [
         doc.frontFilePath ? { label: "Recto Identité", url: `/api/files/${doc.frontFilePath}` } : null,
         doc.backFilePath ? { label: "Verso Identité", url: `/api/files/${doc.backFilePath}` } : null,
@@ -40,7 +46,15 @@ export async function GET(request: NextRequest) {
       }
     })
 
-    return NextResponse.json(formattedDocs)
+    return NextResponse.json({
+      docs: formattedDocs,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    })
   } catch (error) {
     return handleAuthError(error)
   }

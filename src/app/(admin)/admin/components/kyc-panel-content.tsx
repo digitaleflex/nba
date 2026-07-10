@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { Check, Ban, FileText } from "lucide-react"
 import { Button, Badge, cn } from "@nba/design-system"
 
@@ -10,6 +11,7 @@ interface KycPanelContentProps {
 }
 
 export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContentProps) {
+  const [notes, setNotes] = useState("")
   return (
     <div className="space-y-6 text-xs">
       <div className="space-y-2">
@@ -107,12 +109,19 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
       {onAction && data.status === "PENDING" && (
         <div className="space-y-2 border-t pt-4">
           <span className="text-[10px] text-muted-foreground uppercase">Revue administrative</span>
+          <textarea
+            placeholder="Justification (obligatoire pour un refus)..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={3}
+            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+          />
           <div className="flex gap-2">
             <Button
               variant="default"
               size="sm"
               className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-              onClick={() => onAction("kyc_approve", { id: data.id })}
+              onClick={() => onAction("kyc_approve", { id: data.id, notes })}
             >
               <Check className="size-3.5" /> Approuver le KYC
             </Button>
@@ -120,7 +129,8 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
               variant="destructive"
               size="sm"
               className="w-full gap-1.5"
-              onClick={() => onAction("kyc_reject", { id: data.id })}
+              disabled={!notes.trim()}
+              onClick={() => onAction("kyc_reject", { id: data.id, notes: notes || "Refusé" })}
             >
               <Ban className="size-3.5" /> Refuser
             </Button>

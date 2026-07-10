@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { authClient } from "@nba/lib/auth-client"
 import {
   Check, X, Clock, ExternalLink, ListTodo, Radio, History, Trash2, Calendar,
   Search, Eye, Layers, Copy, Play, Loader2, Laptop, Phone, Users, Shield,
@@ -104,6 +105,7 @@ interface BrokerVerification {
   createdAt: string
   submittedAt: string
   videoUrl?: string
+  videoFilePath?: string
   user: { name: string; email: string }
 }
 
@@ -132,6 +134,7 @@ function AdminConsoleContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") || "dashboard"
+  const { data: currentSession } = authClient.useSession()
 
   // Context Panel State
   const [panelOpen, setPanelOpen] = useState(false)
@@ -165,10 +168,16 @@ function AdminConsoleContent() {
   // Module KYC State
   const [kycDocs, setKycDocs] = useState<KYCDoc[]>([])
   const [loadingKyc, setLoadingKyc] = useState(false)
+  const [kycPage, setKycPage] = useState(1)
+  const [kycTotalPages, setKycTotalPages] = useState(1)
+  const [kycStatusFilter, setKycStatusFilter] = useState("ALL")
 
   // Module Broker State
   const [brokerDocs, setBrokerDocs] = useState<BrokerVerification[]>([])
   const [loadingBroker, setLoadingBroker] = useState(false)
+  const [brokerPage, setBrokerPage] = useState(1)
+  const [brokerTotalPages, setBrokerTotalPages] = useState(1)
+  const [brokerStatusFilter, setBrokerStatusFilter] = useState("ALL")
 
   // Module Audit State
   const [audits, setAudits] = useState<AuditLog[]>([])
@@ -178,7 +187,9 @@ function AdminConsoleContent() {
   const [notifTitle, setNotifTitle] = useState("")
   const [notifContent, setNotifContent] = useState("")
   const [sendingNotif, setSendingNotif] = useState(false)
+  const [sendingTest, setSendingTest] = useState(false)
   const [notifSent, setNotifSent] = useState(false)
+  const [notifTested, setNotifTested] = useState(false)
   const [notifHistory, setNotifHistory] = useState<any[]>([])
   const [loadingNotifHistory, setLoadingNotifHistory] = useState(false)
 
@@ -316,10 +327,14 @@ function AdminConsoleContent() {
     setLoadingKyc(true)
     setErrorKyc(null)
     try {
-      const res = await fetch("/api/admin/kyc")
+      const params = new URLSearchParams()
+      if (kycStatusFilter !== "ALL") params.set("status", kycStatusFilter)
+      params.set("page", String(kycPage))
+      const res = await fetch(`/api/admin/kyc?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setKycDocs(data)
+        setKycDocs(data.docs ?? data)
+        setKycTotalPages(data.pagination?.totalPages ?? 1)
       } else {
         setErrorKyc("Erreur de chargement des dossiers KYC")
       }
@@ -329,24 +344,28 @@ function AdminConsoleContent() {
     } finally {
       setLoadingKyc(false)
     }
-  }, [])
+  }, [kycStatusFilter, kycPage])
 
   // Fetch Broker
   const fetchBroker = useCallback(async () => {
     setLoadingBroker(true)
     setErrorBroker(null)
     try {
-      const res = await fetch("/api/admin/broker")
+      const params = new URLSearchParams()
+      if (brokerStatusFilter !== "ALL") params.set("status", brokerStatusFilter)
+      params.set("page", String(brokerPage))
+      const res = await fetch(`/api/admin/broker?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setBrokerDocs(data)
+        setBrokerDocs(data.docs ?? data)
+        setBrokerTotalPages(data.pagination?.totalPages ?? 1)
       }
     } catch (err) {
       console.error(err)
     } finally {
       setLoadingBroker(false)
     }
-  }, [])
+  }, [brokerStatusFilter, brokerPage])
 
   // Fetch Audits
   const fetchAudits = useCallback(async () => {
@@ -380,7 +399,7 @@ function AdminConsoleContent() {
     }
   }, [])
 
-  // Send Notification
+  // Send Notification (broadcast to all users)
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifContent.trim()) return
     setSendingNotif(true)
@@ -392,7 +411,6 @@ function AdminConsoleContent() {
         body: JSON.stringify({ title: notifTitle, content: notifContent }),
       })
       if (res.ok) {
-        const data = await res.json()
         setNotifTitle("")
         setNotifContent("")
         setNotifSent(true)
@@ -403,6 +421,28 @@ function AdminConsoleContent() {
       console.error(err)
     } finally {
       setSendingNotif(false)
+    }
+  }
+
+  // Send test notification to self
+  const handleTestNotification = async () => {
+    if (!notifTitle.trim() || !notifContent.trim() || !currentSession?.user?.id) return
+    setSendingTest(true)
+    setNotifTested(false)
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: notifTitle, content: notifContent, userId: currentSession.user.id }),
+      })
+      if (res.ok) {
+        setNotifTested(true)
+        setTimeout(() => setNotifTested(false), 3000)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setSendingTest(false)
     }
   }
 
@@ -429,13 +469,13 @@ function AdminConsoleContent() {
     else if (activeTab === "membres") { fetchMembrePlans(); fetchMembres() }
     else if (activeTab === "requests") fetchRequests()
     else if (activeTab === "signals") fetchSignals()
-    else if (activeTab === "kyc") fetchKyc()
-    else if (activeTab === "broker") fetchBroker()
+    else if (activeTab === "kyc") { setKycPage(1); fetchKyc() }
+    else if (activeTab === "broker") { setBrokerPage(1); fetchBroker() }
     else if (activeTab === "audit") fetchAudits()
     else if (activeTab === "security") fetchSecurity()
     else if (activeTab === "stats" && !opsData) fetchOperations()
     else if (activeTab === "notifications") fetchNotifHistory()
-  }, [activeTab, fetchOperations, fetchMembers, fetchMembres, fetchMembrePlans, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchAudits, fetchSecurity, fetchNotifHistory])
+  }, [activeTab, fetchOperations, fetchMembers, fetchMembres, fetchMembrePlans, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchAudits, fetchSecurity, fetchNotifHistory, kycPage, kycStatusFilter, brokerPage, brokerStatusFilter])
 
       async function handleDeleteSignal(id: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
@@ -1231,55 +1271,97 @@ function AdminConsoleContent() {
                   Examinez et validez les pièces d'identité des abonnés.
                 </p>
               </div>
+              <div className="flex gap-2">
+                {["ALL", "PENDING", "APPROVED", "REJECTED"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setKycStatusFilter(s); setKycPage(1) }}
+                    className={cn(
+                      "text-[10px] px-3 py-1 rounded-full border transition-colors cursor-pointer",
+                      kycStatusFilter === s
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50"
+                    )}
+                  >
+                    {s === "ALL" ? "Tous" : s}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {loadingKyc ? (
               <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
             ) : kycDocs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {kycDocs.map((doc) => (
-                  <Card key={doc.id} className="border-border bg-card/30 overflow-hidden">
-                    {/* Visual selfie placeholder */}
-                    <div className="h-40 bg-card border-b border-border flex items-center justify-center text-muted-foreground relative">
-                      <ImageIcon className="size-8 text-muted-foreground/30" />
-                      <Badge
-                        variant="outline"
-                        className={cn(
-                          "absolute top-3 right-3 text-[9px] uppercase",
-                          doc.status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                          doc.status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
-                          doc.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                        )}
-                      >
-                        {doc.status}
-                      </Badge>
-                    </div>
-                    <CardContent className="p-4 space-y-4">
-                      <div>
-                        <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
-                        <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
-                      </div>
-
-                      <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/60 pt-3">
-                        <span>Reçu le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
-                        <Button
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {kycDocs.map((doc) => (
+                    <Card key={doc.id} className="border-border bg-card/30 overflow-hidden">
+                      <div className="h-40 bg-card border-b border-border flex items-center justify-center text-muted-foreground relative">
+                        <ImageIcon className="size-8 text-muted-foreground/30" />
+                        <Badge
                           variant="outline"
-                          size="sm"
-                          className="text-[10px] border-border h-7 cursor-pointer"
-                          onClick={() => {
-                            setPanelTitle("Dossier KYC")
-                            setPanelType("kyc")
-                            setPanelData(doc)
-                            setPanelOpen(true)
-                          }}
+                          className={cn(
+                            "absolute top-3 right-3 text-[9px] uppercase",
+                            doc.status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                            doc.status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
+                            doc.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                          )}
                         >
-                          Examiner
-                        </Button>
+                          {doc.status}
+                        </Badge>
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      <CardContent className="p-4 space-y-4">
+                        <div>
+                          <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
+                          <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
+                        </div>
+
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/60 pt-3">
+                          <span>Reçu le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-[10px] border-border h-7 cursor-pointer"
+                            onClick={() => {
+                              setPanelTitle("Dossier KYC")
+                              setPanelType("kyc")
+                              setPanelData(doc)
+                              setPanelOpen(true)
+                            }}
+                          >
+                            Examiner
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {kycTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={kycPage <= 1}
+                      onClick={() => setKycPage((p) => Math.max(1, p - 1))}
+                      className="text-xs cursor-pointer"
+                    >
+                      ← Précédent
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground">
+                      Page {kycPage} / {kycTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={kycPage >= kycTotalPages}
+                      onClick={() => setKycPage((p) => p + 1)}
+                      className="text-xs cursor-pointer"
+                    >
+                      Suivant →
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground">
                 Aucun document KYC reçu.
@@ -1300,64 +1382,107 @@ function AdminConsoleContent() {
                   Vérifiez la liaison de compte broker des utilisateurs avec les vidéos fournies.
                 </p>
               </div>
+              <div className="flex gap-2">
+                {["ALL", "PENDING", "APPROVED", "REJECTED"].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => { setBrokerStatusFilter(s); setBrokerPage(1) }}
+                    className={cn(
+                      "text-[10px] px-3 py-1 rounded-full border transition-colors cursor-pointer",
+                      brokerStatusFilter === s
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:border-primary/50"
+                    )}
+                  >
+                    {s === "ALL" ? "Tous" : s}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {loadingBroker ? (
               <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
             ) : brokerDocs.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {brokerDocs.map((doc) => (
-                  <Card key={doc.id} className="border-border bg-card/30">
-                    <CardContent className="p-5 space-y-4">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
-                          <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {brokerDocs.map((doc) => (
+                    <Card key={doc.id} className="border-border bg-card/30">
+                      <CardContent className="p-5 space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
+                            <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
+                          </div>
+                          <Badge
+                            variant="outline"
+                            className={cn(
+                              "text-[9px] uppercase",
+                              doc.status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                              doc.status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
+                              doc.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                            )}
+                          >
+                            {doc.status}
+                          </Badge>
                         </div>
-                        <Badge
-                          variant="outline"
-                          className={cn(
-                            "text-[9px] uppercase",
-                            doc.status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
-                            doc.status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
-                            doc.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                          )}
-                        >
-                          {doc.status}
-                        </Badge>
-                      </div>
 
-                      <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/60 text-[10px]">
-                        <div>
-                          <span className="text-[9px] text-muted-foreground block uppercase">Broker</span>
-                          <span className="font-semibold text-foreground">{doc.brokerName}</span>
+                        <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/60 text-[10px]">
+                          <div>
+                            <span className="text-[9px] text-muted-foreground block uppercase">Broker</span>
+                            <span className="font-semibold text-foreground">{doc.brokerName}</span>
+                          </div>
+                          <div>
+                            <span className="text-[9px] text-muted-foreground block uppercase">Numéro Compte</span>
+                            <span className="font-semibold text-foreground">{doc.accountId}</span>
+                          </div>
                         </div>
-                        <div>
-                          <span className="text-[9px] text-muted-foreground block uppercase">Numéro Compte</span>
-                          <span className="font-semibold text-foreground">{doc.accountId}</span>
-                        </div>
-                      </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-border/60 text-[10px] text-muted-foreground">
-                        <span>Soumis le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-[10px] border-border h-7 cursor-pointer"
-                          onClick={() => {
-                            setPanelTitle("Vérification Broker")
-                            setPanelType("broker")
-                            setPanelData(doc)
-                            setPanelOpen(true)
-                          }}
-                        >
-                          Visionner Preuve
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-border/60 text-[10px] text-muted-foreground">
+                          <span>Soumis le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-[10px] border-border h-7 cursor-pointer"
+                            onClick={() => {
+                              setPanelTitle("Vérification Broker")
+                              setPanelType("broker")
+                              setPanelData(doc)
+                              setPanelOpen(true)
+                            }}
+                          >
+                            Visionner Preuve
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                {brokerTotalPages > 1 && (
+                  <div className="flex items-center justify-center gap-4 pt-4">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={brokerPage <= 1}
+                      onClick={() => setBrokerPage((p) => Math.max(1, p - 1))}
+                      className="text-xs cursor-pointer"
+                    >
+                      ← Précédent
+                    </Button>
+                    <span className="text-[10px] text-muted-foreground">
+                      Page {brokerPage} / {brokerTotalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={brokerPage >= brokerTotalPages}
+                      onClick={() => setBrokerPage((p) => p + 1)}
+                      className="text-xs cursor-pointer"
+                    >
+                      Suivant →
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground">
                 Aucune demande de vérification broker en attente.
@@ -1402,25 +1527,46 @@ function AdminConsoleContent() {
                       onChange={(e) => setNotifContent(e.target.value)}
                     />
                   </div>
-                  {notifSent && (
-                    <p className="text-xs text-success font-medium">Notification envoyée avec succès !</p>
+                  {notifTested && (
+                    <p className="text-xs text-success font-medium">Test reçu ! Vérifiez vos notifications.</p>
                   )}
-                  <Button
-                    variant="default"
-                    size="sm"
-                    className="w-full mt-2 cursor-pointer"
-                    onClick={handleSendNotification}
-                    disabled={sendingNotif || !notifTitle.trim() || !notifContent.trim()}
-                  >
-                    {sendingNotif ? (
-                      <>
-                        <Loader2 className="size-4 mr-2 animate-spin" />
-                        Envoi en cours...
-                      </>
-                    ) : (
-                      "Diffuser la notification"
-                    )}
-                  </Button>
+                  {notifSent && (
+                    <p className="text-xs text-success font-medium">Notification diffusée à tous les utilisateurs.</p>
+                  )}
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 cursor-pointer"
+                      onClick={handleTestNotification}
+                      disabled={sendingTest || !notifTitle.trim() || !notifContent.trim() || !currentSession?.user?.id}
+                    >
+                      {sendingTest ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" />
+                          Test...
+                        </>
+                      ) : (
+                        "Tester"
+                      )}
+                    </Button>
+                    <Button
+                      variant="default"
+                      size="sm"
+                      className="flex-1 cursor-pointer"
+                      onClick={handleSendNotification}
+                      disabled={sendingNotif || !notifTitle.trim() || !notifContent.trim()}
+                    >
+                      {sendingNotif ? (
+                        <>
+                          <Loader2 className="size-4 mr-2 animate-spin" />
+                          Envoi...
+                        </>
+                      ) : (
+                        "Diffuser"
+                      )}
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
