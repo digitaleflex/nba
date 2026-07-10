@@ -20,7 +20,6 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     where: { id },
     include: {
       creator: { select: { name: true } },
-      audience: { include: { plan: true } }
     }
   })
 
@@ -132,17 +131,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             </div>
           ) : null}
 
-          {/* Target Audience Groups */}
-          <div className="border-t border-border/20 pt-4 space-y-2">
-            <h4 className="text-xs font-semibold text-muted-foreground">Groupes ciblés</h4>
-            <div className="flex flex-wrap gap-2">
-              {signal.audience.map((a: any) => (
-                <Badge key={a.plan.name} variant="secondary" className="px-2 py-0.5">
-                  {a.plan.name}
-                </Badge>
-              ))}
-            </div>
-          </div>
+
         </CardContent>
       </Card>
     </div>
