@@ -4,20 +4,27 @@ import { getStorage } from "@nba/lib/storage"
 import { AuthError } from "@nba/lib/auth-utils"
 
 export const MESSAGE_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"]
-export const MESSAGE_MAX_SIZE = 50 * 1024 * 1024 // 50 Mo
+export const MESSAGE_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+export const MESSAGE_MAX_SIZE = 50 * 1024 * 1024 // 50 Mo (vidéos)
+export const MESSAGE_IMAGE_MAX_SIZE = 10 * 1024 * 1024 // 10 Mo (images)
 
 /**
- * Valide et stocke une vidéo jointe à un message. Retourne le chemin de
- * stockage (à persister dans `attachmentUrl`) et l'URL publique de lecture.
+ * Valide et stocke une pièce jointe (vidéo ou image) à un message. Retourne le
+ * chemin de stockage (à persister dans `attachmentUrl`) et l'URL publique.
  */
 export async function uploadMessageAttachment(file: File) {
-  if (!MESSAGE_VIDEO_MIME.includes(file.type)) {
+  const isImage = MESSAGE_IMAGE_MIME.includes(file.type)
+  const isVideo = MESSAGE_VIDEO_MIME.includes(file.type)
+  if (!isImage && !isVideo) {
     throw new Error(
-      `Format vidéo non supporté : ${file.type}. Formats acceptés : MP4, WebM, MOV.`,
+      `Format non supporté : ${file.type}. Formats acceptés : images (JPEG, PNG, WebP, GIF) et vidéos (MP4, WebM, MOV).`,
     )
   }
-  if (file.size > MESSAGE_MAX_SIZE) {
-    throw new Error("Vidéo trop volumineuse (max 50 Mo)")
+  const maxSize = isImage ? MESSAGE_IMAGE_MAX_SIZE : MESSAGE_MAX_SIZE
+  if (file.size > maxSize) {
+    throw new Error(
+      isImage ? "Image trop volumineuse (max 10 Mo)" : "Vidéo trop volumineuse (max 50 Mo)",
+    )
   }
   const storage = getStorage()
   const result = await storage.upload(file, "messages")
@@ -51,6 +58,19 @@ export interface MessageAttachment {
   size?: number | null
 }
 
+export interface MessageReactionDTO {
+  userId: string
+  emoji: string
+}
+
+export interface QuotedMessageDTO {
+  id: string
+  type: string
+  content: string
+  senderName: string
+  attachmentMime?: string | null
+}
+
 export interface MessageDTO {
   id: string
   conversationId: string
@@ -63,6 +83,11 @@ export interface MessageDTO {
   attachmentName?: string | null
   attachmentSize?: number | null
   readAt: string | null
+  editedAt: string | null
+  deletedAt: string | null
+  quotedMessageId?: string | null
+  quoted?: QuotedMessageDTO | null
+  reactions: MessageReactionDTO[]
   createdAt: string
 }
 
@@ -173,7 +198,19 @@ export async function getConversationMessages(
     where,
     orderBy: { createdAt: "desc" },
     take: limit + 1,
-    include: { sender: { select: { id: true, name: true } } },
+    include: {
+      sender: { select: { id: true, name: true } },
+      reactions: { select: { userId: true, emoji: true } },
+      quotedMessage: {
+        select: {
+          id: true,
+          type: true,
+          content: true,
+          attachmentMime: true,
+          sender: { select: { name: true } },
+        },
+      },
+    },
   })
 
   const hasMore = page.length > limit
@@ -191,6 +228,19 @@ export async function getConversationMessages(
     attachmentName: m.attachmentName,
     attachmentSize: m.attachmentSize,
     readAt: m.readAt ? m.readAt.toISOString() : null,
+    editedAt: m.editedAt ? m.editedAt.toISOString() : null,
+    deletedAt: m.deletedAt ? m.deletedAt.toISOString() : null,
+    quotedMessageId: m.quotedMessageId,
+    quoted: m.quotedMessage
+      ? {
+          id: m.quotedMessage.id,
+          type: m.quotedMessage.type,
+          content: m.quotedMessage.content,
+          senderName: m.quotedMessage.sender.name,
+          attachmentMime: m.quotedMessage.attachmentMime,
+        }
+      : null,
+    reactions: m.reactions.map((r) => ({ userId: r.userId, emoji: r.emoji })),
     createdAt: m.createdAt.toISOString(),
   }))
 
@@ -206,25 +256,41 @@ export async function sendMessage(
   senderId: string,
   content: string,
   attachment?: MessageAttachment | null,
+  quotedMessageId?: string | null,
 ): Promise<MessageDTO> {
   const conversation = await prisma.conversation.findFirst({
     where: { id: conversationId, participants: { some: { userId: senderId } } },
   })
   if (!conversation) throw new AuthError("Conversation introuvable", 404)
 
-  const isVideo = !!attachment?.url
+  const isVideo = attachment?.mime?.startsWith("video/") ?? false
+  const isImage = attachment?.mime?.startsWith("image/") ?? false
+  const messageType = isVideo ? "VIDEO" : isImage ? "IMAGE" : "TEXT"
+
   const message = await prisma.message.create({
     data: {
       conversationId,
       senderId,
-      type: isVideo ? "VIDEO" : "TEXT",
+      type: messageType,
       content: content ?? "",
       attachmentUrl: attachment?.url ?? null,
       attachmentMime: attachment?.mime ?? null,
       attachmentName: attachment?.name ?? null,
       attachmentSize: attachment?.size ?? null,
+      quotedMessageId: quotedMessageId ?? null,
     },
-    include: { sender: { select: { id: true, name: true } } },
+    include: {
+      sender: { select: { id: true, name: true } },
+      quotedMessage: {
+        select: {
+          id: true,
+          type: true,
+          content: true,
+          attachmentMime: true,
+          sender: { select: { name: true } },
+        },
+      },
+    },
   })
 
   await prisma.conversation.update({
@@ -250,6 +316,7 @@ export async function sendMessage(
       attachmentMime: message.attachmentMime,
       attachmentName: message.attachmentName,
       attachmentSize: message.attachmentSize,
+      quotedMessageId: message.quotedMessageId,
       createdAt: message.createdAt.toISOString(),
     },
   }
@@ -269,8 +336,172 @@ export async function sendMessage(
     attachmentName: message.attachmentName,
     attachmentSize: message.attachmentSize,
     readAt: message.readAt ? message.readAt.toISOString() : null,
+    editedAt: null,
+    deletedAt: null,
+    quotedMessageId: message.quotedMessageId,
+    quoted: message.quotedMessage
+      ? {
+          id: message.quotedMessage.id,
+          type: message.quotedMessage.type,
+          content: message.quotedMessage.content,
+          senderName: message.quotedMessage.sender.name,
+          attachmentMime: message.quotedMessage.attachmentMime,
+        }
+      : null,
+    reactions: [],
     createdAt: message.createdAt.toISOString(),
   }
+}
+
+/**
+ * Récupère la liste des réactions d'un message (userId + emoji).
+ */
+async function getMessageReactions(messageId: string): Promise<MessageReactionDTO[]> {
+  const rows = await prisma.messageReaction.findMany({
+    where: { messageId },
+    select: { userId: true, emoji: true },
+  })
+  return rows.map((r) => ({ userId: r.userId, emoji: r.emoji }))
+}
+
+/**
+ * Ajoute, remplace ou retire (emoji = null) la réaction de l'utilisateur sur un
+ * message. Retourne la liste à jour des réactions et notifie les participants.
+ */
+export async function reactToMessage(
+  messageId: string,
+  userId: string,
+  emoji: string | null,
+): Promise<MessageReactionDTO[]> {
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, deletedAt: null },
+    include: { conversation: { include: { participants: true } } },
+  })
+  if (!message) throw new AuthError("Message introuvable", 404)
+  const isParticipant = message.conversation.participants.some((p) => p.userId === userId)
+  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+
+  if (emoji) {
+    await prisma.messageReaction.upsert({
+      where: { messageId_userId: { messageId, userId } },
+      create: { messageId, userId, emoji },
+      update: { emoji },
+    })
+  } else {
+    await prisma.messageReaction.deleteMany({ where: { messageId, userId } })
+  }
+
+  const reactions = await getMessageReactions(messageId)
+
+  const payload = {
+    type: "MESSAGE_REACTION",
+    conversationId: message.conversationId,
+    messageId,
+    userId,
+    emoji,
+    reactions,
+  }
+  for (const p of message.conversation.participants) {
+    await publishMessage(p.userId, payload)
+  }
+
+  return reactions
+}
+
+/**
+ * Édite le contenu d'un message envoyé par l'utilisateur (tag "modifié").
+ * L'original n'est pas conservé côté serveur (édition simple).
+ */
+export async function editMessage(
+  messageId: string,
+  userId: string,
+  content: string,
+): Promise<MessageDTO> {
+  const trimmed = content.trim()
+  if (!trimmed) throw new Error("Le message ne peut pas être vide")
+
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, deletedAt: null },
+    include: { conversation: { include: { participants: true } } },
+  })
+  if (!message) throw new AuthError("Message introuvable", 404)
+  if (message.senderId !== userId) throw new AuthError("Non autorisé", 403)
+
+  const updated = await prisma.message.update({
+    where: { id: messageId },
+    data: { content: trimmed, editedAt: new Date() },
+  })
+
+  const payload = {
+    type: "MESSAGE_UPDATED",
+    conversationId: message.conversationId,
+    messageId,
+    content: trimmed,
+    editedAt: updated.editedAt ? updated.editedAt.toISOString() : null,
+  }
+  for (const p of message.conversation.participants) {
+    if (p.userId === userId) continue
+    await publishMessage(p.userId, payload)
+  }
+
+  return {
+    id: updated.id,
+    conversationId: updated.conversationId,
+    senderId: updated.senderId,
+    senderName: "",
+    type: updated.type,
+    content: updated.content,
+    attachmentUrl: updated.attachmentUrl,
+    attachmentMime: updated.attachmentMime,
+    attachmentName: updated.attachmentName,
+    attachmentSize: updated.attachmentSize,
+    readAt: updated.readAt ? updated.readAt.toISOString() : null,
+    editedAt: updated.editedAt ? updated.editedAt.toISOString() : null,
+    deletedAt: updated.deletedAt ? updated.deletedAt.toISOString() : null,
+    quotedMessageId: updated.quotedMessageId,
+    quoted: null,
+    reactions: [],
+    createdAt: updated.createdAt.toISOString(),
+  }
+}
+
+/**
+ * Supprime un message. `forEveryone` n'est possible que par l'expéditeur
+ * (soft-delete côté serveur, diffusé à tous). Sinon, le masquage "pour moi"
+ * est géré côté client.
+ */
+export async function deleteMessage(
+  messageId: string,
+  userId: string,
+  forEveryone: boolean,
+): Promise<{ messageId: string; forEveryone: boolean }> {
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, deletedAt: null },
+    include: { conversation: { include: { participants: true } } },
+  })
+  if (!message) throw new AuthError("Message introuvable", 404)
+  const isParticipant = message.conversation.participants.some((p) => p.userId === userId)
+  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+
+  if (forEveryone) {
+    if (message.senderId !== userId) throw new AuthError("Non autorisé", 403)
+    await prisma.message.update({
+      where: { id: messageId },
+      data: { deletedAt: new Date(), content: "" },
+    })
+    const payload = {
+      type: "MESSAGE_DELETED",
+      conversationId: message.conversationId,
+      messageId,
+      forEveryone: true,
+    }
+    for (const p of message.conversation.participants) {
+      if (p.userId === userId) continue
+      await publishMessage(p.userId, payload)
+    }
+  }
+
+  return { messageId, forEveryone }
 }
 
 /**

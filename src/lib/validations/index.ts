@@ -31,9 +31,10 @@ export const messageAttachmentSchema = z.object({
 
 export const messageSendSchema = z
   .object({
-    type: z.enum(["TEXT", "VIDEO"]).optional().default("TEXT"),
+    type: z.enum(["TEXT", "VIDEO", "IMAGE"]).optional().default("TEXT"),
     content: z.string().trim().max(5000, "Message trop long").optional().default(""),
     attachment: messageAttachmentSchema.optional(),
+    quotedMessageId: z.string().uuid("ID de message cité invalide").optional(),
   })
   .superRefine((val, ctx) => {
     if (val.type === "VIDEO") {
@@ -46,10 +47,32 @@ export const messageSendSchema = z
           path: ["attachment", "mime"],
         })
       }
+    } else if (val.type === "IMAGE") {
+      if (!val.attachment) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Image requise", path: ["attachment"] })
+      } else if (!val.attachment.mime.startsWith("image/")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Seules les images sont autorisées",
+          path: ["attachment", "mime"],
+        })
+      }
     } else if ((val.content ?? "").length === 0 && !val.attachment) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Le message ne peut pas être vide", path: ["content"] })
     }
   })
+
+export const messageEditSchema = z.object({
+  content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Message trop long"),
+})
+
+export const messageDeleteSchema = z.object({
+  forEveryone: z.boolean().optional().default(false),
+})
+
+export const messageReactionSchema = z.object({
+  emoji: z.string().min(1).max(8).nullable(),
+})
 
 export const startMessageSchema = z.object({
   memberId: z.string().uuid("ID de membre invalide"),

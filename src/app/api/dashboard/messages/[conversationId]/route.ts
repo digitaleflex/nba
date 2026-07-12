@@ -33,9 +33,15 @@ export async function POST(
     if (limited) return limited
     const { conversationId } = await params
     const body = await req.json().catch(() => ({}))
-    const { content, attachment } = validateOrThrow(messageSendSchema, body)
+    const { content, attachment, quotedMessageId } = validateOrThrow(messageSendSchema, body)
 
-    const message = await sendMessage(conversationId, session.user.id, content, attachment ?? null)
+    const message = await sendMessage(
+      conversationId,
+      session.user.id,
+      content,
+      attachment ?? null,
+      quotedMessageId ?? null,
+    )
     return NextResponse.json({ message })
   } catch (error) {
     if (error instanceof ValidationError) {

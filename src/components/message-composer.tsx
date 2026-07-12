@@ -7,16 +7,31 @@ import {
   Italic,
   List,
   Link2,
-  Video,
+  Paperclip,
   X,
   Loader2,
   Send,
+  Quote,
 } from "lucide-react"
 
+export interface AttachmentPayload {
+  url: string
+  mime: string
+  name?: string
+  size?: number
+}
+
 export interface SendPayload {
-  type: "TEXT" | "VIDEO"
+  type: "TEXT" | "VIDEO" | "IMAGE"
   content: string
-  attachment: { url: string; mime: string; name?: string; size?: number } | null
+  attachment: AttachmentPayload | null
+  quotedMessageId?: string | null
+}
+
+export interface QuotedRef {
+  id: string
+  senderName: string
+  preview: string
 }
 
 interface MessageComposerProps {
@@ -25,6 +40,8 @@ interface MessageComposerProps {
   onTypingChange?: (typing: boolean) => void
   disabled?: boolean
   placeholder?: string
+  quotedMessage?: QuotedRef | null
+  onClearQuote?: () => void
 }
 
 export function MessageComposer({
@@ -33,10 +50,12 @@ export function MessageComposer({
   onTypingChange,
   disabled,
   placeholder = "Écrivez un message...",
+  quotedMessage,
+  onClearQuote,
 }: MessageComposerProps) {
   const [text, setText] = useState("")
   const [uploading, setUploading] = useState(false)
-  const [pendingVideo, setPendingVideo] = useState<SendPayload["attachment"]>(null)
+  const [pending, setPending] = useState<AttachmentPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -48,7 +67,7 @@ export function MessageComposer({
     }
   }, [])
 
-  const canSend = !disabled && !uploading && (text.trim().length > 0 || !!pendingVideo)
+  const canSend = !disabled && !uploading && (text.trim().length > 0 || !!pending)
 
   function wrapSelection(el: HTMLTextAreaElement | null, before: string, after: string, placeholderText = "texte") {
     if (!el) return
@@ -106,8 +125,8 @@ export function MessageComposer({
       form.append("file", file)
       const res = await fetch(uploadUrl, { method: "POST", body: form })
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Échec de l'envoi de la vidéo")
-      setPendingVideo({ url: data.path, mime: data.mimeType, name: data.name, size: data.size })
+      if (!res.ok) throw new Error(data.error || "Échec de l'envoi de la pièce jointe")
+      setPending({ url: data.path, mime: data.mimeType, name: data.name, size: data.size })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur")
     } finally {
@@ -117,32 +136,64 @@ export function MessageComposer({
 
   function doSend() {
     if (!canSend) return
+    const type: SendPayload["type"] = pending
+      ? pending.mime.startsWith("video/")
+        ? "VIDEO"
+        : "IMAGE"
+      : "TEXT"
     onSend({
-      type: pendingVideo ? "VIDEO" : "TEXT",
+      type,
       content: text,
-      attachment: pendingVideo,
+      attachment: pending,
+      quotedMessageId: quotedMessage?.id ?? null,
     })
     setText("")
-    setPendingVideo(null)
+    setPending(null)
     setError(null)
+    onClearQuote?.()
   }
+
+  const isImage = pending?.mime.startsWith("image/")
 
   return (
     <div className="border-t border-border/60 p-3">
       {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
-      {pendingVideo && (
-        <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-2">
-          <Video className="size-5 text-primary shrink-0" />
+      {quotedMessage && (
+        <div className="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-primary bg-muted/40 px-3 py-2">
+          <Quote className="size-4 text-primary shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="text-xs font-medium truncate">{pendingVideo.name || "Vidéo"}</p>
-            <p className="text-[10px] text-muted-foreground">Vidéo prête à envoyer</p>
+            <p className="text-[11px] font-medium text-primary">{quotedMessage.senderName}</p>
+            <p className="text-xs text-muted-foreground truncate">{quotedMessage.preview}</p>
           </div>
           <button
             type="button"
-            onClick={() => setPendingVideo(null)}
+            onClick={onClearQuote}
             className="text-muted-foreground hover:text-destructive transition-colors"
-            aria-label="Retirer la vidéo"
+            aria-label="Retirer la citation"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+
+      {pending && (
+        <div className="mb-2 flex items-center gap-3 rounded-xl border border-border bg-muted/40 p-2">
+          {isImage ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={pending.url} alt={pending.name || "image"} className="size-12 rounded-lg object-cover shrink-0" />
+          ) : (
+            <Paperclip className="size-5 text-primary shrink-0" />
+          )}
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-medium truncate">{pending.name || (isImage ? "Image" : "Vidéo")}</p>
+            <p className="text-[10px] text-muted-foreground">Prêt à envoyer</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setPending(null)}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            aria-label="Retirer la pièce jointe"
           >
             <X className="size-4" />
           </button>
@@ -153,7 +204,7 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => wrapSelection(textareaRef.current, "**", "**", "gras")}
-          disabled={!!pendingVideo}
+          disabled={!!pending}
           title="Gras"
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
@@ -162,7 +213,7 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => wrapSelection(textareaRef.current, "*", "*", "italique")}
-          disabled={!!pendingVideo}
+          disabled={!!pending}
           title="Italique"
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
@@ -171,7 +222,7 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => prefixLines(textareaRef.current, "- ")}
-          disabled={!!pendingVideo}
+          disabled={!!pending}
           title="Liste"
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
@@ -180,7 +231,7 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => insertLink(textareaRef.current)}
-          disabled={!!pendingVideo}
+          disabled={!!pending}
           title="Lien"
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
@@ -189,13 +240,19 @@ export function MessageComposer({
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          disabled={uploading || !!pendingVideo}
-          title="Joindre une vidéo"
+          disabled={uploading || !!pending}
+          title="Joindre une image ou vidéo"
           className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
-          {uploading ? <Loader2 className="size-4 animate-spin" /> : <Video className="size-4" />}
+          {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
         </button>
-        <input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={handleFile} />
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*,video/*"
+          className="hidden"
+          onChange={handleFile}
+        />
       </div>
 
       <div className="flex items-end gap-2">
@@ -213,7 +270,7 @@ export function MessageComposer({
             }
           }}
           rows={1}
-          placeholder={pendingVideo ? "Ajouter une légende (optionnel)..." : placeholder}
+          placeholder={pending ? "Ajouter une légende (optionnel)..." : placeholder}
           disabled={disabled}
           className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50 max-h-32"
         />

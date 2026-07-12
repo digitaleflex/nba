@@ -52,6 +52,7 @@ model User {
   signalArchives      SignalArchive[]
   conversations       ConversationParticipant[]
   messages            Message[]           @relation("SentMessages")
+  reactions           MessageReaction[]
 
   @@index([roleId])
   @@index([isActive])
@@ -99,14 +100,36 @@ model Message {
   attachmentName String?   @map("attachment_name")
   attachmentSize Int?      @map("attachment_size")
   readAt         DateTime? @map("read_at")
+  editedAt       DateTime? @map("edited_at")
+  deletedAt      DateTime? @map("deleted_at")
+  quotedMessageId String?  @map("quoted_message_id") @db.Uuid
   createdAt      DateTime  @default(now()) @map("created_at")
 
-  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender       User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  quotedMessage Message?     @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
+  quotedBy      Message[]    @relation("MessageQuote")
+  reactions     MessageReaction[]
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([deletedAt])
   @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("message_reactions")
 }
 
 model Session {

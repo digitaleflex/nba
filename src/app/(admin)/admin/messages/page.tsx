@@ -1,12 +1,13 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { Fragment, useCallback, useEffect, useRef, useState } from "react"
 import { useSocket } from "@nba/lib/hooks/use-socket"
 import { authClient } from "@nba/lib/auth-client"
-import { MarkdownMessage, plainPreview } from "@nba/lib/markdown"
+import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
+import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
 import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
-import { MessageSquare, Loader2, Search, Plus, X, Circle, Check, CheckCheck, Send } from "lucide-react"
+import { MessageSquare, Loader2, Search, Plus, X, Circle, Send } from "lucide-react"
 
 interface Other {
   id: string
@@ -22,30 +23,12 @@ interface Conversation {
   updatedAt: string
 }
 
-interface Message {
-  id: string
-  conversationId: string
-  senderId: string
-  senderName: string
-  type: string
-  content: string
-  attachmentUrl?: string | null
-  attachmentMime?: string | null
-  attachmentName?: string | null
-  attachmentSize?: number | null
-  readAt: string | null
-  createdAt: string
-}
-
 interface Member {
   id: string
   name: string
   email: string
 }
 
-function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
-}
 function formatDay(iso: string) {
   const d = new Date(iso)
   const today = new Date()
@@ -61,7 +44,7 @@ type ScrollIntent = "none" | "bottom" | "keep"
 export default function AdminMessagesPage() {
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [messages, setMessages] = useState<Message[]>([])
+  const [messages, setMessages] = useState<ChatMessageData[]>([])
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [hasMore, setHasMore] = useState(false)
@@ -75,7 +58,11 @@ export default function AdminMessagesPage() {
   const [newText, setNewText] = useState("")
   const [selectedMember, setSelectedMember] = useState<Member | null>(null)
   const [peerTyping, setPeerTyping] = useState(false)
+  const [quoted, setQuoted] = useState<QuotedRef | null>(null)
+  const [composerQuoted, setComposerQuoted] = useState<{ id: string; senderName: string; preview: string } | null>(null)
+  const [hiddenForMe, setHiddenForMe] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
+  const composerRef = useRef<HTMLDivElement>(null)
   const peerTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const scrollIntentRef = useRef<ScrollIntent>("none")
   const prevScrollRef = useRef<{ top: number; height: number }>({ top: 0, height: 0 })
@@ -118,6 +105,9 @@ export default function AdminMessagesPage() {
     setSelectedId(id)
     setPeerTyping(false)
     setMessages([])
+    setHiddenForMe(new Set())
+    setQuoted(null)
+    setComposerQuoted(null)
     const res = await fetch(`/api/admin/messages/${id}`)
     if (res.ok) {
       const data = await res.json()
@@ -148,7 +138,7 @@ export default function AdminMessagesPage() {
     setLoadingOlder(false)
   }, [hasMore, messages])
 
-  const appendMessage = useCallback((msg: Message) => {
+  const appendMessage = useCallback((msg: ChatMessageData) => {
     const el = scrollRef.current
     const nearBottom = !!el && el.scrollHeight - el.scrollTop - el.clientHeight < 120
     setMessages((prev) => {
@@ -161,9 +151,9 @@ export default function AdminMessagesPage() {
   const handleSend = useCallback(
     async (payload: SendPayload) => {
       if (!selectedId || sending) return
-      const { type, content, attachment } = payload
+      const { type, content, attachment, quotedMessageId } = payload
       const tempId = `temp-${Date.now()}`
-      const optimistic: Message = {
+      const optimistic: ChatMessageData = {
         id: tempId,
         conversationId: selectedId,
         senderId: myId,
@@ -175,6 +165,13 @@ export default function AdminMessagesPage() {
         attachmentName: attachment?.name ?? null,
         attachmentSize: attachment?.size ?? null,
         readAt: null,
+        editedAt: null,
+        deletedAt: null,
+        quotedMessageId: quotedMessageId ?? null,
+        quoted: quoted
+          ? { id: quoted.id, senderName: quoted.senderName, content: quoted.content, type: quoted.type, attachmentMime: quoted.attachmentMime }
+          : null,
+        reactions: [],
         createdAt: new Date().toISOString(),
       }
       appendMessage(optimistic)
@@ -186,19 +183,21 @@ export default function AdminMessagesPage() {
       const res = await fetch(`/api/admin/messages/${selectedId}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, content, attachment: attachment ?? undefined }),
+        body: JSON.stringify({ type, content, attachment: attachment ?? undefined, quotedMessageId: quotedMessageId ?? undefined }),
       })
       setSending(false)
       if (res.ok) {
         const data = await res.json()
         setMessages((prev) => prev.map((m) => (m.id === tempId ? data.message : m)))
+        setQuoted(null)
+        setComposerQuoted(null)
         loadConversations()
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
       }
     },
     // eslint-disable-next-line react-hooks/preserve-manual-memoization
-    [selectedId, sending, myId, emit, appendMessage, loadConversations],
+    [selectedId, sending, myId, emit, appendMessage, loadConversations, quoted],
   )
 
   const handleTyping = useCallback(
@@ -233,6 +232,72 @@ export default function AdminMessagesPage() {
     [newText, loadConversations, openConversation],
   )
 
+  const handleQuote = useCallback((m: ChatMessageData) => {
+    setQuoted({ id: m.id, senderName: m.senderName, content: m.content, type: m.type, attachmentMime: m.attachmentMime })
+    const preview = m.attachmentMime?.startsWith("image/")
+      ? "🖼️ Image"
+      : m.attachmentMime?.startsWith("video/")
+        ? "🎥 Vidéo"
+        : plainPreview(m.content)
+    setComposerQuoted({ id: m.id, senderName: m.senderName, preview })
+    requestAnimationFrame(() => composerRef.current?.scrollIntoView({ behavior: "smooth", block: "end" }))
+  }, [])
+
+  const handleReact = useCallback(async (messageId: string, emoji: string | null) => {
+    const current = messages.find((m) => m.id === messageId)
+    const mine = current?.reactions.find((r) => r.userId === myId)?.emoji ?? null
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m
+        const others = m.reactions.filter((r) => r.userId !== myId)
+        const next = emoji && emoji !== mine ? [...others, { userId: myId, emoji }] : others
+        return { ...m, reactions: next }
+      }),
+    )
+    const id = selectedIdRef.current
+    if (!id) return
+    await fetch(`/api/admin/messages/${id}/${messageId}/reactions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ emoji }),
+    })
+  }, [messages, myId])
+
+  const handleEdit = useCallback(async (messageId: string, content: string) => {
+    const id = selectedIdRef.current
+    if (!id) return
+    setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, content, editedAt: new Date().toISOString() } : m)))
+    await fetch(`/api/admin/messages/${id}/${messageId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content }),
+    })
+  }, [])
+
+  const handleDelete = useCallback(async (messageId: string, forEveryone: boolean) => {
+    if (forEveryone) {
+      setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m)))
+    } else {
+      setHiddenForMe((prev) => new Set(prev).add(messageId))
+    }
+    const id = selectedIdRef.current
+    if (!id) return
+    await fetch(`/api/admin/messages/${id}/${messageId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forEveryone }),
+    })
+  }, [])
+
+  const scrollToMessage = useCallback((messageId: string) => {
+    const el = document.getElementById(`msg-${messageId}`)
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" })
+      el.classList.add("ring-2", "ring-primary", "rounded-xl")
+      setTimeout(() => el.classList.remove("ring-2", "ring-primary", "rounded-xl"), 1500)
+    }
+  }, [])
+
   useEffect(() => {
     loadConversations().finally(() => setLoading(false))
   }, [loadConversations])
@@ -255,10 +320,23 @@ export default function AdminMessagesPage() {
   }, [loadOlder])
 
   useEffect(() => {
-    const offMsg = subscribe<{ conversationId: string; message: Message }>("message", (payload) => {
-      const { conversationId, message } = payload
-      if (conversationId === selectedIdRef.current) appendMessage(message)
-      loadConversations()
+    const offMsg = subscribe<{ type?: string; conversationId: string; message?: ChatMessageData; messageId?: string; content?: string; editedAt?: string; emoji?: string | null; reactions?: { userId: string; emoji: string }[]; forEveryone?: boolean }>("message", (payload) => {
+      const { conversationId, type } = payload
+      if (conversationId !== selectedIdRef.current) {
+        loadConversations()
+        return
+      }
+      if (type === "MESSAGE" && payload.message) {
+        appendMessage(payload.message)
+      } else if (type === "MESSAGE_REACTION" && payload.messageId) {
+        setMessages((prev) => prev.map((m) => (m.id === payload.messageId ? { ...m, reactions: payload.reactions ?? [] } : m)))
+      } else if (type === "MESSAGE_UPDATED" && payload.messageId) {
+        setMessages((prev) => prev.map((m) => (m.id === payload.messageId ? { ...m, content: payload.content ?? m.content, editedAt: payload.editedAt ?? m.editedAt } : m)))
+      } else if (type === "MESSAGE_DELETED" && payload.messageId) {
+        setMessages((prev) => prev.map((m) => (m.id === payload.messageId ? { ...m, deletedAt: new Date().toISOString(), content: "" } : m)))
+      } else {
+        loadConversations()
+      }
     })
     const offTyping = subscribe<{ conversationId: string; from: string; typing: boolean }>("typing", (payload) => {
       if (payload.conversationId === selectedIdRef.current && payload.from !== myId && payload.typing) {
@@ -379,7 +457,9 @@ export default function AdminMessagesPage() {
                           {c.lastMessage
                             ? c.lastMessage.type === "VIDEO"
                               ? "🎥 Vidéo"
-                              : plainPreview(c.lastMessage.content)
+                              : c.lastMessage.type === "IMAGE"
+                                ? "🖼️ Image"
+                                : plainPreview(c.lastMessage.content)
                             : "Pas encore de message"}
                         </p>
                       </div>
@@ -418,56 +498,45 @@ export default function AdminMessagesPage() {
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
                       </div>
                     )}
-                    {messages.map((m, i) => {
-                      const isMine = m.senderId === myId
-                      const showDay = i === 0 || formatDay(messages[i - 1].createdAt) !== formatDay(m.createdAt)
-                      return (
-                        <div key={m.id}>
-                          {showDay && (
-                            <div className="text-center text-[11px] text-muted-foreground my-2">
-                              {formatDay(m.createdAt)}
-                            </div>
-                          )}
-                          <div className={`flex ${isMine ? "justify-end" : "justify-start"}`}>
-                            <div
-                              className={`max-w-[75%] rounded-2xl px-3.5 py-2 text-sm ${
-                                isMine ? "bg-primary text-primary-foreground rounded-br-sm" : "bg-muted rounded-bl-sm"
-                              }`}
-                            >
-                              {m.type === "VIDEO" && m.attachmentUrl ? (
-                                <video
-                                  src={`/api/files/${m.attachmentUrl}`}
-                                  controls
-                                  className="max-w-[260px] rounded-lg mb-1 bg-black/20"
-                                />
-                              ) : null}
-                              {m.content.trim().length > 0 && (
-                                <div className={m.type === "VIDEO" ? "mt-1" : ""}>
-                                  <MarkdownMessage content={m.content} />
-                                </div>
-                              )}
-                              <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? "text-primary-foreground/70" : "text-muted-foreground"}`}>
-                                {formatTime(m.createdAt)}
-                                {isMine &&
-                                  (m.readAt ? (
-                                    <CheckCheck className="size-3" />
-                                  ) : (
-                                    <Check className="size-3" />
-                                  ))}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
+                    {messages
+                      .filter((m) => !hiddenForMe.has(m.id))
+                      .map((m, i) => {
+                        const showDay = i === 0 || formatDay(messages[i - 1].createdAt) !== formatDay(m.createdAt)
+                        return (
+                          <Fragment key={m.id}>
+                            {showDay && (
+                              <div className="text-center text-[11px] text-muted-foreground my-2">
+                                {formatDay(m.createdAt)}
+                              </div>
+                            )}
+                            <ChatMessage
+                              message={m}
+                              myId={myId}
+                              isMine={m.senderId === myId}
+                              onQuote={handleQuote}
+                              onReact={handleReact}
+                              onEdit={handleEdit}
+                              onDelete={handleDelete}
+                              onScrollTo={scrollToMessage}
+                            />
+                          </Fragment>
+                        )
+                      })}
                   </div>
 
-                  <MessageComposer
-                    uploadUrl="/api/admin/messages/attachment"
-                    onSend={handleSend}
-                    onTypingChange={handleTyping}
-                    disabled={!selected}
-                  />
+                  <div ref={composerRef}>
+                    <MessageComposer
+                      uploadUrl="/api/admin/messages/attachment"
+                      onSend={handleSend}
+                      onTypingChange={handleTyping}
+                      disabled={!selected}
+                      quotedMessage={composerQuoted}
+                      onClearQuote={() => {
+                        setQuoted(null)
+                        setComposerQuoted(null)
+                      }}
+                    />
+                  </div>
                 </>
               )}
             </div>
