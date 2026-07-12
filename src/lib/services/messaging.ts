@@ -1,0 +1,327 @@
+import { prisma } from "@nba/lib/db"
+import { publishMessage, publishMessageRead } from "@nba/lib/redis-pubsub"
+import { getStorage } from "@nba/lib/storage"
+import { AuthError } from "@nba/lib/auth-utils"
+
+export const MESSAGE_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"]
+export const MESSAGE_MAX_SIZE = 50 * 1024 * 1024 // 50 Mo
+
+/**
+ * Valide et stocke une vidéo jointe à un message. Retourne le chemin de
+ * stockage (à persister dans `attachmentUrl`) et l'URL publique de lecture.
+ */
+export async function uploadMessageAttachment(file: File) {
+  if (!MESSAGE_VIDEO_MIME.includes(file.type)) {
+    throw new Error(
+      `Format vidéo non supporté : ${file.type}. Formats acceptés : MP4, WebM, MOV.`,
+    )
+  }
+  if (file.size > MESSAGE_MAX_SIZE) {
+    throw new Error("Vidéo trop volumineuse (max 50 Mo)")
+  }
+  const storage = getStorage()
+  const result = await storage.upload(file, "messages")
+  return {
+    path: result.path,
+    url: `/api/files/${result.path}`,
+    mimeType: result.mimeType,
+    size: result.size,
+    name: file.name,
+  }
+}
+
+export interface ConversationSummary {
+  id: string
+  other: { id: string; name: string; email: string } | null
+  lastMessage: {
+    id: string
+    type: string
+    content: string
+    senderId: string
+    createdAt: string
+  } | null
+  unreadCount: number
+  updatedAt: string
+}
+
+export interface MessageAttachment {
+  url: string
+  mime: string
+  name?: string | null
+  size?: number | null
+}
+
+export interface MessageDTO {
+  id: string
+  conversationId: string
+  senderId: string
+  senderName: string
+  type: string
+  content: string
+  attachmentUrl?: string | null
+  attachmentMime?: string | null
+  attachmentName?: string | null
+  attachmentSize?: number | null
+  readAt: string | null
+  createdAt: string
+}
+
+type ParticipantWithUser = {
+  userId: string
+  user: { id: string; name: string; email: string }
+}
+
+function otherUserOf(participants: ParticipantWithUser[], myId: string) {
+  const other = participants.find((p) => p.userId !== myId)
+  return other?.user ?? null
+}
+
+/**
+ * Liste les conversations d'un utilisateur (membre ou admin), avec dernier
+ * message, interlocuteur et nombre de messages non lus pour cet utilisateur.
+ */
+export async function listConversations(userId: string): Promise<ConversationSummary[]> {
+  const conversations = await prisma.conversation.findMany({
+    where: { participants: { some: { userId } } },
+    orderBy: { updatedAt: "desc" },
+    include: {
+      participants: {
+        include: { user: { select: { id: true, name: true, email: true } } },
+      },
+      messages: { orderBy: { createdAt: "desc" }, take: 1 },
+    },
+  })
+
+  const ids = conversations.map((c) => c.id)
+  const unreadMap = new Map<string, number>()
+  if (ids.length > 0) {
+    const groups = await prisma.message.groupBy({
+      by: ["conversationId"],
+      where: { conversationId: { in: ids }, senderId: { not: userId }, readAt: null },
+      _count: { _all: true },
+    })
+    for (const g of groups) unreadMap.set(g.conversationId, g._count._all)
+  }
+
+  return conversations.map((c) => ({
+    id: c.id,
+    other: otherUserOf(c.participants as ParticipantWithUser[], userId),
+    lastMessage: c.messages[0]
+      ? {
+          id: c.messages[0].id,
+          type: c.messages[0].type,
+          content: c.messages[0].content,
+          senderId: c.messages[0].senderId,
+          createdAt: c.messages[0].createdAt.toISOString(),
+        }
+      : null,
+    unreadCount: unreadMap.get(c.id) ?? 0,
+    updatedAt: c.updatedAt.toISOString(),
+  }))
+}
+
+export const MESSAGES_PAGE_SIZE = 30
+
+/**
+ * Récupère les messages d'une conversation (par pages, du plus récent au plus
+ * ancien) et marque comme lus ceux envoyés par les autres participants (du
+ * point de vue de `userId`).
+ *
+ * @param opts.before  ISO date du message le plus ancien déjà chargé ; charge
+ *                     les messages strictement antérieurs (pagination arrière).
+ * @returns messages (ordre chronologique croissant) + `hasMore`.
+ */
+export async function getConversationMessages(
+  conversationId: string,
+  userId: string,
+  opts?: { before?: string | null; limit?: number },
+): Promise<{ messages: MessageDTO[]; hasMore: boolean }> {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, participants: { some: { userId } } },
+  })
+  if (!conversation) throw new AuthError("Conversation introuvable", 404)
+
+  // Marque comme lus les messages reçus, et notifie leurs expéditeurs
+  // en temps réel (accusé de lecture).
+  const toMark = await prisma.message.findMany({
+    where: { conversationId, senderId: { not: userId }, readAt: null },
+    select: { id: true, senderId: true },
+  })
+
+  if (toMark.length > 0) {
+    await prisma.message.updateMany({
+      where: { id: { in: toMark.map((m) => m.id) } },
+      data: { readAt: new Date() },
+    })
+
+    const bySender = new Map<string, string[]>()
+    for (const m of toMark) {
+      if (!bySender.has(m.senderId)) bySender.set(m.senderId, [])
+      bySender.get(m.senderId)!.push(m.id)
+    }
+    for (const [senderId, messageIds] of bySender) {
+      await publishMessageRead(senderId, { conversationId, messageIds })
+    }
+  }
+
+  const limit = Math.min(opts?.limit ?? MESSAGES_PAGE_SIZE, 100)
+  const where = opts?.before
+    ? { conversationId, createdAt: { lt: new Date(opts.before) } }
+    : { conversationId }
+
+  const page = await prisma.message.findMany({
+    where,
+    orderBy: { createdAt: "desc" },
+    take: limit + 1,
+    include: { sender: { select: { id: true, name: true } } },
+  })
+
+  const hasMore = page.length > limit
+  const ordered = (hasMore ? page.slice(0, limit) : page).reverse()
+
+  const messages = ordered.map((m) => ({
+    id: m.id,
+    conversationId: m.conversationId,
+    senderId: m.senderId,
+    senderName: m.sender.name,
+    type: m.type,
+    content: m.content,
+    attachmentUrl: m.attachmentUrl,
+    attachmentMime: m.attachmentMime,
+    attachmentName: m.attachmentName,
+    attachmentSize: m.attachmentSize,
+    readAt: m.readAt ? m.readAt.toISOString() : null,
+    createdAt: m.createdAt.toISOString(),
+  }))
+
+  return { messages, hasMore }
+}
+
+/**
+ * Envoie un message dans une conversation existante. L'expéditeur doit en
+ * être participant. Notifie en temps réel tous les autres participants.
+ */
+export async function sendMessage(
+  conversationId: string,
+  senderId: string,
+  content: string,
+  attachment?: MessageAttachment | null,
+): Promise<MessageDTO> {
+  const conversation = await prisma.conversation.findFirst({
+    where: { id: conversationId, participants: { some: { userId: senderId } } },
+  })
+  if (!conversation) throw new AuthError("Conversation introuvable", 404)
+
+  const isVideo = !!attachment?.url
+  const message = await prisma.message.create({
+    data: {
+      conversationId,
+      senderId,
+      type: isVideo ? "VIDEO" : "TEXT",
+      content: content ?? "",
+      attachmentUrl: attachment?.url ?? null,
+      attachmentMime: attachment?.mime ?? null,
+      attachmentName: attachment?.name ?? null,
+      attachmentSize: attachment?.size ?? null,
+    },
+    include: { sender: { select: { id: true, name: true } } },
+  })
+
+  await prisma.conversation.update({
+    where: { id: conversationId },
+    data: { updatedAt: new Date() },
+  })
+
+  const others = await prisma.conversationParticipant.findMany({
+    where: { conversationId, userId: { not: senderId } },
+  })
+
+  const payload = {
+    type: "MESSAGE",
+    conversationId,
+    message: {
+      id: message.id,
+      conversationId,
+      senderId: message.senderId,
+      senderName: message.sender.name,
+      type: message.type,
+      content: message.content,
+      attachmentUrl: message.attachmentUrl,
+      attachmentMime: message.attachmentMime,
+      attachmentName: message.attachmentName,
+      attachmentSize: message.attachmentSize,
+      createdAt: message.createdAt.toISOString(),
+    },
+  }
+  for (const p of others) {
+    await publishMessage(p.userId, payload)
+  }
+
+  return {
+    id: message.id,
+    conversationId: message.conversationId,
+    senderId: message.senderId,
+    senderName: message.sender.name,
+    type: message.type,
+    content: message.content,
+    attachmentUrl: message.attachmentUrl,
+    attachmentMime: message.attachmentMime,
+    attachmentName: message.attachmentName,
+    attachmentSize: message.attachmentSize,
+    readAt: message.readAt ? message.readAt.toISOString() : null,
+    createdAt: message.createdAt.toISOString(),
+  }
+}
+
+/**
+ * Trouve (ou crée) une conversation directe à 2 participants entre deux
+ * utilisateurs. Réutilise la conversation existante si elle existe déjà.
+ */
+async function findOrCreateDirectConversation(userA: string, userB: string): Promise<string> {
+  const convos = await prisma.conversation.findMany({
+    where: { participants: { some: { userId: userA } } },
+    include: { participants: true },
+  })
+  const existing = convos.find(
+    (c) => c.participants.length === 2 && c.participants.some((p) => p.userId === userB),
+  )
+  if (existing) return existing.id
+
+  const created = await prisma.conversation.create({
+    data: {
+      type: "DIRECT",
+      participants: { create: [{ userId: userA }, { userId: userB }] },
+    },
+  })
+  return created.id
+}
+
+/**
+ * (Admin) Trouve ou crée une conversation directe avec un membre, puis envoie
+ * le premier message.
+ */
+export async function startOrReplyAsAdmin(
+  adminId: string,
+  memberId: string,
+  content: string,
+  attachment?: MessageAttachment | null,
+): Promise<{ conversationId: string; message: MessageDTO }> {
+  const conversationId = await findOrCreateDirectConversation(adminId, memberId)
+  const message = await sendMessage(conversationId, adminId, content, attachment)
+  return { conversationId, message }
+}
+
+/**
+ * (Membre) Démarre une conversation directe avec un admin, puis envoie le
+ * premier message. Symétrique de `startOrReplyAsAdmin`.
+ */
+export async function startConversationAsMember(
+  memberId: string,
+  adminId: string,
+  content: string,
+  attachment?: MessageAttachment | null,
+): Promise<{ conversationId: string; message: MessageDTO }> {
+  const conversationId = await findOrCreateDirectConversation(memberId, adminId)
+  const message = await sendMessage(conversationId, memberId, content, attachment)
+  return { conversationId, message }
+}

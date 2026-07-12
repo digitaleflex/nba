@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Users, Radio, History, ListTodo, ShieldCheck, MessageCircle } from "lucide-react"
+import { Users, Radio, History, ListTodo, ShieldCheck, MessageCircle, MessageSquare } from "lucide-react"
 import { cn } from "@nba/design-system"
 
 const NAV_ITEMS = [
   { href: "/admin", label: "Demandes d'accès", icon: ListTodo, matchExact: true },
   { href: "/admin/members", label: "Membres", icon: Users, matchExact: false },
+  { href: "/admin/messages", label: "Messages", icon: MessageSquare, matchExact: false },
   { href: "/admin/support", label: "Support", icon: MessageCircle, matchExact: false },
   { href: "/admin/audit", label: "Journal d'audit", icon: ShieldCheck, matchExact: false },
 ]

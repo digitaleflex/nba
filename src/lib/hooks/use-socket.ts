@@ -64,7 +64,12 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const connect = useCallback(() => {
     if (typeof window === "undefined") return
 
-    const wsUrl = url || (window.location.protocol === "https:" ? window.location.origin : `http://${window.location.hostname}:3001`)
+    const wsUrl =
+      url ||
+      process.env.NEXT_PUBLIC_WS_URL ||
+      (window.location.protocol === "https:"
+        ? window.location.origin
+        : `http://${window.location.hostname}:3001`)
 
     if (socketRef.current?.connected) return
 

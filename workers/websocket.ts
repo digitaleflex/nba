@@ -1,6 +1,7 @@
 import { createServer } from "http"
 import { Server as SocketIOServer, Socket } from "socket.io"
 import IORedis from "ioredis"
+import "dotenv/config"
 import { prisma } from "./ws-prisma"
 import { verifySignedCookie, extractSessionToken } from "./ws-auth"
 
@@ -105,6 +106,27 @@ io.on("connection", (socket) => {
   socket.on("ping", () => {
     socket.emit("pong", { ts: Date.now() })
   })
+
+  // ── Indicateur "en train d'écrire" ──
+  socket.on("typing", (data: { to?: string; conversationId?: string; typing?: boolean }) => {
+    const to = data?.to
+    if (!to) return
+    const channel = `nba:typing:user:${to}`
+    try {
+      const pub = new IORedis(REDIS_URL!, { maxRetriesPerRequest: null })
+      pub.publish(
+        channel,
+        JSON.stringify({
+          from: userId,
+          conversationId: data.conversationId,
+          typing: data.typing ?? true,
+        }),
+      )
+      pub.disconnect()
+    } catch (err) {
+      console.error("[ws] typing publish failed:", err)
+    }
+  })
 })
 
 // ── Subscribe Redis Pub/Sub : forward aux clients Socket.IO ──
@@ -127,15 +149,50 @@ if (REDIS_URL) {
     }
   })
 
+  sub.psubscribe("nba:msg:user:*", (err) => {
+    if (err) {
+      console.error("[ws] Redis msg psubscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:msg:user:*")
+    }
+  })
+
+  sub.psubscribe("nba:typing:user:*", (err) => {
+    if (err) {
+      console.error("[ws] Redis typing psubscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:typing:user:*")
+    }
+  })
+
+  sub.psubscribe("nba:read:user:*", (err) => {
+    if (err) {
+      console.error("[ws] Redis read psubscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:read:user:*")
+    }
+  })
+
   sub.on("pmessage", (_pattern, channel, message) => {
-    const userId = channel.replace("nba:notif:user:", "")
+    let event = "notification"
+    let userId = channel.replace("nba:notif:user:", "")
+    if (channel.startsWith("nba:msg:user:")) {
+      event = "message"
+      userId = channel.replace("nba:msg:user:", "")
+    } else if (channel.startsWith("nba:typing:user:")) {
+      event = "typing"
+      userId = channel.replace("nba:typing:user:", "")
+    } else if (channel.startsWith("nba:read:user:")) {
+      event = "message_read"
+      userId = channel.replace("nba:read:user:", "")
+    }
     const room = `user:${userId}`
     const sockets = io.sockets.adapter.rooms.get(room)
     if (sockets && sockets.size > 0) {
       try {
         const payload = JSON.parse(message)
-        io.to(room).emit("notification", payload)
-        console.log(`[ws] 📬 Forwarded notification to ${sockets.size} socket(s) for user ${userId.slice(0, 8)}...`)
+        io.to(room).emit(event, payload)
+        console.log(`[ws] 📬 Forwarded ${event} to ${sockets.size} socket(s) for user ${userId.slice(0, 8)}...`)
       } catch (err) {
         console.error("[ws] Failed to parse/forward message:", err)
       }

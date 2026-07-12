@@ -146,6 +146,21 @@ export async function GET(
     if (!isAdmin && decodedSegments[1] !== session.user.id) {
       return new NextResponse("Accès refusé", { status: 403 })
     }
+  } else if (category === "messages") {
+    // Accès réservé aux participants de la conversation propriétaire du message
+    const msg = await prisma.message.findFirst({
+      where: { attachmentUrl: filePath },
+      select: { conversationId: true },
+    })
+    if (!msg) {
+      return new NextResponse("Fichier non trouvé", { status: 404 })
+    }
+    const isParticipant = await prisma.conversationParticipant.findFirst({
+      where: { conversationId: msg.conversationId, userId: session.user.id },
+    })
+    if (!isParticipant) {
+      return new NextResponse("Accès refusé", { status: 403 })
+    }
   } else {
     return new NextResponse("Catégorie de fichier inconnue", { status: 400 })
   }

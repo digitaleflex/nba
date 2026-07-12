@@ -18,6 +18,8 @@
     "db:setup": "pnpm db:generate && pnpm prisma migrate deploy && pnpm db:seed",
     "db:studio": "prisma studio",
     "queue:dev": "tsx workers/queue.ts",
+    "ws:dev": "tsx workers/websocket.ts",
+    "ws:start": "tsx workers/websocket.ts",
     "test:env": "tsx scripts/test-env.ts",
     "keep-alive": "tsx scripts/keep-alive.ts",
     "pm2:start": "pm2 start ecosystem.config.cjs",

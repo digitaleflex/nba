@@ -4,7 +4,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
-import { Button, cn } from "@nba/design-system"
+import { Button, Badge, cn } from "@nba/design-system"
+import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import {
   LayoutDashboard,
   Users,
@@ -104,6 +105,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       icon: MessageCircle,
       active: pathname === "/dashboard/support",
     },
+    {
+      href: "/dashboard/messages",
+      label: "Messages",
+      icon: MessageCircle,
+      active: pathname.startsWith("/dashboard/messages"),
+    },
   ]
 
   // Les 12 liens d'administration
@@ -184,6 +191,10 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
 
   const links = isAdmin ? adminLinks : userLinks
   const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
+  const { unreadTotal } = useMessagingUnread()
+  const isMessagesLink = (href: string) => href === "/dashboard/messages"
+  const messagesBadge =
+    unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
 
   return (
     <aside
@@ -223,6 +234,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
         <nav className="space-y-1.5">
           {links.map((link, idx) => {
             const Icon = link.icon
+            const showBadge = isMessagesLink(link.href) && !!messagesBadge
             return (
               <Link
                 key={idx}
@@ -239,13 +251,27 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
                 {link.active && !isCollapsed && (
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
                 )}
-                <Icon
-                  className={cn(
-                    "size-5 shrink-0 transition-transform duration-200 group-hover:scale-105",
-                    link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                <span className="relative inline-flex shrink-0">
+                  <Icon
+                    className={cn(
+                      "size-5 transition-transform duration-200 group-hover:scale-105",
+                      link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                    )}
+                  />
+                  {showBadge && isCollapsed && (
+                    <span className="absolute -top-1 -right-1 size-2 rounded-full bg-primary ring-2 ring-card" />
                   )}
-                />
-                {!isCollapsed && <span className="truncate">{link.label}</span>}
+                </span>
+                {!isCollapsed && (
+                  <span className="truncate flex items-center gap-2">
+                    {link.label}
+                    {showBadge && (
+                      <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
+                        {messagesBadge}
+                      </Badge>
+                    )}
+                  </span>
+                )}
               </Link>
             )
           })}

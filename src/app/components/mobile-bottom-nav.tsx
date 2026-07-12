@@ -4,6 +4,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { cn } from "@nba/design-system"
+import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import {
   LayoutDashboard,
   TrendingUp,
@@ -15,6 +16,7 @@ import {
   CreditCard,
   Users,
   Bell,
+  MessageCircle,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -84,6 +86,12 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
       icon: Bell,
       active: pathname.startsWith("/dashboard/notifications"),
     },
+    {
+      href: "/dashboard/messages",
+      label: "Messages",
+      icon: MessageCircle,
+      active: pathname.startsWith("/dashboard/messages"),
+    },
   ]
 
   // Liens pour l'espace admin mobile
@@ -116,12 +124,16 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
 
   const links = isAdmin ? adminLinks : userLinks
 
+  const { unreadTotal } = useMessagingUnread()
+  const messagesBadge = unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/85 backdrop-blur-lg px-2 select-none">
       <nav className="flex h-full items-center justify-around">
         {links.map((link, idx) => {
           const Icon = link.icon
           const isActive = link.active
+          const showBadge = link.href === "/dashboard/messages" && !!messagesBadge
 
           if (link.onClick) {
             return (
@@ -150,7 +162,14 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
               {isActive && (
                 <span className="absolute top-0 w-8 h-1 rounded-b-full bg-primary" />
               )}
-              <Icon className={cn("size-5 shrink-0 transition-transform", isActive && "scale-110")} />
+              <span className="relative inline-flex">
+                <Icon className={cn("size-5 shrink-0 transition-transform", isActive && "scale-110")} />
+                {showBadge && (
+                  <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card">
+                    {messagesBadge}
+                  </span>
+                )}
+              </span>
               <span className={cn("text-[10px] font-medium tracking-tight", isActive ? "font-bold text-primary" : "")}>
                 {link.label}
               </span>

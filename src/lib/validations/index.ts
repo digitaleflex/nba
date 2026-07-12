@@ -18,6 +18,50 @@ export const selectPlanSchema = z.object({
   planId: z.string().uuid("ID de plan invalide"),
 })
 
+export const messageContentSchema = z.object({
+  content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Message trop long"),
+})
+
+export const messageAttachmentSchema = z.object({
+  url: z.string().min(1, "URL de pièce jointe requise"),
+  mime: z.string().min(1, "Type de fichier requis"),
+  name: z.string().max(255).optional(),
+  size: z.number().int().nonnegative().optional(),
+})
+
+export const messageSendSchema = z
+  .object({
+    type: z.enum(["TEXT", "VIDEO"]).optional().default("TEXT"),
+    content: z.string().trim().max(5000, "Message trop long").optional().default(""),
+    attachment: messageAttachmentSchema.optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.type === "VIDEO") {
+      if (!val.attachment) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Vidéo requise", path: ["attachment"] })
+      } else if (!val.attachment.mime.startsWith("video/")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Seules les vidéos sont autorisées",
+          path: ["attachment", "mime"],
+        })
+      }
+    } else if ((val.content ?? "").length === 0 && !val.attachment) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Le message ne peut pas être vide", path: ["content"] })
+    }
+  })
+
+export const startMessageSchema = z.object({
+  memberId: z.string().uuid("ID de membre invalide"),
+  content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Message trop long"),
+})
+
+export const startMessageMemberSchema = z
+  .object({
+    adminId: z.string().uuid("ID d'admin invalide"),
+  })
+  .and(messageSendSchema)
+
 export const reviewAccessSchema = z.object({
   status: accessStatusSchema,
   notes: z.string().optional(),
