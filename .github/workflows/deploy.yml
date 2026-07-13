@@ -45,13 +45,13 @@ jobs:
             cd /home/audest/nba
             echo "=== git pull ==="
             git pull
-            echo "=== docker compose pull (nba-app) ==="
-            # --ignore-pull-failures ne fait pas planter le deploy si GHCR est down
-            docker compose pull --ignore-pull-failures nba-app 2>&1 | tail -5
-            echo "=== docker compose up -d nba-app ==="
-            docker compose up -d nba-app
+            echo "=== docker compose pull (app) ==="
+            # Le service s'appelle 'app' dans compose.yml
+            docker compose pull --ignore-pull-failures app 2>&1 | tail -5
+            echo "=== docker compose up -d app ==="
+            docker compose up -d app
             echo "=== Status final ==="
-            docker compose ps nba-app
+            docker compose ps app
             echo "=== Health check ==="
             sleep 10
             curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 5 https://access.signauxx.com/login || echo "login KO"
