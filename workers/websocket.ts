@@ -91,16 +91,30 @@ io.use(async (socket, next) => {
 })
 
 // ── Gestion des connexions ──
+const onlineCounts = new Map<string, number>()
+
 io.on("connection", (socket) => {
   const userId = socket.data.userId as string
   const room = `user:${userId}`
   socket.join(room)
-  console.log(`[ws] ✅ ${socket.id} connected as user ${userId.slice(0, 8)}... (${io.engine.clientsCount} total)`)
+  console.log(`[ws] socket connected: user=${userId} socket=${socket.id}`)
 
   socket.emit("connected", { userId, socketId: socket.id })
 
+  const prev = onlineCounts.get(userId) ?? 0
+  onlineCounts.set(userId, prev + 1)
+  socket.emit("presence:init", Array.from(onlineCounts.keys()))
+  if (prev === 0) io.emit("presence", { userId, online: true })
+
   socket.on("disconnect", (reason) => {
-    console.log(`[ws] ❌ ${socket.id} disconnected: ${reason} (${io.engine.clientsCount} remaining)`)
+    console.log(`[ws] socket disconnected: user=${userId} socket=${socket.id} reason=${reason}`)
+    const n = (onlineCounts.get(userId) ?? 1) - 1
+    if (n <= 0) {
+      onlineCounts.delete(userId)
+      io.emit("presence", { userId, online: false })
+    } else {
+      onlineCounts.set(userId, n)
+    }
   })
 
   socket.on("ping", () => {

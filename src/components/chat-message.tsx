@@ -209,7 +209,14 @@ export function ChatMessage({
                 {formatTime(message.createdAt)}
                 {message.editedAt && <span className="opacity-70">(modifié)</span>}
                 {isMine &&
-                  (message.readAt ? <CheckCheck className="size-3" /> : <Check className="size-3" />)}
+                  (message.readAt ? (
+                    <span className="flex items-center gap-0.5">
+                      <CheckCheck className="size-3" />
+                      Vu à {formatTime(message.readAt)}
+                    </span>
+                  ) : (
+                    <Check className="size-3" />
+                  ))}
               </p>
             </>
           )}

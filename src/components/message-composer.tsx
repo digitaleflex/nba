@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import { Button } from "@nba/design-system"
+import { EmojiPicker } from "@nba/components/emoji-picker"
 import {
   Bold,
   Italic,
@@ -12,6 +13,7 @@ import {
   Loader2,
   Send,
   Quote,
+  Smile,
 } from "lucide-react"
 
 export interface AttachmentPayload {
@@ -57,6 +59,7 @@ export function MessageComposer({
   const [uploading, setUploading] = useState(false)
   const [pending, setPending] = useState<AttachmentPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [emojiOpen, setEmojiOpen] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -112,6 +115,22 @@ export function MessageComposer({
     onTypingChange(true)
     if (typingTimer.current) clearTimeout(typingTimer.current)
     typingTimer.current = setTimeout(() => onTypingChange?.(false), 700)
+  }
+
+  function insertEmoji(emoji: string) {
+    const el = textareaRef.current
+    if (!el) {
+      setText((t) => t + emoji)
+      return
+    }
+    const start = el.selectionStart
+    const end = el.selectionEnd
+    const next = text.slice(0, start) + emoji + text.slice(end)
+    setText(next)
+    requestAnimationFrame(() => {
+      el.focus()
+      el.setSelectionRange(start + emoji.length, start + emoji.length)
+    })
   }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -200,7 +219,7 @@ export function MessageComposer({
         </div>
       )}
 
-      <div className="flex items-center gap-1 mb-2">
+      <div className="relative flex items-center gap-1 mb-2">
         <button
           type="button"
           onClick={() => wrapSelection(textareaRef.current, "**", "**", "gras")}
@@ -246,6 +265,25 @@ export function MessageComposer({
         >
           {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
         </button>
+        <button
+          type="button"
+          onClick={() => setEmojiOpen((v) => !v)}
+          title="Emojis"
+          className={`flex size-8 items-center justify-center rounded-lg transition-colors disabled:opacity-40 ${
+            emojiOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+          }`}
+        >
+          <Smile className="size-4" />
+        </button>
+        {emojiOpen && (
+          <EmojiPicker
+            onSelect={(e) => {
+              insertEmoji(e)
+              setEmojiOpen(false)
+            }}
+            onClose={() => setEmojiOpen(false)}
+          />
+        )}
         <input
           ref={fileRef}
           type="file"

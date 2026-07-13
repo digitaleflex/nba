@@ -62,6 +62,7 @@ export default function MessagesPage() {
   const [quoted, setQuoted] = useState<QuotedRef | null>(null)
   const [composerQuoted, setComposerQuoted] = useState<{ id: string; senderName: string; preview: string } | null>(null)
   const [hiddenForMe, setHiddenForMe] = useState<Set<string>>(new Set())
+  const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set())
   const scrollRef = useRef<HTMLDivElement>(null)
   const composerRef = useRef<HTMLDivElement>(null)
   const peerTypingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -386,10 +387,21 @@ export default function MessagesPage() {
       const now = new Date().toISOString()
       setMessages((prev) => prev.map((m) => (ids.has(m.id) ? { ...m, readAt: now } : m)))
     })
+    const offPresence = subscribe<{ userId: string; online: boolean }>("presence", (payload) => {
+      setOnlineUsers((prev) => {
+        const next = new Set(prev)
+        if (payload.online) next.add(payload.userId)
+        else next.delete(payload.userId)
+        return next
+      })
+    })
+    const offPresenceInit = subscribe<string[]>("presence:init", (ids) => setOnlineUsers(new Set(ids)))
     return () => {
       offMsg()
       offTyping()
       offRead()
+      offPresence()
+      offPresenceInit()
     }
   }, [subscribe, appendMessage, loadConversations, myId])
 
@@ -491,9 +503,14 @@ export default function MessagesPage() {
                         c.id === selectedId ? "bg-primary/10" : "hover:bg-muted/50"
                       }`}
                     >
-                      <Avatar className="size-10 shrink-0">
-                        <AvatarFallback>{initials(c.other?.name ?? "?")}</AvatarFallback>
-                      </Avatar>
+                      <div className="relative shrink-0">
+                        <Avatar className="size-10">
+                          <AvatarFallback>{initials(c.other?.name ?? "?")}</AvatarFallback>
+                        </Avatar>
+                        {c.other && onlineUsers.has(c.other.id) && (
+                          <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-500 border-2 border-background" />
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium truncate">{c.other?.name ?? "Inconnu"}</p>
                         <p className="text-xs text-muted-foreground truncate">
@@ -528,13 +545,18 @@ export default function MessagesPage() {
               ) : (
                 <>
                   <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
-                    <Avatar className="size-9">
-                      <AvatarFallback>{initials(selected.other?.name ?? "?")}</AvatarFallback>
-                    </Avatar>
+                    <div className="relative">
+                      <Avatar className="size-9">
+                        <AvatarFallback>{initials(selected.other?.name ?? "?")}</AvatarFallback>
+                      </Avatar>
+                      {selected.other && onlineUsers.has(selected.other.id) && (
+                        <span className="absolute -bottom-0.5 -right-0.5 size-3 rounded-full bg-green-500 border-2 border-background" />
+                      )}
+                    </div>
                     <div>
                       <p className="text-sm font-semibold leading-none">{selected.other?.name}</p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        {peerTyping ? "en train d'écrire…" : selected.other?.email}
+                        {peerTyping ? "en train d'écrire…" : onlineUsers.has(selected.other?.id ?? "") ? "en ligne" : selected.other?.email}
                       </p>
                     </div>
                   </div>
