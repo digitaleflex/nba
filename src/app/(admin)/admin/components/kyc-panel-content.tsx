@@ -106,7 +106,7 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
         </div>
       </div>
 
-      {onAction && data.status === "PENDING" && (
+      {onAction && (data.status === "PENDING" || data.status === "REJECTED") && (
         <div className="space-y-2 border-t pt-4">
           <span className="text-[10px] text-muted-foreground uppercase">Revue administrative</span>
           <textarea
