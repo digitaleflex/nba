@@ -14,9 +14,13 @@ vi.mock("../email", () => ({
 vi.mock("./audit", () => ({
   logAuditEvent: vi.fn(async () => {}),
 }))
+vi.mock("./push", () => ({
+  sendPushToUser: vi.fn(async () => ({ sent: 0, failed: 0 })),
+}))
 
 import { distributeSignal } from "./signal-distribution"
 import { prisma } from "../db"
+import { sendPushToUser } from "./push"
 
 const SENDER = "sender-id"
 
@@ -98,6 +102,11 @@ describe("distributeSignal", () => {
     const emails = enqueueEmail.mock.calls.map((c: any) => c[1])
     expect(emails.map((e: any) => e.to).sort()).toEqual(["m1@x.com", "m2@x.com"])
     expect(emails.every((e: any) => e.subject === "Sujet signal")).toBe(true)
+
+    // 2 notifications push web envoyées (unitaire + in-app + email + push)
+    expect(sendPushToUser).toHaveBeenCalledTimes(2)
+    const pushUsers = (sendPushToUser as any).mock.calls.map((c: any) => c[0])
+    expect(pushUsers).toEqual(expect.arrayContaining(["m1", "m2"]))
   })
 
   it("exclut l'expéditeur (pas d'echo de son propre signal)", async () => {

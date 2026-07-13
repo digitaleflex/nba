@@ -1,6 +1,7 @@
 import { prisma } from "../db"
 import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
+import { sendPushToUser } from "./push"
 import { readFile } from "fs/promises"
 import { join } from "path"
 
@@ -159,6 +160,14 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             backoff: { type: "exponential", delay: 5000 },
           },
         )
+
+        // Notification push web (fire-and-forget, ne bloque pas la distribution)
+        sendPushToUser(member.id, {
+          title: "Nouveau signal de trading",
+          body: "Un nouveau signal a été publié pour vos groupes.",
+          url: "/dashboard",
+          tag: notification.id,
+        }).catch((err) => console.error("[signal] push failed:", err))
       }),
     )
   }

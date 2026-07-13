@@ -1,5 +1,12 @@
 import { prisma } from "@nba/lib/db"
-import { getResendStatusMap, classifyResendStatus, type ResendEmailStatus } from "@nba/lib/services/resend-delivery"
+import {
+  getResendStatusMap,
+  getLatestEventMap,
+  classifyResendStatus,
+  classifyByEventType,
+  type ResendEmailStatus,
+  type DeliveryBucket,
+} from "@nba/lib/services/resend-delivery"
 
 const RECENT_SIGNALS = 12
 
@@ -97,14 +104,27 @@ export default async function SignalTrackerPage() {
     })
   }
 
+  const eventMap = await getLatestEventMap(allExternalIds)
   const statusMap = await getResendStatusMap(allExternalIds)
 
   for (const row of rows) {
     for (const u of row.perUser) {
-      const status: ResendEmailStatus | null = u.externalId ? statusMap.get(u.externalId) ?? null : null
-      const bucket = classifyResendStatus(status)
+      let bucket: DeliveryBucket
+      let event: string | null
+      if (u.externalId && eventMap.has(u.externalId)) {
+        const evt = eventMap.get(u.externalId)
+        bucket = classifyByEventType(evt)
+        event = evt ?? "en attente Resend"
+      } else if (u.externalId) {
+        const status: ResendEmailStatus | null = statusMap.get(u.externalId) ?? null
+        bucket = classifyResendStatus(status)
+        event = status?.last_event ?? "en attente Resend"
+      } else {
+        bucket = "unknown"
+        event = "pas d'email"
+      }
       u.bucket = bucket
-      u.event = status?.last_event ?? (u.externalId ? "en attente Resend" : "pas d'email")
+      u.event = event
       row[bucket] = (row[bucket] ?? 0) + 1
     }
   }
@@ -128,9 +148,17 @@ export default async function SignalTrackerPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité des signaux</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité des signaux</h1>
+          <span className="inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+            Temps réel (webhooks)
+          </span>
+        </div>
         <p className="text-sm text-muted-foreground mt-1">
-          Suivi de la livraison des emails de signaux (via Resend) et des notifications par utilisateur.
+          Chaque signal publié est distribué à tous les membres des groupes ciblés via <b>email</b> +{" "}
+          <b>notification in-app</b> + <b>push web</b>. Le statut email ci-dessous est suivi en temps réel
+          via les webhooks Resend (ouverture, livraison, bounce, plainte).
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { prisma } from "@nba/lib/db"
 
 // In-memory cache to avoid hammering the Resend API on every Tracker load.
 // Keyed by Resend message id, with a short TTL.
@@ -56,6 +57,53 @@ export async function getResendEmailStatus(
 }
 
 export type DeliveryBucket = "delivered" | "bounced" | "complained" | "opened" | "pending" | "failed" | "unknown"
+
+/**
+ * Classifie un événement Resend (webhook) en bucket de livraison.
+ * Le dernier événement reçu pour un email détermine son statut.
+ */
+export function classifyByEventType(type: string | undefined | null): DeliveryBucket {
+  switch (type) {
+    case "email.delivered":
+      return "delivered"
+    case "email.opened":
+      return "opened"
+    case "email.bounced":
+      return "bounced"
+    case "email.complained":
+      return "complained"
+    case "email.sent":
+      return "pending"
+    default:
+      return "unknown"
+  }
+}
+
+/**
+ * Récupère le type du dernier événement Resend connu pour chaque externalId.
+ * Source temps réel (webhooks) — prioritaire sur l'interrogation de l'API Resend.
+ */
+export async function getLatestEventMap(
+  externalIds: (string | null | undefined)[],
+): Promise<Map<string, string | undefined>> {
+  const wanted = Array.from(new Set(externalIds.filter((id): id is string => !!id)))
+  const map = new Map<string, string | undefined>()
+  if (wanted.length === 0) return map
+
+  try {
+    const events = await prisma.emailEvent.findMany({
+      where: { externalId: { in: wanted } },
+      orderBy: { createdAt: "desc" },
+      select: { externalId: true, type: true },
+    })
+    for (const e of events) {
+      if (!map.has(e.externalId)) map.set(e.externalId, e.type)
+    }
+  } catch {
+    // Table absente ou erreur — on retombe sur l'API Resend
+  }
+  return map
+}
 
 export function classifyResendStatus(status: ResendEmailStatus | null): DeliveryBucket {
   if (!status) return "unknown"
