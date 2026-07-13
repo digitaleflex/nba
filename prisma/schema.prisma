@@ -30,6 +30,8 @@ model User {
   metadata          Json?             @db.JsonB
   deletedAt         DateTime?         @map("deleted_at")
   notificationSound String           @default("default") @map("notification_sound")
+  emailStatus       EmailStatus       @default(OK) @map("email_status")
+  emailStatusAt     DateTime?         @map("email_status_at")
 
   sessions            Session[]
   accounts            Account[]
@@ -576,6 +578,14 @@ enum DeliveryStatus {
   SENT
   FAILED
   BOUNCED
+}
+
+enum EmailStatus {
+  OK
+  BOUNCED
+  COMPLAINED
+  SUPPRESSED
+  INVALID
 }
 
 model SignalVersion {

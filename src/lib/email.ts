@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { prisma } from "./db"
 
 function getResend(): Resend {
   const key = process.env.RESEND_API_KEY
@@ -895,6 +896,24 @@ export async function sendEmail(
   to: string,
   template: { subject: string; html: string },
 ): Promise<string | null> {
+  // Sprint 1 (#59) : blocage si le destinataire a un emailStatus != OK
+  // (BOUNCED, COMPLAINED, SUPPRESSED, INVALID). Les emails non-lies a un user
+  // (ex: alerte admin) passent normalement.
+  try {
+    const blocked = await prisma.user.findFirst({
+      where: { email: to.toLowerCase() },
+      select: { id: true, emailStatus: true },
+    })
+    if (blocked && blocked.emailStatus !== "OK") {
+      console.warn(
+        `[EMAIL] Skip ${to} — emailStatus=${blocked.emailStatus} (Sprint 1 #59)`,
+      )
+      return null
+    }
+  } catch {
+    // Si la DB est down, on ne bloque pas (fail-open)
+  }
+
   try {
     const resend = getResend()
     const { data, error } = await resend.emails.send({

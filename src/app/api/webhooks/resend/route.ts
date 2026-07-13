@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
+import { markUserBounced } from "@nba/lib/services/email-status"
 
 export const runtime = "nodejs"
 
@@ -79,6 +80,12 @@ export async function POST(req: NextRequest) {
         where: { id: delivery.id },
         data: { status: "BOUNCED", errorMessage },
       })
+      // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
+      if (type === "email.bounced") {
+        await markUserBounced(emailId).catch((err) =>
+          console.error("[resend-webhook] markUserBounced failed:", err),
+        )
+      }
       await alertAdmin(type, emailId, event.data)
     } else if (type === "email.delivered" && delivery.status !== "BOUNCED") {
       await prisma.notificationDelivery.update({
