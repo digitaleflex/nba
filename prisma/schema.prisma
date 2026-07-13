@@ -454,6 +454,33 @@ model NotificationDelivery {
 }
 
 // ════════════════════════════════════════
+//  Email reputation monitoring (bounce/complaint trends)
+// ════════════════════════════════════════
+
+model EmailReputationHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  date          DateTime @unique @db.Date
+  window        String   // "24h" | "7d" | "30d"
+  sent          Int
+  delivered     Int
+  opened        Int
+  clicked       Int
+  bounced       Int
+  complained    Int
+  failed        Int
+  bounceRate    Float    // bounced / sent * 100
+  complaintRate Float    @map("complaint_rate")
+  openRate      Float    @map("open_rate")
+  clickRate     Float    @map("click_rate")
+  alertLevel    String   @default("ok") @map("alert_level") // "ok" | "warn" | "danger"
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([date, window])
+  @@index([window, date])
+  @@map("email_reputation_history")
+}
+
+// ════════════════════════════════════════
 //  Email stats aggregation (GDPR retention)
 // ════════════════════════════════════════
 
