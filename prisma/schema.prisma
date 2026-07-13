@@ -454,6 +454,32 @@ model NotificationDelivery {
 }
 
 // ════════════════════════════════════════
+//  Email stats aggregation (GDPR retention)
+// ════════════════════════════════════════
+
+model EmailStatsMonthly {
+  id          String   @id @default(uuid()) @db.Uuid
+  year        Int
+  month       Int      // 1-12
+  totalEvents Int      @default(0) @map("total_events")
+  delivered   Int      @default(0)
+  opened      Int      @default(0)
+  clicked     Int      @default(0)
+  bounced     Int      @default(0)
+  complained  Int      @default(0)
+  failed      Int      @default(0)
+  deliveryDelayed Int  @default(0) @map("delivery_delayed")
+  suppressed  Int      @default(0)
+  openRate    Float    @default(0) @map("open_rate")
+  clickRate   Float    @default(0) @map("click_rate")
+  bounceRate  Float    @default(0) @map("bounce_rate")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([year, month])
+  @@map("email_stats_monthly")
+}
+
+// ════════════════════════════════════════
 //  Webhook Dead Letter Queue (resilience)
 // ════════════════════════════════════════
 
