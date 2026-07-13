@@ -894,20 +894,26 @@ export function supportTicketEmail(
 export async function sendEmail(
   to: string,
   template: { subject: string; html: string },
-): Promise<void> {
+): Promise<string | null> {
   try {
     const resend = getResend()
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM,
       to,
       subject: template.subject,
       html: template.html,
     })
+
+    if (error) {
+      throw new Error(typeof error === "string" ? error : error.message)
+    }
+
+    return data?.id ?? null
   } catch (err) {
     if (err instanceof Error && err.message.includes("RESEND_API_KEY")) {
       if (process.env.NODE_ENV === "development") {
         console.warn(`[EMAIL] Dev mode — simulated send to ${to}:`, template.subject)
-        return
+        return `dev-${Date.now()}`
       }
     }
     console.error(`[EMAIL] Failed to send to ${to}:`, err)

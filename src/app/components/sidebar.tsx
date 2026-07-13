@@ -197,6 +197,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       active: pathname === "/admin" && activeTab === "stats",
     },
     {
+      href: "/admin/tracker",
+      label: "Tracker",
+      icon: Activity,
+      active: pathname === "/admin/tracker",
+    },
+    {
       href: "/admin?tab=settings",
       label: "Paramètres",
       icon: Settings,

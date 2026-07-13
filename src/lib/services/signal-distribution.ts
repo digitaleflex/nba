@@ -1,0 +1,178 @@
+import { prisma } from "../db"
+import { tradingSignalEmail } from "../email"
+import { logAuditEvent } from "./audit"
+import { readFile } from "fs/promises"
+import { join } from "path"
+
+const STORAGE_BASE_PATH = process.cwd() + "/storage"
+
+async function readImageAsDataUri(path: string): Promise<string | null> {
+  try {
+    const fullPath = join(STORAGE_BASE_PATH, path)
+    const buffer = await readFile(fullPath)
+    const ext = path.split(".").pop()?.toLowerCase()
+    const mime =
+      ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg"
+    return `data:${mime};base64,${buffer.toString("base64")}`
+  } catch (err) {
+    console.error(`[signal] Failed to read image ${path}:`, err)
+    return null
+  }
+}
+
+export interface DistributeDeps {
+  // Redis pub/sub publish (channel, payload object)
+  publish?: (channel: string, payload: unknown) => Promise<void> | void
+  // BullMQ email enqueue
+  enqueueEmail?: (name: string, data: any, opts?: any) => Promise<unknown>
+}
+
+/**
+ * Distribue un signal publié à tous les membres actifs (non supprimés) ayant
+ * une demande d'accès APPROUVÉE vers l'un des plans ciblés.
+ *
+ * - Crée une notification in-app par membre
+ * - Publie en temps réel via Redis pub/sub (WebSocket)
+ * - Enqueue un job d'envoi email (livraison traçable via Resend externalId)
+ *
+ * L'expéditeur (signal.createdBy) est exclu pour éviter de recevoir son propre signal.
+ *
+ * Extrait de workers/queue.ts pour être testable.
+ */
+export async function distributeSignal(signalId: string, deps: DistributeDeps = {}) {
+  const publish = deps.publish ?? (async () => {})
+  const enqueueEmail = deps.enqueueEmail ?? (async () => {})
+
+  const signal = await prisma.signal.findUnique({
+    where: { id: signalId },
+    include: {
+      audience: {
+        include: {
+          plan: true,
+        },
+      },
+    },
+  })
+
+  if (!signal) return { skipped: "not_found" as const }
+
+  // Publie automatiquement un brouillon planifié dont l'heure est arrivée
+  if (
+    signal.status === "DRAFT" &&
+    signal.scheduledAt &&
+    new Date(signal.scheduledAt).getTime() <= Date.now() + 5000
+  ) {
+    await prisma.signal.update({
+      where: { id: signalId },
+      data: {
+        status: "PUBLISHED",
+        publishedAt: new Date(),
+        jobId: null,
+      },
+    })
+    signal.status = "PUBLISHED"
+    signal.publishedAt = new Date()
+  }
+
+  if (signal.status !== "PUBLISHED") return { skipped: "not_published" as const }
+
+  const planIds = signal.audience.map((a: any) => a.planId)
+  if (planIds.length === 0) return { skipped: "no_audience" as const }
+
+  const members = await prisma.user.findMany({
+    where: {
+      isActive: true,
+      deletedAt: null,
+      id: { not: signal.createdBy }, // Exclure l'expéditeur (echo)
+      accessRequests: {
+        some: {
+          planId: { in: planIds },
+          status: "APPROVED",
+        },
+      },
+    },
+  })
+
+  console.log(`[signal] Distributing signal ${signalId} to ${members.length} member(s)`)
+
+  const BATCH_SIZE = 50
+  for (let i = 0; i < members.length; i += BATCH_SIZE) {
+    const batch = members.slice(i, i + BATCH_SIZE)
+    await Promise.all(
+      batch.map(async (member) => {
+        const notification = await prisma.notification.create({
+          data: {
+            userId: member.id,
+            type: "SIGNAL",
+            title: "Nouveau signal de trading",
+            body: `Un nouveau signal a été publié pour vos groupes.`,
+            data: {
+              signalId: signal.id,
+              imageUrl: signal.imageUrl,
+              imageUrls: signal.imageUrls,
+            },
+          },
+        })
+
+        try {
+          const channel = `nba:notif:user:${member.id}`
+          await publish(channel, {
+            id: notification.id,
+            type: "SIGNAL",
+            title: "Nouveau signal de trading",
+            body: `Un nouveau signal a été publié pour vos groupes.`,
+            data: {
+              signalId: signal.id,
+              imageUrl: signal.imageUrl,
+              imageUrls: signal.imageUrls,
+            },
+            createdAt: notification.createdAt,
+          })
+        } catch (err) {
+          console.error("[signal] pubsub failed:", err)
+        }
+
+        const delivery = await prisma.notificationDelivery.create({
+          data: {
+            notificationId: notification.id,
+            channel: "EMAIL",
+            status: "PENDING",
+          },
+        })
+
+        let imageDataUri: string | null = null
+        if (signal.imageUrl) {
+          imageDataUri = await readImageAsDataUri(signal.imageUrl)
+        }
+        const template = tradingSignalEmail(member, signal.content, imageDataUri)
+
+        await enqueueEmail(
+          `delivery-${delivery.id}`,
+          {
+            deliveryId: delivery.id,
+            to: member.email,
+            subject: template.subject,
+            html: template.html,
+          },
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 5000 },
+          },
+        )
+      }),
+    )
+  }
+
+  await logAuditEvent({
+    userId: signal.createdBy,
+    action: "signal.publish",
+    resourceType: "signal",
+    resourceId: signal.id,
+    details: {
+      recipientCount: members.length,
+      plans: signal.audience.map((a: any) => a.plan.name),
+    },
+  })
+
+  return { skipped: null, recipientCount: members.length }
+}
