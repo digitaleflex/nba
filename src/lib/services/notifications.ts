@@ -37,14 +37,44 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   })
 
   // Envoi push web (fire-and-forget, ne bloque pas la réponse)
+  // Livraison tracée pour le suivi temps réel (Tracker admin).
+  const pushDelivery = await prisma.notificationDelivery
+    .create({
+      data: {
+        notificationId: notification.id,
+        channel: "PUSH",
+        status: "PENDING",
+      },
+    })
+    .catch(() => null)
+
   sendPushToUser(params.userId, {
     title: params.title,
     body: params.body,
     url: params.linkUrl || "/dashboard",
     tag: notification.id,
-  }).catch((err) => {
-    console.error("[notify] push failed:", err)
   })
+    .then(async (res) => {
+      if (!pushDelivery) return
+      const failed = !!(res as { failed?: number })?.failed
+      await prisma.notificationDelivery
+        .update({
+          where: { id: pushDelivery.id },
+          data: { status: failed ? "FAILED" : "SENT" },
+        })
+        .catch(() => {})
+    })
+    .catch(async (err) => {
+      console.error("[notify] push failed:", err)
+      if (pushDelivery) {
+        await prisma.notificationDelivery
+          .update({
+            where: { id: pushDelivery.id },
+            data: { status: "FAILED" },
+          })
+          .catch(() => {})
+      }
+    })
 
   // WebSocket temps réel via Redis Pub/Sub
   publishNotification(params.userId, {

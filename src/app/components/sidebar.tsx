@@ -15,6 +15,7 @@ import {
   Link2,
   Bell,
   Activity,
+  Gauge,
   Shield,
   BarChart2,
   Settings,
@@ -195,6 +196,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Statistiques",
       icon: BarChart2,
       active: pathname === "/admin" && activeTab === "stats",
+    },
+    {
+      href: "/admin/control-room",
+      label: "Centre de contrôle",
+      icon: Gauge,
+      active: pathname === "/admin/control-room",
     },
     {
       href: "/admin/tracker",

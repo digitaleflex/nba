@@ -17,6 +17,7 @@ import {
   Users,
   Bell,
   MessageCircle,
+  Gauge,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -96,6 +97,12 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
 
   // Liens pour l'espace admin mobile
   const adminLinks: MobileNavLink[] = [
+    {
+      href: "/admin/control-room",
+      label: "Centre",
+      icon: Gauge,
+      active: pathname === "/admin/control-room",
+    },
     {
       href: "/admin?tab=requests",
       label: "Accès",
