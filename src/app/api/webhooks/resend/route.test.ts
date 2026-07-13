@@ -16,6 +16,7 @@ vi.mock("@nba/lib/db", () => ({
       findFirst: vi.fn(),
       update: vi.fn(async () => ({})),
     },
+    auditLog: { create: vi.fn(async () => ({})) },
   },
 }))
 
@@ -137,5 +138,44 @@ describe("POST /api/webhooks/resend", () => {
       data: { status: "FAILED", errorMessage: "email.failed: API Key Invalid" },
     })
     expect(sendEmail).toHaveBeenCalledOnce() // alerte admin
+  })
+
+  it("alerte critique sur domain.deleted + audit log (Sprint 1 #62)", async () => {
+    const domainEvent = {
+      type: "domain.deleted",
+      data: { name: "access.signauxx.com" },
+    }
+    mockVerify.mockReturnValue(domainEvent)
+
+    const res = await POST(makeRequest(domainEvent))
+    expect(res.status).toBe(200)
+    // Pas de traitement delivery
+    expect(prisma.notificationDelivery.findFirst).not.toHaveBeenCalled()
+    // Audit log
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          action: "resend.domain.deleted",
+          resourceType: "resend_domain",
+        }),
+      }),
+    )
+    // Alerte critique envoyee
+    expect(sendEmail).toHaveBeenCalledOnce()
+    const alertArgs = (sendEmail as any).mock.calls[0][1]
+    expect(alertArgs.subject).toContain("CRITIQUE")
+    expect(alertArgs.subject).toContain("access.signauxx.com")
+  })
+
+  it("audit log seul (pas d'alerte) sur domain.created / domain.updated", async () => {
+    for (const t of ["domain.created", "domain.updated"]) {
+      vi.clearAllMocks()
+      ;(prisma.auditLog.create as any).mockResolvedValue({})
+      mockVerify.mockReturnValue({ type: t, data: { name: "example.com" } })
+      const res = await POST(makeRequest({ type: t, data: { name: "example.com" } }))
+      expect(res.status).toBe(200)
+      expect(prisma.auditLog.create).toHaveBeenCalled()
+      expect(sendEmail).not.toHaveBeenCalled()
+    }
   })
 })

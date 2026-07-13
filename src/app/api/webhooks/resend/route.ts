@@ -49,7 +49,20 @@ export async function POST(req: NextRequest) {
   const emailId = event.data?.email_id
   const svixId = headers.id
 
-  if (!svixId || !type || !emailId) {
+  if (!svixId || !type) {
+    return NextResponse.json({ ok: true })
+  }
+
+  // Sprint 1 (#62) : Domain Events Resend (domain.created/updated/deleted)
+  // Structure differente : pas d'email_id. Gere avant le check emailId.
+  if (type.startsWith("domain.")) {
+    await handleDomainEvent(type, event.data as Record<string, unknown> | undefined).catch(
+      (err) => console.error("[resend-webhook] handleDomainEvent failed:", err),
+    )
+    return NextResponse.json({ ok: true })
+  }
+
+  if (!emailId) {
     return NextResponse.json({ ok: true })
   }
 
@@ -126,5 +139,42 @@ async function alertAdmin(type: string, emailId: string, data?: ResendWebhookEve
     })
   } catch {
     // L'alerte ne doit jamais bloquer le traitement du webhook
+  }
+}
+
+/**
+ * Sprint 1 (#62) : gestion des Domain Events Resend.
+ * - domain.deleted : ALERTE CRITIQUE (tous les envois s'arretent si c'est notre domaine)
+ * - domain.created / domain.updated : info dans audit
+ */
+async function handleDomainEvent(type: string, data: Record<string, unknown> | undefined) {
+  const domainName = (data as any)?.name ?? (data as any)?.domain ?? "unknown"
+  const subject = type === "domain.deleted"
+    ? `[CRITIQUE] Domaine Resend supprime — ${domainName}`
+    : `[INFO] Domaine Resend ${type} — ${domainName}`
+
+  // Log audit pour tous les events
+  await prisma.auditLog.create({
+    data: {
+      action: `resend.${type}`,
+      resourceType: "resend_domain",
+      details: { domain: domainName, payload: data ?? {} } as any,
+    },
+  })
+
+  if (type === "domain.deleted") {
+    // ALERTE CRITIQUE : si c'est notre domaine expediteur, plus rien ne part
+    await sendEmail(ADMIN_EMAIL, {
+      subject,
+      html: `<p style="color:#dc2626;font-weight:bold">
+        Un domaine Resend a ete supprime.
+      </p>
+      <p><b>Domaine :</b> ${domainName}</p>
+      <p><b>Impact :</b> Si c'est <code>access.signauxx.com</code> ou un domaine expediteur,
+      TOUS les envois emails sont bloques.</p>
+      <p><b>Action immediate :</b> verifier le dashboard Resend, re-creer le domaine, reconfigurer les DNS (SPF/DKIM/DMARC).</p>
+      <hr>
+      <pre>${JSON.stringify(data ?? {}, null, 2)}</pre>`,
+    })
   }
 }
