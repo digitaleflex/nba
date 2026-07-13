@@ -63,7 +63,11 @@ describe("POST /api/webhooks/resend", () => {
 
   it("stocke l'event et alerte l'admin sur bounce", async () => {
     mockVerify.mockReturnValue(BOUNCED_EVENT)
-    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({ id: "d1", status: "PENDING" })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d1",
+      status: "PENDING",
+      lastEventAt: null,
+    })
 
     const res = await POST(makeRequest(BOUNCED_EVENT))
     const json = await res.json()
@@ -73,23 +77,31 @@ describe("POST /api/webhooks/resend", () => {
     expect(prisma.emailEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ externalId: "resend-123", svixId: "evt_1", type: "email.bounced" }),
     })
-    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith({
-      where: { id: "d1" },
-      data: { status: "BOUNCED", errorMessage: "Mailbox full" },
-    })
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "d1" },
+        data: expect.objectContaining({ status: "BOUNCED", errorMessage: "Mailbox full" }),
+      }),
+    )
     expect(sendEmail).toHaveBeenCalledOnce()
   })
 
   it("marque SENT sur delivered", async () => {
     mockVerify.mockReturnValue({ type: "email.delivered", data: { email_id: "resend-456" } })
-    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({ id: "d2", status: "PENDING" })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d2",
+      status: "PENDING",
+      lastEventAt: null,
+    })
 
     const res = await POST(makeRequest({ type: "email.delivered", data: { email_id: "resend-456" } }))
     expect(res.status).toBe(200)
-    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith({
-      where: { id: "d2" },
-      data: { status: "SENT" },
-    })
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "d2" },
+        data: expect.objectContaining({ status: "SENT" }),
+      }),
+    )
     expect(sendEmail).not.toHaveBeenCalled()
   })
 
@@ -129,14 +141,23 @@ describe("POST /api/webhooks/resend", () => {
       },
     }
     mockVerify.mockReturnValue(failedEvent)
-    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({ id: "d3", status: "PENDING" })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d3",
+      status: "PENDING",
+      lastEventAt: null,
+    })
 
     const res = await POST(makeRequest(failedEvent))
     expect(res.status).toBe(200)
-    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith({
-      where: { id: "d3" },
-      data: { status: "FAILED", errorMessage: "email.failed: API Key Invalid" },
-    })
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "d3" },
+        data: expect.objectContaining({
+          status: "FAILED",
+          errorMessage: "email.failed: API Key Invalid",
+        }),
+      }),
+    )
     expect(sendEmail).toHaveBeenCalledOnce() // alerte admin
   })
 
@@ -207,5 +228,102 @@ describe("POST /api/webhooks/resend", () => {
     expect(prisma.emailEvent.create).toHaveBeenCalledWith({
       data: expect.objectContaining({ clickLink: null }),
     })
+  })
+
+  it("out-of-order : delivered AVANT opened (opened anterieur) -> delivered pris, opened ignore (Sprint 2 #65)", async () => {
+    // opened recu en premier (t-1)
+    mockVerify.mockReturnValueOnce({
+      type: "email.opened",
+      created_at: "2026-07-13T10:00:00.000Z",
+      data: { email_id: "resend-ooo" },
+    })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d-ooo",
+      status: "PENDING",
+      lastEventAt: null,
+    })
+    await POST(
+      new NextRequest("https://x", {
+        method: "POST",
+        body: JSON.stringify({}),
+        headers: {
+          "svix-id": "evt-ooo-1",
+          "svix-timestamp": "1",
+          "svix-signature": "s",
+        },
+      }),
+    )
+    // delivered recu en second (t) plus recent
+    mockVerify.mockReturnValueOnce({
+      type: "email.delivered",
+      created_at: "2026-07-13T10:00:05.000Z",
+      data: { email_id: "resend-ooo" },
+    })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d-ooo",
+      status: "PENDING",
+      lastEventAt: new Date("2026-07-13T10:00:00.000Z"),
+    })
+    await POST(
+      new NextRequest("https://x", {
+        method: "POST",
+        body: JSON.stringify({}),
+        headers: {
+          "svix-id": "evt-ooo-2",
+          "svix-timestamp": "1",
+          "svix-signature": "s",
+        },
+      }),
+    )
+    // opened (anterieur) recu en 3e
+    mockVerify.mockReturnValueOnce({
+      type: "email.opened",
+      created_at: "2026-07-13T10:00:02.000Z",
+      data: { email_id: "resend-ooo" },
+    })
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d-ooo",
+      status: "SENT",
+      lastEventAt: new Date("2026-07-13T10:00:05.000Z"),
+    })
+    await POST(
+      new NextRequest("https://x", {
+        method: "POST",
+        body: JSON.stringify({}),
+        headers: {
+          "svix-id": "evt-ooo-3",
+          "svix-timestamp": "1",
+          "svix-signature": "s",
+        },
+      }),
+    )
+    // Le delivery doit etre reste SENT (opened anterieur ignore, pas de downgrade)
+    const updates = (prisma.notificationDelivery.update as any).mock.calls
+    const lastUpdate = updates[updates.length - 1][0]
+    // le dernier update etait pour delivered, status SENT
+    expect(lastUpdate.data.status).toBe("SENT")
+  })
+
+  it("terminal negatif (bounced) s'applique TOUJOURS meme si en retard (Sprint 2 #65)", async () => {
+    // delivered a deja ete applique
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d-term",
+      status: "SENT",
+      lastEventAt: new Date("2026-07-13T10:00:05.000Z"),
+    })
+    // bounced anterieur (devrait quand meme s'appliquer)
+    mockVerify.mockReturnValue({
+      type: "email.bounced",
+      created_at: "2026-07-13T10:00:02.000Z", // anterieur
+      data: { email_id: "resend-term", bounce: { message: "Mailbox full" } },
+    })
+    const res = await POST(makeRequest({ type: "email.bounced", data: { email_id: "resend-term", bounce: { message: "Mailbox full" } } }))
+    expect(res.status).toBe(200)
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "d-term" },
+        data: expect.objectContaining({ status: "BOUNCED" }),
+      }),
+    )
   })
 })

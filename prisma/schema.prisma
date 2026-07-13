@@ -441,6 +441,7 @@ model NotificationDelivery {
   externalId     String?            @map("external_id")
   errorMessage   String?            @map("error_message")
   sentAt         DateTime?          @map("sent_at")
+  lastEventAt    DateTime?          @map("last_event_at") // timestamp Resend du dernier event applique
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
 

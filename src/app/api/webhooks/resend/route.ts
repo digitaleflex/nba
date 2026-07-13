@@ -94,10 +94,22 @@ export async function POST(req: NextRequest) {
 
   const delivery = await prisma.notificationDelivery.findFirst({
     where: { channel: "EMAIL", externalId: emailId },
-    select: { id: true, status: true },
+    select: { id: true, status: true, lastEventAt: true },
   })
 
   if (delivery) {
+    // Sprint 2 (#65) : gestion des events hors-ordre
+    // On lit le timestamp Resend (top-level created_at) et on ne met a jour
+    // le statut que si l'event est plus recent que lastEventAt.
+    // Les events TERMINAUX negatifs (bounced/complained/failed) s'appliquent
+    // toujours, meme s'ils arrivent "tard".
+    const eventTs = (event as any).created_at
+      ? new Date((event as any).created_at as string)
+      : new Date()
+    const isStale = delivery.lastEventAt && eventTs.getTime() <= delivery.lastEventAt.getTime()
+    const isTerminalNegative =
+      type === "email.bounced" || type === "email.complained" || type === "email.failed"
+
     if (type === "email.bounced" || type === "email.complained") {
       const errorMessage =
         type === "email.complained"
@@ -105,7 +117,7 @@ export async function POST(req: NextRequest) {
           : (event.data?.bounce?.message ?? "Bounce")
       await prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: { status: "BOUNCED", errorMessage },
+        data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
       })
       // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
       if (type === "email.bounced") {
@@ -127,13 +139,27 @@ export async function POST(req: NextRequest) {
         (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
       await prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: { status: "FAILED", errorMessage: `email.failed: ${reason}` },
+        data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
       })
       await alertAdmin(type, emailId, event.data)
-    } else if (type === "email.delivered" && delivery.status !== "BOUNCED") {
+    } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
       await prisma.notificationDelivery.update({
         where: { id: delivery.id },
-        data: { status: "SENT" },
+        data: { status: "SENT", sentAt: eventTs, lastEventAt: eventTs },
+      })
+    } else if (isStale && !isTerminalNegative) {
+      // Event non-terminal mais obsolete : on stocke dans email_events
+      // (deja fait) mais on ne touche pas au statut.
+      // Log debug pour visibilite.
+      console.log(
+        `[resend-webhook] Out-of-order event ignored: type=${type} eventTs=${eventTs.toISOString()} lastEventAt=${delivery.lastEventAt?.toISOString()}`,
+      )
+    } else if (type === "email.delivered" && isStale) {
+      // Cas particulier : delivered en retard alors qu'on a deja un statut final negatif
+      // On met a jour lastEventAt mais on ne change pas le statut.
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { lastEventAt: eventTs },
       })
     }
   }
