@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
-import { markUserBounced } from "@nba/lib/services/email-status"
+import { markUserBounced, markUserComplained } from "@nba/lib/services/email-status"
 
 export const runtime = "nodejs"
 
@@ -84,6 +84,12 @@ export async function POST(req: NextRequest) {
       if (type === "email.bounced") {
         await markUserBounced(emailId).catch((err) =>
           console.error("[resend-webhook] markUserBounced failed:", err),
+        )
+      }
+      // Sprint 1 (#60) : auto-suspend le user sur complaint (legale + anti-spam)
+      if (type === "email.complained") {
+        await markUserComplained(emailId).catch((err) =>
+          console.error("[resend-webhook] markUserComplained failed:", err),
         )
       }
       await alertAdmin(type, emailId, event.data)

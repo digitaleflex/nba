@@ -90,3 +90,64 @@ export async function markUserBounced(
 
   return { userId, email: userEmail, newStatus, bounceCount }
 }
+
+/**
+ * Marque le user comme COMPLAINED et **suspend** son compte suite a un
+ * evenement `email.complained` Resend. C'est une mesure legale/anti-spam :
+ * un membre qui marque nos emails comme spam ne doit plus recevoir aucun
+ * envoi, et son acces est bloque.
+ *
+ * Idempotent. Cree un audit log dedie.
+ *
+ * @returns { userId, email } ou null si user introuvable
+ */
+export async function markUserComplained(
+  externalId: string,
+  triggeredBy?: string,
+): Promise<{ userId: string; email: string; wasActive: boolean } | null> {
+  const delivery = await prisma.notificationDelivery.findFirst({
+    where: { channel: "EMAIL", externalId },
+    select: {
+      id: true,
+      notification: { select: { userId: true, user: { select: { email: true, name: true, isActive: true, emailStatus: true } } } },
+    },
+  })
+  if (!delivery?.notification?.userId) return null
+
+  const userId = delivery.notification.userId
+  const u = delivery.notification.user
+
+  // Pas de "downgrade" : si deja plus severe (deja COMPLAINED, SUPPRESSED ou INVALID), skip
+  const alreadySevere =
+    u.emailStatus === "COMPLAINED" ||
+    u.emailStatus === "SUPPRESSED" ||
+    u.emailStatus === "INVALID"
+
+  if (!alreadySevere) {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        emailStatus: "COMPLAINED",
+        emailStatusAt: new Date(),
+        isActive: false,
+      },
+    })
+
+    await logAuditEvent({
+      userId: triggeredBy,
+      action: "user.email_status_changed",
+      resourceType: "user",
+      resourceId: userId,
+      details: {
+        from: u.emailStatus,
+        to: "COMPLAINED",
+        reason: "email.complained",
+        suspended: true,
+        previousActive: u.isActive,
+        email: u.email,
+      },
+    })
+  }
+
+  return { userId, email: u.email, wasActive: u.isActive }
+}
