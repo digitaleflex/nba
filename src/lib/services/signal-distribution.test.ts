@@ -167,4 +167,26 @@ describe("distributeSignal", () => {
     )
     expect(result.recipientCount).toBe(1)
   })
+
+  it("inclut les membres signalsAccessOverride même hors groupe ciblé (et leur envoie email+push)", async () => {
+    ;(prisma.signal.findUnique as any).mockResolvedValue(publishedSignal())
+    let capturedWhere: any = null
+    ;(prisma.user.findMany as any).mockImplementation(async (args: any) => {
+      capturedWhere = args?.where
+      return [{ id: "ovr", email: "ovr@x.com" }]
+    })
+
+    const result = await distributeSignal("sig-1", { publish: publish as any, enqueueEmail: enqueueEmail as any })
+
+    expect(capturedWhere.OR).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ signalsAccessOverride: true }),
+      ]),
+    )
+    expect(result.recipientCount).toBe(1)
+    // Email + push web bien déclenchés pour le membre override
+    expect(enqueueEmail).toHaveBeenCalledTimes(1)
+    expect(enqueueEmail.mock.calls[0][1].to).toBe("ovr@x.com")
+    expect(sendPushToUser).toHaveBeenCalledWith("ovr", expect.any(Object))
+  })
 })
