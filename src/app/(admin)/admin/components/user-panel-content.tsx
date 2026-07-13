@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2 } from "lucide-react"
+import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
 
 interface UserPanelContentProps {
@@ -146,6 +146,37 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             >
               {data.signalsAccessOverride ? "Révoquer l'accès exceptionnel" : "Accorder l'accès exceptionnel"}
             </Button>
+          </div>
+
+          {/* Outils super-admin (réparation d'états) */}
+          <div className="space-y-2 border-t pt-4">
+            <span className="text-[10px] text-muted-foreground uppercase block">Outils super-admin</span>
+            <div className="grid grid-cols-1 gap-1.5">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1.5 justify-start"
+                onClick={() => onAction("revoke_sessions", { id: data.id })}
+              >
+                <Ban className="size-3.5" /> Révoquer toutes les sessions
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1.5 justify-start"
+                onClick={() => onAction("reset_realtime", { id: data.id })}
+              >
+                <Zap className="size-3.5" /> Reset real-time (déconnecter les sockets)
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full gap-1.5 justify-start"
+                onClick={() => onAction("mark_messages_read", { id: data.id })}
+              >
+                <Check className="size-3.5" /> Marquer tous les messages comme lus
+              </Button>
+            </div>
           </div>
 
           {/* Alerter l'utilisateur */}

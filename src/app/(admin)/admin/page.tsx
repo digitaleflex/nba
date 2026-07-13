@@ -21,6 +21,7 @@ import { AuditTab } from "./features/AuditTab"
 import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
+import { AdminTools } from "./components/admin-tools"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 
 const AdminContextPanel = dynamic(
@@ -176,6 +177,42 @@ function AdminConsoleContent() {
             toast.success(`Rôle changé en ${extraData.roleName} avec succès.`)
           }
         }
+      } else if (actionType === "revoke_sessions") {
+        const res = await fetch("/api/admin/members/revoke-sessions", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id }),
+        })
+        if (res.ok) {
+          setPanelOpen(false)
+          toast.success("Toutes les sessions de l'utilisateur ont été révoquées.")
+        } else {
+          toast.error("Erreur lors de la révocation des sessions.")
+        }
+      } else if (actionType === "reset_realtime") {
+        const res = await fetch("/api/admin/members/reset-realtime", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id }),
+        })
+        if (res.ok) {
+          setPanelOpen(false)
+          toast.success("Real-time réinitialisé pour l'utilisateur (sockets déconnectés).")
+        } else {
+          toast.error("Erreur lors du reset real-time.")
+        }
+      } else if (actionType === "mark_messages_read") {
+        const res = await fetch("/api/admin/members/mark-messages-read", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id }),
+        })
+        if (res.ok) {
+          setPanelOpen(false)
+          toast.success("Tous les messages de l'utilisateur ont été marqués comme lus.")
+        } else {
+          toast.error("Erreur lors de la mise à jour des messages.")
+        }
       } else if (actionType === "toggle_signal_override") {
         const res = await fetch("/api/admin/members", {
           method: "PUT",
@@ -276,6 +313,11 @@ function AdminConsoleContent() {
             </button>
           ))}
         </div>
+
+        {/* ============================================================== */}
+        {/* OUTILS SUPER-ADMIN (toujours visibles) */}
+        {/* ============================================================== */}
+        <AdminTools />
 
         {/* ============================================================== */}
         {/* MODULE VIEWS */}

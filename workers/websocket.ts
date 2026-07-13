@@ -187,6 +187,34 @@ if (REDIS_URL) {
     }
   })
 
+  // Canal de contrôle admin (ex: reset realtime d'un user)
+  sub.subscribe("nba:ws:control", (err) => {
+    if (err) {
+      console.error("[ws] Redis control subscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:ws:control")
+    }
+  })
+
+  sub.on("message", (channel, message) => {
+    try {
+      if (channel !== "nba:ws:control") return
+      if (message.startsWith("reset:")) {
+        const targetUserId = message.slice("reset:".length)
+        let disconnected = 0
+        for (const [, socket] of io.sockets.sockets) {
+          if (socket.data.userId === targetUserId) {
+            socket.disconnect(true)
+            disconnected++
+          }
+        }
+        console.log(`[ws] 🔌 Reset realtime for user ${targetUserId.slice(0, 8)}... (${disconnected} socket(s))`)
+      }
+    } catch (err) {
+      console.error("[ws] control message handling failed:", err)
+    }
+  })
+
   sub.on("pmessage", (_pattern, channel, message) => {
     let event = "notification"
     let userId = channel.replace("nba:notif:user:", "")
