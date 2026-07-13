@@ -7,6 +7,7 @@ import { notify } from "@nba/lib/services/notifications";
 import { brokerApprovedEmail, brokerRejectedEmail } from "@nba/lib/email";
 import { scheduleFileCleanup } from "@nba/lib/queue";
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding";
+import { invalidatePrefix } from "@nba/lib/cache";
 
 export async function PUT(
   req: NextRequest,
@@ -27,6 +28,8 @@ export async function PUT(
         reviewNotes: parsed.notes,
       },
     });
+
+    await invalidatePrefix("ops");
 
     await logAuditEvent({
       userId: session.user.id,

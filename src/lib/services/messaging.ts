@@ -3,6 +3,7 @@ import { publishMessage, publishMessageRead } from "@nba/lib/redis-pubsub"
 import { getStorage } from "@nba/lib/storage"
 import { AuthError } from "@nba/lib/auth-utils"
 import { sendPushToUser } from "@nba/lib/services/push"
+import { invalidatePrefix } from "@nba/lib/cache"
 
 export const MESSAGE_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"]
 export const MESSAGE_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"]
@@ -346,8 +347,11 @@ export async function sendMessage(
       body: preview,
       url,
       tag: `msg-${conversationId}`,
-    }).catch((err) => console.error("[push] message push failed:", err))
+      }).catch((err) => console.error("[push] message push failed:", err))
   }
+
+  // Bust le cache des listes de conversations (les deux participants)
+  await invalidatePrefix("conv:")
 
   return {
     id: message.id,

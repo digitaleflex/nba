@@ -5,6 +5,7 @@ import { notify } from "@nba/lib/services/notifications"
 import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
+import { invalidatePrefix } from "@nba/lib/cache"
 
 export async function POST(request: Request) {
   try {
@@ -51,6 +52,7 @@ export async function POST(request: Request) {
         },
       })
 
+      await invalidatePrefix("ops")
       return NextResponse.json({ success: true, count: 1 })
     }
 
@@ -119,6 +121,7 @@ export async function POST(request: Request) {
       })
     )
 
+    await invalidatePrefix("ops")
     return NextResponse.json({ success: true, count: users.length })
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })

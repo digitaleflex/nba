@@ -3,13 +3,18 @@ import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, startMessageMemberSchema, messageSendSchema, ValidationError } from "@nba/lib/validations"
 import { listConversations, startConversationAsMember } from "@nba/lib/services/messaging"
+import { getCached } from "@nba/lib/cache"
 
 const messageRateLimit = rateLimitMiddleware({ window: 60, max: 20 })
 
 export async function GET() {
   try {
     const session = await requireAuth()
-    const conversations = await listConversations(session.user.id)
+    const conversations = await getCached(
+      "conv:" + session.user.id,
+      () => listConversations(session.user.id),
+      10,
+    )
     return NextResponse.json({ conversations })
   } catch (error) {
     return handleAuthError(error)

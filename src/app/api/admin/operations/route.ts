@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { getCached } from "@nba/lib/cache"
 
 export async function GET() {
   try {
@@ -19,6 +20,9 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
+    const data = await getCached(
+      "ops",
+      async () => {
     const now = new Date()
     const sevenDaysAgo = new Date()
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
@@ -132,7 +136,7 @@ export async function GET() {
     // SMTP: check if config exists (can't test without sending)
     const smtpHealthy = !!(process.env.RESEND_API_KEY || process.env.SMTP_HOST)
 
-    return NextResponse.json({
+    return {
       attention: {
         kycPendingCount,
         brokerPendingCount,
@@ -155,7 +159,12 @@ export async function GET() {
         smtp: smtpHealthy ? "healthy" : "warning",
         storage: storageHealthy ? "healthy" : "warning",
       },
-    })
+    }
+      },
+      20,
+    )
+
+    return NextResponse.json(data)
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

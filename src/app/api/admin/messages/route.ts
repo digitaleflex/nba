@@ -2,11 +2,16 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { validateOrThrow, startMessageSchema, messageSendSchema, ValidationError } from "@nba/lib/validations"
 import { listConversations, startOrReplyAsAdmin } from "@nba/lib/services/messaging"
+import { getCached } from "@nba/lib/cache"
 
 export async function GET() {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const conversations = await listConversations(session.user.id)
+    const conversations = await getCached(
+      "conv:" + session.user.id,
+      () => listConversations(session.user.id),
+      10,
+    )
     return NextResponse.json({ conversations })
   } catch (error) {
     return handleAuthError(error)

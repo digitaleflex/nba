@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { invalidatePrefix } from "@nba/lib/cache"
 
 export async function GET(request: NextRequest) {
   try {
@@ -139,6 +140,7 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    await invalidatePrefix("ops")
     return NextResponse.json(updated)
   } catch (error) {
     return handleAuthError(error)

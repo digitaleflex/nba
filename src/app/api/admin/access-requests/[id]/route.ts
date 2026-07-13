@@ -5,6 +5,7 @@ import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
+import { invalidatePrefix } from "@nba/lib/cache"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -64,6 +65,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         notes: parsed.notes,
       },
     })
+
+    await invalidatePrefix("ops")
 
     if (parsed.status === "APPROVED") {
       await prisma.user.update({
