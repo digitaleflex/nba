@@ -8,6 +8,7 @@ import {
   type DeliveryBucket,
 } from "@nba/lib/services/resend-delivery"
 import { LiveRefresh } from "./live-refresh"
+import { SignalTableClient } from "./signal-table-client"
 import IORedis from "ioredis"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
@@ -307,131 +308,13 @@ export default async function SignalTrackerPage({
         <Kpi label="Push échoués" value={totals.pushFailed} tone="danger" />
       </div>
 
-      <div className="rounded-xl border border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50 text-muted-foreground">
-              <tr className="text-left">
-                <th className="px-4 py-2.5 font-medium">Signal</th>
-                <th className="px-4 py-2.5 font-medium">Groupes</th>
-                <th className="px-4 py-2.5 font-medium text-right">Dest.</th>
-                <th className="px-4 py-2.5 font-medium text-right">In-app lus</th>
-                <th className="px-4 py-2.5 font-medium text-right">Emails</th>
-                <th className="px-4 py-2.5 font-medium text-right">Délivrés</th>
-                <th className="px-4 py-2.5 font-medium text-right">Ouverts</th>
-                <th className="px-4 py-2.5 font-medium text-right">Bounces</th>
-                <th className="px-4 py-2.5 font-medium text-right">Plaintes</th>
-                <th className="px-4 py-2.5 font-medium text-right">Push</th>
-                <th className="px-4 py-2.5 font-medium text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {rows.map((r) => (
-                <tr key={r.id} className="hover:bg-muted/30 group">
-                  <td className="px-4 py-3 max-w-[200px]">
-                    <div className="font-medium truncate">{r.title}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {r.publishedAt ? new Date(r.publishedAt).toLocaleString("fr-FR") : "—"}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-[100px] truncate">{r.plans}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.recipients}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{r.emailsSent}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-success">{r.delivered}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-info">{r.opened}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.bounced}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.complained}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    <span className="text-success">{r.pushSent}</span>
-                    {r.pushFailed > 0 && (
-                      <span className="text-destructive"> / {r.pushFailed}</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link
-                      href={`/admin?tab=signals`}
-                      className="opacity-0 group-hover:opacity-100 text-xs text-primary hover:underline"
-                    >
-                      Voir
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
-                    {query ? `Aucun signal ne correspond à "${query}".` : "Aucun signal publié récemment."}
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {rows[0] && (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="px-4 py-3 border-b border-border bg-muted/30">
-            <h2 className="font-semibold">Détail par utilisateur — dernier signal</h2>
-            <p className="text-xs text-muted-foreground">{rows[0].title}</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/50 text-muted-foreground">
-                <tr className="text-left">
-                  <th className="px-4 py-2.5 font-medium">Utilisateur</th>
-                  <th className="px-4 py-2.5 font-medium">Email</th>
-                  <th className="px-4 py-2.5 font-medium">Email (Resend)</th>
-                  <th className="px-4 py-2.5 font-medium">Push web</th>
-                  <th className="px-4 py-2.5 font-medium">In-app</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {rows[0].perUser.map((u, i) => (
-                  <tr key={i} className="hover:bg-muted/30">
-                    <td className="px-4 py-2.5">{u.name}</td>
-                    <td className="px-4 py-2.5 text-muted-foreground">{u.email}</td>
-                    <td className="px-4 py-2.5">
-                      <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {u.pushStatus ? (
-                        <span
-                          className={
-                            u.pushStatus === "envoyé"
-                              ? "inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success"
-                              : "inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive"
-                          }
-                        >
-                          {u.pushStatus}
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      {u.inAppRead ? (
-                        <span className="inline-flex items-center rounded-full bg-info/10 px-2.5 py-0.5 text-xs font-medium text-info">
-                          lu
-                        </span>
-                      ) : (
-                        <span className="text-xs text-muted-foreground">non lu</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {rows[0].perUser.length === 0 && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                      Aucun destinataire pour ce signal.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Tableau des signaux (cliquable — cliquer sur une ligne pour voir le détail par utilisateur) */}
+      <SignalTableClient
+        rows={rows.map((r) => ({
+          ...r,
+          publishedAt: r.publishedAt?.toISOString() ?? null,
+        }))}
+      />
     </div>
   )
 }
@@ -447,19 +330,6 @@ function Kpi({ label, value, tone }: { label: string; value: number; tone?: "suc
   )
 }
 
-function BucketBadge({ bucket, event }: { bucket: string; event: string | null }) {
-  const map: Record<string, string> = {
-    delivered: "bg-success/10 text-success",
-    opened: "bg-info/10 text-info",
-    bounced: "bg-destructive/10 text-destructive",
-    complained: "bg-destructive/10 text-destructive",
-    pending: "bg-amber-500/10 text-amber-600",
-    failed: "bg-destructive/10 text-destructive",
-    unknown: "bg-muted text-muted-foreground",
-  }
-  const cls = map[bucket] ?? map.unknown
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>{event ?? bucket}</span>
-}
 
 function WorkerKpi({ label, value }: { label: string; value: string }) {
   const ok = value === "actif"
