@@ -24,7 +24,10 @@ export async function GET() {
             _count: {
               select: {
                 accessRequests: {
-                  where: { status: "APPROVED" },
+                  where: {
+                    status: "APPROVED",
+                    user: { isActive: true, deletedAt: null },
+                  },
                 },
               },
             },

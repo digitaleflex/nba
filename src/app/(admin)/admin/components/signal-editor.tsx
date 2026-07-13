@@ -37,24 +37,48 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [targetStatus, setTargetStatus] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED")
   const [isEstimating, setIsEstimating] = useState(false)
-  const [estimationResult, setEstimationResult] = useState<{ total: number; breakdown: Record<string, number> } | null>(null)
+  const [estimationResult, setEstimationResult] = useState<{
+    total: number
+    overrideCount: number
+    breakdown: { planId: string; name: string; count: number }[]
+  } | null>(null)
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch plans
+  // Fetch plans (no auto-select: admin must choose consciously)
   useEffect(() => {
     fetch("/api/public/plans")
       .then((r) => r.json())
       .then((data) => {
         setPlans(data)
-        // Auto-select all plans by default
-        if (data.length > 0) {
-          setSelectedPlans(data.map((p: Plan) => p.id))
-        }
+        // No auto-select — admin must explicitly choose target groups
       })
       .catch((err) => console.error("Failed to load plans:", err))
   }, [])
+
+  // Live estimate: debounced call to /api/admin/signals/estimate on every
+  // selection change. Gives the admin immediate feedback on recipient count
+  // and breakdown (fixes the "multi-select does nothing" feeling).
+  useEffect(() => {
+    if (selectedPlans.length === 0) {
+      setEstimationResult(null)
+      return
+    }
+    const handle = setTimeout(async () => {
+      try {
+        const planQuery = selectedPlans.map((id) => `planIds=${id}`).join("&")
+        const res = await fetch(`/api/admin/signals/estimate?${planQuery}`)
+        if (res.ok) {
+          const data = await res.json()
+          setEstimationResult(data)
+        }
+      } catch (err) {
+        console.error("Live estimate failed:", err)
+      }
+    }, 350)
+    return () => clearTimeout(handle)
+  }, [selectedPlans])
 
   // Auto-resize textarea
   useEffect(() => {
@@ -185,6 +209,8 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   }
 
   // Open confirmation modal
+  // L'estimate est déjà calculé en live à chaque changement de sélection ;
+  // on rafraîchit ici pour avoir la valeur la plus fraîche possible avant d'envoyer.
   async function openConfirmation(status: "DRAFT" | "PUBLISHED") {
     if (!content.trim()) {
       toast.warning("Veuillez rédiger ou coller le contenu de votre signal.")
@@ -198,17 +224,16 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     setTargetStatus(status)
     setShowConfirmModal(true)
     setIsEstimating(true)
-    setEstimationResult(null)
 
     try {
-      const planQuery = selectedPlans.map(id => `planIds=${id}`).join("&")
+      const planQuery = selectedPlans.map((id) => `planIds=${id}`).join("&")
       const res = await fetch(`/api/admin/signals/estimate?${planQuery}`)
       if (res.ok) {
         const data = await res.json()
         setEstimationResult(data)
       }
     } catch (err) {
-      console.error("Failed to estimate recipients:", err)
+      console.error("Failed to refresh estimate before publish:", err)
     } finally {
       setIsEstimating(false)
     }
@@ -410,7 +435,31 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
           {/* GROUPS OF DIFFUSION CARD LIST */}
           <Card className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm">
             <CardContent className="p-4 space-y-4">
-              <h3 className="font-bold text-sm border-b pb-2">Groupes de diffusion</h3>
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="font-bold text-sm">Groupes de diffusion</h3>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => setSelectedPlans(plans.map((p) => p.id))}
+                    disabled={selectedPlans.length === plans.length}
+                  >
+                    Tout
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-[10px]"
+                    onClick={() => setSelectedPlans([])}
+                    disabled={selectedPlans.length === 0}
+                  >
+                    Aucun
+                  </Button>
+                </div>
+              </div>
 
               <div className="grid gap-2">
                 {plans.length === 0 ? (
@@ -448,34 +497,73 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
                     )
                   })
                 )}
-              </div>
-
-              {/* Main Submit Actions */}
-              <div className="flex flex-col gap-2 pt-2 border-t">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="w-full h-10 text-xs rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  disabled={!content.trim() || isSubmitting !== null}
-                  onClick={() => openConfirmation("PUBLISHED")}
-                >
-                  <Send className="size-4" />
-                  Publier le signal immédiatement
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full h-10 text-xs rounded-xl cursor-pointer"
-                  disabled={!content.trim() || isSubmitting !== null}
-                  onClick={() => openConfirmation("DRAFT")}
-                >
-                  <Save className="size-4 mr-1.5" />
-                  Enregistrer en brouillon
-                </Button>
-              </div>
-
-            </CardContent>
-          </Card>
+               </div>
+ 
+               {/* Live recipient preview (estimate) */}
+               {selectedPlans.length > 0 && (
+                 <div
+                   data-testid="live-estimate"
+                   className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs space-y-1.5"
+                 >
+                   <div className="flex items-center justify-between">
+                     <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">
+                       Destinataires prévus
+                     </span>
+                     {estimationResult ? (
+                       <span className="font-bold text-primary text-sm">
+                         {estimationResult.total} membre{estimationResult.total > 1 ? "s" : ""}
+                       </span>
+                     ) : (
+                       <Loader2 className="size-3 animate-spin text-muted-foreground" />
+                     )}
+                   </div>
+                   {estimationResult && (
+                     <div className="space-y-0.5 text-muted-foreground">
+                       {estimationResult.breakdown.map((b) => (
+                         <div key={b.planId} className="flex justify-between">
+                           <span className="truncate pr-2">{b.name}</span>
+                           <span className="font-medium text-foreground">{b.count}</span>
+                         </div>
+                       ))}
+                       {estimationResult.overrideCount > 0 && (
+                         <div className="flex justify-between">
+                           <span>Accès global (override)</span>
+                           <span className="font-medium text-foreground">
+                             {estimationResult.overrideCount}
+                           </span>
+                         </div>
+                       )}
+                     </div>
+                   )}
+                 </div>
+               )}
+ 
+               {/* Main Submit Actions */}
+               <div className="flex flex-col gap-2 pt-2 border-t">
+                 <Button
+                   variant="default"
+                   size="sm"
+                   className="w-full h-10 text-xs rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+                   disabled={!content.trim() || isSubmitting !== null}
+                   onClick={() => openConfirmation("PUBLISHED")}
+                 >
+                   <Send className="size-4" />
+                   Publier le signal immédiatement
+                 </Button>
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   className="w-full h-10 text-xs rounded-xl cursor-pointer"
+                   disabled={!content.trim() || isSubmitting !== null}
+                   onClick={() => openConfirmation("DRAFT")}
+                 >
+                   <Save className="size-4 mr-1.5" />
+                   Enregistrer en brouillon
+                 </Button>
+               </div>
+ 
+             </CardContent>
+           </Card>
 
         </div>
 
@@ -503,15 +591,23 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
 
                 {estimationResult && (
                   <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 border text-xs">
-                    {Object.entries(estimationResult.breakdown).map(([planName, count]) => (
-                      <div key={planName} className="flex justify-between text-muted-foreground">
-                        <span>Signals {planName}</span>
-                        <span className="font-medium text-foreground">{count} membres</span>
+                    {estimationResult.breakdown.map((b) => (
+                      <div key={b.planId} className="flex justify-between text-muted-foreground">
+                        <span className="truncate pr-2">{b.name}</span>
+                        <span className="font-medium text-foreground">{b.count} membre{b.count > 1 ? "s" : ""}</span>
                       </div>
                     ))}
+                    {estimationResult.overrideCount > 0 && (
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Accès global (override)</span>
+                        <span className="font-medium text-foreground">
+                          {estimationResult.overrideCount} membre{estimationResult.overrideCount > 1 ? "s" : ""}
+                        </span>
+                      </div>
+                    )}
                     <div className="flex justify-between font-bold border-t pt-1.5 mt-1.5 text-primary">
                       <span>Total (uniques)</span>
-                      <span>✓ {estimationResult.total} membres</span>
+                      <span>✓ {estimationResult.total} membre{estimationResult.total > 1 ? "s" : ""}</span>
                     </div>
                   </div>
                 )}
