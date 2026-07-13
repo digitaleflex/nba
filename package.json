@@ -27,7 +27,8 @@
     "pm2:status": "pm2 status",
     "pm2:logs": "pm2 logs keep-alive",
     "pm2:save": "pm2 save",
-    "pm2:startup": "pm2 startup"
+    "pm2:startup": "pm2 startup",
+    "status": "bash scripts/status.sh"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1079.0",
