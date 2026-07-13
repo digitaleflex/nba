@@ -116,6 +116,38 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             </div>
           </div>
 
+          {/* Accès signaux exceptionnel (override admin) */}
+          <div className="space-y-2 border-t pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] text-muted-foreground uppercase">Accès signaux exceptionnel</span>
+              <Badge
+                variant="outline"
+                className={cn(
+                  data.signalsAccessOverride
+                    ? "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                    : "bg-neutral-500/10 text-neutral-400 border-neutral-500/20"
+                )}
+              >
+                {data.signalsAccessOverride ? "Accordé" : "Désactivé"}
+              </Badge>
+            </div>
+            <p className="text-[10px] text-muted-foreground">
+              Autorise cet utilisateur à voir les signaux même si le KYC / Broker ne sont pas validés.
+            </p>
+            <Button
+              variant={data.signalsAccessOverride ? "destructive" : "default"}
+              size="sm"
+              className={
+                data.signalsAccessOverride
+                  ? "w-full gap-1.5"
+                  : "w-full gap-1.5 bg-amber-600 hover:bg-amber-700 text-white border-0"
+              }
+              onClick={() => onAction("toggle_signal_override", { id: data.id, value: !data.signalsAccessOverride })}
+            >
+              {data.signalsAccessOverride ? "Révoquer l'accès exceptionnel" : "Accorder l'accès exceptionnel"}
+            </Button>
+          </div>
+
           {/* Alerter l'utilisateur */}
           <div className="space-y-2 border-t pt-4">
             <button

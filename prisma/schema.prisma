@@ -26,6 +26,7 @@ model User {
   language          String            @default("fr")
   onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
   isActive          Boolean           @default(true) @map("is_active")
+  signalsAccessOverride Boolean       @default(false) @map("signals_access_override")
   metadata          Json?             @db.JsonB
   deletedAt         DateTime?         @map("deleted_at")
   notificationSound String           @default("default") @map("notification_sound")

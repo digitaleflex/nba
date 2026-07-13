@@ -176,6 +176,25 @@ function AdminConsoleContent() {
             toast.success(`Rôle changé en ${extraData.roleName} avec succès.`)
           }
         }
+      } else if (actionType === "toggle_signal_override") {
+        const res = await fetch("/api/admin/members", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id, signalsAccessOverride: extraData.value }),
+        })
+        if (res.ok) {
+          setPanelData((prev: any) => (prev ? { ...prev, signalsAccessOverride: extraData.value } : prev))
+          activeRefetch.current?.()
+          fetchOperations()
+          setPanelOpen(false)
+          toast.success(
+            extraData.value
+              ? "Accès aux signaux exceptionnel accordé."
+              : "Accès aux signaux exceptionnel révoqué."
+          )
+        } else {
+          toast.error("Erreur lors de la mise à jour de l'accès.")
+        }
       } else if (actionType === "force_onboarding") {
         const res = await fetch("/api/admin/members", {
           method: "PUT",

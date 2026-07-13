@@ -19,6 +19,7 @@ export default async function SignalsPage() {
         country: true,
         phone: true,
         whatsapp: true,
+        signalsAccessOverride: true,
         role: { select: { name: true } },
       },
     }),
@@ -54,7 +55,7 @@ export default async function SignalsPage() {
   const isBrokerSubmitted = brokerVerif !== null
   const isBrokerApproved = brokerStatus === "APPROVED"
 
-  const hasAccess = isAdmin || (isProfileComplete && isKycApproved && isBrokerApproved)
+  const hasAccess = isAdmin || user.signalsAccessOverride || (isProfileComplete && isKycApproved && isBrokerApproved)
 
   if (hasAccess) {
     return <SignalsView />

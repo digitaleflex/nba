@@ -17,6 +17,7 @@ export async function GET() {
         country: true,
         phone: true,
         whatsapp: true,
+        signalsAccessOverride: true,
         role: { select: { name: true } },
       },
     }),
@@ -59,7 +60,7 @@ export async function GET() {
     { id: "broker", label: "Vérification de votre compte Broker", status: brokerStatus ?? "NOT_SUBMITTED" },
   ]
 
-  const hasAccess = isAdmin || (isProfileComplete && isKycApproved && isBrokerApproved)
+  const hasAccess = isAdmin || user.signalsAccessOverride || (isProfileComplete && isKycApproved && isBrokerApproved)
 
   // Vérifier s'il ne reste que la validation par l'équipe
   const isOnlyValidationPending = 
@@ -81,6 +82,7 @@ export async function GET() {
 
   return NextResponse.json({
     hasAccess,
+    accessOverride: user.signalsAccessOverride,
     profileCompletion,
     isProfileComplete,
     kycStatus,
