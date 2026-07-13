@@ -124,107 +124,59 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     },
   ]
 
-  // Les 12 liens d'administration
-  const adminLinks = [
+  // Liens d'administration groupés par section
+  interface AdminGroup {
+    label: string
+    items: {
+      href: string
+      label: string
+      icon: React.ComponentType<{ className?: string }>
+      active: boolean
+    }[]
+  }
+
+  const isActiveTab = (tab: string) => pathname === "/admin" && activeTab === tab
+
+  const adminGroups: AdminGroup[] = [
     {
-      href: "/admin?tab=dashboard",
-      label: "Tableau de bord",
-      icon: LayoutDashboard,
-      active: pathname === "/admin" && activeTab === "dashboard",
+      label: "Supervision",
+      items: [
+        { href: "/admin?tab=dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: isActiveTab("dashboard") },
+        { href: "/admin/control-room", label: "Centre de contrôle", icon: Gauge, active: pathname === "/admin/control-room" },
+        { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname === "/admin/tracker" },
+      ],
     },
     {
-      href: "/admin/messages",
-      label: "Messages",
-      icon: MessageCircle,
-      active: pathname === "/admin/messages",
+      label: "Communications",
+      items: [
+        { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
+        { href: "/admin?tab=signals", label: "Signaux", icon: Radio, active: isActiveTab("signals") },
+        { href: "/admin?tab=notifications", label: "Notifications", icon: Bell, active: isActiveTab("notifications") },
+      ],
     },
     {
-      href: "/admin?tab=users",
-      label: "Utilisateurs",
-      icon: Users,
-      active: pathname === "/admin" && activeTab === "users",
-    },
-    {
-      href: "/admin?tab=membres",
       label: "Membres",
-      icon: Users,
-      active: pathname === "/admin" && activeTab === "membres",
+      items: [
+        { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, active: isActiveTab("requests") },
+        { href: "/admin?tab=users", label: "Utilisateurs", icon: Users, active: isActiveTab("users") },
+        { href: "/admin?tab=membres", label: "Membres", icon: Users, active: isActiveTab("membres") },
+        { href: "/admin?tab=kyc", label: "Dossiers KYC", icon: FileCheck, active: isActiveTab("kyc") },
+        { href: "/admin?tab=broker", label: "Vérification Broker", icon: Link2, active: isActiveTab("broker") },
+      ],
     },
     {
-      href: "/admin?tab=requests",
-      label: "Demandes d'accès",
-      icon: ListTodo,
-      active: pathname === "/admin" && activeTab === "requests",
-    },
-    {
-      href: "/admin?tab=signals",
-      label: "Signaux",
-      icon: Radio,
-      active: pathname === "/admin" && activeTab === "signals",
-    },
-    {
-      href: "/admin?tab=kyc",
-      label: "Dossiers KYC",
-      icon: FileCheck,
-      active: pathname === "/admin" && activeTab === "kyc",
-    },
-    {
-      href: "/admin?tab=broker",
-      label: "Vérification Broker",
-      icon: Link2,
-      active: pathname === "/admin" && activeTab === "broker",
-    },
-    {
-      href: "/admin?tab=notifications",
-      label: "Notifications",
-      icon: Bell,
-      active: pathname === "/admin" && activeTab === "notifications",
-    },
-    {
-      href: "/admin?tab=audit",
-      label: "Journal d'audit",
-      icon: Activity,
-      active: pathname === "/admin" && activeTab === "audit",
-    },
-    {
-      href: "/admin?tab=security",
-      label: "Centre de sécurité",
-      icon: Shield,
-      active: pathname === "/admin" && activeTab === "security",
-    },
-    {
-      href: "/admin?tab=stats",
-      label: "Statistiques",
-      icon: BarChart2,
-      active: pathname === "/admin" && activeTab === "stats",
-    },
-    {
-      href: "/admin/control-room",
-      label: "Centre de contrôle",
-      icon: Gauge,
-      active: pathname === "/admin/control-room",
-    },
-    {
-      href: "/admin/tracker",
-      label: "Tracker",
-      icon: Activity,
-      active: pathname === "/admin/tracker",
-    },
-    {
-      href: "/admin/webhooks/dlq",
-      label: "DLQ Webhooks",
-      icon: Inbox,
-      active: pathname.startsWith("/admin/webhooks/dlq"),
-    },
-    {
-      href: "/admin?tab=settings",
-      label: "Paramètres",
-      icon: Settings,
-      active: pathname === "/admin" && activeTab === "settings",
+      label: "Système",
+      items: [
+        { href: "/admin?tab=audit", label: "Journal d'audit", icon: Activity, active: isActiveTab("audit") },
+        { href: "/admin?tab=stats", label: "Statistiques", icon: BarChart2, active: isActiveTab("stats") },
+        { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
+        { href: "/admin?tab=security", label: "Sécurité", icon: Shield, active: isActiveTab("security") },
+        { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, active: isActiveTab("settings") },
+      ],
     },
   ]
 
-  const links = isAdmin ? adminLinks : userLinks
+  const links = isAdmin ? adminGroups.flatMap((g) => g.items) : userLinks
   const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
   const { unreadTotal } = useMessagingUnread()
   const isMessagesLink = (href: string) =>
@@ -267,50 +219,93 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
         </div>
 
         {/* Menu Navigation */}
-        <nav className="space-y-1.5">
-          {links.map((link, idx) => {
-            const Icon = link.icon
-            const showBadge = isMessagesLink(link.href) && !!messagesBadge
-            return (
-              <Link
-                key={idx}
-                href={link.href}
-                className={cn(
-                  "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group relative",
-                  isCollapsed ? "justify-center" : "gap-3.5",
-                  link.active
-                    ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-                title={isCollapsed ? link.label : undefined}
-              >
-                {link.active && !isCollapsed && (
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
-                )}
-                <span className="relative inline-flex shrink-0">
-                  <Icon
+        <nav className={isCollapsed ? "space-y-1.5" : "space-y-5"}>
+          {isAdmin && !isCollapsed
+            ? adminGroups.map((group) => (
+                <div key={group.label} className="space-y-1">
+                  <p className="px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
+                    {group.label}
+                  </p>
+                  {group.items.map((link) => {
+                    const Icon = link.icon
+                    const showBadge = isMessagesLink(link.href) && !!messagesBadge
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={cn(
+                          "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group",
+                          "gap-3.5",
+                          link.active
+                            ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {link.active && (
+                          <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
+                        )}
+                        <Icon
+                          className={cn(
+                            "size-4.5 shrink-0 transition-transform duration-200 group-hover:scale-105",
+                            link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                          )}
+                        />
+                        <span className="truncate flex items-center gap-2">
+                          {link.label}
+                          {showBadge && (
+                            <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
+                              {messagesBadge}
+                            </Badge>
+                          )}
+                        </span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              ))
+            : links.map((link, idx) => {
+                const Icon = link.icon
+                const showBadge = isMessagesLink(link.href) && !!messagesBadge
+                return (
+                  <Link
+                    key={idx}
+                    href={link.href}
                     className={cn(
-                      "size-5 transition-transform duration-200 group-hover:scale-105",
-                      link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                      "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group relative",
+                      isCollapsed ? "justify-center" : "gap-3.5",
+                      link.active
+                        ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
-                  />
-                  {showBadge && isCollapsed && (
-                    <span className="absolute -top-1 -right-1 size-2 rounded-full bg-primary ring-2 ring-card" />
-                  )}
-                </span>
-                {!isCollapsed && (
-                  <span className="truncate flex items-center gap-2">
-                    {link.label}
-                    {showBadge && (
-                      <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
-                        {messagesBadge}
-                      </Badge>
+                    title={isCollapsed ? link.label : undefined}
+                  >
+                    {link.active && !isCollapsed && (
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
                     )}
-                  </span>
-                )}
-              </Link>
-            )
-          })}
+                    <span className="relative inline-flex shrink-0">
+                      <Icon
+                        className={cn(
+                          "size-5 transition-transform duration-200 group-hover:scale-105",
+                          link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                        )}
+                      />
+                      {showBadge && isCollapsed && (
+                        <span className="absolute -top-1 -right-1 size-2 rounded-full bg-primary ring-2 ring-card" />
+                      )}
+                    </span>
+                    {!isCollapsed && (
+                      <span className="truncate flex items-center gap-2">
+                        {link.label}
+                        {showBadge && (
+                          <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
+                            {messagesBadge}
+                          </Badge>
+                        )}
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
 
           {/* Switch to Admin for privileged users */}
           {showAdminSwitch && (
