@@ -5,6 +5,7 @@ import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { AdminHeader } from "./admin/components/admin-header"
+import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -25,9 +26,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="flex min-h-dvh flex-col md:flex-row noise">
-      {/* Desktop Sidebar */}
-      <Sidebar isAdmin={true} user={user} />
+    <MessagingUnreadProvider>
+      <div className="flex min-h-dvh flex-col md:flex-row noise">
+        {/* Desktop Sidebar */}
+        <Sidebar isAdmin={true} user={user} />
 
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
@@ -55,6 +57,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav isAdmin={true} user={user} />
-    </div>
+      </div>
+    </MessagingUnreadProvider>
   )
 }
