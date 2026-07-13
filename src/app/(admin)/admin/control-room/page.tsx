@@ -179,13 +179,13 @@ export default function ControlRoomPage() {
             Vue opérationnelle connectée à la base — signaux, livraisons email & push.
           </p>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
           <RefreshCw className="size-3" />
           <span>Auto-refresh 10s</span>
           {lastUpdate && <span>· MAJ {timeAgo(lastUpdate.toISOString())}</span>}
           <button
             onClick={fetchData}
-            className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-[10px] hover:bg-muted/50"
+            className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-[10px] hover:bg-muted/50 min-h-[32px]"
           >
             Rafraîchir
           </button>

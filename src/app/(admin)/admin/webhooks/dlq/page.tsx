@@ -83,7 +83,7 @@ export default function DlqPage() {
 
       {/* Stats */}
       {stats && (
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card className="border-border bg-card/30">
             <CardContent className="p-4">
               <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
