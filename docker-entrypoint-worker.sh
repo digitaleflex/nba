@@ -15,6 +15,11 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
+# Regenerate Prisma client to match the current DB schema
+# (avoids stale client after a CI/CD migration deploy)
+echo "Regenerating Prisma client..."
+pnpm prisma generate >/dev/null 2>&1 || echo "  (warning: prisma generate failed, continuing with existing client)"
+
 # Configure B2 CLI
 if [ -n "$B2_APPLICATION_KEY_ID" ] && [ -n "$B2_APPLICATION_KEY" ]; then
   b2 authorize-account "$B2_APPLICATION_KEY_ID" "$B2_APPLICATION_KEY" >/dev/null 2>&1
