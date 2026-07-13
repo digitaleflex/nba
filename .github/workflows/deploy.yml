@@ -41,7 +41,17 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/audest/nba
+            echo "=== git pull ==="
             git pull
-            docker compose pull
-            docker compose up -d
+            echo "=== docker compose pull (nba-app) ==="
+            # --ignore-pull-failures ne fait pas planter le deploy si GHCR est down
+            docker compose pull --ignore-pull-failures nba-app 2>&1 | tail -5
+            echo "=== docker compose up -d nba-app ==="
+            docker compose up -d nba-app
+            echo "=== Status final ==="
+            docker compose ps nba-app
+            echo "=== Health check ==="
+            sleep 10
+            curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 5 https://access.signauxx.com/login || echo "login KO"

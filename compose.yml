@@ -1,6 +1,9 @@
 services:
   app:
     image: ghcr.io/digitaleflex/nba
+    # Force le pull de la derniere image a chaque `up -d` pour eviter
+    # d'utiliser une image locale obsolete (incident 2026-07-13).
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile
