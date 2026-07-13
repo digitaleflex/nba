@@ -23,6 +23,11 @@ vi.mock("@nba/lib/email", () => ({
   sendEmail: vi.fn(async () => "alert-id"),
 }))
 
+vi.mock("@nba/lib/services/email-status", () => ({
+  markUserBounced: vi.fn(async () => null),
+  markUserComplained: vi.fn(async () => null),
+}))
+
 import { POST } from "./route"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
@@ -111,5 +116,26 @@ describe("POST /api/webhooks/resend", () => {
     const res = await POST(makeRequest({ type: "email.sent", data: {} }))
     expect(res.status).toBe(200)
     expect(prisma.emailEvent.create).not.toHaveBeenCalled()
+  })
+
+  it("marque FAILED + alerte admin sur email.failed (Sprint 1 #61)", async () => {
+    const failedEvent = {
+      type: "email.failed",
+      data: {
+        email_id: "resend-789",
+        to: ["x@exemple.com"],
+        reason: "API Key Invalid",
+      },
+    }
+    mockVerify.mockReturnValue(failedEvent)
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({ id: "d3", status: "PENDING" })
+
+    const res = await POST(makeRequest(failedEvent))
+    expect(res.status).toBe(200)
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith({
+      where: { id: "d3" },
+      data: { status: "FAILED", errorMessage: "email.failed: API Key Invalid" },
+    })
+    expect(sendEmail).toHaveBeenCalledOnce() // alerte admin
   })
 })

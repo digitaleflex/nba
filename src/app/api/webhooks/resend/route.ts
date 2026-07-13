@@ -93,6 +93,16 @@ export async function POST(req: NextRequest) {
         )
       }
       await alertAdmin(type, emailId, event.data)
+    } else if (type === "email.failed") {
+      // Sprint 1 (#61) : echec d'envoi cote expediteur (cle API, quota, etc.)
+      // Different d'un bounce (qui est cote destinataire).
+      const reason =
+        (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { status: "FAILED", errorMessage: `email.failed: ${reason}` },
+      })
+      await alertAdmin(type, emailId, event.data)
     } else if (type === "email.delivered" && delivery.status !== "BOUNCED") {
       await prisma.notificationDelivery.update({
         where: { id: delivery.id },
