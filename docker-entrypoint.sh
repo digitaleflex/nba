@@ -39,7 +39,7 @@ echo "=== Setup complete. Starting app... ==="
 # Build the PM2 ecosystem dynamically based on WS_ENABLED
 if [ "$WS_ENABLED" = "true" ]; then
   echo "Starting WebSocket + Next.js via PM2..."
-  ECOSYSTEM_FILE="/app/ecosystem.runtime.cjs"
+  ECOSYSTEM_FILE="/app/ecosystem.config.cjs"
   cat > "$ECOSYSTEM_FILE" <<'EOF'
 module.exports = {
   apps: [

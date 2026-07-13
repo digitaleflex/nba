@@ -320,6 +320,12 @@ export default function MessagesPage() {
     }
   }, [])
 
+  // Chargement initial de la liste, indépendant du socket : évite un spinner
+  // infini si le WebSocket est indisponible (la liste doit s'afficher quand même).
+  useEffect(() => {
+    loadConversations().finally(() => setLoading(false))
+  }, [loadConversations])
+
   useEffect(() => {
     setOnConnect(() => {
       loadConversations().finally(() => setLoading(false))
