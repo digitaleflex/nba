@@ -8,6 +8,10 @@ import {
   type DeliveryBucket,
 } from "@nba/lib/services/resend-delivery"
 import { LiveRefresh } from "./live-refresh"
+import IORedis from "ioredis"
+import Link from "next/link"
+import { revalidatePath } from "next/cache"
+import { cn } from "@nba/design-system"
 
 const RECENT_SIGNALS = 12
 
@@ -48,9 +52,22 @@ function snippet(content: string): string {
 
 export const dynamic = "force-dynamic"
 
-export default async function SignalTrackerPage() {
+export default async function SignalTrackerPage({
+  searchParams: sp,
+}: {
+  searchParams: Promise<{ q?: string; status?: string }>
+}) {
+  const searchParams = await sp
+  const query = searchParams.q?.toLowerCase() ?? ""
+  const filterStatus = searchParams.status ?? ""
+
+  const where: any = { status: "PUBLISHED", deletedAt: null }
+  if (query) {
+    where.content = { contains: query, mode: "insensitive" }
+  }
+
   const signals = await prisma.signal.findMany({
-    where: { status: "PUBLISHED", deletedAt: null },
+    where,
     orderBy: { publishedAt: "desc" },
     take: RECENT_SIGNALS,
     select: {
@@ -60,6 +77,26 @@ export default async function SignalTrackerPage() {
       audience: { select: { plan: { select: { name: true } } } },
     },
   })
+
+  // Worker health check
+  let workerHealth = { signalWorker: "inconnu", notifWorker: "inconnu", pendingJobs: 0 }
+  try {
+    const redisUrl = process.env.REDIS_URL
+    if (redisUrl) {
+      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
+      const [sigMeta, notifMeta, pendingSig] = await Promise.all([
+        r.hget("bull:signal-distribution:meta", "version").catch(() => null),
+        r.hget("bull:notification-delivery:meta", "version").catch(() => null),
+        r.zcard("bull:signal-distribution:wait").catch(() => 0),
+      ])
+      workerHealth = {
+        signalWorker: sigMeta ? "actif" : "inactif",
+        notifWorker: notifMeta ? "actif" : "inactif",
+        pendingJobs: pendingSig,
+      }
+      await r.quit()
+    }
+  } catch {} // Redis indisponible, on ignore
 
   const rows: SignalRow[] = []
   const allExternalIds: string[] = []
@@ -175,25 +212,86 @@ export default async function SignalTrackerPage() {
     { recipients: 0, inAppRead: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pushSent: 0, pushFailed: 0 },
   )
 
+  const statusCounts = {
+    all: rows.length,
+    delivered: rows.reduce((a, r) => a + r.delivered, 0),
+    bounced: rows.reduce((a, r) => a + r.bounced, 0),
+    pending: rows.reduce((a, r) => a + r.pending, 0),
+  }
+
+  async function handleRetryAll() {
+    "use server"
+    try {
+      const redisUrl = process.env.REDIS_URL
+      if (!redisUrl) return
+      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
+      const failed = await r.zrange("bull:signal-distribution:failed", 0, -1)
+      for (const id of failed) {
+        await r.zrem("bull:signal-distribution:failed", id)
+        await r.zadd("bull:signal-distribution:wait", Date.now(), id)
+        await r.hdel("bull:signal-distribution:" + id, "failedReason", "finishedOn", "processedOn", "stacktrace")
+      }
+      await r.quit()
+    } catch {}
+    revalidatePath("/admin/tracker")
+  }
+
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <div className="flex items-center gap-2">
-          <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité des signaux</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité</h1>
           <span className="inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
             <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-            Temps réel (webhooks)
+            Temps réel
           </span>
+          <div className="ml-auto flex items-center gap-2">
+            <LiveRefresh />
+          </div>
         </div>
-        <p className="text-sm text-muted-foreground mt-1">
-          Chaque signal publié est distribué à tous les membres des groupes ciblés via <b>email</b> +{" "}
-          <b>notification in-app</b> + <b>push web</b>. Le statut email est suivi en temps réel via les
-          webhooks Resend (ouverture, livraison, bounce, plainte). Les statuts push/in-app sont suivis
-          à la distribution.
-        </p>
-        <div className="mt-2">
-          <LiveRefresh />
-        </div>
+      </div>
+
+      {/* Worker Status Bar */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <WorkerKpi label="Worker signaux" value={workerHealth.signalWorker} />
+        <WorkerKpi label="Worker emails" value={workerHealth.notifWorker} />
+        <WorkerKpi label="Jobs en attente" value={String(workerHealth.pendingJobs)} />
+        <WorkerKpi label="Signaux analysés" value={String(rows.length)} />
+      </div>
+
+      {/* Filtres + actions */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <form className="flex items-center gap-2">
+          <input
+            name="q"
+            defaultValue={query}
+            placeholder="Rechercher un signal..."
+            className="h-9 rounded-lg border border-border bg-background px-3 text-xs w-64 outline-none focus:border-primary"
+          />
+          <button
+            type="submit"
+            className="h-9 rounded-lg bg-primary text-primary-foreground px-4 text-xs font-medium hover:bg-primary/90"
+          >
+            Filtrer
+          </button>
+          {query && (
+            <Link
+              href="/admin/tracker"
+              className="h-9 rounded-lg border border-border px-3 text-xs flex items-center text-muted-foreground hover:text-foreground"
+            >
+              Réinitialiser
+            </Link>
+          )}
+        </form>
+        <form action={handleRetryAll}>
+          <button
+            type="submit"
+            className="h-9 rounded-lg border border-amber-500/30 text-amber-600 bg-amber-500/5 px-4 text-xs font-medium hover:bg-amber-500/10"
+          >
+            Re-tenter les jobs échoués
+          </button>
+        </form>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
@@ -224,22 +322,20 @@ export default async function SignalTrackerPage() {
                 <th className="px-4 py-2.5 font-medium text-right">Bounces</th>
                 <th className="px-4 py-2.5 font-medium text-right">Plaintes</th>
                 <th className="px-4 py-2.5 font-medium text-right">Push</th>
+                <th className="px-4 py-2.5 font-medium text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {rows.map((r) => (
-                <tr key={r.id} className="hover:bg-muted/30">
-                  <td className="px-4 py-3 max-w-[260px]">
+                <tr key={r.id} className="hover:bg-muted/30 group">
+                  <td className="px-4 py-3 max-w-[200px]">
                     <div className="font-medium truncate">{r.title}</div>
                     <div className="text-xs text-muted-foreground">
                       {r.publishedAt ? new Date(r.publishedAt).toLocaleString("fr-FR") : "—"}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.plans}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs max-w-[100px] truncate">{r.plans}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.recipients}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">
-                    {r.inAppRead}/{r.recipients}
-                  </td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.emailsSent}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-success">{r.delivered}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-info">{r.opened}</td>
@@ -251,12 +347,20 @@ export default async function SignalTrackerPage() {
                       <span className="text-destructive"> / {r.pushFailed}</span>
                     )}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <Link
+                      href={`/admin?tab=signals`}
+                      className="opacity-0 group-hover:opacity-100 text-xs text-primary hover:underline"
+                    >
+                      Voir
+                    </Link>
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
-                    Aucun signal publié récemment.
+                  <td colSpan={11} className="px-4 py-10 text-center text-muted-foreground">
+                    {query ? `Aucun signal ne correspond à "${query}".` : "Aucun signal publié récemment."}
                   </td>
                 </tr>
               )}
@@ -355,4 +459,17 @@ function BucketBadge({ bucket, event }: { bucket: string; event: string | null }
   }
   const cls = map[bucket] ?? map.unknown
   return <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${cls}`}>{event ?? bucket}</span>
+}
+
+function WorkerKpi({ label, value }: { label: string; value: string }) {
+  const ok = value === "actif"
+  return (
+    <div className="rounded-xl border border-border bg-card px-3 py-2.5 flex items-center justify-between gap-2">
+      <span className="text-xs text-muted-foreground">{label}</span>
+      <span className={cn("inline-flex items-center gap-1.5 text-xs font-semibold", ok ? "text-success" : "text-destructive")}>
+        <span className={cn("h-2 w-2 rounded-full", ok ? "bg-success" : "bg-destructive")} />
+        {value}
+      </span>
+    </div>
+  )
 }
