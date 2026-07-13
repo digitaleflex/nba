@@ -11,7 +11,7 @@ vi.mock("@nba/lib/services/audit", () => ({
   logAuditEvent: vi.fn(async () => {}),
 }))
 
-import { markUserBounced, markUserComplained } from "./email-status"
+import { markUserBounced, markUserComplained, markUserSuppressed } from "./email-status"
 import { prisma } from "@nba/lib/db"
 import { logAuditEvent } from "@nba/lib/services/audit"
 
@@ -173,5 +173,70 @@ describe("markUserComplained", () => {
 
     await markUserComplained("ext-1")
     expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+})
+
+describe("markUserSuppressed", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  it("retourne null si pas de delivery", async () => {
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue(null)
+    const r = await markUserSuppressed("ext-1")
+    expect(r).toBeNull()
+  })
+
+  it("OK -> SUPPRESSED + audit (Bonus #74)", async () => {
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d1",
+      notification: {
+        userId: "u1",
+        user: { email: "x@x.com", name: "X", isActive: true, emailStatus: "OK" },
+      },
+    })
+    ;(prisma.user.update as any).mockResolvedValue({})
+
+    const r = await markUserSuppressed("ext-1", "admin-1")
+
+    expect(r).toEqual({ userId: "u1", email: "x@x.com", wasActive: true })
+    expect(prisma.user.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "u1" },
+        data: expect.objectContaining({ emailStatus: "SUPPRESSED" }),
+      }),
+    )
+    expect(logAuditEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        details: expect.objectContaining({ from: "OK", to: "SUPPRESSED", reason: "email.suppressed" }),
+      }),
+    )
+  })
+
+  it("idempotent : deja SUPPRESSED -> pas d'update", async () => {
+    ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+      id: "d1",
+      notification: {
+        userId: "u1",
+        user: { email: "x@x.com", name: "X", isActive: true, emailStatus: "SUPPRESSED" },
+      },
+    })
+    await markUserSuppressed("ext-1")
+    expect(prisma.user.update).not.toHaveBeenCalled()
+  })
+
+  it("ne downgrade jamais depuis COMPLAINED ou INVALID", async () => {
+    for (const severe of ["COMPLAINED", "INVALID"]) {
+      vi.clearAllMocks()
+      ;(prisma.notificationDelivery.findFirst as any).mockResolvedValue({
+        id: "d1",
+        notification: {
+          userId: "u1",
+          user: { email: "x@x.com", name: "X", isActive: true, emailStatus: severe },
+        },
+      })
+      await markUserSuppressed("ext-1")
+      expect(prisma.user.update).not.toHaveBeenCalled()
+    }
   })
 })

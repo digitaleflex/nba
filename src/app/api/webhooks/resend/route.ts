@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
-import { markUserBounced, markUserComplained } from "@nba/lib/services/email-status"
+import { markUserBounced, markUserComplained, markUserSuppressed } from "@nba/lib/services/email-status"
 import { enqueueDlq } from "@nba/lib/services/webhook-dlq"
 
 export const runtime = "nodejs"
@@ -171,17 +171,23 @@ async function processDeliveryEvent(args: {
       )
     }
     await alertAdmin(type, emailId, event.data)
-  } else if (type === "email.failed") {
-    // Sprint 1 (#61) : echec d'envoi cote expediteur (cle API, quota, etc.)
-    // Different d'un bounce (qui est cote destinataire).
-    const reason =
-      (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
-    await prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
-    })
-    await alertAdmin(type, emailId, event.data)
-  } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
+    } else if (type === "email.failed") {
+      // Sprint 1 (#61) : echec d'envoi cote expediteur (cle API, quota, etc.)
+      // Different d'un bounce (qui est cote destinataire).
+      const reason =
+        (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
+      await prisma.notificationDelivery.update({
+        where: { id: delivery.id },
+        data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
+      })
+      await alertAdmin(type, emailId, event.data)
+    } else if (type === "email.suppressed") {
+      // Bonus #74 : Resend refuse l'envoi (destinataire sur suppression list)
+      // On marque le user SUPPRESSED -> skip les futurs envois
+      await markUserSuppressed(emailId).catch((err) =>
+        console.error("[resend-webhook] markUserSuppressed failed:", err),
+      )
+    } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
     await prisma.notificationDelivery.update({
       where: { id: delivery.id },
       data: { status: "SENT", sentAt: eventTs, lastEventAt: eventTs },

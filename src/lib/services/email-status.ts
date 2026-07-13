@@ -151,3 +151,60 @@ export async function markUserComplained(
 
   return { userId, email: u.email, wasActive: u.isActive }
 }
+
+/**
+ * Bonus #74 : marque le user comme SUPPRESSED suite a un
+ * evenement `email.suppressed` Resend. Resend refuse d'envoyer aux
+ * adresses sur sa suppression list (hard bounces repetes, plaintes,
+ * etc.). On marque le user pour skip les futurs envois et eviter
+ * de polluer le reputation score.
+ *
+ * Idempotent. Cree un audit log.
+ */
+export async function markUserSuppressed(
+  externalId: string,
+  triggeredBy?: string,
+): Promise<{ userId: string; email: string; wasActive: boolean } | null> {
+  const delivery = await prisma.notificationDelivery.findFirst({
+    where: { channel: "EMAIL", externalId },
+    select: {
+      id: true,
+      notification: {
+        select: {
+          userId: true,
+          user: { select: { email: true, name: true, isActive: true, emailStatus: true } },
+        },
+      },
+    },
+  })
+  if (!delivery?.notification?.userId) return null
+
+  const userId = delivery.notification.userId
+  const u = delivery.notification.user
+
+  // Ne pas "downgrader" : COMPLAINED / INVALID restent prioritaires
+  const alreadySevere = u.emailStatus === "COMPLAINED" || u.emailStatus === "INVALID"
+
+  if (!alreadySevere && u.emailStatus !== "SUPPRESSED") {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { emailStatus: "SUPPRESSED", emailStatusAt: new Date() },
+    })
+
+    await logAuditEvent({
+      userId: triggeredBy,
+      action: "user.email_status_changed",
+      resourceType: "user",
+      resourceId: userId,
+      details: {
+        from: u.emailStatus,
+        to: "SUPPRESSED",
+        reason: "email.suppressed",
+        previousActive: u.isActive,
+        email: u.email,
+      },
+    })
+  }
+
+  return { userId, email: u.email, wasActive: u.isActive }
+}
