@@ -131,6 +131,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       active: pathname === "/admin" && activeTab === "dashboard",
     },
     {
+      href: "/admin/messages",
+      label: "Messages",
+      icon: MessageCircle,
+      active: pathname === "/admin/messages",
+    },
+    {
       href: "/admin?tab=users",
       label: "Utilisateurs",
       icon: Users,
@@ -201,7 +207,8 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
   const links = isAdmin ? adminLinks : userLinks
   const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
   const { unreadTotal } = useMessagingUnread()
-  const isMessagesLink = (href: string) => href === "/dashboard/messages"
+  const isMessagesLink = (href: string) =>
+    href === "/dashboard/messages" || href === "/admin/messages"
   const messagesBadge =
     unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
 
