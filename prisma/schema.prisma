@@ -461,13 +461,15 @@ model EmailEvent {
   deliveryId String?  @map("delivery_id") @db.Uuid
   externalId String   @map("external_id") // Resend message id (matches NotificationDelivery.externalId)
   svixId     String   @map("svix_id") // Svix event id (deduplication)
-  type       String // email.sent | email.delivered | email.opened | email.bounced | email.complained
+  type       String // email.sent | email.delivered | email.opened | email.clicked | email.bounced | email.complained | email.failed | email.delivery_delayed | email.suppressed
   createdAt  DateTime @default(now()) @map("created_at")
   raw        Json?    @db.JsonB
+  clickLink  String?  @map("click_link") // URL cliquée (event email.clicked uniquement)
 
   @@unique([svixId])
   @@index([externalId])
   @@index([deliveryId])
+  @@index([type])
   @@map("email_events")
 }
 

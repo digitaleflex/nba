@@ -68,8 +68,13 @@ export async function POST(req: NextRequest) {
 
   // Deduplicate by Svix event id (unique constraint on email_events.svix_id)
   try {
+    // Sprint 2 (#63) : extraire l'URL cliquée pour les events email.clicked
+    const clickLink =
+      type === "email.clicked"
+        ? (event.data as any)?.click?.link ?? null
+        : null
     await prisma.emailEvent.create({
-      data: { externalId: emailId, svixId, type, raw: event as object },
+      data: { externalId: emailId, svixId, type, raw: event as object, clickLink },
     })
   } catch (e: any) {
     if (e?.code === "P2002") {

@@ -20,6 +20,7 @@ import {
   CheckCircle2,
   Inbox,
   MailOpen,
+  MousePointerClick,
   ShieldAlert,
   Loader2,
   RefreshCw,
@@ -45,6 +46,9 @@ type ControlRoomData = {
     bounced: number
     complained: number
     openRate: number
+    clicks: number
+    ctr: number
+    topClickLinks: { link: string; count: number }[]
     pushSentLast24h: number
     pushFailedLast24h: number
     pushSubsCount: number
@@ -55,6 +59,7 @@ type ControlRoomData = {
     emailsSent: number
     delivered: number
     opened: number
+    clicked: number
     bounced: number
     complained: number
   }
@@ -238,6 +243,12 @@ export default function ControlRoomPage() {
           value={k?.opened ?? 0}
         />
         <KpiCard
+          icon={<MousePointerClick className="size-4" />}
+          label="Clics (7j)"
+          value={k?.clicks ?? 0}
+          sub={`${k?.ctr ?? 0}% CTR`}
+        />
+        <KpiCard
           icon={<ShieldAlert className="size-4 text-rose-600" />}
           label="Bounces (7j)"
           value={k?.bounced ?? 0}
@@ -268,6 +279,7 @@ export default function ControlRoomPage() {
               <FunnelBar label="Emails envoyés" value={f?.emailsSent ?? 0} max={Math.max(1, f?.signals ?? 1)} color="bg-blue-500" />
               <FunnelBar label="Délivrés" value={f?.delivered ?? 0} max={Math.max(1, f?.signals ?? 1)} color="bg-emerald-500" />
               <FunnelBar label="Ouverts" value={f?.opened ?? 0} max={Math.max(1, f?.signals ?? 1)} color="bg-emerald-400" />
+              <FunnelBar label="Clics" value={f?.clicked ?? 0} max={Math.max(1, f?.signals ?? 1)} color="bg-emerald-300" />
               {((f?.bounced ?? 0) > 0 || (f?.complained ?? 0) > 0) && (
                 <>
                   <FunnelBar label="Bounces" value={f?.bounced ?? 0} max={Math.max(1, f?.signals ?? 1)} color="bg-rose-500" />
@@ -275,6 +287,25 @@ export default function ControlRoomPage() {
                 </>
               )}
             </div>
+
+            {/* Top liens cliqués (Sprint 2 #63) */}
+            {(k?.topClickLinks ?? []).length > 0 && (
+              <div className="pt-4 mt-4 border-t border-border/60">
+                <h3 className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground pb-2">
+                  Top liens cliqués (7j)
+                </h3>
+                <div className="space-y-1.5">
+                  {k!.topClickLinks.map((l) => (
+                    <div key={l.link} className="flex items-center justify-between gap-2 text-[11px]">
+                      <span className="truncate font-mono text-foreground/80" title={l.link}>
+                        {l.link}
+                      </span>
+                      <span className="font-bold text-primary whitespace-nowrap">{l.count}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

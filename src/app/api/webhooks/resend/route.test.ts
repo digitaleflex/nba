@@ -178,4 +178,34 @@ describe("POST /api/webhooks/resend", () => {
       expect(sendEmail).not.toHaveBeenCalled()
     }
   })
+
+  it("extrait clickLink du payload email.clicked (Sprint 2 #63)", async () => {
+    const clickedEvent = {
+      type: "email.clicked",
+      data: {
+        email_id: "resend-click-1",
+        click: { link: "https://access.signauxx.com/dashboard/signals/abc" },
+      },
+    }
+    mockVerify.mockReturnValue(clickedEvent)
+
+    const res = await POST(makeRequest(clickedEvent))
+    expect(res.status).toBe(200)
+    expect(prisma.emailEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        externalId: "resend-click-1",
+        type: "email.clicked",
+        clickLink: "https://access.signauxx.com/dashboard/signals/abc",
+      }),
+    })
+  })
+
+  it("email.clicked sans click.link -> clickLink null", async () => {
+    mockVerify.mockReturnValue({ type: "email.clicked", data: { email_id: "x" } })
+    const res = await POST(makeRequest({ type: "email.clicked", data: { email_id: "x" } }))
+    expect(res.status).toBe(200)
+    expect(prisma.emailEvent.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({ clickLink: null }),
+    })
+  })
 })

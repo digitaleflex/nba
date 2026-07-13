@@ -39,6 +39,8 @@ export async function GET() {
           notificationsLast7d,
           emailsSentLast7d,
           recentEmailEvents,
+          clicksLast7d,
+          topClickLinks,
           pushSentLast24h,
           pushFailedLast24h,
           pushSubsCount,
@@ -59,6 +61,14 @@ export async function GET() {
             orderBy: { createdAt: "desc" },
             take: 40,
             select: { type: true, externalId: true, createdAt: true },
+          }),
+          prisma.emailEvent.count({ where: { type: "email.clicked", createdAt: { gte: last7d } } }),
+          prisma.emailEvent.groupBy({
+            by: ["clickLink"],
+            where: { type: "email.clicked", createdAt: { gte: last7d }, clickLink: { not: null } },
+            _count: true,
+            orderBy: { _count: { clickLink: "desc" } },
+            take: 5,
           }),
           prisma.notificationDelivery.count({
             where: { channel: "PUSH", status: "SENT", createdAt: { gte: last24h } },
@@ -114,9 +124,11 @@ export async function GET() {
           const map: Record<string, { title: string; status: FeedItem["status"] }> = {
             "email.delivered": { title: "Email délivré", status: "ok" },
             "email.opened": { title: "Email ouvert", status: "ok" },
+            "email.clicked": { title: "Lien cliqué", status: "ok" },
             "email.bounced": { title: "Email rejeté (bounce)", status: "danger" },
             "email.complained": { title: "Plainte email", status: "danger" },
             "email.sent": { title: "Email envoyé", status: "ok" },
+            "email.failed": { title: "Échec d'envoi", status: "danger" },
           }
           const m = map[e.type]
           if (!m) continue
@@ -194,6 +206,11 @@ export async function GET() {
             bounced,
             complained,
             openRate: delivered > 0 ? Math.round((opened / delivered) * 100) : 0,
+            clicks: clicksLast7d,
+            ctr: delivered > 0 ? Math.round((clicksLast7d / delivered) * 100) : 0,
+            topClickLinks: topClickLinks
+              .filter((t) => t.clickLink)
+              .map((t) => ({ link: t.clickLink as string, count: t._count })),
             pushSentLast24h,
             pushFailedLast24h,
             pushSubsCount,
@@ -204,6 +221,7 @@ export async function GET() {
             emailsSent: emailsSentLast7d,
             delivered,
             opened,
+            clicked: clicksLast7d,
             bounced,
             complained,
           },
