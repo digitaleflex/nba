@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Bell, CheckSquare, User, Loader2, ArrowRight } from "lucide-react"
 import { cn } from "@nba/design-system"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 
 interface SearchResults {
   users: { id: string; name: string; email: string }[]
@@ -47,6 +48,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   // Recherche avec debounce
   useEffect(() => {
     if (query.length < 2) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setResults(null)
       return
     }
@@ -118,6 +120,9 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           >
             <Bell className="size-4" />
           </button>
+
+          {/* Notifications push (web) */}
+          <PushNotificationToggle compact />
 
           {/* Admin Profil */}
           <div className="flex items-center gap-2 pl-2 border-l border-neutral-200/60 dark:border-neutral-800/60">
@@ -247,7 +252,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                   {results.audit.length > 0 && (
                     <div>
                       <h4 className="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                        Activités d'audit
+                        Activités d&apos;audit
                       </h4>
                       <div className="space-y-0.5">
                         {results.audit.map((a) => (

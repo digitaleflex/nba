@@ -26,6 +26,7 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
   useEffect(() => {
     if (typeof window === "undefined") return
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSupported(false)
       return
     }

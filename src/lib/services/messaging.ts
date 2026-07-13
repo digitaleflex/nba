@@ -2,6 +2,7 @@ import { prisma } from "@nba/lib/db"
 import { publishMessage, publishMessageRead } from "@nba/lib/redis-pubsub"
 import { getStorage } from "@nba/lib/storage"
 import { AuthError } from "@nba/lib/auth-utils"
+import { sendPushToUser } from "@nba/lib/services/push"
 
 export const MESSAGE_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"]
 export const MESSAGE_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"]
@@ -300,6 +301,7 @@ export async function sendMessage(
 
   const others = await prisma.conversationParticipant.findMany({
     where: { conversationId, userId: { not: senderId } },
+    include: { user: { select: { role: { select: { name: true } } } } },
   })
 
   const payload = {
@@ -322,6 +324,29 @@ export async function sendMessage(
   }
   for (const p of others) {
     await publishMessage(p.userId, payload)
+  }
+
+  // Notification push web (type WhatsApp) : le destinataire reçoit une Notif
+  // sur son téléphone même si l'onglet est fermé. Fire-and-forget.
+  const preview = message.content?.trim()
+    ? message.content
+    : message.type === "IMAGE"
+      ? "🖼️ Image"
+      : message.type === "VIDEO"
+        ? "🎥 Vidéo"
+        : "Message"
+  for (const p of others) {
+    const recipientIsAdmin =
+      p.user?.role?.name === "ADMIN" || p.user?.role?.name === "SUPER_ADMIN"
+    const url = recipientIsAdmin
+      ? `/admin/messages?conv=${conversationId}`
+      : `/dashboard/messages?conv=${conversationId}`
+    sendPushToUser(p.userId, {
+      title: `${message.sender.name}`,
+      body: preview,
+      url,
+      tag: `msg-${conversationId}`,
+    }).catch((err) => console.error("[push] message push failed:", err))
   }
 
   return {
