@@ -83,12 +83,15 @@ export async function createSignal(input: CreateSignalInput) {
       queueFailed = true
     }
   } else if (parsed.status === "PUBLISHED") {
+    const qType = signalDistributionQueue.constructor.name
+    console.log(`[signal] Queue type: ${qType}, name: ${(signalDistributionQueue as any).name ?? "?"}, signalId: ${signal.id}`)
     try {
-      await signalDistributionQueue.add(`distribute-${signal.id}`, {
+      const job = await signalDistributionQueue.add(`distribute-${signal.id}`, {
         signalId: signal.id,
       })
+      console.log(`[signal] Queue add success, job id: ${job.id}, signalId: ${signal.id}`)
     } catch (err) {
-      console.error("[signal] BullMQ failed during publication:", err)
+      console.error(`[signal] BullMQ failed during publication (queue=${qType}, signalId=${signal.id}):`, err)
       queueFailed = true
     }
   }

@@ -11,12 +11,12 @@ function getResend(): Resend {
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "noreply@signauxx.com"
 const APP_NAME = "NeverBrokeAgain"
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"
+const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL || "https://signauxx.com").replace(/\/+$/, "")
 
 // ── Logo ──
 
 const LOGO_IMG = `<img
-  src="${process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"}/logo.png"
+  src="${APP_DOMAIN}/logo.png"
   alt="NeverBrokeAgain"
   width="120"
   height="120"

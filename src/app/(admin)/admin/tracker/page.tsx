@@ -9,12 +9,24 @@ import {
 } from "@nba/lib/services/resend-delivery"
 import { LiveRefresh } from "./live-refresh"
 import { SignalTableClient } from "./signal-table-client"
+import { UserTimeline } from "./user-timeline"
 import IORedis from "ioredis"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
 import { cn } from "@nba/design-system"
 
 const RECENT_SIGNALS = 12
+
+interface UserSignalCompact {
+  signalId: string
+  signalTitle: string
+  publishedAt: string
+  plans: string
+  emailBucket: string
+  emailEvent: string | null
+  pushStatus: string | null
+  inAppRead: boolean
+}
 
 interface PerUser {
   email: string
@@ -220,6 +232,28 @@ export default async function SignalTrackerPage({
     pending: rows.reduce((a, r) => a + r.pending, 0),
   }
 
+  // Build per-user timeline data (aggregate all signals per user)
+  const userMap = new Map<string, { id: string; name: string; email: string; signals: UserSignalCompact[] }>()
+  for (const row of rows) {
+    for (const u of row.perUser) {
+      const key = u.email
+      if (!userMap.has(key)) {
+        userMap.set(key, { id: key, name: u.name, email: u.email, signals: [] })
+      }
+      userMap.get(key)!.signals.push({
+        signalId: row.id,
+        signalTitle: row.title,
+        publishedAt: row.publishedAt?.toISOString() ?? "",
+        plans: row.plans,
+        emailBucket: u.emailBucket,
+        emailEvent: u.emailEvent,
+        pushStatus: u.pushStatus,
+        inAppRead: u.inAppRead,
+      })
+    }
+  }
+  const users = Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
+
   async function handleRetryAll() {
     "use server"
     try {
@@ -315,6 +349,9 @@ export default async function SignalTrackerPage({
           publishedAt: r.publishedAt?.toISOString() ?? null,
         }))}
       />
+
+      {/* Timeline individuelle par utilisateur */}
+      <UserTimeline users={users} />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent } from "@nba/design-system"
 import { TrendingUp, BarChart3, Users, Activity } from "lucide-react"
+import { PushOnboardingBanner } from "@nba/components/push-onboarding-banner"
 
 export default async function DashboardPage() {
   const session = await getServerSession()
@@ -41,6 +42,8 @@ export default async function DashboardPage() {
           Bienvenue sur votre tableau de bord
         </p>
       </div>
+
+      <PushOnboardingBanner />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         <Card className="relative overflow-hidden">

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
-import { Loader2 } from "lucide-react"
+import { Loader2, ChevronDown } from "lucide-react"
 import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
 import { AccessRequest, CachedGet } from "./types"
@@ -21,6 +21,8 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
   const [rejectTarget, setRejectTarget] = useState<string | null>(null)
   const [rejectReason, setRejectReason] = useState<string>("")
   const [rejectNotes, setRejectNotes] = useState<string>("")
+  const [reexamineTarget, setReexamineTarget] = useState<string | null>(null)
+  const [reexamineOpen, setReexamineOpen] = useState(false)
 
   const fetchRequests = useCallback(async (status = "ALL") => {
     setLoadingRequests(true)
@@ -43,6 +45,25 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchRequests(requestStatusFilter)
   }, [requestStatusFilter, fetchRequests])
+
+  function openReexamine(id: string) {
+    setReexamineTarget(id)
+    setReexamineOpen(true)
+  }
+
+  async function handleReexamine(status: "APPROVED" | "REJECTED" | "REVOKED" | "SUSPENDED") {
+    if (!reexamineTarget) return
+    invalidate()
+    await fetch(`/api/admin/access-requests/${reexamineTarget}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status, reviewerId: "admin", notes: `Réexaminé → ${status}` }),
+    })
+    setReexamineOpen(false)
+    setReexamineTarget(null)
+    fetchRequests(requestStatusFilter)
+    refreshOps()
+  }
 
   async function handleApprove(id: string) {
     if (!confirm("Approuver cette demande d'accès ?")) return
@@ -158,6 +179,13 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                         <span className="font-medium">Motif :</span> {req.notes}
                       </p>
                     )}
+                    <button
+                      onClick={() => openReexamine(req.id)}
+                      className="mt-2 inline-flex items-center gap-1 text-[10px] text-primary hover:underline cursor-pointer"
+                    >
+                      <ChevronDown className="size-3" />
+                      Réexaminer
+                    </button>
                   </div>
                 )}
 
@@ -197,6 +225,44 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
             : `Aucune demande ${REQUEST_STATUS_LABELS[requestStatusFilter]?.toLowerCase() ?? ""}.`}
         </div>
       )}
+
+      <Dialog open={reexamineOpen} onOpenChange={(o) => !o && setReexamineOpen(false)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Réexaminer la demande</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant="default"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer"
+              onClick={() => handleReexamine("APPROVED")}
+            >
+              Réapprouver
+            </Button>
+            <Button
+              variant="outline"
+              className="border-amber-500/40 text-amber-500 hover:bg-amber-500/10 cursor-pointer"
+              onClick={() => handleReexamine("SUSPENDED")}
+            >
+              Suspendre
+            </Button>
+            <Button
+              variant="destructive"
+              className="cursor-pointer"
+              onClick={() => handleReexamine("REVOKED")}
+            >
+              Révoquer
+            </Button>
+            <Button
+              variant="ghost"
+              className="text-muted-foreground cursor-pointer"
+              onClick={() => { setReexamineOpen(false); setReexamineTarget(null) }}
+            >
+              Annuler
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
         <DialogContent>
