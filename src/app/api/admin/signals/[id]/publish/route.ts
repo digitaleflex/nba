@@ -12,6 +12,7 @@ export async function POST(
     const { id } = await params
     const updated = await publishSignal(id, session.user.id)
     await invalidatePrefix("ops")
+    await invalidatePrefix("signals:")
     return NextResponse.json(updated)
   } catch (error) {
     return handleAuthError(error)

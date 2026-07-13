@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
-import { invalidatePrefix } from "@nba/lib/cache"
+import { getCached, invalidatePrefix } from "@nba/lib/cache"
 
 export async function GET(request: NextRequest) {
   try {
@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    const result = await getCached(
+      `members:${query}:${status}:${onboarding}:${planId}:${page}:${limit}`,
+      async () => {
     const [members, total] = await Promise.all([
       prisma.user.findMany({
         where,
@@ -100,7 +103,12 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where }),
     ])
 
-    return NextResponse.json({ members, total, page, limit })
+        return { members, total, page, limit }
+      },
+      15,
+    )
+
+    return NextResponse.json(result)
   } catch (error) {
     return handleAuthError(error)
   }
@@ -141,6 +149,7 @@ export async function PUT(request: NextRequest) {
     })
 
     await invalidatePrefix("ops")
+    await invalidatePrefix("members:")
     return NextResponse.json(updated)
   } catch (error) {
     return handleAuthError(error)

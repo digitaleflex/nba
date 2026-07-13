@@ -67,6 +67,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     })
 
     await invalidatePrefix("ops")
+    await invalidatePrefix("access:")
 
     if (parsed.status === "APPROVED") {
       await prisma.user.update({

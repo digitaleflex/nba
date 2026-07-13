@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { unstable_cache } from "next/cache"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { getCached } from "@nba/lib/cache"
 
 const getAuditFilters = unstable_cache(
   async () => {
@@ -52,34 +53,42 @@ export async function GET(request: NextRequest) {
     if (action) where.action = action
     if (resourceType) where.resourceType = resourceType
 
-    const [logs, total, filters] = await Promise.all([
-      prisma.auditLog.findMany({
-        where,
-        select: {
-          id: true,
-          action: true,
-          resourceType: true,
-          resourceId: true,
-          details: true,
-          ipAddress: true,
-          createdAt: true,
-          user: { select: { name: true, email: true } },
-        },
-        orderBy: { createdAt: "desc" },
-        skip,
-        take: limit,
-      }),
-      prisma.auditLog.count({ where }),
-      getAuditFilters(),
-    ])
+    const result = await getCached(
+      `audit:${query}:${action}:${resourceType}:${page}:${limit}`,
+      async () => {
+        const [logs, total, filters] = await Promise.all([
+          prisma.auditLog.findMany({
+            where,
+            select: {
+              id: true,
+              action: true,
+              resourceType: true,
+              resourceId: true,
+              details: true,
+              ipAddress: true,
+              createdAt: true,
+              user: { select: { name: true, email: true } },
+            },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+          }),
+          prisma.auditLog.count({ where }),
+          getAuditFilters(),
+        ])
 
-    return NextResponse.json({
-      logs,
-      total,
-      page,
-      limit,
-      filters,
-    })
+        return {
+          logs,
+          total,
+          page,
+          limit,
+          filters,
+        }
+      },
+      30,
+    )
+
+    return NextResponse.json(result)
   } catch (error) {
     return handleAuthError(error)
   }

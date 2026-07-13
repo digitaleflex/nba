@@ -5,7 +5,7 @@ import { notify } from "@nba/lib/services/notifications"
 import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
-import { invalidatePrefix } from "@nba/lib/cache"
+import { getCached, invalidatePrefix } from "@nba/lib/cache"
 
 export async function POST(request: Request) {
   try {
@@ -53,6 +53,7 @@ export async function POST(request: Request) {
       })
 
       await invalidatePrefix("ops")
+      await invalidatePrefix("notif:")
       return NextResponse.json({ success: true, count: 1 })
     }
 
@@ -144,16 +145,21 @@ export async function GET() {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
-    const notifications = await prisma.notification.findMany({
-      where: { type: "SYSTEM" },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: {
-        user: {
-          select: { name: true, email: true },
-        },
-      },
-    })
+    const notifications = await getCached(
+      "notif:history",
+      async () =>
+        prisma.notification.findMany({
+          where: { type: "SYSTEM" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          include: {
+            user: {
+              select: { name: true, email: true },
+            },
+          },
+        }),
+      30,
+    )
 
     return NextResponse.json({ notifications })
   } catch (error: any) {

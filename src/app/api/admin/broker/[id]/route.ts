@@ -30,6 +30,7 @@ export async function PUT(
     });
 
     await invalidatePrefix("ops");
+    await invalidatePrefix("broker:");
 
     await logAuditEvent({
       userId: session.user.id,
