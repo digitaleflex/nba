@@ -1,0 +1,20 @@
+import { NextRequest, NextResponse } from "next/server"
+import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { verifyDeviceCode } from "@nba/lib/services/device"
+
+export async function POST(req: NextRequest) {
+  try {
+    const session = await requireAuth()
+    const { code } = (await req.json()) as { code?: string }
+    if (!code) {
+      return NextResponse.json({ error: "Code requis" }, { status: 400 })
+    }
+    await verifyDeviceCode(session.user.id, code, req)
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    if (error instanceof Error && error.message === "Code invalide ou expiré") {
+      return NextResponse.json({ error: error.message }, { status: 400 })
+    }
+    return handleAuthError(error)
+  }
+}

@@ -26,6 +26,7 @@ import {
   CreditCard,
   MessageCircle,
   Volume2,
+  MonitorSmartphone,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -110,6 +111,14 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Messages",
       icon: MessageCircle,
       active: pathname.startsWith("/dashboard/messages"),
+    },
+    {
+      href: "/dashboard/devices",
+      label: "Appareils",
+      icon: MonitorSmartphone,
+      active:
+        pathname.startsWith("/dashboard/devices") ||
+        pathname.startsWith("/dashboard/verify-device"),
     },
   ]
 
