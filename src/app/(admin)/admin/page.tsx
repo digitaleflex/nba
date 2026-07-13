@@ -13,6 +13,7 @@ import { SignalsTab } from "./features/SignalsTab"
 import { KycTab } from "./features/KycTab"
 import { BrokerTab } from "./features/BrokerTab"
 import { StatsTab } from "./features/StatsTab"
+import { AnalyticsTab } from "./features/AnalyticsTab"
 import { SecurityTab } from "./features/SecurityTab"
 import { EmailsTab } from "./features/EmailsTab"
 import { SettingsTab } from "./features/SettingsTab"
@@ -236,6 +237,7 @@ function AdminConsoleContent() {
             { value: "kyc", label: "KYC" },
             { value: "broker", label: "Broker" },
             { value: "stats", label: "Statistiques" },
+            { value: "analytics", label: "Analytics" },
             { value: "security", label: "Sécurité" },
             { value: "emails", label: "E-mails" },
             { value: "settings", label: "Paramètres" },
@@ -295,6 +297,10 @@ function AdminConsoleContent() {
 
         {activeTab === "stats" && (
           <StatsTab opsData={opsData} />
+        )}
+
+        {activeTab === "analytics" && (
+          <AnalyticsTab cachedGet={cachedGet} />
         )}
 
         {activeTab === "security" && (
