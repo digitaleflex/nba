@@ -15,9 +15,10 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Sync schema (safe: creates tables/columns only, never drops data)
-echo "Syncing database schema..."
-pnpm prisma db push
+# Sync schema (non-interactive: applique les migrations en attente, ne touche pas au data)
+# Utilise `migrate deploy` (pas `db push` qui est interactif et casse au demarrage)
+echo "Applying database migrations..."
+pnpm prisma migrate deploy
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."
