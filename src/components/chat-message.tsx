@@ -9,6 +9,7 @@ import {
   Quote,
   Pencil,
   Trash2,
+  Flag,
   X,
   Loader2,
 } from "lucide-react"
@@ -56,10 +57,12 @@ interface ChatMessageProps {
   message: ChatMessageData
   myId: string
   isMine: boolean
+  canModerate?: boolean
   onQuote: (m: ChatMessageData) => void
   onReact: (messageId: string, emoji: string | null) => void
   onEdit: (messageId: string, content: string) => Promise<void>
   onDelete: (messageId: string, forEveryone: boolean) => Promise<void>
+  onReport?: (messageId: string, reason: string) => void
   onScrollTo: (messageId: string) => void
 }
 
@@ -67,10 +70,12 @@ export function ChatMessage({
   message,
   myId,
   isMine,
+  canModerate = false,
   onQuote,
   onReact,
   onEdit,
   onDelete,
+  onReport,
   onScrollTo,
 }: ChatMessageProps) {
   const [showEmoji, setShowEmoji] = useState(false)
@@ -78,6 +83,8 @@ export function ChatMessage({
   const [editText, setEditText] = useState(message.content)
   const [saving, setSaving] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [reporting, setReporting] = useState(false)
+  const [reportReason, setReportReason] = useState("")
   const emojiRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -266,6 +273,15 @@ export function ChatMessage({
           >
             <Quote className="size-3.5" />
           </button>
+          {onReport && (
+            <button
+              onClick={() => setReporting(true)}
+              title="Signaler"
+              className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
+            >
+              <Flag className="size-3.5" />
+            </button>
+          )}
           {isMine && (
             <button
               onClick={() => {
@@ -309,7 +325,7 @@ export function ChatMessage({
               >
                 Me le masquer
               </button>
-              {isMine && (
+              {(isMine || canModerate) && (
                 <button
                   onClick={() => {
                     setConfirmDelete(false)
@@ -320,6 +336,47 @@ export function ChatMessage({
                   Supprimer pour tout le monde
                 </button>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signalement */}
+      {reporting && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setReporting(false)}>
+          <div className="w-80 rounded-2xl border border-border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <Flag className="size-4 text-destructive" />
+              <p className="text-sm font-medium">Signaler ce message</p>
+              <button onClick={() => setReporting(false)} className="ml-auto text-muted-foreground hover:text-foreground">
+                <X className="size-4" />
+              </button>
+            </div>
+            <textarea
+              value={reportReason}
+              onChange={(e) => setReportReason(e.target.value)}
+              rows={3}
+              placeholder="Motif du signalement..."
+              className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+            />
+            <div className="mt-3 flex justify-end gap-2">
+              <button
+                onClick={() => setReporting(false)}
+                className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
+              >
+                Annuler
+              </button>
+              <button
+                disabled={reportReason.trim().length < 3}
+                onClick={() => {
+                  setReporting(false)
+                  onReport?.(message.id, reportReason.trim())
+                  setReportReason("")
+                }}
+                className="rounded-lg bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                Envoyer
+              </button>
             </div>
           </div>
         </div>

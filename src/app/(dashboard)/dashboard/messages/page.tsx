@@ -8,6 +8,7 @@ import { MessageComposer, type SendPayload } from "@nba/components/message-compo
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
 import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
 import { MessageSquare, Loader2, Search, Plus, X, Circle, Send } from "lucide-react"
+import { toast } from "sonner"
 
 interface Other {
   id: string
@@ -302,6 +303,22 @@ export default function MessagesPage() {
     }
   }, [])
 
+  const handleReport = useCallback(async (messageId: string, reason: string) => {
+    const id = selectedIdRef.current
+    if (!id) return
+    try {
+      const res = await fetch(`/api/dashboard/messages/${id}/${messageId}/report`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reason }),
+      })
+      if (res.ok) toast.success("Message signalé à l'équipe de modération")
+      else toast.error("Impossible de signaler ce message")
+    } catch {
+      toast.error("Impossible de signaler ce message")
+    }
+  }, [])
+
   useEffect(() => {
     setOnConnect(() => {
       loadConversations().finally(() => setLoading(false))
@@ -547,6 +564,7 @@ export default function MessagesPage() {
                               onReact={handleReact}
                               onEdit={handleEdit}
                               onDelete={handleDelete}
+                              onReport={handleReport}
                               onScrollTo={scrollToMessage}
                             />
                           </Fragment>

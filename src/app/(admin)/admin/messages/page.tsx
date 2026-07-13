@@ -7,7 +7,8 @@ import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
 import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
-import { MessageSquare, Loader2, Search, Plus, X, Circle, Send } from "lucide-react"
+import { MessageSquare, Loader2, Search, Plus, X, Circle, Send, ShieldAlert } from "lucide-react"
+import { toast } from "sonner"
 
 interface Other {
   id: string
@@ -298,6 +299,54 @@ export default function AdminMessagesPage() {
     }
   }, [])
 
+  const [moderationOpen, setModerationOpen] = useState(false)
+  const [reports, setReports] = useState<
+    { id: string; messageId: string; conversationId: string; reason: string; messageContent: string; messageSenderName: string; reporterName: string; reporterEmail: string; createdAt: string }[]
+  >([])
+  const [loadingReports, setLoadingReports] = useState(false)
+
+  const loadReports = useCallback(async () => {
+    setLoadingReports(true)
+    const res = await fetch("/api/admin/messages/reports")
+    if (res.ok) {
+      const data = await res.json()
+      setReports(data.reports ?? [])
+    }
+    setLoadingReports(false)
+  }, [])
+
+  const handleReport = useCallback(async (messageId: string, reason: string) => {
+    const id = selectedIdRef.current
+    if (!id) return
+    const res = await fetch(`/api/dashboard/messages/${id}/${messageId}/report`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    })
+    if (res.ok) toast.success("Message signalé")
+    else toast.error("Impossible de signaler ce message")
+  }, [])
+
+  const moderateDelete = useCallback(async (report: (typeof reports)[number]) => {
+    const res = await fetch(`/api/admin/messages/${report.conversationId}/${report.messageId}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ forEveryone: true }),
+    })
+    if (res.ok) {
+      await fetch(`/api/admin/messages/reports/${report.id}`, { method: "POST" })
+      toast.success("Message supprimé et signalement traité")
+      loadReports()
+    } else {
+      toast.error("Échec de la suppression")
+    }
+  }, [loadReports])
+
+  const resolveReport = useCallback(async (reportId: string) => {
+    await fetch(`/api/admin/messages/reports/${reportId}`, { method: "POST" })
+    loadReports()
+  }, [loadReports])
+
   useEffect(() => {
     loadConversations().finally(() => setLoading(false))
   }, [loadConversations])
@@ -396,6 +445,12 @@ export default function AdminMessagesPage() {
           </span>
           <Button onClick={() => setPickerOpen(true)} className="gap-2">
             <Plus className="size-4" /> Nouveau message
+          </Button>
+          <Button variant="outline" onClick={() => { setModerationOpen(true); loadReports() }} className="gap-2">
+            <ShieldAlert className="size-4" /> Modération
+            {reports.length > 0 && (
+              <span className="ml-1 rounded-full bg-destructive px-1.5 text-[10px] text-destructive-foreground">{reports.length}</span>
+            )}
           </Button>
         </div>
       </div>
@@ -513,10 +568,12 @@ export default function AdminMessagesPage() {
                               message={m}
                               myId={myId}
                               isMine={m.senderId === myId}
+                              canModerate
                               onQuote={handleQuote}
                               onReact={handleReact}
                               onEdit={handleEdit}
                               onDelete={handleDelete}
+                              onReport={handleReport}
                               onScrollTo={scrollToMessage}
                             />
                           </Fragment>
@@ -615,6 +672,47 @@ export default function AdminMessagesPage() {
                 </div>
               </div>
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={moderationOpen} onOpenChange={setModerationOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>File de modération</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+            {loadingReports && (
+              <div className="flex justify-center py-6">
+                <Loader2 className="size-5 animate-spin text-primary" />
+              </div>
+            )}
+            {!loadingReports && reports.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-6">Aucun signalement en attente.</p>
+            )}
+            {reports.map((r) => (
+              <div key={r.id} className="rounded-xl border border-border p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-medium">{r.messageSenderName}</span>
+                  <span className="text-muted-foreground">
+                    signalé par {r.reporterName} ({r.reporterEmail})
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground italic truncate">{r.messageContent || "📎 Pièce jointe"}</p>
+                <p className="text-xs">
+                  <span className="text-destructive font-medium">Motif : </span>
+                  {r.reason}
+                </p>
+                <div className="flex justify-end gap-2 pt-1">
+                  <Button variant="outline" size="sm" onClick={() => resolveReport(r.id)}>
+                    Marquer traité
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => moderateDelete(r)}>
+                    Supprimer le message
+                  </Button>
+                </div>
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>

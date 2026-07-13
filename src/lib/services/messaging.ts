@@ -484,7 +484,10 @@ export async function deleteMessage(
   if (!isParticipant) throw new AuthError("Non autorisé", 403)
 
   if (forEveryone) {
-    if (message.senderId !== userId) throw new AuthError("Non autorisé", 403)
+    const canDelete =
+      message.senderId === userId ||
+      (await isModerator(userId))
+    if (!canDelete) throw new AuthError("Non autorisé", 403)
     await prisma.message.update({
       where: { id: messageId },
       data: { deletedAt: new Date(), content: "" },
@@ -502,6 +505,97 @@ export async function deleteMessage(
   }
 
   return { messageId, forEveryone }
+}
+
+async function isModerator(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: { select: { name: true } } },
+  })
+  return user?.role.name === "ADMIN" || user?.role.name === "SUPER_ADMIN"
+}
+
+/**
+ * Signale un message (membre ou admin). Crée un `MessageReport` conservé pour
+ * la modération. Un même utilisateur ne peut pas signaler deux fois le même message.
+ */
+export async function reportMessage(
+  messageId: string,
+  reporterId: string,
+  reason: string,
+): Promise<{ id: string }> {
+  const message = await prisma.message.findFirst({
+    where: { id: messageId, deletedAt: null },
+    include: { conversation: { include: { participants: true } } },
+  })
+  if (!message) throw new AuthError("Message introuvable", 404)
+  const isParticipant = message.conversation.participants.some((p) => p.userId === reporterId)
+  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+
+  const existing = await prisma.messageReport.findFirst({
+    where: { messageId, reporterId },
+  })
+  if (existing) return { id: existing.id }
+
+  const report = await prisma.messageReport.create({
+    data: { messageId, reporterId, reason: reason.slice(0, 500) },
+  })
+  return { id: report.id }
+}
+
+export interface MessageReportDTO {
+  id: string
+  messageId: string
+  reason: string
+  createdAt: string
+  handledAt: string | null
+  conversationId: string
+  messageContent: string
+  messageSenderName: string
+  reporterName: string
+  reporterEmail: string
+}
+
+/**
+ * Liste les signalements de messages (file de modération admin).
+ */
+export async function listMessageReports(onlyPending = true): Promise<MessageReportDTO[]> {
+  const reports = await prisma.messageReport.findMany({
+    where: onlyPending ? { handledAt: null } : {},
+    orderBy: { createdAt: "desc" },
+    include: {
+      message: {
+        select: {
+          conversationId: true,
+          content: true,
+          sender: { select: { name: true } },
+        },
+      },
+      reporter: { select: { name: true, email: true } },
+    },
+  })
+  return reports.map((r) => ({
+    id: r.id,
+    messageId: r.messageId,
+    reason: r.reason,
+    createdAt: r.createdAt.toISOString(),
+    handledAt: r.handledAt ? r.handledAt.toISOString() : null,
+    conversationId: r.message.conversationId,
+    messageContent: r.message.content,
+    messageSenderName: r.message.sender.name,
+    reporterName: r.reporter.name,
+    reporterEmail: r.reporter.email,
+  }))
+}
+
+/**
+ * Marque un signalement comme traité (sans supprimer le message).
+ */
+export async function resolveReport(reportId: string): Promise<void> {
+  await prisma.messageReport.update({
+    where: { id: reportId },
+    data: { handledAt: new Date() },
+  })
 }
 
 /**

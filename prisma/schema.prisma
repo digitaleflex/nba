@@ -53,6 +53,7 @@ model User {
   conversations       ConversationParticipant[]
   messages            Message[]           @relation("SentMessages")
   reactions           MessageReaction[]
+  reports             MessageReport[]
 
   @@index([roleId])
   @@index([isActive])
@@ -110,6 +111,7 @@ model Message {
   quotedMessage Message?     @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
   quotedBy      Message[]    @relation("MessageQuote")
   reactions     MessageReaction[]
+  reports       MessageReport[]
 
   @@index([conversationId])
   @@index([senderId])
@@ -130,6 +132,22 @@ model MessageReaction {
   @@unique([messageId, userId])
   @@index([messageId])
   @@map("message_reactions")
+}
+
+model MessageReport {
+  id         String   @id @default(uuid()) @db.Uuid
+  messageId  String   @map("message_id") @db.Uuid
+  reporterId String   @map("reporter_id") @db.Uuid
+  reason     String
+  handledAt  DateTime? @map("handled_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([handledAt])
+  @@map("message_reports")
 }
 
 model Session {

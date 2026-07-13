@@ -74,6 +74,10 @@ export const messageReactionSchema = z.object({
   emoji: z.string().min(1).max(8).nullable(),
 })
 
+export const messageReportSchema = z.object({
+  reason: z.string().trim().min(3, "Motif trop court").max(500, "Motif trop long"),
+})
+
 export const startMessageSchema = z.object({
   memberId: z.string().uuid("ID de membre invalide"),
   content: z.string().trim().min(1, "Le message ne peut pas être vide").max(5000, "Message trop long"),
