@@ -83,6 +83,25 @@ services:
     networks:
       - nba
 
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    networks:
+      - nba
+    env_file: .env
+    environment:
+      QUEUE_ENABLED: "true"
+    depends_on:
+      nba-redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: unless-stopped
+
   nba-imgproxy:
     image: darthsim/imgproxy:latest
     container_name: nba-imgproxy

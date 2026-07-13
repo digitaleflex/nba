@@ -45,6 +45,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
 
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const activeControllerRef = useRef<AbortController | null>(null)
 
   // Fetch plans (no auto-select: admin must choose consciously)
   useEffect(() => {
@@ -58,26 +59,40 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
   }, [])
 
   // Live estimate: debounced call to /api/admin/signals/estimate on every
-  // selection change. Gives the admin immediate feedback on recipient count
-  // and breakdown (fixes the "multi-select does nothing" feeling).
+  // selection change. AbortController pour eviter qu'un fetch lent
+  // (selection de 5 plans) ecrase le resultat d'un fetch rapide
+  // (selection de 2 plans) qui est arrive apres.
   useEffect(() => {
     if (selectedPlans.length === 0) {
       setEstimationResult(null)
       return
     }
     const handle = setTimeout(async () => {
+      const controller = new AbortController()
+      // Annuler si une nouvelle selection arrive pendant le fetch
+      activeControllerRef.current?.abort()
+      activeControllerRef.current = controller
       try {
-        const planQuery = selectedPlans.map((id) => `planIds=${id}`).join("&")
-        const res = await fetch(`/api/admin/signals/estimate?${planQuery}`)
+        const planQuery = `planIds=${selectedPlans.join(",")}`
+        const res = await fetch(`/api/admin/signals/estimate?${planQuery}`, {
+          signal: controller.signal,
+        })
         if (res.ok) {
           const data = await res.json()
-          setEstimationResult(data)
+          // Verifier que la selection n'a pas change pendant le fetch
+          if (!controller.signal.aborted) {
+            setEstimationResult(data)
+          }
         }
-      } catch (err) {
-        console.error("Live estimate failed:", err)
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          console.error("Live estimate failed:", err)
+        }
       }
     }, 350)
-    return () => clearTimeout(handle)
+    return () => {
+      clearTimeout(handle)
+    }
   }, [selectedPlans])
 
   // Auto-resize textarea
@@ -226,7 +241,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
     setIsEstimating(true)
 
     try {
-      const planQuery = selectedPlans.map((id) => `planIds=${id}`).join("&")
+      const planQuery = `planIds=${selectedPlans.join(",")}`
       const res = await fetch(`/api/admin/signals/estimate?${planQuery}`)
       if (res.ok) {
         const data = await res.json()

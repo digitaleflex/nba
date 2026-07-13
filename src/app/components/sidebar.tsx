@@ -249,9 +249,9 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
         {isCollapsed ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
       </button>
 
-      <div className="space-y-7">
+      <div className="flex flex-col min-h-0 flex-1 space-y-7 overflow-y-auto">
         {/* Logo / Header */}
-        <div className={cn("flex items-center gap-2 px-2", isCollapsed ? "justify-center" : "justify-between")}>
+        <div className={cn("flex items-center gap-2 px-2 shrink-0", isCollapsed ? "justify-center" : "justify-between")}>
           <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg tracking-tight shrink-0">
             {isCollapsed ? (
               <span className="bg-primary text-primary-foreground font-black text-sm rounded-lg size-8 flex items-center justify-center shadow-xs select-none">NB</span>
@@ -347,7 +347,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       </div>
 
       {/* User Section / Bottom */}
-      <div className="border-t border-border pt-4">
+      <div className="border-t border-border pt-4 shrink-0">
         <div
           className={cn(
             "flex items-center justify-between rounded-2xl transition-all p-2",
