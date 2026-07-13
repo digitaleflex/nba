@@ -459,7 +459,7 @@ model NotificationDelivery {
 
 model EmailReputationHistory {
   id            String   @id @default(uuid()) @db.Uuid
-  date          DateTime @unique @db.Date
+  date          DateTime @db.Date
   window        String   // "24h" | "7d" | "30d"
   sent          Int
   delivered     Int

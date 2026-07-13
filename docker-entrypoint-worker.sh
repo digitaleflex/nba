@@ -17,7 +17,7 @@ echo "Database is ready."
 
 # Sync schema (safe: creates tables/columns only, never drops data)
 echo "Syncing database schema..."
-pnpm prisma db push
+pnpm prisma migrate deploy --accept-data-loss
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."
