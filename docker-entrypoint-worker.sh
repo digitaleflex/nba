@@ -15,14 +15,6 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Sync schema (safe: creates tables/columns only, never drops data)
-echo "Syncing database schema..."
-pnpm prisma migrate deploy
-
-# Seed database (idempotent - uses upsert)
-echo "Seeding database..."
-pnpm db:seed
-
 # Configure B2 CLI
 if [ -n "$B2_APPLICATION_KEY_ID" ] && [ -n "$B2_APPLICATION_KEY" ]; then
   b2 authorize-account "$B2_APPLICATION_KEY_ID" "$B2_APPLICATION_KEY" >/dev/null 2>&1
