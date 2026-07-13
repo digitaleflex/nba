@@ -1,3 +1,6 @@
+-- Add PUSH to NotificationChannel enum
+ALTER TYPE "NotificationChannel" ADD VALUE 'PUSH';
+
 -- CreateTable
 CREATE TABLE "email_events" (
     "id" UUID NOT NULL,

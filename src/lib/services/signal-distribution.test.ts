@@ -90,12 +90,17 @@ describe("distributeSignal", () => {
     const channels = publish.mock.calls.map((c: any) => c[0])
     expect(channels).toEqual(["nba:notif:user:m1", "nba:notif:user:m2"])
 
-    // 2 livraisons email PENDING créées
-    expect(prisma.notificationDelivery.create).toHaveBeenCalledTimes(2)
+    // 2 livraisons email PENDING + 2 livraisons PUSH créées
+    expect(prisma.notificationDelivery.create).toHaveBeenCalledTimes(4)
     const deliveries = (prisma.notificationDelivery.create as any).mock.calls.map(
       (c: any) => c[0].data,
     )
-    expect(deliveries.every((d: any) => d.channel === "EMAIL" && d.status === "PENDING")).toBe(true)
+    const emailDeliveries = deliveries.filter((d: any) => d.channel === "EMAIL")
+    const pushDeliveries = deliveries.filter((d: any) => d.channel === "PUSH")
+    expect(emailDeliveries.length).toBe(2)
+    expect(emailDeliveries.every((d: any) => d.status === "PENDING")).toBe(true)
+    expect(pushDeliveries.length).toBe(2)
+    expect(pushDeliveries.every((d: any) => ["SENT", "FAILED"].includes(d.status))).toBe(true)
 
     // 2 jobs email enqueue avec le bon destinataire
     expect(enqueueEmail).toHaveBeenCalledTimes(2)

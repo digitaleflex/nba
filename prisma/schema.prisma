@@ -568,6 +568,7 @@ enum NotificationChannel {
   IN_APP
   EMAIL
   TELEGRAM
+  PUSH
 }
 
 enum DeliveryStatus {

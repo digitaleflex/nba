@@ -162,12 +162,20 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
         )
 
         // Notification push web (fire-and-forget, ne bloque pas la distribution)
-        sendPushToUser(member.id, {
+        const pushResult = await sendPushToUser(member.id, {
           title: "Nouveau signal de trading",
           body: "Un nouveau signal a été publié pour vos groupes.",
           url: "/dashboard",
           tag: notification.id,
-        }).catch((err) => console.error("[signal] push failed:", err))
+        }).catch(() => ({ sent: 0, failed: 0 }))
+
+        await prisma.notificationDelivery.create({
+          data: {
+            notificationId: notification.id,
+            channel: "PUSH",
+            status: pushResult.sent > 0 ? "SENT" : "FAILED",
+          },
+        })
       }),
     )
   }

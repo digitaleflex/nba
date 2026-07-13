@@ -7,6 +7,7 @@ import {
   type ResendEmailStatus,
   type DeliveryBucket,
 } from "@nba/lib/services/resend-delivery"
+import { LiveRefresh } from "./live-refresh"
 
 const RECENT_SIGNALS = 12
 
@@ -14,8 +15,10 @@ interface PerUser {
   email: string
   name: string
   externalId: string | null
-  bucket: string
-  event: string | null
+  emailBucket: string
+  emailEvent: string | null
+  pushStatus: string | null
+  inAppRead: boolean
 }
 
 interface SignalRow {
@@ -24,6 +27,7 @@ interface SignalRow {
   publishedAt: Date | null
   plans: string
   recipients: number
+  inAppRead: number
   emailsSent: number
   delivered: number
   bounced: number
@@ -32,6 +36,8 @@ interface SignalRow {
   pending: number
   failed: number
   unknown: number
+  pushSent: number
+  pushFailed: number
   perUser: PerUser[]
 }
 
@@ -65,26 +71,47 @@ export default async function SignalTrackerPage() {
         data: { path: ["signalId"], equals: signal.id },
       },
       select: {
+        isRead: true,
         user: { select: { email: true, name: true } },
-        deliveries: {
-          where: { channel: "EMAIL" },
-          select: { externalId: true, status: true },
-        },
+        deliveries: { select: { channel: true, status: true, externalId: true } },
       },
     })
 
     const perUser: PerUser[] = []
     for (const n of notifications) {
-      const externalId = n.deliveries[0]?.externalId ?? null
+      const emailDelivery = n.deliveries.find((d) => d.channel === "EMAIL")
+      const pushDelivery = n.deliveries.find((d) => d.channel === "PUSH")
+      const externalId = emailDelivery?.externalId ?? null
       if (externalId) allExternalIds.push(externalId)
       perUser.push({
         email: n.user.email,
         name: n.user.name,
         externalId,
-        bucket: "unknown",
-        event: null,
+        emailBucket: "unknown",
+        emailEvent: null,
+        pushStatus: pushDelivery
+          ? pushDelivery.status === "SENT"
+            ? "envoyé"
+            : pushDelivery.status === "FAILED"
+              ? "échoué"
+              : pushDelivery.status
+          : null,
+        inAppRead: n.isRead,
       })
     }
+
+    const emailsSent = notifications.reduce(
+      (s, n) => s + n.deliveries.filter((d) => d.channel === "EMAIL").length,
+      0,
+    )
+    const pushSent = notifications.reduce(
+      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "SENT").length,
+      0,
+    )
+    const pushFailed = notifications.reduce(
+      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "FAILED").length,
+      0,
+    )
 
     rows.push({
       id: signal.id,
@@ -92,7 +119,8 @@ export default async function SignalTrackerPage() {
       publishedAt: signal.publishedAt,
       plans: signal.audience.map((a) => a.plan.name).join(", ") || "—",
       recipients: notifications.length,
-      emailsSent: notifications.reduce((s, n) => s + n.deliveries.length, 0),
+      inAppRead: notifications.filter((n) => n.isRead).length,
+      emailsSent,
       delivered: 0,
       bounced: 0,
       complained: 0,
@@ -100,6 +128,8 @@ export default async function SignalTrackerPage() {
       pending: 0,
       failed: 0,
       unknown: 0,
+      pushSent,
+      pushFailed,
       perUser,
     })
   }
@@ -123,8 +153,8 @@ export default async function SignalTrackerPage() {
         bucket = "unknown"
         event = "pas d'email"
       }
-      u.bucket = bucket
-      u.event = event
+      u.emailBucket = bucket
+      u.emailEvent = event
       row[bucket] = (row[bucket] ?? 0) + 1
     }
   }
@@ -132,17 +162,17 @@ export default async function SignalTrackerPage() {
   const totals = rows.reduce(
     (acc, r) => {
       acc.recipients += r.recipients
+      acc.inAppRead += r.inAppRead
       acc.emailsSent += r.emailsSent
       acc.delivered += r.delivered
       acc.bounced += r.bounced
       acc.complained += r.complained
       acc.opened += r.opened
-      acc.pending += r.pending
-      acc.failed += r.failed
-      acc.unknown += r.unknown
+      acc.pushSent += r.pushSent
+      acc.pushFailed += r.pushFailed
       return acc
     },
-    { recipients: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pending: 0, failed: 0, unknown: 0 },
+    { recipients: 0, inAppRead: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pushSent: 0, pushFailed: 0 },
   )
 
   return (
@@ -157,19 +187,26 @@ export default async function SignalTrackerPage() {
         </div>
         <p className="text-sm text-muted-foreground mt-1">
           Chaque signal publié est distribué à tous les membres des groupes ciblés via <b>email</b> +{" "}
-          <b>notification in-app</b> + <b>push web</b>. Le statut email ci-dessous est suivi en temps réel
-          via les webhooks Resend (ouverture, livraison, bounce, plainte).
+          <b>notification in-app</b> + <b>push web</b>. Le statut email est suivi en temps réel via les
+          webhooks Resend (ouverture, livraison, bounce, plainte). Les statuts push/in-app sont suivis
+          à la distribution.
         </p>
+        <div className="mt-2">
+          <LiveRefresh />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <Kpi label="Signaux" value={rows.length} />
         <Kpi label="Destinataires" value={totals.recipients} />
+        <Kpi label="In-app lus" value={totals.inAppRead} tone="info" />
         <Kpi label="Emails envoyés" value={totals.emailsSent} />
         <Kpi label="Délivrés" value={totals.delivered} tone="success" />
         <Kpi label="Ouverts" value={totals.opened} tone="info" />
         <Kpi label="Bounces" value={totals.bounced} tone="danger" />
         <Kpi label="Plaintes" value={totals.complained} tone="danger" />
+        <Kpi label="Push envoyés" value={totals.pushSent} />
+        <Kpi label="Push échoués" value={totals.pushFailed} tone="danger" />
       </div>
 
       <div className="rounded-xl border border-border overflow-hidden">
@@ -180,11 +217,13 @@ export default async function SignalTrackerPage() {
                 <th className="px-4 py-2.5 font-medium">Signal</th>
                 <th className="px-4 py-2.5 font-medium">Groupes</th>
                 <th className="px-4 py-2.5 font-medium text-right">Dest.</th>
+                <th className="px-4 py-2.5 font-medium text-right">In-app lus</th>
                 <th className="px-4 py-2.5 font-medium text-right">Emails</th>
                 <th className="px-4 py-2.5 font-medium text-right">Délivrés</th>
                 <th className="px-4 py-2.5 font-medium text-right">Ouverts</th>
                 <th className="px-4 py-2.5 font-medium text-right">Bounces</th>
                 <th className="px-4 py-2.5 font-medium text-right">Plaintes</th>
+                <th className="px-4 py-2.5 font-medium text-right">Push</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
@@ -198,16 +237,25 @@ export default async function SignalTrackerPage() {
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{r.plans}</td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.recipients}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {r.inAppRead}/{r.recipients}
+                  </td>
                   <td className="px-4 py-3 text-right tabular-nums">{r.emailsSent}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-success">{r.delivered}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-info">{r.opened}</td>
                   <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.bounced}</td>
-                  <td className="px-4 py-2.5 text-right tabular-nums text-destructive">{r.complained}</td>
+                  <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.complained}</td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    <span className="text-success">{r.pushSent}</span>
+                    {r.pushFailed > 0 && (
+                      <span className="text-destructive"> / {r.pushFailed}</span>
+                    )}
+                  </td>
                 </tr>
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                  <td colSpan={10} className="px-4 py-10 text-center text-muted-foreground">
                     Aucun signal publié récemment.
                   </td>
                 </tr>
@@ -229,7 +277,9 @@ export default async function SignalTrackerPage() {
                 <tr className="text-left">
                   <th className="px-4 py-2.5 font-medium">Utilisateur</th>
                   <th className="px-4 py-2.5 font-medium">Email</th>
-                  <th className="px-4 py-2.5 font-medium">Statut email (Resend)</th>
+                  <th className="px-4 py-2.5 font-medium">Email (Resend)</th>
+                  <th className="px-4 py-2.5 font-medium">Push web</th>
+                  <th className="px-4 py-2.5 font-medium">In-app</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -238,13 +288,37 @@ export default async function SignalTrackerPage() {
                     <td className="px-4 py-2.5">{u.name}</td>
                     <td className="px-4 py-2.5 text-muted-foreground">{u.email}</td>
                     <td className="px-4 py-2.5">
-                      <BucketBadge bucket={u.bucket} event={u.event} />
+                      <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {u.pushStatus ? (
+                        <span
+                          className={
+                            u.pushStatus === "envoyé"
+                              ? "inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success"
+                              : "inline-flex items-center rounded-full bg-destructive/10 px-2.5 py-0.5 text-xs font-medium text-destructive"
+                          }
+                        >
+                          {u.pushStatus}
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      {u.inAppRead ? (
+                        <span className="inline-flex items-center rounded-full bg-info/10 px-2.5 py-0.5 text-xs font-medium text-info">
+                          lu
+                        </span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">non lu</span>
+                      )}
                     </td>
                   </tr>
                 ))}
                 {rows[0].perUser.length === 0 && (
                   <tr>
-                    <td colSpan={3} className="px-4 py-8 text-center text-muted-foreground">
+                    <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
                       Aucun destinataire pour ce signal.
                     </td>
                   </tr>
