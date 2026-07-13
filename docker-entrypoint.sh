@@ -15,10 +15,10 @@ until pg_isready -d "$DATABASE_URL" -q 2>/dev/null; do
 done
 echo "Database is ready."
 
-# Sync schema (non-interactive: applique les migrations en attente, ne touche pas au data)
-# Utilise `migrate deploy` (pas `db push` qui est interactif et casse au demarrage)
-echo "Applying database migrations..."
-pnpm prisma migrate deploy
+# Note: `migrate deploy` est execute par le workflow GitHub Actions AVANT
+# `docker compose up -d` (cf. .github/workflows/deploy.yml), PAS au demarrage
+# du container. Raison : race avec pgbouncer qui detient parfois
+# l'advisory lock Prisma (P1002 timeout).
 
 # Seed database (idempotent - uses upsert)
 echo "Seeding database..."
