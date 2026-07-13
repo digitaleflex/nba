@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { NOTIFICATION_SOUND_IDS } from "@nba/lib/notification-sounds"
 
-const SOUNDS = ["default", "chime", "urgent", "signal", "pop"] as const
+const SOUNDS = NOTIFICATION_SOUND_IDS
 export type NotificationSound = (typeof SOUNDS)[number]
 
 export async function GET() {

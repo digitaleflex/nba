@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
+import { NOTIFICATION_SOUNDS } from "@nba/lib/notification-sounds"
 
 interface Notification {
   id: string
@@ -47,26 +48,6 @@ function getThumbnail(n: Notification): string | null {
   return null
 }
 
-const SOUNDS = [
-  { id: "default", label: "Classique", desc: "Double ding clair" },
-  { id: "chime", label: "Douce", desc: "Carillon 3 notes" },
-  { id: "pop", label: "Pop", desc: "Bulle courte" },
-  { id: "signal", label: "Signal", desc: "Balayage ascendant" },
-  { id: "urgent", label: "Urgente", desc: "3 bips descendants" },
-  { id: "light-hearted", label: "Léger", desc: "Mélodie joyeuse" },
-  { id: "joyous", label: "Joyeuse", desc: "Chime mélodique" },
-  { id: "opening", label: "Éclat", desc: "Ton cristallin" },
-  { id: "pristine", label: "Pureté", desc: "Son immaculé" },
-  { id: "slick", label: "Glissé", desc: "Court et discret" },
-  { id: "sly", label: "Discret", desc: "Subtil et doux" },
-  { id: "come-here", label: "Appel", desc: "Ton d'attention" },
-  { id: "playful", label: "Ludique", desc: "Amusant et frais" },
-  { id: "happy-to-help", label: "Succès", desc: "Confirmation positive" },
-  { id: "coins", label: "Pièces", desc: "Son de caisse" },
-  { id: "to-the-point", label: "Précis", desc: "Déterminé" },
-  { id: "not-good", label: "Erreur", desc: "Ton négatif" },
-] as const
-
 const VOLUME_KEY = "nba-notification-volume"
 
 function formatTimeAgo(dateStr: string): string {
@@ -81,7 +62,7 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
-  const { play: playSound, changeVolume: changeVolumeNofit } = useNotificationSound()
+  const { play: playSound, changeVolume: changeVolumeNofit, changeSound } = useNotificationSound()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -95,6 +76,7 @@ export default function NotificationsPage() {
   const [volume, setVolume] = useState(0.5)
   const [soundLoaded, setSoundLoaded] = useState(false)
   const [soundSaved, setSoundSaved] = useState(false)
+  const [soundError, setSoundError] = useState(false)
 
   const [permStatus, setPermStatus] = useState<NotificationPermission | "unsupported" | "unknown">("unknown")
   const [requestingPerm, setRequestingPerm] = useState(false)
@@ -127,15 +109,24 @@ export default function NotificationsPage() {
   }
 
   async function saveSound() {
+    setSoundError(false)
     try {
-      await fetch("/api/dashboard/notification-preferences", {
+      const res = await fetch("/api/dashboard/notification-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sound: selectedSound }),
       })
+      if (!res.ok) {
+        setSoundError(true)
+        return
+      }
       setSoundSaved(true)
+      // Applique le son en direct (sinon le hook reste sur l'ancienne valeur jusqu'au reload)
+      changeSound(selectedSound)
       setTimeout(() => setSoundSaved(false), 2000)
-    } catch {}
+    } catch {
+      setSoundError(true)
+    }
   }
 
   async function requestPerm() {
@@ -394,6 +385,12 @@ export default function NotificationsPage() {
               </Button>
             </div>
 
+            {soundError && (
+              <p className="text-xs text-destructive mt-2">
+                Échec de l'enregistrement. Réessayez.
+              </p>
+            )}
+
             {/* Volume slider */}
             <div className="mb-5 flex items-center gap-3">
               <button
@@ -419,7 +416,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {SOUNDS.map((s) => (
+              {NOTIFICATION_SOUNDS.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => {
