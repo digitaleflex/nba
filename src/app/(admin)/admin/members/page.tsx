@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, Loader2, ChevronLeft, ChevronRight, UserCheck, UserX, Mail, Phone, Globe } from "lucide-react"
+import { Search, Loader2, ChevronLeft, ChevronRight, UserCheck, UserX, Mail, Phone, Globe, Eraser, AlertTriangle } from "lucide-react"
 import { Button, Input, Badge, Card, CardContent, cn } from "@nba/design-system"
+import { toast } from "sonner"
 
 interface Member {
   id: string
@@ -76,14 +77,143 @@ export default function AdminMembersPage() {
 
   const totalPages = Math.ceil(total / limit)
 
+  // Cleanup des acces fantomes (inactifs/supprimes avec access APPROVED)
+  const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [cleanupPreview, setCleanupPreview] = useState<{
+    usersAffected: number
+    accessRequestsRevoked: number
+    ghostUsers: { email: string; name: string; reason: string }[]
+  } | null>(null)
+
+  async function previewCleanup() {
+    setCleanupLoading(true)
+    try {
+      const res = await fetch("/api/admin/access/cleanup?dryRun=1", { method: "POST" })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Erreur")
+      const data = await res.json()
+      setCleanupPreview({
+        usersAffected: data.usersAffected,
+        accessRequestsRevoked: data.accessRequestsRevoked,
+        ghostUsers: data.ghostUsers,
+      })
+    } catch (err: any) {
+      toast.error(`Erreur: ${err.message}`)
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
+  async function runCleanup() {
+    setCleanupLoading(true)
+    try {
+      const res = await fetch("/api/admin/access/cleanup", { method: "POST" })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Erreur")
+      const data = await res.json()
+      toast.success(
+        `${data.accessRequestsRevoked} acces revoques sur ${data.usersAffected} membre(s) fantome(s)`,
+        { duration: 6000 },
+      )
+      setCleanupPreview(null)
+      fetchMembers()
+    } catch (err: any) {
+      toast.error(`Erreur: ${err.message}`)
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Gestion des membres</h1>
-        <p className="text-sm text-muted-foreground">
-          {total} membre{total !== 1 ? "s" : ""} inscrit{total !== 1 ? "s" : ""}
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Gestion des membres</h1>
+          <p className="text-sm text-muted-foreground">
+            {total} membre{total !== 1 ? "s" : ""} inscrit{total !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          onClick={previewCleanup}
+          disabled={cleanupLoading}
+        >
+          {cleanupLoading ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Eraser className="size-3.5" />
+          )}
+          Nettoyer les acces fantomes
+        </Button>
       </div>
+
+      {/* Modale de confirmation du cleanup */}
+      {cleanupPreview && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold">
+                  {cleanupPreview.usersAffected === 0
+                    ? "Aucun acces fantome detecte"
+                    : `${cleanupPreview.accessRequestsRevoked} acces a revoquer sur ${cleanupPreview.usersAffected} membre(s) fantome(s)`}
+                </p>
+                {cleanupPreview.usersAffected > 0 && (
+                  <div className="mt-2 max-h-40 overflow-y-auto rounded-md border bg-background/50 text-xs">
+                    <table className="w-full">
+                      <thead className="bg-muted/40 text-muted-foreground">
+                        <tr>
+                          <th className="text-left px-2 py-1 font-medium">Email</th>
+                          <th className="text-left px-2 py-1 font-medium">Nom</th>
+                          <th className="text-left px-2 py-1 font-medium">Raison</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cleanupPreview.ghostUsers.map((u) => (
+                          <tr key={u.email} className="border-t">
+                            <td className="px-2 py-1 font-mono">{u.email}</td>
+                            <td className="px-2 py-1">{u.name}</td>
+                            <td className="px-2 py-1 text-amber-700">{u.reason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Les acces APPROVED seront passes en REVOKED. Les autres donnees (KYC, profil,
+                  notifications) sont conservees. Action journalisee.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setCleanupPreview(null)}
+                disabled={cleanupLoading}
+              >
+                Annuler
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={runCleanup}
+                disabled={cleanupLoading || cleanupPreview.usersAffected === 0}
+                className="gap-1.5"
+              >
+                {cleanupLoading ? (
+                  <Loader2 className="size-3.5 animate-spin" />
+                ) : (
+                  <Eraser className="size-3.5" />
+                )}
+                Revoquer {cleanupPreview.accessRequestsRevoked} acces
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
