@@ -71,6 +71,13 @@ export default function OnboardingWizardPage() {
 
   const emailVerified = state.checklist.emailVerified
 
+  useEffect(() => {
+    if (emailVerified) {
+      const t = setTimeout(() => router.push("/dashboard"), 1200)
+      return () => clearTimeout(t)
+    }
+  }, [emailVerified, router])
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="text-center space-y-2">
