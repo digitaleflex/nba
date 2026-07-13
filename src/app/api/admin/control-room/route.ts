@@ -27,6 +27,7 @@ export async function GET() {
       "control-room",
       async () => {
         const now = new Date()
+        const last1h = new Date(now.getTime() - 60 * 60 * 1000)
         const last24h = new Date(now.getTime() - 24 * 60 * 60 * 1000)
         const last7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
 
@@ -47,6 +48,7 @@ export async function GET() {
           recentSignals,
           bouncedLast24h,
           complainedLast24h,
+          delayedLast1h,
         ] = await Promise.all([
           prisma.user.count({ where: { isActive: true, deletedAt: null } }),
           prisma.user.count({ where: { signalsAccessOverride: true } }),
@@ -91,6 +93,7 @@ export async function GET() {
           }),
           prisma.emailEvent.count({ where: { type: "email.bounced", createdAt: { gte: last24h } } }),
           prisma.emailEvent.count({ where: { type: "email.complained", createdAt: { gte: last24h } } }),
+          prisma.emailEvent.count({ where: { type: "email.delivery_delayed", createdAt: { gte: last1h } } }),
         ])
 
         // Funnel email sur 7j
@@ -190,6 +193,13 @@ export async function GET() {
             message: "RESEND_WEBHOOK_SECRET non configuré (tracking email en fallback)",
           })
         }
+        // Sprint 2 (#64) : alerte si trop de delivery_delayed sur 1h
+        if (delayedLast1h > 10) {
+          alerts.push({
+            level: "warn",
+            message: `${delayedLast1h} emails en retard de livraison sur 1h (probleme destinataire ou SMTP ?)`,
+          })
+        }
         if (!redisHealthy) {
           alerts.push({ level: "danger", message: "Redis injoignable" })
         }
@@ -214,6 +224,7 @@ export async function GET() {
             pushSentLast24h,
             pushFailedLast24h,
             pushSubsCount,
+            delayedLast1h,
           },
           funnel: {
             signals: signalsLast7d,

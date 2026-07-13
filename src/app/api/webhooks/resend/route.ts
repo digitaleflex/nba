@@ -9,6 +9,8 @@ export const runtime = "nodejs"
 const ADMIN_EMAIL =
   process.env.ADMIN_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? "admin@signauxx.com"
 
+const DELAYED_BURST_THRESHOLD = 10 // au-dessus de 10 sur 1h = probleme systemique probable
+
 interface ResendWebhookEvent {
   type?: string
   data?: {
@@ -64,6 +66,13 @@ export async function POST(req: NextRequest) {
 
   if (!emailId) {
     return NextResponse.json({ ok: true })
+  }
+
+  // Sprint 2 (#64) : alerte admin throttlede si > 10 email.delivery_delayed sur 1h
+  if (type === "email.delivery_delayed") {
+    await checkDelayedBurst(emailId).catch((err) =>
+      console.error("[resend-webhook] checkDelayedBurst failed:", err),
+    )
   }
 
   // Deduplicate by Svix event id (unique constraint on email_events.svix_id)
@@ -182,4 +191,46 @@ async function handleDomainEvent(type: string, data: Record<string, unknown> | u
       <pre>${JSON.stringify(data ?? {}, null, 2)}</pre>`,
     })
   }
+}
+
+/**
+ * Sprint 2 (#64) : detection d'un burst de delivery_delayed.
+ * Alerte admin (throttlee 1 fois par heure via auditLog) si on depasse
+ * DELAYED_BURST_THRESHOLD emails en retard sur 1h. Indique generalement
+ * un probleme cote destinataires (inbox pleines, serveurs lents) ou
+ * un incident SMTP.
+ */
+async function checkDelayedBurst(externalId: string) {
+  const last1h = new Date(Date.now() - 60 * 60 * 1000)
+  const count = await prisma.emailEvent.count({
+    where: { type: "email.delivery_delayed", createdAt: { gte: last1h } },
+  })
+  if (count <= DELAYED_BURST_THRESHOLD) return
+
+  // Throttle : alerte max 1 fois par heure
+  const recentAlert = await prisma.auditLog.findFirst({
+    where: {
+      action: "email.delayed_burst_alert",
+      createdAt: { gte: last1h },
+    },
+  })
+  if (recentAlert) return
+
+  await sendEmail(ADMIN_EMAIL, {
+    subject: `[ALERTE] Burst de ${count} emails en retard sur 1h`,
+    html: `<p><b>${count}</b> emails ont un retard de livraison sur la derniere heure
+      (seuil: ${DELAYED_BURST_THRESHOLD}).</p>
+      <p>Causes possibles : inbox destinataires pleines, incident SMTP cote serveur mail cible,
+      ou probleme Resend transitoire.</p>
+      <p>Voir le Centre de controle pour le detail et l'evolution.</p>
+      <p><b>Dernier email concerne :</b> <code>${externalId}</code></p>`,
+  })
+
+  await prisma.auditLog.create({
+    data: {
+      action: "email.delayed_burst_alert",
+      resourceType: "system",
+      details: { count, threshold: DELAYED_BURST_THRESHOLD, lastExternalId: externalId } as any,
+    },
+  })
 }
