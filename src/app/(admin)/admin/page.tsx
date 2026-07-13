@@ -10,7 +10,7 @@ import {
   AlertTriangle, Server, ArrowUpRight, Image as ImageIcon
 } from "lucide-react"
 import { toast } from "sonner"
-import { Button, Card, CardContent, Badge, Tabs, TabsList, TabsTrigger, TabsContent, Input, cn } from "@nba/design-system"
+import { Button, Card, CardContent, Badge, Tabs, TabsList, TabsTrigger, TabsContent, Input, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
 import dynamic from "next/dynamic"
 
 const SignalEditor = dynamic(
@@ -65,6 +65,9 @@ interface AccessRequest {
   id: string
   status: string
   createdAt: string
+  notes: string | null
+  reviewedAt: string | null
+  reviewer?: { id: string; name: string } | null
   user: {
     id: string
     name: string
@@ -84,6 +87,40 @@ interface AccessRequest {
     nextStep: string | null
   }
 }
+
+const REQUEST_STATUS_LABELS: Record<string, string> = {
+  PENDING: "En attente",
+  APPROVED: "Approuvé",
+  REJECTED: "Rejeté",
+  SUSPENDED: "Suspendu",
+  REVOKED: "Révoqué",
+}
+
+const REQUEST_STATUS_CLASS: Record<string, string> = {
+  PENDING: "text-amber-600 border-amber-500/20 bg-amber-500/10",
+  APPROVED: "text-emerald-600 border-emerald-500/20 bg-emerald-500/10",
+  REJECTED: "text-rose-600 border-rose-500/20 bg-rose-500/10",
+  SUSPENDED: "text-orange-600 border-orange-500/20 bg-orange-500/10",
+  REVOKED: "text-rose-700 border-rose-600/20 bg-rose-600/10",
+}
+
+const REQUEST_FILTERS: { value: string; label: string }[] = [
+  { value: "ALL", label: "Tous" },
+  { value: "PENDING", label: "En attente" },
+  { value: "APPROVED", label: "Approuvés" },
+  { value: "REJECTED", label: "Rejetés" },
+  { value: "SUSPENDED", label: "Suspendus" },
+  { value: "REVOKED", label: "Révoqués" },
+]
+
+const REJECT_REASONS: string[] = [
+  "Documents KYC incomplets",
+  "Identité non vérifiée",
+  "Broker non vérifié",
+  "Paiement ou abonnement requis",
+  "Doublon de compte",
+  "Autre",
+]
 
 interface Signal {
   id: string
@@ -191,6 +228,11 @@ function AdminConsoleContent() {
   // Module Requests State
   const [requests, setRequests] = useState<AccessRequest[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
+  const [requestStatusFilter, setRequestStatusFilter] = useState<string>("ALL")
+  const [rejectOpen, setRejectOpen] = useState(false)
+  const [rejectTarget, setRejectTarget] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState<string>("")
+  const [rejectNotes, setRejectNotes] = useState<string>("")
 
   // Module Signals State
   const [signals, setSignals] = useState<Signal[]>([])
@@ -310,11 +352,11 @@ function AdminConsoleContent() {
   }, [])
 
   // Fetch Access Requests
-  const fetchRequests = useCallback(async () => {
+  const fetchRequests = useCallback(async (status = "ALL") => {
     setLoadingRequests(true)
     setErrorRequests(null)
     try {
-      const { ok, data } = await cachedGet("/api/admin/access-requests")
+      const { ok, data } = await cachedGet(`/api/admin/access-requests?status=${status}`)
       if (ok) {
         setRequests(data)
       } else {
@@ -489,7 +531,7 @@ function AdminConsoleContent() {
     if (activeTab === "dashboard") fetchOperations()
     else if (activeTab === "users") fetchMembers()
     else if (activeTab === "membres") { fetchMembrePlans(); fetchMembres() }
-    else if (activeTab === "requests") fetchRequests()
+    else if (activeTab === "requests") fetchRequests(requestStatusFilter)
     else if (activeTab === "signals") fetchSignals()
     else if (activeTab === "kyc") { setKycPage(1); fetchKyc() }
     else if (activeTab === "broker") { setBrokerPage(1); fetchBroker() }
@@ -497,7 +539,7 @@ function AdminConsoleContent() {
     else if (activeTab === "security") fetchSecurity()
     else if (activeTab === "stats" && !opsData) fetchOperations()
     else if (activeTab === "notifications") fetchNotifHistory()
-  }, [activeTab, fetchOperations, fetchMembers, fetchMembres, fetchMembrePlans, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchAudits, fetchSecurity, fetchNotifHistory, kycPage, kycStatusFilter, brokerPage, brokerStatusFilter])
+  }, [activeTab, fetchOperations, fetchMembers, fetchMembres, fetchMembrePlans, fetchRequests, fetchSignals, fetchKyc, fetchBroker, fetchAudits, fetchSecurity, fetchNotifHistory, kycPage, kycStatusFilter, brokerPage, brokerStatusFilter, requestStatusFilter])
 
       async function handleDeleteSignal(id: string) {
         if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
@@ -636,15 +678,41 @@ function AdminConsoleContent() {
   }
 
   // Action review (requests onboarding)
-  async function handleReview(id: string, status: string) {
-    if (!confirm(status === "APPROVED" ? "Approuver cette demande d'accès ?" : "Rejeter cette demande d'accès ?")) return
+  async function handleApprove(id: string) {
+    if (!confirm("Approuver cette demande d'accès ?")) return
     invalidateAdminCache()
     await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, reviewerId: "admin", notes: "Review onboarding" }),
+      body: JSON.stringify({ status: "APPROVED", reviewerId: "admin", notes: "Demande approuvée" }),
     })
-    fetchRequests()
+    fetchRequests(requestStatusFilter)
+    fetchOperations()
+  }
+
+  function openReject(id: string) {
+    setRejectTarget(id)
+    setRejectReason("")
+    setRejectNotes("")
+    setRejectOpen(true)
+  }
+
+  async function confirmReject() {
+    if (!rejectTarget) return
+    if (!rejectReason) {
+      toast.error("Veuillez sélectionner un motif de refus.")
+      return
+    }
+    invalidateAdminCache()
+    const notes = rejectNotes.trim() ? `${rejectReason} — ${rejectNotes.trim()}` : rejectReason
+    await fetch(`/api/admin/access-requests/${rejectTarget}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "REJECTED", reviewerId: "admin", notes }),
+    })
+    setRejectOpen(false)
+    setRejectTarget(null)
+    fetchRequests(requestStatusFilter)
     fetchOperations()
   }
 
@@ -1113,12 +1181,28 @@ function AdminConsoleContent() {
         {/* ============================================================== */}
         {activeTab === "requests" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-5">
+            <div className="flex flex-col gap-4 border-b border-border pb-5">
               <div>
                 <h1 className="text-xl font-bold tracking-tight text-foreground">Demandes d'accès</h1>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Validez les dossiers d'inscription des membres pour activer leurs comptes.
+                  Historique et validation des dossiers d'inscription des membres.
                 </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {REQUEST_FILTERS.map((f) => (
+                  <button
+                    key={f.value}
+                    onClick={() => setRequestStatusFilter(f.value)}
+                    className={cn(
+                      "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                      requestStatusFilter === f.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    {f.label}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -1134,9 +1218,17 @@ function AdminConsoleContent() {
                           <h3 className="font-bold text-foreground text-sm">{req.user.name}</h3>
                           <p className="text-[10px] text-muted-foreground">{req.user.email}</p>
                         </div>
-                        <Badge variant="outline" className="text-[9px] border-border">
-                          {req.plan.name}
-                        </Badge>
+                        <div className="flex flex-col items-end gap-1.5">
+                          <Badge variant="outline" className="text-[9px] border-border">
+                            {req.plan.name}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={cn("text-[9px]", REQUEST_STATUS_CLASS[req.status] || REQUEST_STATUS_CLASS.PENDING)}
+                          >
+                            {REQUEST_STATUS_LABELS[req.status] || req.status}
+                          </Badge>
+                        </div>
                       </div>
 
                       <div className="space-y-1.5 text-[11px] text-muted-foreground">
@@ -1152,28 +1244,44 @@ function AdminConsoleContent() {
                         </div>
                       </div>
 
+                      {req.status !== "PENDING" && (
+                        <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1 text-[11px]">
+                          <p className="text-muted-foreground">
+                            Traité par <span className="font-medium text-foreground">{req.reviewer?.name ?? "Admin"}</span>
+                            {req.reviewedAt ? ` · ${new Date(req.reviewedAt).toLocaleDateString("fr-FR")}` : ""}
+                          </p>
+                          {req.notes && (
+                            <p className="text-foreground/90">
+                              <span className="font-medium">Motif :</span> {req.notes}
+                            </p>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex justify-between items-center pt-2 border-t border-border/60">
                         <span className="text-[10px] text-muted-foreground">
                           Soumis le {new Date(req.createdAt).toLocaleDateString()}
                         </span>
-                        <div className="flex gap-2">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            className="text-[10px] h-7 px-3.5 cursor-pointer"
-                            onClick={() => handleReview(req.id, "REJECTED")}
-                          >
-                            Refuser
-                          </Button>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            className="text-[10px] h-7 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer"
-                            onClick={() => handleReview(req.id, "APPROVED")}
-                          >
-                            Approuver
-                          </Button>
-                        </div>
+                        {req.status === "PENDING" && (
+                          <div className="flex gap-2">
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              className="text-[10px] h-7 px-3.5 cursor-pointer"
+                              onClick={() => openReject(req.id)}
+                            >
+                              Refuser
+                            </Button>
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="text-[10px] h-7 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer"
+                              onClick={() => handleApprove(req.id)}
+                            >
+                              Approuver
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -1181,11 +1289,60 @@ function AdminConsoleContent() {
               </div>
             ) : (
               <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground select-none">
-                Aucune demande d'accès en attente d'approbation.
+                {requestStatusFilter === "ALL"
+                  ? "Aucune demande d'accès."
+                  : `Aucune demande ${REQUEST_STATUS_LABELS[requestStatusFilter]?.toLowerCase() ?? ""}.`}
               </div>
             )}
           </div>
         )}
+
+        <Dialog open={rejectOpen} onOpenChange={(o) => !o && setRejectOpen(false)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Refuser la demande d'accès</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Motif du refus</p>
+                <div className="flex flex-wrap gap-2">
+                  {REJECT_REASONS.map((r) => (
+                    <button
+                      key={r}
+                      onClick={() => setRejectReason(r)}
+                      className={cn(
+                        "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                        rejectReason === r
+                          ? "bg-rose-600 text-white border-rose-600"
+                          : "border-border text-muted-foreground hover:bg-muted/50"
+                      )}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-xs text-muted-foreground">Précisions (optionnel)</label>
+                <textarea
+                  value={rejectNotes}
+                  onChange={(e) => setRejectNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Détails supplémentaires..."
+                  className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setRejectOpen(false)}>
+                  Annuler
+                </Button>
+                <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason}>
+                  Confirmer le refus
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
         {/* ============================================================== */}
         {/* SIGNALS */}

@@ -2,13 +2,23 @@ import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getOnboardingStateForUsers } from "@nba/lib/services/onboarding"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
+import { type AccessStatus } from "@nba/generated/prisma/enums"
 
-export async function GET() {
+const VALID_STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED", "REVOKED"] as const
+
+export async function GET(req: Request) {
   try {
     await requirePermission("users.read")
 
+    const url = new URL(req.url)
+    const statusParam = url.searchParams.get("status")
+    const where =
+      statusParam && statusParam !== "ALL" && (VALID_STATUSES as readonly string[]).includes(statusParam)
+        ? { status: statusParam as AccessStatus }
+        : {}
+
     const requests = await prisma.accessRequest.findMany({
-      where: { status: "PENDING" },
+      where,
       include: {
         user: {
           select: {
@@ -23,8 +33,9 @@ export async function GET() {
           },
         },
         plan: true,
+        reviewer: { select: { id: true, name: true } },
       },
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: "desc" },
     })
 
     const userIds = requests.map((r) => r.userId)
