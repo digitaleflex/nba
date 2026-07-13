@@ -28,6 +28,7 @@ import {
   MessageCircle,
   Volume2,
   MonitorSmartphone,
+  Inbox,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -208,6 +209,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Tracker",
       icon: Activity,
       active: pathname === "/admin/tracker",
+    },
+    {
+      href: "/admin/webhooks/dlq",
+      label: "DLQ Webhooks",
+      icon: Inbox,
+      active: pathname.startsWith("/admin/webhooks/dlq"),
     },
     {
       href: "/admin?tab=settings",

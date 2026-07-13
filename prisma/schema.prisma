@@ -454,6 +454,40 @@ model NotificationDelivery {
 }
 
 // ════════════════════════════════════════
+//  Webhook Dead Letter Queue (resilience)
+// ════════════════════════════════════════
+
+model WebhookDlq {
+  id           String   @id @default(uuid()) @db.Uuid
+  source       String   @default("resend") // future-proof: autres providers
+  eventType    String   @map("event_type")
+  svixId       String?  @map("svix_id")
+  externalId   String?  @map("external_id")
+  payload      Json     @db.JsonB
+  rawBody      String?  @map("raw_body") // payload brut (pour replay)
+  attempts     Int      @default(0)
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  lastError    String?  @map("last_error")
+  status       DlqStatus @default(PENDING)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  replayedAt   DateTime? @map("replayed_at")
+  abandonedAt  DateTime? @map("abandoned_at")
+
+  @@index([status])
+  @@index([source, eventType])
+  @@index([createdAt])
+  @@index([svixId])
+  @@map("webhook_dlq")
+}
+
+enum DlqStatus {
+  PENDING
+  REPLAYED
+  ABANDONED
+}
+
+// ════════════════════════════════════════
 //  Resend webhook events (real-time email tracking)
 // ════════════════════════════════════════
 

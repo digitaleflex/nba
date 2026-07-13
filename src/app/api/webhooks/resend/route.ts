@@ -3,6 +3,7 @@ import { Resend } from "resend"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
 import { markUserBounced, markUserComplained } from "@nba/lib/services/email-status"
+import { enqueueDlq } from "@nba/lib/services/webhook-dlq"
 
 export const runtime = "nodejs"
 
@@ -97,74 +98,109 @@ export async function POST(req: NextRequest) {
     select: { id: true, status: true, lastEventAt: true },
   })
 
-  if (delivery) {
-    // Sprint 2 (#65) : gestion des events hors-ordre
-    // On lit le timestamp Resend (top-level created_at) et on ne met a jour
-    // le statut que si l'event est plus recent que lastEventAt.
-    // Les events TERMINAUX negatifs (bounced/complained/failed) s'appliquent
-    // toujours, meme s'ils arrivent "tard".
-    const eventTs = (event as any).created_at
-      ? new Date((event as any).created_at as string)
-      : new Date()
-    const isStale = delivery.lastEventAt && eventTs.getTime() <= delivery.lastEventAt.getTime()
-    const isTerminalNegative =
-      type === "email.bounced" || type === "email.complained" || type === "email.failed"
-
-    if (type === "email.bounced" || type === "email.complained") {
-      const errorMessage =
-        type === "email.complained"
-          ? "Marqué comme spam (complaint)"
-          : (event.data?.bounce?.message ?? "Bounce")
-      await prisma.notificationDelivery.update({
-        where: { id: delivery.id },
-        data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
+  // Sprint 3 (#67) : DLQ - tout traitement post-store passe par ce try/catch.
+  // Si une exception survient, l'event est mis en DLQ (au lieu d'etre perdu)
+  // et on retourne 200 a Resend (pour eviter le retry qui dupliquerait la DLQ).
+  try {
+    await processDeliveryEvent({ type: type!, event, emailId, delivery });
+  } catch (err: any) {
+    console.error(`[resend-webhook] processDeliveryEvent failed for ${type} ${emailId}:`, err)
+    try {
+      await enqueueDlq({
+        source: "resend",
+        eventType: type!,
+        svixId: svixId,
+        externalId: emailId,
+        payload: event,
+        rawBody: payload,
+        lastError: err?.message ?? String(err),
       })
-      // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
-      if (type === "email.bounced") {
-        await markUserBounced(emailId).catch((err) =>
-          console.error("[resend-webhook] markUserBounced failed:", err),
-        )
-      }
-      // Sprint 1 (#60) : auto-suspend le user sur complaint (legale + anti-spam)
-      if (type === "email.complained") {
-        await markUserComplained(emailId).catch((err) =>
-          console.error("[resend-webhook] markUserComplained failed:", err),
-        )
-      }
-      await alertAdmin(type, emailId, event.data)
-    } else if (type === "email.failed") {
-      // Sprint 1 (#61) : echec d'envoi cote expediteur (cle API, quota, etc.)
-      // Different d'un bounce (qui est cote destinataire).
-      const reason =
-        (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
-      await prisma.notificationDelivery.update({
-        where: { id: delivery.id },
-        data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
-      })
-      await alertAdmin(type, emailId, event.data)
-    } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
-      await prisma.notificationDelivery.update({
-        where: { id: delivery.id },
-        data: { status: "SENT", sentAt: eventTs, lastEventAt: eventTs },
-      })
-    } else if (isStale && !isTerminalNegative) {
-      // Event non-terminal mais obsolete : on stocke dans email_events
-      // (deja fait) mais on ne touche pas au statut.
-      // Log debug pour visibilite.
-      console.log(
-        `[resend-webhook] Out-of-order event ignored: type=${type} eventTs=${eventTs.toISOString()} lastEventAt=${delivery.lastEventAt?.toISOString()}`,
-      )
-    } else if (type === "email.delivered" && isStale) {
-      // Cas particulier : delivered en retard alors qu'on a deja un statut final negatif
-      // On met a jour lastEventAt mais on ne change pas le statut.
-      await prisma.notificationDelivery.update({
-        where: { id: delivery.id },
-        data: { lastEventAt: eventTs },
-      })
+    } catch (dlqErr: any) {
+      console.error(`[resend-webhook] DLQ enqueue failed:`, dlqErr)
     }
   }
 
   return NextResponse.json({ ok: true })
+}
+
+/**
+ * Traite un event de delivery (post-store dans email_events).
+ * Tout throw ici est capture par le caller et mis en DLQ.
+ */
+async function processDeliveryEvent(args: {
+  type: string
+  event: ResendWebhookEvent
+  emailId: string
+  delivery: { id: string; status: string; lastEventAt: Date | null } | null
+}) {
+  const { type, event, emailId, delivery } = args
+  if (!delivery) return
+
+  // Sprint 2 (#65) : gestion des events hors-ordre
+  // On lit le timestamp Resend (top-level created_at) et on ne met a jour
+  // le statut que si l'event est plus recent que lastEventAt.
+  // Les events TERMINAUX negatifs (bounced/complained/failed) s'appliquent
+  // toujours, meme s'ils arrivent "tard".
+  const eventTs = (event as any).created_at
+    ? new Date((event as any).created_at as string)
+    : new Date()
+  const isStale =
+    delivery.lastEventAt && eventTs.getTime() <= delivery.lastEventAt.getTime()
+  const isTerminalNegative =
+    type === "email.bounced" || type === "email.complained" || type === "email.failed"
+
+  if (type === "email.bounced" || type === "email.complained") {
+    const errorMessage =
+      type === "email.complained"
+        ? "Marqué comme spam (complaint)"
+        : (event.data?.bounce?.message ?? "Bounce")
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
+    })
+    // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
+    if (type === "email.bounced") {
+      await markUserBounced(emailId).catch((err) =>
+        console.error("[resend-webhook] markUserBounced failed:", err),
+      )
+    }
+    // Sprint 1 (#60) : auto-suspend le user sur complaint (legale + anti-spam)
+    if (type === "email.complained") {
+      await markUserComplained(emailId).catch((err) =>
+        console.error("[resend-webhook] markUserComplained failed:", err),
+      )
+    }
+    await alertAdmin(type, emailId, event.data)
+  } else if (type === "email.failed") {
+    // Sprint 1 (#61) : echec d'envoi cote expediteur (cle API, quota, etc.)
+    // Different d'un bounce (qui est cote destinataire).
+    const reason =
+      (event.data as any)?.reason ?? (event.data as any)?.error ?? "Failed"
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
+    })
+    await alertAdmin(type, emailId, event.data)
+  } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: "SENT", sentAt: eventTs, lastEventAt: eventTs },
+    })
+  } else if (isStale && !isTerminalNegative) {
+    // Event non-terminal mais obsolete : on stocke dans email_events
+    // (deja fait) mais on ne touche pas au statut.
+    // Log debug pour visibilite.
+    console.log(
+      `[resend-webhook] Out-of-order event ignored: type=${type} eventTs=${eventTs.toISOString()} lastEventAt=${delivery.lastEventAt?.toISOString()}`,
+    )
+  } else if (type === "email.delivered" && isStale) {
+    // Cas particulier : delivered en retard alors qu'on a deja un statut final negatif
+    // On met a jour lastEventAt mais on ne change pas le statut.
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { lastEventAt: eventTs },
+    })
+  }
 }
 
 async function alertAdmin(type: string, emailId: string, data?: ResendWebhookEvent["data"]) {
