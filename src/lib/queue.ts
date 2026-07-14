@@ -68,7 +68,6 @@ function getQueue(name: string): QueueLike {
   if (!globalForQueues.queues[name]) {
     const connection = getRedisConnection();
     const isNoop = !connection
-    console.log(`[queue:${name}] Creating queue, isNoop=${isNoop}, redisUrl=${process.env.REDIS_URL ? "set" : "unset"}, queueEnabled=${process.env.QUEUE_ENABLED}`)
 
     if (!connection) {
       globalForQueues.queues[name] = createNoopQueue(name);
