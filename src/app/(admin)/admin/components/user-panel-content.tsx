@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail } from "lucide-react"
+import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail, Bell } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
 
 interface UserPanelContentProps {
@@ -62,6 +62,18 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             <span className="text-[10px] text-muted-foreground uppercase">Email</span>
             <div className="mt-0.5">
               <EmailStatusBadge status={data.emailStatus} />
+            </div>
+          </div>
+          <div>
+            <span className="text-[10px] text-muted-foreground uppercase">Notifications Push</span>
+            <div className="mt-0.5">
+              {data._count?.pushSubscriptions ? (
+                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 inline-flex items-center gap-1">
+                  <Bell className="size-2.5" /> {data._count.pushSubscriptions} appareil{data._count.pushSubscriptions > 1 ? "s" : ""}
+                </Badge>
+              ) : (
+                <span className="text-xs font-semibold text-muted-foreground">Non activé</span>
+              )}
             </div>
           </div>
           <div>

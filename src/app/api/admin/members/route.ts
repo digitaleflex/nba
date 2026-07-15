@@ -96,6 +96,7 @@ export async function GET(request: NextRequest) {
               accessRequests: true,
               kycDocuments: true,
               notifications: true,
+              pushSubscriptions: true,
             },
           },
         },

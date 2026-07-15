@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight, Inbox, Download } from "lucide-react"
+import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff } from "lucide-react"
 import { Card, Badge, Button, cn } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
 import { CachedGet } from "./types"
@@ -220,6 +220,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                 <th className="px-4 py-3">Membre</th>
                 <th className="px-4 py-3 hidden md:table-cell">Contact</th>
                 <th className="px-4 py-3 hidden md:table-cell">Email</th>
+                <th className="px-4 py-3 hidden lg:table-cell">Push</th>
                 <th className="px-4 py-3">Abonnement(s)</th>
                 <th className="px-4 py-3 hidden md:table-cell">Onboarding</th>
                 <th className="px-4 py-3">Statut</th>
@@ -229,9 +230,9 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
-                <tr><td colSpan={8} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+                <tr><td colSpan={9} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
               ) : membres.length === 0 ? (
-                <tr><td colSpan={8} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche." /></td></tr>
+                <tr><td colSpan={9} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche." /></td></tr>
               ) : (
                 membres.map((m: any) => (
                   <tr key={m.id} className="hover:bg-card/30 transition-colors">
@@ -247,6 +248,17 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                     </td>
                     <td className="px-4 py-3 hidden md:table-cell">
                       <EmailStatusBadge status={m.emailStatus} />
+                    </td>
+                    <td className="px-4 py-3 hidden lg:table-cell">
+                      {(m._count?.pushSubscriptions ?? 0) > 0 ? (
+                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600" title={`${m._count.pushSubscriptions} appareil(s)`}>
+                          <Bell className="size-2.5" /> ON
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted/50 text-muted-foreground">
+                          <BellOff className="size-2.5" /> OFF
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
