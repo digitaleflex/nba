@@ -340,7 +340,7 @@ function AdminConsoleContent() {
         )}
 
         {activeTab === "membres" && (
-          <MembresTab cachedGet={cachedGet} />
+          <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
 
         {activeTab === "requests" && (
