@@ -52,34 +52,48 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
     fetchSignals()
   }, [fetchSignals])
 
+  const [actingSignalId, setActingSignalId] = useState<string | null>(null)
+
   async function handleDeleteSignal(id: string) {
     if (!confirm("Voulez-vous vraiment supprimer ce signal ?")) return
+    setActingSignalId(id)
     invalidate()
-    await fetch(`/api/admin/signals/${id}`, {
-      method: "DELETE",
-    })
-    setSignals((prev) => prev.filter((s) => s.id !== id))
-    toast.success("Signal supprimé avec succès.")
+    const res = await fetch(`/api/admin/signals/${id}`, { method: "DELETE" })
+    if (res.ok) {
+      setSignals((prev) => prev.filter((s) => s.id !== id))
+      toast.success("Signal supprimé")
+    } else {
+      toast.error("Erreur lors de la suppression")
+    }
+    setActingSignalId(null)
   }
 
   async function handlePublishSignal(id: string) {
     if (!confirm("Publier ce signal maintenant ?")) return
+    setActingSignalId(id)
     invalidate()
     const res = await fetch(`/api/admin/signals/${id}/publish`, { method: "POST" })
     if (res.ok) {
       fetchSignals()
-      toast.success("Signal publié avec succès.")
+      toast.success("Signal publié")
+    } else {
+      toast.error("Erreur lors de la publication")
     }
+    setActingSignalId(null)
   }
 
   async function handleDuplicateSignal(id: string) {
     if (!confirm("Dupliquer ce signal en brouillon ?")) return
+    setActingSignalId(id)
     invalidate()
     const res = await fetch(`/api/admin/signals/${id}/duplicate`, { method: "POST" })
     if (res.ok) {
       fetchSignals()
-      toast.success("Signal dupliqué en brouillon.")
+      toast.success("Signal dupliqué en brouillon")
+    } else {
+      toast.error("Erreur lors de la duplication")
     }
+    setActingSignalId(null)
   }
 
   return (

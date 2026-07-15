@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff } from "lucide-react"
 import { Card, Badge, Button, cn } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
+import { toast } from "sonner"
 import { CachedGet } from "./types"
 
 interface MembresTabProps {
@@ -57,24 +58,47 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   useEffect(() => { fetchPlans() }, [fetchPlans])
   useEffect(() => { fetchMembres() }, [fetchMembres])
 
+  const [updating, setUpdating] = useState<string | null>(null)
+
   async function updateMember(userId: string, data: Record<string, unknown>) {
-    const res = await fetch("/api/admin/members", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId, ...data }),
-    })
-    if (res.ok) {
-      invalidate()
-      fetchMembres()
+    setUpdating(userId)
+    try {
+      const res = await fetch("/api/admin/members", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, ...data }),
+      })
+      if (res.ok) {
+        invalidate()
+        fetchMembres()
+        const label = "isActive" in data ? (data.isActive ? "réactivé" : "suspendu") : "mis à jour"
+        toast.success(`Membre ${label}`)
+      } else {
+        toast.error("Erreur lors de la mise à jour")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setUpdating(null)
     }
   }
 
   async function deleteMember(userId: string) {
     if (!confirm("Supprimer définitivement ce membre ?")) return
-    const res = await fetch(`/api/admin/members?userId=${userId}`, { method: "DELETE" })
-    if (res.ok) {
-      invalidate()
-      fetchMembres()
+    setUpdating(userId)
+    try {
+      const res = await fetch(`/api/admin/members?userId=${userId}`, { method: "DELETE" })
+      if (res.ok) {
+        invalidate()
+        fetchMembres()
+        toast.success("Membre supprimé")
+      } else {
+        toast.error("Erreur lors de la suppression")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setUpdating(null)
     }
   }
 

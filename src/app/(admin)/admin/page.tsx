@@ -177,6 +177,8 @@ function AdminConsoleContent() {
           fetchOperations()
           setPanelOpen(false)
           toast.success("Document KYC traité.")
+        } else {
+          toast.error("Erreur lors du traitement KYC.")
         }
       } else if (actionType === "broker_approve" || actionType === "broker_reject") {
         const status = actionType === "broker_approve" ? "APPROVED" : "REJECTED"
@@ -190,23 +192,26 @@ function AdminConsoleContent() {
           fetchOperations()
           setPanelOpen(false)
           toast.success("Compte broker traité.")
+        } else {
+          toast.error("Erreur lors du traitement broker.")
         }
       } else if (actionType === "change_role") {
-        // Get the role ID by name
         const rolesRes = await fetch("/api/admin/roles")
+        if (!rolesRes.ok) { toast.error("Erreur lors du chargement des rôles."); return }
         const roles = await rolesRes.json()
         const role = roles.find((r: any) => r.name === extraData.roleName)
-        if (role) {
-          const updateRes = await fetch("/api/admin/members", {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ userId: extraData.id, roleId: role.id }),
-          })
-          if (updateRes.ok) {
-            activeRefetch.current?.()
-            setPanelOpen(false)
-            toast.success(`Rôle changé en ${extraData.roleName} avec succès.`)
-          }
+        if (!role) { toast.error("Rôle introuvable."); return }
+        const updateRes = await fetch("/api/admin/members", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userId: extraData.id, roleId: role.id }),
+        })
+        if (updateRes.ok) {
+          activeRefetch.current?.()
+          setPanelOpen(false)
+          toast.success(`Rôle changé en ${extraData.roleName}`)
+        } else {
+          toast.error("Erreur lors du changement de rôle.")
         }
       } else if (actionType === "revoke_sessions") {
         const res = await fetch("/api/admin/members/revoke-sessions", {

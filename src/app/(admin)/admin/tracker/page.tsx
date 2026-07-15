@@ -10,6 +10,7 @@ import {
 import { LiveRefresh } from "./live-refresh"
 import { SignalTableClient } from "./signal-table-client"
 import { UserTimeline } from "./user-timeline"
+import { RetryButton } from "./retry-button"
 import IORedis from "ioredis"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
@@ -300,11 +301,13 @@ export default async function SignalTrackerPage({
 
   async function handleRetryAll() {
     "use server"
+    let count = 0
     try {
       const redisUrl = process.env.REDIS_URL
-      if (!redisUrl) return
+      if (!redisUrl) return { count: 0 }
       const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
       const failed = await r.zrange("bull:signal-distribution:failed", 0, -1)
+      count = failed.length
       for (const id of failed) {
         await r.zrem("bull:signal-distribution:failed", id)
         await r.zadd("bull:signal-distribution:wait", Date.now(), id)
@@ -313,6 +316,7 @@ export default async function SignalTrackerPage({
       await r.quit()
     } catch {}
     revalidatePath("/admin/tracker")
+    return { count }
   }
 
   return (
@@ -363,14 +367,7 @@ export default async function SignalTrackerPage({
             </Link>
           )}
         </form>
-        <form action={handleRetryAll}>
-          <button
-            type="submit"
-            className="h-9 rounded-lg border border-amber-500/30 text-amber-600 bg-amber-500/5 px-4 text-xs font-medium hover:bg-amber-500/10"
-          >
-            Re-tenter les jobs échoués
-          </button>
-        </form>
+        <RetryButton serverAction={handleRetryAll} />
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

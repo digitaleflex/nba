@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { toast } from "sonner"
 import { Loader2, MailQuestion } from "lucide-react"
 import { authClient } from "@nba/lib/auth-client"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
@@ -21,8 +22,6 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
   const [notifContent, setNotifContent] = useState("")
   const [sendingNotif, setSendingNotif] = useState(false)
   const [sendingTest, setSendingTest] = useState(false)
-  const [notifSent, setNotifSent] = useState(false)
-  const [notifTested, setNotifTested] = useState(false)
   const [notifHistory, setNotifHistory] = useState<any[]>([])
   const [loadingNotifHistory, setLoadingNotifHistory] = useState(false)
 
@@ -48,7 +47,6 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifContent.trim()) return
     setSendingNotif(true)
-    setNotifSent(false)
     invalidate()
     try {
       const res = await fetch("/api/admin/notifications", {
@@ -59,11 +57,13 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
       if (res.ok) {
         setNotifTitle("")
         setNotifContent("")
-        setNotifSent(true)
-        setTimeout(() => setNotifSent(false), 3000)
+        toast.success("Notification diffusée à tous les utilisateurs")
         fetchNotifHistory()
+      } else {
+        toast.error("Erreur lors de la diffusion")
       }
     } catch (err) {
+      toast.error("Erreur réseau")
       console.error(err)
     } finally {
       setSendingNotif(false)
@@ -73,7 +73,6 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
   const handleTestNotification = async () => {
     if (!notifTitle.trim() || !notifContent.trim() || !currentSession?.user?.id) return
     setSendingTest(true)
-    setNotifTested(false)
     try {
       const res = await fetch("/api/admin/notifications", {
         method: "POST",
@@ -81,11 +80,13 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         body: JSON.stringify({ title: notifTitle, content: notifContent, userId: currentSession.user.id }),
       })
       if (res.ok) {
-        setNotifTested(true)
         playNotifSound()
-        setTimeout(() => setNotifTested(false), 3000)
+        toast.success("Notification de test envoyée")
+      } else {
+        toast.error("Erreur lors du test")
       }
     } catch (err) {
+      toast.error("Erreur réseau")
       console.error(err)
     } finally {
       setSendingTest(false)
@@ -125,12 +126,6 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
                 onChange={(e) => setNotifContent(e.target.value)}
               />
             </div>
-            {notifTested && (
-              <p className="text-xs text-success font-medium">Test reçu ! Vérifiez vos notifications.</p>
-            )}
-            {notifSent && (
-              <p className="text-xs text-success font-medium">Notification diffusée à tous les utilisateurs.</p>
-            )}
             <div className="flex gap-2 mt-2">
               <Button
                 variant="outline"

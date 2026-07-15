@@ -10,6 +10,7 @@ export function AdminTools() {
   const [queues, setQueues] = useState<any[] | null>(null)
 
   async function purgeCache() {
+    if (!confirm("Purger le cache Redis ? Cela peut ralentir temporairement les requêtes.")) return
     setBusy("cache")
     try {
       const res = await fetch("/api/admin/cache/purge", { method: "POST" })

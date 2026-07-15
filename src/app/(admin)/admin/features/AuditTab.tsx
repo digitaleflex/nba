@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Trash2, Loader2, Shield, User, FileText, Mail, Bell, Monitor, FileX } from "lucide-react"
+import { toast } from "sonner"
 import { Card, Button, Badge, cn } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
 import { AuditLog, CachedGet } from "./types"
@@ -48,6 +49,7 @@ function formatDetails(details: unknown, resourceType: string): string {
 export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
   const [audits, setAudits] = useState<AuditLog[]>([])
   const [loadingAudits, setLoadingAudits] = useState(false)
+  const [purging, setPurging] = useState(false)
 
   const fetchAudits = useCallback(async () => {
     setLoadingAudits(true)
@@ -82,14 +84,19 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
           className="text-xs"
           onClick={async () => {
             if (!confirm("Supprimer les logs d'audit de plus de 90 jours ?")) return
+            setPurging(true)
             invalidate()
             const res = await fetch("/api/admin/audit-logs", { method: "DELETE" })
             if (res.ok) {
-              const { deleted, olderThanDays } = await res.json()
-              alert(`${deleted} logs supprimés (> ${olderThanDays} jours)`)
+              const { deleted } = await res.json()
+              toast.success(`${deleted} logs supprimés`)
               fetchAudits()
+            } else {
+              toast.error("Erreur lors de la purge")
             }
+            setPurging(false)
           }}
+          disabled={purging}
         >
           <Trash2 className="size-3 mr-1" />
           Purger les vieux logs

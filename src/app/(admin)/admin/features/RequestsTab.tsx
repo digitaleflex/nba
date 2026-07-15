@@ -51,28 +51,45 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     setReexamineOpen(true)
   }
 
+  const [actingRequestId, setActingRequestId] = useState<string | null>(null)
+
   async function handleReexamine(status: "APPROVED" | "REJECTED" | "REVOKED" | "SUSPENDED") {
     if (!reexamineTarget) return
+    setActingRequestId(reexamineTarget)
     invalidate()
-    await fetch(`/api/admin/access-requests/${reexamineTarget}`, {
+    const res = await fetch(`/api/admin/access-requests/${reexamineTarget}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status, reviewerId: "admin", notes: `Réexaminé → ${status}` }),
     })
+    if (res.ok) {
+      const label = status === "APPROVED" ? "approuvée" : status === "REJECTED" ? "refusée" : status === "REVOKED" ? "révoquée" : "suspendue"
+      toast.success(`Demande ${label}`)
+    } else {
+      toast.error("Erreur lors du réexamen")
+    }
     setReexamineOpen(false)
     setReexamineTarget(null)
+    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
 
   async function handleApprove(id: string) {
     if (!confirm("Approuver cette demande d'accès ?")) return
+    setActingRequestId(id)
     invalidate()
-    await fetch(`/api/admin/access-requests/${id}`, {
+    const res = await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "APPROVED", reviewerId: "admin", notes: "Demande approuvée" }),
     })
+    if (res.ok) {
+      toast.success("Demande approuvée")
+    } else {
+      toast.error("Erreur lors de l'approbation")
+    }
+    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
@@ -91,14 +108,21 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       return
     }
     invalidate()
+    setActingRequestId(rejectTarget)
     const notes = rejectNotes.trim() ? `${rejectReason} — ${rejectNotes.trim()}` : rejectReason
-    await fetch(`/api/admin/access-requests/${rejectTarget}`, {
+    const res = await fetch(`/api/admin/access-requests/${rejectTarget}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status: "REJECTED", reviewerId: "admin", notes }),
     })
+    if (res.ok) {
+      toast.success("Demande refusée")
+    } else {
+      toast.error("Erreur lors du refus")
+    }
     setRejectOpen(false)
     setRejectTarget(null)
+    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
