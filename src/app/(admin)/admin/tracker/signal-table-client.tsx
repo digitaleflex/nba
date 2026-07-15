@@ -70,9 +70,9 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
               </div>
 
               {/* Plan badges with counts */}
-              <div className="hidden md:flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap max-w-[200px]">
                 {r.planBreakdown.map((p) => (
-                  <span key={p.name} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
+                  <span key={p.name} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary shrink-0">
                     {p.name}
                     <span className="text-primary/60">({p.count})</span>
                   </span>
