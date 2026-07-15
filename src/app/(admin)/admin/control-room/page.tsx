@@ -52,6 +52,13 @@ type ControlRoomData = {
     pushSentLast24h: number
     pushFailedLast24h: number
     pushSubsCount: number
+    pendingRequests: number
+    pendingKyc: number
+  }
+  dangerZone: {
+    bannedCount: number
+    pendingRequests: number
+    pendingKyc: number
   }
   funnel: {
     signals: number
@@ -191,6 +198,48 @@ export default function ControlRoomPage() {
           </button>
         </div>
       </div>
+
+      {/* Danger Zone — Tour de contrôle */}
+      {data?.dangerZone && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <Card className={cn("border", data.dangerZone.bannedCount > 0 ? "border-rose-500/40 bg-rose-500/5" : "border-border")}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Bannis</p>
+                <p className="text-xl font-bold text-foreground">{data.dangerZone.bannedCount}</p>
+              </div>
+              <ShieldAlert className={cn("size-5", data.dangerZone.bannedCount > 0 ? "text-rose-500" : "text-muted-foreground/30")} />
+            </CardContent>
+          </Card>
+          <Card className={cn("border", data.dangerZone.pendingRequests > 0 ? "border-amber-500/40 bg-amber-500/5" : "border-border")}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Demandes</p>
+                <p className="text-xl font-bold text-foreground">{data.dangerZone.pendingRequests}</p>
+              </div>
+              <Inbox className={cn("size-5", data.dangerZone.pendingRequests > 0 ? "text-amber-500" : "text-muted-foreground/30")} />
+            </CardContent>
+          </Card>
+          <Card className={cn("border", data.dangerZone.pendingKyc > 0 ? "border-amber-500/40 bg-amber-500/5" : "border-border")}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">KYC en attente</p>
+                <p className="text-xl font-bold text-foreground">{data.dangerZone.pendingKyc}</p>
+              </div>
+              <ShieldAlert className={cn("size-5", data.dangerZone.pendingKyc > 0 ? "text-amber-500" : "text-muted-foreground/30")} />
+            </CardContent>
+          </Card>
+          <Card className={cn("border", (data.kpis.bounced ?? 0) > 0 ? "border-rose-500/40 bg-rose-500/5" : "border-border")}>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-[10px] text-muted-foreground uppercase">Bounces 24h</p>
+                <p className="text-xl font-bold text-foreground">{data.kpis.bounced ?? 0}</p>
+              </div>
+              <Mail className={cn("size-5", (data.kpis.bounced ?? 0) > 0 ? "text-rose-500" : "text-muted-foreground/30")} />
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {error && (
         <Card className="border-rose-500/30 bg-rose-500/5">

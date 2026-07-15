@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
+import { getBannedList } from "@nba/lib/services/moderation"
 
 /**
  * Centre de contrôle admin : données temps réel pour le monitoring opérationnel.
@@ -49,6 +50,8 @@ export async function GET() {
           bouncedLast24h,
           complainedLast24h,
           delayedLast1h,
+          pendingRequests,
+          pendingKyc,
         ] = await Promise.all([
           prisma.user.count({ where: { isActive: true, deletedAt: null } }),
           prisma.user.count({ where: { signalsAccessOverride: true } }),
@@ -94,6 +97,8 @@ export async function GET() {
           prisma.emailEvent.count({ where: { type: "email.bounced", createdAt: { gte: last24h } } }),
           prisma.emailEvent.count({ where: { type: "email.complained", createdAt: { gte: last24h } } }),
           prisma.emailEvent.count({ where: { type: "email.delivery_delayed", createdAt: { gte: last1h } } }),
+          prisma.accessRequest.count({ where: { status: "PENDING" } }),
+          prisma.kycDocument.count({ where: { status: "PENDING" } }),
         ])
 
         // Funnel email sur 7j
@@ -225,6 +230,8 @@ export async function GET() {
             pushFailedLast24h,
             pushSubsCount,
             delayedLast1h,
+            pendingRequests,
+            pendingKyc,
           },
           funnel: {
             signals: signalsLast7d,
@@ -242,6 +249,11 @@ export async function GET() {
             webhook: webhookConfigured ? "healthy" : "warning",
             storage: storageHealthy ? "healthy" : "warning",
             pushSubs: pushSubsCount,
+          },
+          dangerZone: {
+            bannedCount: (await getBannedList()).length,
+            pendingRequests,
+            pendingKyc,
           },
           alerts,
         }
