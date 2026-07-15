@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import {
   LayoutDashboard,
   TrendingUp,
@@ -202,6 +203,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
             </Link>
           )
         })}
+        <PushNotificationToggle compact />
       </nav>
     </div>
   )

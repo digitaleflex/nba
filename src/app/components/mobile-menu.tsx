@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import {
   LayoutDashboard,
   TrendingUp,
@@ -204,6 +205,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
                 <p className="text-xs font-bold truncate text-foreground">{user.name}</p>
                 <p className="text-[10px] truncate text-muted-foreground">{user.email}</p>
               </div>
+              <PushNotificationToggle compact />
             </div>
             <Button
               variant="ghost"

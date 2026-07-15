@@ -22,6 +22,7 @@ export function PushOnboardingBanner() {
   const [loading, setLoading] = useState(false)
   const [dismissed, setDismissed] = useState(false)
   const [checking, setChecking] = useState(true)
+  const [alreadyDismissed, setAlreadyDismissed] = useState(false)
 
   useEffect(() => {
     if (typeof window === "undefined" || dismissed) return
@@ -29,9 +30,9 @@ export function PushOnboardingBanner() {
       setChecking(false)
       return
     }
-    const dismissedStorage = localStorage.getItem("push-onboarding-dismissed")
-    if (dismissedStorage) {
-      setDismissed(true)
+    const wasDismissed = sessionStorage.getItem("push-dismissed-session")
+    if (wasDismissed) {
+      setAlreadyDismissed(true)
       setChecking(false)
       return
     }
@@ -47,7 +48,7 @@ export function PushOnboardingBanner() {
 
   function handleDismiss() {
     setDismissed(true)
-    localStorage.setItem("push-onboarding-dismissed", "true")
+    sessionStorage.setItem("push-dismissed-session", "true")
   }
 
   async function handleSubscribe() {
@@ -87,7 +88,7 @@ export function PushOnboardingBanner() {
 
       if (res.ok) {
         setSubscribed(true)
-        localStorage.removeItem("push-onboarding-dismissed")
+        sessionStorage.removeItem("push-dismissed-session")
       } else {
         await sub.unsubscribe()
       }
@@ -98,7 +99,7 @@ export function PushOnboardingBanner() {
     }
   }
 
-  if (checking || subscribed || dismissed) return null
+  if (checking || subscribed || dismissed || alreadyDismissed) return null
 
   return (
     <div
