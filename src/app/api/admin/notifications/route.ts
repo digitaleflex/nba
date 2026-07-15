@@ -6,6 +6,9 @@ import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
 export async function POST(request: Request) {
   try {
@@ -28,6 +31,13 @@ export async function POST(request: Request) {
 
     if (!title || !content) {
       return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 })
+    }
+
+    const rateLimitId = userId ? `notif:${userId}` : "notif:broadcast"
+    const requestClone = new Request(request.url, { headers: request.headers })
+    const rateLimitRes = await broadcastRateLimit(requestClone, rateLimitId)
+    if (rateLimitRes) {
+      return rateLimitRes
     }
 
     if (userId) {

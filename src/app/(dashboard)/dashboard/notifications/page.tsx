@@ -77,6 +77,9 @@ export default function NotificationsPage() {
   const [soundLoaded, setSoundLoaded] = useState(false)
   const [soundSaved, setSoundSaved] = useState(false)
   const [soundError, setSoundError] = useState(false)
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({})
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [prefsSaving, setPrefsSaving] = useState(false)
 
   const [permStatus, setPermStatus] = useState<NotificationPermission | "unsupported" | "unknown">("unknown")
   const [requestingPerm, setRequestingPerm] = useState(false)
@@ -87,9 +90,11 @@ export default function NotificationsPage() {
       .then((r) => r.json())
       .then((data) => {
         setSelectedSound(data.sound)
+        setPrefs(data.prefs || {})
         setSoundLoaded(true)
+        setPrefsLoaded(true)
       })
-      .catch(() => setSoundLoaded(true))
+      .catch(() => { setSoundLoaded(true); setPrefsLoaded(true) })
 
     const savedVolume = localStorage.getItem(VOLUME_KEY)
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -126,6 +131,26 @@ export default function NotificationsPage() {
       setTimeout(() => setSoundSaved(false), 2000)
     } catch {
       setSoundError(true)
+    }
+  }
+
+  function togglePref(key: string) {
+    setPrefs((prev) => ({ ...prev, [key]: !(prev[key] !== false) }))
+  }
+
+  async function savePrefs() {
+    setPrefsSaving(true)
+    try {
+      const res = await fetch("/api/dashboard/notification-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prefs }),
+      })
+      if (!res.ok) throw new Error("failed")
+    } catch {
+      // silent
+    } finally {
+      setPrefsSaving(false)
     }
   }
 
@@ -435,6 +460,63 @@ export default function NotificationsPage() {
                     <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
                   </div>
                 </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Préférences par type ── */}
+      {prefsLoaded && (
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BellRing className="size-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Types de notifications</h2>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={savePrefs}
+                disabled={prefsSaving}
+              >
+                <Save className="size-3.5 mr-1.5" />
+                {prefsSaving ? "..." : "Enregistrer"}
+              </Button>
+            </div>
+            <div className="space-y-0.5">
+              {[
+                { key: "signal", label: "Signaux", desc: "Nouveaux signaux de trading publiés" },
+                { key: "kyc", label: "KYC", desc: "Validation de vos documents d'identité" },
+                { key: "broker", label: "Broker", desc: "Validation de votre compte broker" },
+                { key: "access", label: "Abonnement", desc: "Changements de votre abonnement" },
+                { key: "security", label: "Sécurité", desc: "Connexions, changements de mot de passe" },
+                { key: "system", label: "Annonces", desc: "Messages de l'équipe NeverBrokeAgain" },
+                { key: "message", label: "Messages", desc: "Nouveaux messages de la communauté" },
+              ].map(({ key, label, desc }) => (
+                <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
+                  <div className="min-w-0 mr-3">
+                    <p className="text-xs font-medium text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  </div>
+                  <div
+                    role="switch"
+                    aria-checked={prefs[key] !== false}
+                    tabIndex={0}
+                    onClick={() => togglePref(key)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePref(key) } }}
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-primary ${
+                      prefs[key] !== false ? "bg-primary" : "bg-muted"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block size-4 rounded-full bg-white shadow-lg transform ring-0 transition-transform duration-200 ${
+                        prefs[key] !== false ? "translate-x-[18px]" : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </label>
               ))}
             </div>
           </CardContent>

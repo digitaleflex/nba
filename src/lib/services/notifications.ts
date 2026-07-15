@@ -7,6 +7,27 @@ import { publishNotification } from "@nba/lib/redis-pubsub"
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING"
 type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH"
 
+const TYPE_TO_PREF_KEY: Record<NotificationType, string> = {
+  SIGNAL: "signal",
+  KYC: "kyc",
+  BROKER: "broker",
+  ACCESS: "access",
+  SECURITY: "security",
+  SYSTEM: "system",
+  ONBOARDING: "system",
+}
+
+async function getUserPrefs(userId: string): Promise<Record<string, boolean>> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { metadata: true },
+  })
+  const meta = (user?.metadata || {}) as Record<string, any>
+  return meta.notificationPrefs || {}
+}
+
+export { getUserPrefs }
+
 interface NotifyParams {
   userId: string
   type: NotificationType
@@ -36,45 +57,80 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     },
   })
 
-  // Envoi push web (fire-and-forget, ne bloque pas la réponse)
-  // Livraison tracée pour le suivi temps réel (Tracker admin).
-  const pushDelivery = await prisma.notificationDelivery
-    .create({
-      data: {
-        notificationId: notification.id,
-        channel: "PUSH",
-        status: "PENDING",
-      },
-    })
-    .catch(() => null)
+  // Vérifier les préférences de notification
+  const prefs = await getUserPrefs(params.userId).catch(() => ({}))
+  const prefKey = TYPE_TO_PREF_KEY[params.type]
+  const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
-  sendPushToUser(params.userId, {
-    title: params.title,
-    body: params.body,
-    url: params.linkUrl || "/dashboard",
-    tag: notification.id,
-  })
-    .then(async (res) => {
-      if (!pushDelivery) return
-      const failed = !!(res as { failed?: number })?.failed
-      await prisma.notificationDelivery
-        .update({
-          where: { id: pushDelivery.id },
-          data: { status: failed ? "FAILED" : "SENT" },
-        })
-        .catch(() => {})
+  if (typeEnabled) {
+    // Envoi push web (fire-and-forget, ne bloque pas la réponse)
+    const pushDelivery = await prisma.notificationDelivery
+      .create({
+        data: {
+          notificationId: notification.id,
+          channel: "PUSH",
+          status: "PENDING",
+        },
+      })
+      .catch(() => null)
+
+    sendPushToUser(params.userId, {
+      title: params.title,
+      body: params.body,
+      url: params.linkUrl || "/dashboard",
+      tag: notification.id,
     })
-    .catch(async (err) => {
-      console.error("[notify] push failed:", err)
-      if (pushDelivery) {
+      .then(async (res) => {
+        if (!pushDelivery) return
+        const failed = !!(res as { failed?: number })?.failed
         await prisma.notificationDelivery
           .update({
             where: { id: pushDelivery.id },
-            data: { status: "FAILED" },
+            data: { status: failed ? "FAILED" : "SENT" },
           })
           .catch(() => {})
-      }
-    })
+      })
+      .catch(async (err) => {
+        console.error("[notify] push failed:", err)
+        if (pushDelivery) {
+          await prisma.notificationDelivery
+            .update({
+              where: { id: pushDelivery.id },
+              data: { status: "FAILED" },
+            })
+            .catch(() => {})
+        }
+      })
+
+    if (params.email) {
+      const queue = getQueue("notification-delivery")
+      const { to, subject, html } = params.email
+
+      await prisma.$transaction(async (tx) => {
+        const delivery = await tx.notificationDelivery.create({
+          data: {
+            notificationId: notification.id,
+            channel: "EMAIL",
+            status: "PENDING",
+          },
+        })
+
+        await queue.add(
+          `email-${notification.id}`,
+          {
+            deliveryId: delivery.id,
+            to,
+            subject,
+            html,
+          },
+          {
+            attempts: 3,
+            backoff: { type: "exponential", delay: 5000 },
+          }
+        )
+      })
+    }
+  }
 
   // WebSocket temps réel via Redis Pub/Sub
   publishNotification(params.userId, {
@@ -88,35 +144,6 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   }).catch((err) => {
     console.error("[notify] pubsub failed:", err)
   })
-
-  if (params.email) {
-    const queue = getQueue("notification-delivery")
-    const { to, subject, html } = params.email
-
-    await prisma.$transaction(async (tx) => {
-      const delivery = await tx.notificationDelivery.create({
-        data: {
-          notificationId: notification.id,
-          channel: "EMAIL",
-          status: "PENDING",
-        },
-      })
-
-      await queue.add(
-        `email-${notification.id}`,
-        {
-          deliveryId: delivery.id,
-          to,
-          subject,
-          html,
-        },
-        {
-          attempts: 3,
-          backoff: { type: "exponential", delay: 5000 },
-        }
-      )
-    })
-  }
 
   return { id: notification.id }
 }

@@ -102,6 +102,18 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
   console.log(`[signal] Distributing signal ${signalId} to ${members.length} member(s)`)
 
+  const memberIds = members.map((m) => m.id)
+  const memberPrefs = new Map<string, boolean>()
+  const prefUsers = await prisma.user.findMany({
+    where: { id: { in: memberIds } },
+    select: { id: true, metadata: true },
+  })
+  prefUsers.forEach((u) => {
+    const meta = (u.metadata || {}) as Record<string, any>
+    const prefs = meta.notificationPrefs || {}
+    memberPrefs.set(u.id, prefs.signal !== false)
+  })
+
   const BATCH_SIZE = 50
   for (let i = 0; i < members.length; i += BATCH_SIZE) {
     const batch = members.slice(i, i + BATCH_SIZE)
@@ -139,6 +151,9 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           console.error("[signal] pubsub failed:", err)
         }
 
+        const wantsNotifications = memberPrefs.get(member.id) !== false
+
+        if (wantsNotifications) {
         const delivery = await prisma.notificationDelivery.create({
           data: {
             notificationId: notification.id,
@@ -182,6 +197,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             status: pushResult.sent > 0 ? "SENT" : "FAILED",
           },
         })
+        }
       }),
     )
   }
