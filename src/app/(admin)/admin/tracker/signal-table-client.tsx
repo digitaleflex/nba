@@ -44,14 +44,14 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
             <thead className="bg-muted/50 text-muted-foreground">
               <tr className="text-left">
                 <th className="px-4 py-2.5 font-medium">Signal</th>
-                <th className="px-4 py-2.5 font-medium">Groupes</th>
+                <th className="px-4 py-2.5 font-medium hidden md:table-cell">Groupes</th>
                 <th className="px-4 py-2.5 font-medium text-right">Dest.</th>
                 <th className="px-4 py-2.5 font-medium text-right">Emails</th>
                 <th className="px-4 py-2.5 font-medium text-right">Délivrés</th>
-                <th className="px-4 py-2.5 font-medium text-right">Ouverts</th>
-                <th className="px-4 py-2.5 font-medium text-right">Bounces</th>
-                <th className="px-4 py-2.5 font-medium text-right">Plaintes</th>
-                <th className="px-4 py-2.5 font-medium text-right">Push</th>
+                <th className="px-4 py-2.5 font-medium text-right hidden md:table-cell">Ouverts</th>
+                <th className="px-4 py-2.5 font-medium text-right hidden md:table-cell">Bounces</th>
+                <th className="px-4 py-2.5 font-medium text-right hidden md:table-cell">Plaintes</th>
+                <th className="px-4 py-2.5 font-medium text-right hidden md:table-cell">Push</th>
                 <th className="px-4 py-2.5 font-medium text-right">Détail</th>
               </tr>
             </thead>
@@ -72,14 +72,14 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                         {r.publishedAt ? new Date(r.publishedAt).toLocaleString("fr-FR") : "—"}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs max-w-[100px] truncate">{r.plans}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs max-w-[100px] truncate hidden md:table-cell">{r.plans}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.recipients}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.emailsSent}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-success">{r.delivered}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-info">{r.opened}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.bounced}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-destructive">{r.complained}</td>
-                    <td className="px-4 py-3 text-right tabular-nums">
+                    <td className="px-4 py-3 text-right tabular-nums text-info hidden md:table-cell">{r.opened}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-destructive hidden md:table-cell">{r.bounced}</td>
+                    <td className="px-4 py-3 text-right tabular-nums text-destructive hidden md:table-cell">{r.complained}</td>
+                    <td className="px-4 py-3 text-right tabular-nums hidden md:table-cell">
                       <span className="text-success">{r.pushSent}</span>
                       {r.pushFailed > 0 && (
                         <span className="text-destructive"> / {r.pushFailed}</span>

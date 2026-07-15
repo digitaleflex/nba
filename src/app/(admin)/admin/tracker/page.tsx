@@ -302,7 +302,7 @@ export default async function SignalTrackerPage({
             name="q"
             defaultValue={query}
             placeholder="Rechercher un signal..."
-            className="h-9 rounded-lg border border-border bg-background px-3 text-xs w-64 outline-none focus:border-primary"
+            className="h-9 rounded-lg border border-border bg-background px-3 text-xs w-40 md:w-64 outline-none focus:border-primary"
           />
           <button
             type="submit"
