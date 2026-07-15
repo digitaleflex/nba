@@ -108,6 +108,28 @@ function AdminConsoleContent() {
     }
   }, [])
 
+  // Helper: execute an action, show toast with undo button
+  const undoableAction = useCallback(async (
+    execute: () => Promise<boolean>,
+    undo: () => Promise<void>,
+    successMsg: string,
+  ) => {
+    const ok = await execute()
+    if (!ok) return
+    toast.success(successMsg, {
+      action: {
+        label: "Annuler",
+        onClick: async () => {
+          await undo()
+          toast.info("Action annulée")
+          invalidateAdminCache()
+          activeRefetch.current?.()
+        },
+      },
+      duration: 6000,
+    })
+  }, [])
+
   const refreshOps = useCallback(() => {
     invalidateAdminCache()
     fetchOperations()
@@ -123,17 +145,26 @@ function AdminConsoleContent() {
     invalidateAdminCache()
     try {
       if (actionType === "suspend" || actionType === "reactivate") {
-        const isActive = actionType === "reactivate"
-        const res = await fetch("/api/admin/members", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: extraData.id, isActive }),
-        })
-        if (res.ok) {
-          activeRefetch.current?.()
-          setPanelOpen(false)
-          toast.success(`Utilisateur ${isActive ? "réactivé" : "suspendu"} avec succès.`)
-        }
+        const makeActive = actionType === "reactivate"
+        await undoableAction(
+          async () => {
+            const res = await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, isActive: makeActive }),
+            })
+            if (res.ok) { activeRefetch.current?.(); setPanelOpen(false); return true }
+            return false
+          },
+          async () => {
+            await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, isActive: !makeActive }),
+            })
+          },
+          `Utilisateur ${makeActive ? "réactivé" : "suspendu"}`,
+        )
       } else if (actionType === "kyc_approve" || actionType === "kyc_reject") {
         const status = actionType === "kyc_approve" ? "APPROVED" : "REJECTED"
         const res = await fetch(`/api/admin/kyc/${extraData.id}`, {
@@ -213,6 +244,27 @@ function AdminConsoleContent() {
         } else {
           toast.error("Erreur lors de la mise à jour des messages.")
         }
+      } else if (actionType === "reset_email") {
+        const prevStatus = extraData.emailStatus || "BOUNCED"
+        await undoableAction(
+          async () => {
+            const res = await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, emailStatus: "OK" }),
+            })
+            if (res.ok) { activeRefetch.current?.(); setPanelOpen(false); return true }
+            return false
+          },
+          async () => {
+            await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, emailStatus: prevStatus }),
+            })
+          },
+          "Email réinitialisé",
+        )
       } else if (actionType === "toggle_signal_override") {
         const res = await fetch("/api/admin/members", {
           method: "PUT",
@@ -246,15 +298,13 @@ function AdminConsoleContent() {
           toast.error("Erreur lors de la validation manuelle.")
         }
       } else if (actionType === "delete_user") {
-        const res = await fetch(`/api/admin/members?userId=${extraData.id}`, {
-          method: "DELETE",
-        })
+        const res = await fetch(`/api/admin/members?userId=${extraData.id}`, { method: "DELETE" })
         if (res.ok) {
           activeRefetch.current?.()
           setPanelOpen(false)
           toast.success("Utilisateur supprimé avec succès.")
         } else {
-          toast.error("Erreur lors de la suppression de l'utilisateur.")
+          toast.error("Erreur lors de la suppression.")
         }
       } else if (actionType === "send_user_notification") {
         const res = await fetch("/api/admin/notifications", {
@@ -287,32 +337,61 @@ function AdminConsoleContent() {
         {/* ============================================================== */}
         <div className="relative">
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
-            {[
-              { value: "dashboard", label: "Tableau de bord" },
-              { value: "requests", label: "Demandes" },
-              { value: "signals", label: "Signaux" },
-              { value: "kyc", label: "KYC" },
-              { value: "broker", label: "Broker" },
-              { value: "stats", label: "Statistiques" },
-              { value: "analytics", label: "Analytics" },
-              { value: "security", label: "Sécurité" },
-              { value: "emails", label: "E-mails" },
-              { value: "settings", label: "Paramètres" },
-              { value: "audit", label: "Audit" },
-            ].map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                className={cn(
-                  "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start",
-                  activeTab === tab.value
-                    ? "bg-primary text-primary-foreground border-primary"
-                    : "border-border text-muted-foreground hover:bg-muted/50"
-                )}
-              >
-                {tab.label}
-              </button>
-            ))}
+            <div className="shrink-0 w-1" />
+            {/* Right fade gradient hint (mobile only) */}
+            <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-background to-transparent md:hidden" />
+            {([
+              { label: "Pilotage", tabs: [
+                { value: "dashboard", label: "Tableau de bord" },
+                { value: "stats", label: "Statistiques" },
+                { value: "analytics", label: "Analytics" },
+              ]},
+              { label: "Membres", tabs: [
+                { value: "requests", label: "Demandes" },
+                { value: "membres", label: "Membres" },
+                { value: "kyc", label: "KYC" },
+                { value: "broker", label: "Broker" },
+              ]},
+              { label: "Communication", tabs: [
+                { value: "signals", label: "Signaux" },
+                { value: "emails", label: "E-mails" },
+              ]},
+              { label: "Système", tabs: [
+                { value: "audit", label: "Audit" },
+                { value: "security", label: "Sécurité" },
+                { value: "settings", label: "Paramètres" },
+              ]},
+            ]).flatMap((group, gi) => {
+              const items: React.ReactNode[] = []
+              if (gi > 0) {
+                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
+              }
+              items.push(
+                <span
+                  key={`gl-${gi}`}
+                  className="shrink-0 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider select-none"
+                >
+                  {group.label}
+                </span>
+              )
+              group.tabs.forEach((tab) => {
+                items.push(
+                  <button
+                    key={tab.value}
+                    onClick={() => router.push(`/admin?tab=${tab.value}`)}
+                    className={cn(
+                      "text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start",
+                      activeTab === tab.value
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "border-border text-muted-foreground hover:bg-muted/50"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                )
+              })
+              return items
+            })}
           </div>
           <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-background to-transparent md:hidden" />
         </div>

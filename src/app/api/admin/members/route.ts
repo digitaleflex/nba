@@ -57,6 +57,8 @@ export async function GET(request: NextRequest) {
           onboardingStatus: true,
           isActive: true,
           signalsAccessOverride: true,
+          emailStatus: true,
+          emailStatusAt: true,
           createdAt: true,
           role: { select: { name: true } },
           accessRequests: {
@@ -119,7 +121,7 @@ export async function PUT(request: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
-    const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride } = body
+    const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = body
 
     if (!userId) {
       return NextResponse.json({ error: "userId est requis" }, { status: 400 })
@@ -129,6 +131,8 @@ export async function PUT(request: NextRequest) {
     if (typeof isActive === "boolean") data.isActive = isActive
     if (onboardingStatus) data.onboardingStatus = onboardingStatus
     if (typeof signalsAccessOverride === "boolean") data.signalsAccessOverride = signalsAccessOverride
+    if (emailStatus) data.emailStatus = emailStatus
+    if (emailStatus) data.emailStatusAt = new Date()
     if (roleId) {
       const role = await prisma.role.findUnique({ where: { id: roleId } })
       if (!role) {

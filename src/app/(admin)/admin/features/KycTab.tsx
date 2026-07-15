@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { ImageIcon, Loader2 } from "lucide-react"
+import { ImageIcon, Loader2, FileX } from "lucide-react"
 import { Card, CardContent, Badge, Button, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { KYCDoc, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 
 interface KycTabProps {
@@ -145,9 +146,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
           )}
         </>
       ) : (
-        <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground">
-          Aucun document KYC reçu.
-        </div>
+        <EmptyState icon={FileX} title="Aucun document KYC" description="Les documents soumis par les membres apparaîtront ici." />
       )}
     </div>
   )

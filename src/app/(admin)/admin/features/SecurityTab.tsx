@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, EyeOff, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, Button } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { CachedGet } from "./types"
 
 interface SecurityTabProps {
@@ -108,9 +109,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">
-                    Aucune session active.
-                  </p>
+                  <EmptyState icon={EyeOff} title="Aucune session active" />
                 )}
               </div>
             </CardContent>
@@ -135,9 +134,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     </div>
                   </>
                 ) : (
-                  <p className="text-xs text-muted-foreground py-4 text-center">
-                    Aucune tentative suspecte détectée.
-                  </p>
+                  <EmptyState icon={ShieldCheck} title="Aucune tentative suspecte" />
                 )}
               </div>
             </CardContent>
@@ -197,7 +194,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
               </table>
             </div>
           ) : (
-            <p className="text-xs text-muted-foreground py-6 text-center">Aucune session enregistrée.</p>
+            <EmptyState icon={EyeOff} title="Aucune session enregistrée" />
           )}
         </CardContent>
       </Card>

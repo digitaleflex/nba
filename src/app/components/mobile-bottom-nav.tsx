@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
@@ -18,6 +19,7 @@ import {
   Bell,
   MessageCircle,
   Gauge,
+  Activity,
 } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -43,6 +45,21 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   const searchParams = useSearchParams()
   const router = useRouter()
   const activeTab = searchParams.get("tab") || "requests"
+
+  const [pendingRequests, setPendingRequests] = useState(0)
+  useEffect(() => {
+    if (!isAdmin) return
+    const controller = new AbortController()
+    fetch("/api/admin/access-requests?status=PENDING", { signal: controller.signal })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d?.total != null) setPendingRequests(d.total)
+        else if (Array.isArray(d?.requests)) setPendingRequests(d.requests.length)
+        else if (Array.isArray(d)) setPendingRequests(d.length)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [isAdmin])
 
   async function handleLogout() {
     if (!confirm("Voulez-vous vraiment vous déconnecter ?")) return
@@ -116,16 +133,16 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
       active: pathname === "/admin" && activeTab === "signals",
     },
     {
-      href: "/admin?tab=users",
+      href: "/admin?tab=membres",
       label: "Membres",
       icon: Users,
       active: pathname === "/admin" && activeTab === "users",
     },
     {
-      href: "/dashboard",
-      label: "Retour",
-      icon: LayoutDashboard,
-      active: false,
+      href: "/admin/tracker",
+      label: "Tracker",
+      icon: Activity,
+      active: pathname === "/admin/tracker",
     },
   ]
 
@@ -141,6 +158,8 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
           const Icon = link.icon
           const isActive = link.active
           const showBadge = link.href === "/dashboard/messages" && !!messagesBadge
+          const showAccesBadge =
+            isAdmin && link.href === "/admin?tab=requests" && pendingRequests > 0
 
           if (link.onClick) {
             return (
@@ -171,9 +190,9 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
               )}
               <span className="relative inline-flex">
                 <Icon className={cn("size-5 shrink-0 transition-transform", isActive && "scale-110")} />
-                {showBadge && (
+                {(showBadge || showAccesBadge) && (
                   <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card">
-                    {messagesBadge}
+                    {showAccesBadge ? (pendingRequests > 9 ? "9+" : String(pendingRequests)) : messagesBadge}
                   </span>
                 )}
               </span>

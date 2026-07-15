@@ -4,8 +4,10 @@ import { prisma } from "@nba/lib/db"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
+import { MobilePageTitle } from "@nba/app/components/mobile-page-title"
 import { AdminHeader } from "./admin/components/admin-header"
 import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
+import { Toaster } from "sonner"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -38,16 +40,11 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
         {/* Mobile Header */}
         <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 min-w-0">
             <MobileMenu isAdmin={true} user={user} />
-            <div className="flex items-center gap-2 font-bold text-sm">
-              <span className="text-primary font-extrabold">Never</span>BrokeAgain
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase">
-                Admin
-              </span>
-            </div>
+            <MobilePageTitle />
           </div>
-          <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
+          <span className="text-xs text-muted-foreground font-medium truncate ml-2">{user.name}</span>
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
@@ -58,6 +55,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav isAdmin={true} user={user} />
       </div>
+      <Toaster richColors position="top-center" />
     </MessagingUnreadProvider>
   )
 }

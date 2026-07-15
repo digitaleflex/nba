@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from "react"
 import dynamic from "next/dynamic"
-import { Play, Copy, Eye, Trash2, Loader2 } from "lucide-react"
+import { Play, Copy, Eye, Trash2, Loader2, Inbox } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, Badge, Button, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { Signal, CachedGet, OpenPanel } from "./types"
 
 const SignalEditor = dynamic(
@@ -166,9 +167,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
             ))}
           </div>
         ) : (
-          <div className="py-12 text-center border border-dashed border-border rounded-xl text-muted-foreground">
-            Aucun signal créé.
-          </div>
+          <EmptyState icon={Inbox} title="Aucun signal créé" description="Créez votre premier signal via l'éditeur ci-contre." />
         )}
       </div>
     </div>

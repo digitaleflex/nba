@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, MailQuestion } from "lucide-react"
 import { Card, Badge, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { CachedGet } from "./types"
 
 interface EmailsTabProps {
@@ -135,9 +136,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
           </div>
         </Card>
       ) : (
-        <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground">
-          Aucun e-mail trouvé.
-        </div>
+        <EmptyState icon={MailQuestion} title="Aucun e-mail trouvé" />
       )}
     </div>
   )

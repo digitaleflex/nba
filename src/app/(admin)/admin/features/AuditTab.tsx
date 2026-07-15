@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Trash2, Loader2, Shield, User, FileText, Mail, Bell, Monitor } from "lucide-react"
+import { Trash2, Loader2, Shield, User, FileText, Mail, Bell, Monitor, FileX } from "lucide-react"
 import { Card, Button, Badge, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { AuditLog, CachedGet } from "./types"
 
 interface AuditTabProps {
@@ -165,7 +166,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
                 )
               })
             ) : (
-              <div className="py-10 text-center text-muted-foreground">Aucun log enregistré.</div>
+              <EmptyState icon={FileX} title="Aucun log enregistré" description="Les actions des administrateurs apparaîtront ici." />
             )}
           </div>
         </div>

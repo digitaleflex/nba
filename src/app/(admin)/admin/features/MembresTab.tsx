@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight } from "lucide-react"
+import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight, Inbox, Download } from "lucide-react"
 import { Card, Badge, Button, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { CachedGet } from "./types"
 
 interface MembresTabProps {
@@ -88,6 +89,57 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   const totalPages = Math.ceil(total / limit)
   const hasFilters = searchQuery || statusFilter || planFilter || onboardingFilter
 
+  function exportExcel() {
+    const rows = membres.map((m: any) => [
+      m.name || "",
+      m.email || "",
+      m.phone || "",
+      m.country || "",
+      m.emailStatus || "OK",
+      m.plan?.name || "",
+      m.onboardingStatus || "",
+      m.isActive ? "Oui" : "Non",
+      new Date(m.createdAt).toLocaleDateString("fr-FR"),
+    ])
+    const headers = ["Nom", "Email", "Téléphone", "Pays", "Statut email", "Plan", "Onboarding", "Actif", "Créé le"]
+
+    let xml = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:o="urn:schemas-microsoft-com:office:office"
+ xmlns:x="urn:schemas-microsoft-com:office:excel"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:html="http://www.w3.org/TR/REC-html40">
+ <Styles>
+  <Style ss:ID="header">
+   <Font ss:Bold="1" ss:Color="#FFFFFF"/>
+   <Interior ss:Color="#1E3A5F" ss:Pattern="Solid"/>
+  </Style>
+ </Styles>
+ <Worksheet ss:Name="Membres">
+  <Table>`
+    xml += `\n   <Row>`
+    headers.forEach((h) => { xml += `<Cell ss:StyleID="header"><Data ss:Type="String">${h.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</Data></Cell>` })
+    xml += `</Row>`
+    rows.forEach((r) => {
+      xml += `\n   <Row>`
+      r.forEach((c: string) => { xml += `<Cell><Data ss:Type="String">${String(c).replace(/&/g, "&amp;").replace(/</g, "&lt;")}</Data></Cell>` })
+      xml += `</Row>`
+    })
+    xml += `
+  </Table>
+ </Worksheet>
+</Workbook>`
+
+    const blob = new Blob([xml], { type: "application/vnd.ms-excel" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = `membres-${new Date().toISOString().slice(0, 10)}.xls`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-border pb-5">
@@ -95,6 +147,16 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
           <h1 className="text-xl font-bold tracking-tight text-foreground">Membres</h1>
           <p className="text-xs text-muted-foreground mt-1">Gestion des membres et de leurs abonnements</p>
         </div>
+        {membres.length > 0 && (
+          <button
+            onClick={exportExcel}
+            className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+            title="Exporter en Excel"
+          >
+            <Download className="size-3.5" />
+            <span className="hidden sm:inline">Exporter</span>
+          </button>
+        )}
       </div>
 
       {/* Filters row */}
@@ -157,6 +219,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
               <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                 <th className="px-4 py-3">Membre</th>
                 <th className="px-4 py-3 hidden md:table-cell">Contact</th>
+                <th className="px-4 py-3 hidden md:table-cell">Email</th>
                 <th className="px-4 py-3">Abonnement(s)</th>
                 <th className="px-4 py-3 hidden md:table-cell">Onboarding</th>
                 <th className="px-4 py-3">Statut</th>
@@ -166,9 +229,9 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             </thead>
             <tbody className="divide-y divide-border">
               {loading ? (
-                <tr><td colSpan={7} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+                <tr><td colSpan={8} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
               ) : membres.length === 0 ? (
-                <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">Aucun membre trouvé</td></tr>
+                <tr><td colSpan={8} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche." /></td></tr>
               ) : (
                 membres.map((m: any) => (
                   <tr key={m.id} className="hover:bg-card/30 transition-colors">
@@ -181,6 +244,9 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                       <div>{m.email}</div>
                       {m.phone && <div className="text-[10px]">{m.phone}</div>}
                       {m.country && <div className="text-[10px]">{m.country}</div>}
+                    </td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      <EmailStatusBadge status={m.emailStatus} />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-1">
@@ -271,6 +337,18 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       )}
     </div>
   )
+}
+
+function EmailStatusBadge({ status }: { status: string | null | undefined }) {
+  if (!status || status === "OK") {
+    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600">OK</span>
+  }
+  const config: Record<string, { label: string; class: string }> = {
+    BOUNCED: { label: "BOUNCED", class: "bg-amber-500/10 text-amber-600" },
+    INVALID: { label: "INVALID", class: "bg-rose-500/10 text-rose-600" },
+  }
+  const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
 }
 
 function OnboardingBadge({ status }: { status: string | null }) {

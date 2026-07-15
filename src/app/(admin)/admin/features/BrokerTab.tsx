@@ -1,8 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, FileX } from "lucide-react"
 import { Card, CardContent, Badge, Button, cn } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { BrokerVerification, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 
 interface BrokerTabProps {
@@ -154,9 +155,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
           )}
         </>
       ) : (
-        <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground">
-          Aucune demande de vérification broker en attente.
-        </div>
+        <EmptyState icon={FileX} title="Aucune vérification broker" />
       )}
     </div>
   )

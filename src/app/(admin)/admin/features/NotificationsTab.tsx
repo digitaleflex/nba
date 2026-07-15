@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, MailQuestion } from "lucide-react"
 import { authClient } from "@nba/lib/auth-client"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 import { Card, CardContent, Input, Button } from "@nba/design-system"
+import { EmptyState } from "@nba/app/components/empty-state"
 import { CachedGet } from "./types"
 
 interface NotificationsTabProps {
@@ -190,7 +191,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
             ))}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground py-4 text-center">Aucune notification envoyée.</p>
+          <EmptyState icon={MailQuestion} title="Aucune notification envoyée" />
         )}
       </div>
     </div>

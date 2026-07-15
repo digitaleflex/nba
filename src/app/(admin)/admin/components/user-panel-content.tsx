@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap } from "lucide-react"
+import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
 
 interface UserPanelContentProps {
@@ -59,6 +59,12 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             </div>
           </div>
           <div>
+            <span className="text-[10px] text-muted-foreground uppercase">Email</span>
+            <div className="mt-0.5">
+              <EmailStatusBadge status={data.emailStatus} />
+            </div>
+          </div>
+          <div>
             <span className="text-[10px] text-muted-foreground uppercase">Téléphone (WhatsApp)</span>
             <p className="font-semibold text-foreground mt-0.5">{data.phone || "Non renseigné"}</p>
           </div>
@@ -83,34 +89,46 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
         <div className="space-y-4 border-t pt-4">
           <div>
             <span className="text-[10px] text-muted-foreground uppercase block mb-2">Actions de compte</span>
-            <div className="flex gap-2">
-              {data.isActive ? (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  className="w-full gap-1.5"
-                  onClick={() => onAction("suspend", { id: data.id })}
-                >
-                  <Ban className="size-3.5" /> Suspendre
-                </Button>
-              ) : (
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
-                  onClick={() => onAction("reactivate", { id: data.id })}
-                >
-                  <Check className="size-3.5" /> Réactiver
-                </Button>
-              )}
-              {data.onboardingStatus !== "ACTIVE" && (
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2">
+                {data.isActive ? (
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="w-full gap-1.5"
+                    onClick={() => onAction("suspend", { id: data.id })}
+                  >
+                    <Ban className="size-3.5" /> Suspendre
+                  </Button>
+                ) : (
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="w-full gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0"
+                    onClick={() => onAction("reactivate", { id: data.id })}
+                  >
+                    <Check className="size-3.5" /> Réactiver
+                  </Button>
+                )}
+                {data.onboardingStatus !== "ACTIVE" && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
+                    onClick={() => onAction("force_onboarding", { id: data.id })}
+                  >
+                    <Check className="size-3.5" /> Forcer ACTIVE
+                  </Button>
+                )}
+              </div>
+              {(data.emailStatus === "BOUNCED" || data.emailStatus === "INVALID") && (
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full gap-1.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/20"
-                  onClick={() => onAction("force_onboarding", { id: data.id })}
+                  className="w-full gap-1.5 border-amber-500/30 bg-amber-500/10 text-amber-600 hover:bg-amber-500/20"
+                  onClick={() => onAction("reset_email", { id: data.id })}
                 >
-                  <Check className="size-3.5" /> Forcer ACTIVE
+                  <Mail className="size-3.5" /> Réinitialiser l'email
                 </Button>
               )}
             </div>
@@ -370,6 +388,9 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             </div>
           )}
 
+          {/* Timeline */}
+          <MiniTimeline data={data} />
+
           <span className="text-[10px] text-muted-foreground uppercase mt-3 block border-t pt-4">Changer le rôle</span>
           <div className="grid grid-cols-1 gap-1.5">
             {ROLES.map((role) => (
@@ -414,6 +435,99 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function EmailStatusBadge({ status }: { status: string | null | undefined }) {
+  if (!status || status === "OK") {
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600">OK</span>
+  }
+  const config: Record<string, { label: string; class: string }> = {
+    BOUNCED: { label: "BOUNCED", class: "bg-amber-500/10 text-amber-600" },
+    INVALID: { label: "INVALID", class: "bg-rose-500/10 text-rose-600" },
+  }
+  const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+}
+
+/* Mini timeline du parcours utilisateur */
+const TIMELINE_ICONS: Record<string, any> = {
+  registration: UserPlus,
+  kyc_submitted: Camera,
+  kyc_approved: Check,
+  kyc_rejected: Ban,
+  broker_submitted: Video,
+  broker_approved: Check,
+  broker_rejected: Ban,
+  access_granted: CreditCard,
+  email_bounced: Mail,
+}
+
+function MiniTimeline({ data }: { data: any }) {
+  const events: { date: Date; label: string; iconKey: string; status?: string }[] = []
+
+  if (data.createdAt) {
+    events.push({ date: new Date(data.createdAt), label: "Inscription", iconKey: "registration" })
+  }
+
+  if (data.kycDocuments) {
+    data.kycDocuments.forEach((doc: any) => {
+      if (doc.createdAt) {
+        events.push({
+          date: new Date(doc.createdAt),
+          label: doc.status === "APPROVED" ? "KYC approuvé" : doc.status === "REJECTED" ? "KYC refusé" : "KYC soumis",
+          iconKey: doc.status === "APPROVED" ? "kyc_approved" : doc.status === "REJECTED" ? "kyc_rejected" : "kyc_submitted",
+          status: doc.status,
+        })
+      }
+    })
+  }
+
+  if (data.brokerVerifications) {
+    data.brokerVerifications.forEach((b: any) => {
+      if (b.createdAt) {
+        events.push({
+          date: new Date(b.createdAt),
+          label: b.status === "APPROVED" ? "Broker validé" : b.status === "REJECTED" ? "Broker refusé" : "Broker soumis",
+          iconKey: b.status === "APPROVED" ? "broker_approved" : b.status === "REJECTED" ? "broker_rejected" : "broker_submitted",
+          status: b.status,
+        })
+      }
+    })
+  }
+
+  events.sort((a, b) => a.date.getTime() - b.date.getTime())
+
+  if (events.length === 0) return null
+
+  return (
+    <div className="border-t pt-4 mt-3">
+      <span className="text-[10px] text-muted-foreground uppercase block mb-3">Parcours</span>
+      <div className="relative pl-5 space-y-3">
+        <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border/50" />
+        {events.map((ev, i) => {
+          const Icon = TIMELINE_ICONS[ev.iconKey] || Circle
+          return (
+            <div key={i} className="relative flex items-start gap-3">
+              <div className={cn(
+                "absolute -left-[13px] p-0.5 rounded-full ring-2 ring-card",
+                ev.status === "APPROVED" ? "bg-emerald-500/20 text-emerald-600" :
+                ev.status === "REJECTED" ? "bg-rose-500/20 text-rose-600" :
+                "bg-muted text-muted-foreground"
+              )}>
+                <Icon className="size-2.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-medium text-foreground/80">{ev.label}</p>
+                <p className="text-[9px] text-muted-foreground">
+                  {ev.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </p>
+              </div>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }
