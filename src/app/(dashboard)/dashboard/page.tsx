@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { Card, CardContent } from "@nba/design-system"
 import { TrendingUp, BarChart3, Users, Activity } from "lucide-react"
 import { PushOnboardingBanner } from "@nba/components/push-onboarding-banner"
+import { PushSubscriptionDialog } from "@nba/components/push-subscription-dialog"
 
 export default async function DashboardPage() {
   const session = await getServerSession()
@@ -44,6 +45,7 @@ export default async function DashboardPage() {
       </div>
 
       <PushOnboardingBanner />
+      <PushSubscriptionDialog />
 
       <div className="grid gap-3 grid-cols-2 lg:grid-cols-3">
         <Card className="relative overflow-hidden">
