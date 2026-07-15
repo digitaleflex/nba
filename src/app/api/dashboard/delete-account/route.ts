@@ -17,47 +17,51 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Mot de passe requis pour supprimer le compte" }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, email: true },
-    }) as { name: string; email: string } | null
+    const [user, account] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, email: true },
+      }),
+      prisma.account.findFirst({
+        where: { userId: session.user.id, providerId: "credential" },
+        select: { password: true },
+      }),
+    ])
 
     if (!user) {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
     }
 
-    // Verify password using Better Auth's signIn
-    const { auth } = await import("@nba/lib/auth")
+    if (!account?.password) {
+      return NextResponse.json({ error: "Aucun mot de passe configuré" }, { status: 400 })
+    }
 
-    await auth.api.signInEmail({
-      body: {
-        email: user.email,
-        password: password,
-      },
-    })
+    // Verify password using Better Auth's scrypt hasher (avoids signInEmail which creates a session)
+    const { verifyPassword } = await import("@better-auth/utils/password")
+    const valid = await verifyPassword(account.password, password)
+    if (!valid) {
+      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+    }
 
-    // Envoyer un email de confirmation avant suppression
-    await sendAccountDeletionEmail(user).catch((err) =>
+    // Soft delete + delete all sessions
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: session.user.id },
+        data: { deletedAt: new Date() },
+      }),
+      prisma.session.deleteMany({
+        where: { userId: session.user.id },
+      }),
+    ])
+
+    // Send confirmation email (non-blocking)
+    sendAccountDeletionEmail(user).catch((err) =>
       console.error("[delete-account] email failed:", err)
     )
-
-    // Soft delete - set deletedAt
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { deletedAt: new Date() },
-    })
-
-    // Invalidate all sessions
-    await prisma.session.deleteMany({
-      where: { userId: session.user.id },
-    })
 
     return NextResponse.json({ success: true })
   } catch (error: any) {
     const message = error.message || "Erreur lors de la suppression du compte"
-    if (message.includes("invalid") || message.includes("password") || message.includes("Invalid")) {
-      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
-    }
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
