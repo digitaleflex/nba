@@ -43,8 +43,12 @@ interface PerUser {
 interface SignalRow {
   id: string
   title: string
+  content: string
+  author: string
   publishedAt: Date | null
   plans: string
+  planBreakdown: { name: string; count: number }[]
+  hasImages: boolean
   recipients: number
   inAppRead: number
   emailsSent: number
@@ -89,7 +93,14 @@ export default async function SignalTrackerPage({
       id: true,
       content: true,
       publishedAt: true,
-      audience: { select: { plan: { select: { name: true } } } },
+      imageUrl: true,
+      imageUrls: true,
+      creator: { select: { name: true } },
+      audience: {
+        select: {
+          plan: { select: { id: true, name: true } },
+        },
+      },
     },
   })
 
@@ -182,11 +193,24 @@ export default async function SignalTrackerPage({
       0,
     )
 
+    const planCount = new Map<string, number>()
+    for (const u of perUser) {
+      planCount.set(u.plan, (planCount.get(u.plan) ?? 0) + 1)
+    }
+    const planBreakdown = signal.audience.map((a: any) => ({
+      name: a.plan.name,
+      count: planCount.get(a.plan.name) ?? 0,
+    }))
+
     rows.push({
       id: signal.id,
       title: snippet(signal.content),
+      content: signal.content,
+      author: (signal as any).creator?.name || "Inconnu",
       publishedAt: signal.publishedAt,
-      plans: signal.audience.map((a) => a.plan.name).join(", ") || "—",
+      plans: signal.audience.map((a: any) => a.plan.name).join(", ") || "—",
+      planBreakdown,
+      hasImages: !!(signal as any).imageUrl || ((signal as any).imageUrls?.length ?? 0) > 0,
       recipients: notifications.length,
       inAppRead: notifications.filter((n) => n.isRead).length,
       emailsSent,
