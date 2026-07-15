@@ -172,7 +172,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                   <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1 text-[11px]">
                     <p className="text-muted-foreground">
                       Traité par <span className="font-medium text-foreground">{req.reviewer?.name ?? "Admin"}</span>
-                      {req.reviewedAt ? ` · ${new Date(req.reviewedAt).toLocaleDateString("fr-FR")}` : ""}
+                      {req.reviewedAt ? ` · ${new Date(req.reviewedAt).toLocaleString("fr-FR")}` : ""}
                     </p>
                     {req.notes && (
                       <p className="text-foreground/90">
@@ -191,7 +191,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
 
                 <div className="flex justify-between items-center pt-2 border-t border-border/60">
                   <span className="text-[10px] text-muted-foreground">
-                    Soumis le {new Date(req.createdAt).toLocaleDateString()}
+                    Soumis le {new Date(req.createdAt).toLocaleString("fr-FR")}
                   </span>
                   {req.status === "PENDING" && (
                     <div className="flex gap-2">

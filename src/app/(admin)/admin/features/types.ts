@@ -82,6 +82,8 @@ export interface AuditLog {
   id: string
   action: string
   resourceType: string
+  resourceId: string | null
+  details: Record<string, unknown> | null
   createdAt: string
   ipAddress: string | null
   user: { name: string; email: string } | null
