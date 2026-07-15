@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { Search, Bell, CheckSquare, User, Loader2, ArrowRight } from "lucide-react"
 import { cn } from "@nba/design-system"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { NotificationBell } from "@nba/components/notification-bell"
 
 interface SearchResults {
   users: { id: string; name: string; email: string }[]
@@ -120,14 +121,8 @@ export function AdminHeader({ user }: AdminHeaderProps) {
             <CheckSquare className="size-4" />
           </button>
 
-          {/* Notifications */}
-          <button
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors relative cursor-pointer"
-            title="Notifications (bientôt disponible)"
-            disabled
-          >
-            <Bell className="size-4" />
-          </button>
+          {/* Notifications (temps réel) */}
+          <NotificationBell />
 
           {/* Notifications push (web) */}
           <PushNotificationToggle compact />
