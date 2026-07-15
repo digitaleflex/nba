@@ -3,6 +3,7 @@ import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
+import { isEmailBanned } from "./services/moderation"
 
 const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
@@ -63,6 +64,12 @@ export const auth = betterAuth({
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          const banned = await isEmailBanned(user.email)
+          if (banned) {
+            throw new Error(`Ce compte a été banni : ${banned.reason}. Contactez le support.`)
+          }
+        },
         after: async (user) => {
           await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
         },

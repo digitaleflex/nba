@@ -14,6 +14,7 @@ const ADMIN_TABS: Record<string, string> = {
   emails: "E-mails",
   settings: "Paramètres",
   audit: "Audit",
+  moderation: "Modération",
   users: "Utilisateurs",
   membres: "Membres",
   notifications: "Notifications",

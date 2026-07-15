@@ -21,6 +21,7 @@ import { AuditTab } from "./features/AuditTab"
 import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
+import { ModerationTab } from "./features/ModerationTab"
 import { AdminTools } from "./components/admin-tools"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 
@@ -362,6 +363,7 @@ function AdminConsoleContent() {
                 { value: "emails", label: "E-mails" },
               ]},
               { label: "Système", tabs: [
+                { value: "moderation", label: "Modération" },
                 { value: "audit", label: "Audit" },
                 { value: "security", label: "Sécurité" },
                 { value: "settings", label: "Paramètres" },
@@ -397,7 +399,11 @@ function AdminConsoleContent() {
               })
               return items
             })}
-          </div>
+        {activeTab === "moderation" && (
+          <ModerationTab />
+        )}
+
+      </div>
           <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-background to-transparent md:hidden" />
         </div>
 
