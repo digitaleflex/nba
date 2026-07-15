@@ -20,7 +20,8 @@ const LOGO_IMG = `<img
   alt="NeverBrokeAgain"
   width="120"
   height="120"
-  style="display:block;margin:0 auto;border-radius:12px"
+  class="logo-img"
+  style="display:block;margin:0 auto;border-radius:12px;max-width:100%;height:auto"
 />`
 
 // ── Helpers ──
@@ -37,15 +38,32 @@ function layout(body: string): string {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no"/>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
     @media only screen and (max-width:600px){
-      .container{width:100% !important;padding:24px 16px !important}
+      body,table,td,p,a,li,blockquote{-webkit-text-size-adjust:100% !important;-ms-text-size-adjust:100% !important}
+      .container{width:100% !important;padding:0 12px !important}
+      .card{padding:24px 20px !important;border-radius:12px !important}
+      .header-pad{padding:24px 12px 16px !important}
+      .footer-text{font-size:11px !important}
+      .logo-img{width:80px !important;height:80px !important}
+      .brand-name{font-size:16px !important}
+      .brand-tagline{font-size:10px !important}
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#FAFBFC;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAFBFC;min-height:100vh">
-    <tr><td align="center" style="padding:40px 16px">
+<body style="margin:0;padding:0;background-color:#F2F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F2F4F6">
+    <tr><td align="center" class="header-pad" style="padding:32px 16px">
       <table class="container" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
         <!-- Header -->
         <tr>
@@ -54,25 +72,25 @@ function layout(body: string): string {
           </td>
         </tr>
         <tr>
-          <td style="padding-bottom:24px;text-align:center">
-            <p style="margin:0;font-size:18px;font-weight:800;color:#1E2024;letter-spacing:-0.5px">
+          <td style="padding-bottom:20px;text-align:center">
+            <p class="brand-name" style="margin:0;font-size:18px;font-weight:800;color:#1A1D23;letter-spacing:-0.3px">
               <span style="color:#283B5D">Never</span>BrokeAgain
             </p>
-            <p style="margin:4px 0 0;font-size:11px;color:#6A758B;letter-spacing:1px;text-transform:uppercase">Signaux traders premium</p>
+            <p class="brand-tagline" style="margin:4px 0 0;font-size:11px;color:#6B7280;letter-spacing:1px;text-transform:uppercase">Signaux traders premium</p>
           </td>
         </tr>
         <!-- Card -->
         <tr>
-          <td style="background-color:#FFFFFF;border-radius:16px;padding:40px 32px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.03)">
+          <td class="card" style="background-color:#FFFFFF;border-radius:16px;padding:40px 32px;border:1px solid #E5E7EB">
             ${body}
           </td>
         </tr>
         <!-- Footer -->
         <tr>
-          <td style="padding-top:24px;text-align:center">
-            <p style="margin:0;font-size:12px;color:#6A758B;line-height:1.6">
+          <td style="padding-top:20px;text-align:center">
+            <p class="footer-text" style="margin:0;font-size:12px;color:#6B7280;line-height:1.6">
               ${APP_NAME} &mdash; Signaux traders premium<br/>
-              <a href="${APP_DOMAIN}/contact" style="color:#283B5D;text-decoration:none;font-weight:500">Nous contacter</a>
+              <a href="${APP_DOMAIN}/contact" style="color:#283B5D;text-decoration:none;font-weight:500;font-size:12px">Nous contacter</a>
             </p>
           </td>
         </tr>
@@ -92,10 +110,10 @@ interface ButtonOptions {
 }
 
 function ctaButton({ url, text }: ButtonOptions): string {
-  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0" width="100%">
+  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0" width="100%">
     <tr>
-      <td align="center" bgcolor="#283B5D" style="background-color:#283B5D;border-radius:8px;padding:0" width="100%">
-        <a href="${url}" target="_blank" style="display:block;padding:14px 32px;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;letter-spacing:-0.2px;text-align:center;background-color:#283B5D">${text}</a>
+      <td align="center" bgcolor="#283B5D" style="background-color:#283B5D;border-radius:12px;padding:0" width="100%">
+        <a href="${url}" target="_blank" style="display:block;padding:16px 32px;min-height:22px;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:12px;letter-spacing:-0.2px;text-align:center;background-color:#283B5D;line-height:1.4;word-break:break-word">${text}</a>
       </td>
     </tr>
   </table>`
