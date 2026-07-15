@@ -8,6 +8,7 @@ import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
+import { ErrorBoundary } from "@nba/app/components/error-boundary"
 import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -73,7 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           </header>
 
           <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
-            {children}
+            <ErrorBoundary>{children}</ErrorBoundary>
           </main>
         </div>
 

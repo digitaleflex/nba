@@ -8,6 +8,7 @@ import { MobilePageTitle } from "@nba/app/components/mobile-page-title"
 import { AdminHeader } from "./admin/components/admin-header"
 import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
 import { Toaster } from "sonner"
+import { ErrorBoundary } from "@nba/app/components/error-boundary"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -48,7 +49,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </header>
 
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
-          {children}
+          <ErrorBoundary>{children}</ErrorBoundary>
         </main>
       </div>
 
