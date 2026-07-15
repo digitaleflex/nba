@@ -12,6 +12,7 @@ interface PerUser {
   emailEvent: string | null
   pushStatus: string | null
   inAppRead: boolean
+  plan: string
 }
 
 interface SignalRow {
@@ -44,7 +45,7 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
             <thead className="bg-muted/50 text-muted-foreground">
               <tr className="text-left">
                 <th className="px-4 py-2.5 font-medium">Signal</th>
-                <th className="px-4 py-2.5 font-medium hidden md:table-cell">Groupes</th>
+                <th className="px-4 py-2.5 font-medium">Groupes</th>
                 <th className="px-4 py-2.5 font-medium text-right">Dest.</th>
                 <th className="px-4 py-2.5 font-medium text-right">Emails</th>
                 <th className="px-4 py-2.5 font-medium text-right">Délivrés</th>
@@ -72,7 +73,15 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                         {r.publishedAt ? new Date(r.publishedAt).toLocaleString("fr-FR") : "—"}
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground text-xs max-w-[100px] truncate hidden md:table-cell">{r.plans}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-wrap gap-1">
+                        {r.plans.split(", ").map((p) => (
+                          <span key={p} className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary">
+                            {p}
+                          </span>
+                        ))}
+                      </div>
+                    </td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.recipients}</td>
                     <td className="px-4 py-3 text-right tabular-nums">{r.emailsSent}</td>
                     <td className="px-4 py-3 text-right tabular-nums text-success">{r.delivered}</td>
@@ -93,57 +102,85 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                     <tr key={`${r.id}-detail`}>
                       <td colSpan={10} className="px-0 py-0">
                         <div className="bg-muted/10 border-t border-border">
-                          <div className="px-4 py-3 border-b border-border bg-muted/20">
+                          <div className="px-4 py-3 border-b border-border bg-muted/20 flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-sm">Détail par utilisateur</span>
+                            {r.plans.split(", ").map((p) => (
+                              <span key={p} className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                                {p}
+                              </span>
+                            ))}
                           </div>
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead className="text-muted-foreground bg-muted/5">
                                 <tr className="text-left">
                                   <th className="px-4 py-2 font-medium text-xs">Utilisateur</th>
-                                  <th className="px-4 py-2 font-medium text-xs">Email</th>
+                                  <th className="px-4 py-2 font-medium text-xs">Groupe</th>
+                                  <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Email</th>
                                   <th className="px-4 py-2 font-medium text-xs">Email (Resend)</th>
-                                  <th className="px-4 py-2 font-medium text-xs">Push web</th>
+                                  <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Push web</th>
                                   <th className="px-4 py-2 font-medium text-xs">In-app</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-border/50">
-                                {r.perUser.map((u, i) => (
-                                  <tr key={i} className="hover:bg-muted/20">
-                                    <td className="px-4 py-2 text-sm">{u.name}</td>
-                                    <td className="px-4 py-2 text-xs text-muted-foreground">{u.email}</td>
-                                    <td className="px-4 py-2">
-                                      <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
-                                    </td>
-                                    <td className="px-4 py-2">
-                                      {u.pushStatus ? (
-                                        <span
-                                          className={
-                                            u.pushStatus === "envoyé"
-                                              ? "inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
-                                              : "inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
-                                          }
-                                        >
-                                          {u.pushStatus}
-                                        </span>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground">—</span>
-                                      )}
-                                    </td>
-                                    <td className="px-4 py-2">
-                                      {u.inAppRead ? (
-                                        <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs font-medium text-info">
-                                          lu
-                                        </span>
-                                      ) : (
-                                        <span className="text-xs text-muted-foreground">non lu</span>
-                                      )}
-                                    </td>
-                                  </tr>
-                                ))}
+                                {(() => {
+                                  const grouped = new Map<string, typeof r.perUser>()
+                                  for (const u of r.perUser) {
+                                    const list = grouped.get(u.plan) || []
+                                    list.push(u)
+                                    grouped.set(u.plan, list)
+                                  }
+                                  const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
+                                  return entries.flatMap(([plan, users]) => [
+                                    <tr key={`plan-${plan}`} className="bg-muted/20">
+                                      <td colSpan={6} className="px-4 py-1.5 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                                        Groupe : {plan}
+                                        <span className="ml-2 font-normal text-muted-foreground/60">({users.length})</span>
+                                      </td>
+                                    </tr>,
+                                    ...users.map((u, i) => (
+                                      <tr key={`${u.email}-${i}`} className="hover:bg-muted/20">
+                                        <td className="px-4 py-2 text-sm">{u.name}</td>
+                                        <td className="px-4 py-2">
+                                          <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                                            {u.plan}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{u.email}</td>
+                                        <td className="px-4 py-2">
+                                          <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
+                                        </td>
+                                        <td className="px-4 py-2 hidden md:table-cell">
+                                          {u.pushStatus ? (
+                                            <span
+                                              className={
+                                                u.pushStatus === "envoyé"
+                                                  ? "inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
+                                                  : "inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                                              }
+                                            >
+                                              {u.pushStatus}
+                                            </span>
+                                          ) : (
+                                            <span className="text-xs text-muted-foreground">—</span>
+                                          )}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                          {u.inAppRead ? (
+                                            <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs font-medium text-info">
+                                              lu
+                                            </span>
+                                          ) : (
+                                            <span className="text-xs text-muted-foreground">non lu</span>
+                                          )}
+                                        </td>
+                                      </tr>
+                                    )),
+                                  ])
+                                })()}
                                 {r.perUser.length === 0 && (
                                   <tr>
-                                    <td colSpan={5} className="px-4 py-6 text-center text-xs text-muted-foreground">
+                                    <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
                                       Aucun destinataire pour ce signal.
                                     </td>
                                   </tr>

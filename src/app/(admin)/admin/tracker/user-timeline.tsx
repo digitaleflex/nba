@@ -8,6 +8,7 @@ interface UserSignal {
   signalTitle: string
   publishedAt: string
   plans: string
+  plan: string
   emailBucket: string
   emailEvent: string | null
   pushStatus: string | null
@@ -121,7 +122,9 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
                             {new Date(s.publishedAt).toLocaleString("fr-FR")}
                           </p>
                         </div>
-                        <span className="text-[10px] text-muted-foreground shrink-0">{s.plans}</span>
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary shrink-0">
+                          {s.plan}
+                        </span>
                       </div>
 
                       <div className="flex flex-wrap gap-2">

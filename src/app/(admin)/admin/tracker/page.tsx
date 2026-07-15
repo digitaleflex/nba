@@ -22,6 +22,7 @@ interface UserSignalCompact {
   signalTitle: string
   publishedAt: string
   plans: string
+  plan: string
   emailBucket: string
   emailEvent: string | null
   pushStatus: string | null
@@ -36,6 +37,7 @@ interface PerUser {
   emailEvent: string | null
   pushStatus: string | null
   inAppRead: boolean
+  plan: string
 }
 
 interface SignalRow {
@@ -122,10 +124,26 @@ export default async function SignalTrackerPage({
       },
       select: {
         isRead: true,
-        user: { select: { email: true, name: true } },
+        userId: true,
+        user: { select: { id: true, email: true, name: true } },
         deliveries: { select: { channel: true, status: true, externalId: true } },
       },
     })
+
+    const planIds = signal.audience.map((a: any) => a.plan.id ?? a.planId)
+    const userIds = notifications.map((n) => n.userId)
+    const accessRequests = userIds.length > 0
+      ? await prisma.accessRequest.findMany({
+          where: { userId: { in: userIds }, planId: { in: planIds }, status: "APPROVED" },
+          select: { userId: true, plan: { select: { name: true } } },
+        })
+      : []
+    const userPlanMap = new Map<string, string>()
+    for (const ar of accessRequests) {
+      if (!userPlanMap.has(ar.userId)) {
+        userPlanMap.set(ar.userId, ar.plan.name)
+      }
+    }
 
     const perUser: PerUser[] = []
     for (const n of notifications) {
@@ -137,6 +155,7 @@ export default async function SignalTrackerPage({
         email: n.user.email,
         name: n.user.name,
         externalId,
+        plan: userPlanMap.get(n.userId) || signal.audience.map((a: any) => a.plan.name).join(", "),
         emailBucket: "unknown",
         emailEvent: null,
         pushStatus: pushDelivery
@@ -245,6 +264,7 @@ export default async function SignalTrackerPage({
         signalTitle: row.title,
         publishedAt: row.publishedAt?.toISOString() ?? "",
         plans: row.plans,
+        plan: u.plan,
         emailBucket: u.emailBucket,
         emailEvent: u.emailEvent,
         pushStatus: u.pushStatus,
