@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest an idea for this project
+logic: "sequence"
+title: "[FEAT]: Real-time P&L dashboard per user"
+labels: [enhancement, "high priority"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: "Users cannot easily track their performance from following signals, need transparency and engagement metrics"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: "Build real-time P&L dashboard showing each user's profit/loss from all signals they've followed, with filter by signal creator, time period, and detailed breakdown"
+    validations:
+      required: true
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Details
+      description: "Create P&L aggregation service that tracks trade settlements, calculates P&L in real-time, displays equity curve, and shows win/loss percentage per signal or creator"
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: "Excel export of trade history, monthly performance report emails, static dashboard page"
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: "Improve user engagement by 40%, increase trust, increase signal consumption, provide competitive advantage against SignalFlow"
+    validations:
+      required: false
+  - type: textarea
+    id: test-coverage
+    attributes:
+      label: Testing Strategy
+      description: "Unit tests for P&L calculation logic, integration tests for real-time updates, acceptance tests for user experience with complex signals"
+    validations:
+      required: false
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Potential Blockers
+      description: "Requires trade settlement tracking, complex P&L calculations, maintaining accurate equity curves"
+    validations:
+      required: false

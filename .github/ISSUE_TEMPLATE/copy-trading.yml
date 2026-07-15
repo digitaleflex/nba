@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest an idea for this project
+logic: "sequence"
+title: "[FEAT]: Copy-trading execution after signals"
+labels: [enhancement, "high priority"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: "Need automated execution of trades when signals are published, removing friction and implementing the signal-to-trade pipeline for users"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: "Build copy-trading engine that connects users' exchange accounts (Binance/Bybit through webhooks) to automatically execute positions when quality signals are published"
+    validations:
+      required: true
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Details
+      description: "Integration with Binance/Bybit REST APIs, WebSocket connections, order execution modules, risk management (max position size, stop-loss), users can enable/disable auto-trading, master switch for each exchange account"
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: "Manual execution guide, signal simulation only, trading bots connecting to exchanges"
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: "100% execution rate on quality signals, eliminates manual friction, improves user retention, creates competitive advantage over SignalFlow, increases trading volume"
+    validations:
+      required: false
+  - type: textarea
+    id: test-coverage
+    attributes:
+      label: Testing Strategy
+      description: "Unit tests for order execution logic, integration tests for exchange API connections, load tests for concurrent orders, user acceptance tests for trade logging and management"
+    validations:
+      required: false
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Potential Blockers
+      description: "Exchange API requirements and key management, real trading risks (can lose money), regulatory compliance"
+    validations:
+      required: false
