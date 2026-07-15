@@ -1,0 +1,63 @@
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const API_BASE = "https://api.telegram.org/bot"
+
+async function apiCall(method: string, body: Record<string, unknown>) {
+  if (!BOT_TOKEN) return { ok: false, error: "TELEGRAM_BOT_TOKEN not configured" }
+  const res = await fetch(`${API_BASE}${BOT_TOKEN}/${method}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  return res.json() as Promise<{ ok: boolean; result?: unknown; error_code?: number; description?: string }>
+}
+
+export async function sendTelegramMessage(
+  chatId: string,
+  text: string,
+  options?: { parseMode?: "HTML" | "MarkdownV2"; disableNotification?: boolean }
+): Promise<{ ok: boolean; messageId?: number; error?: string }> {
+  if (!BOT_TOKEN) return { ok: false, error: "Bot token not configured" }
+  if (!chatId) return { ok: false, error: "No chat_id" }
+
+  const result = await apiCall("sendMessage", {
+    chat_id: chatId,
+    text,
+    parse_mode: options?.parseMode || "HTML",
+    disable_notification: options?.disableNotification || false,
+    disable_web_page_preview: true,
+  })
+
+  if (!result.ok) {
+    console.warn(`[telegram] send failed to ${chatId}: ${(result as any).description || "unknown"}`)
+    return { ok: false, error: (result as any).description }
+  }
+
+  const data = result as any
+  return { ok: true, messageId: data.result?.message_id }
+}
+
+export async function setBotCommands() {
+  if (!BOT_TOKEN) return
+  await apiCall("setMyCommands", {
+    commands: [
+      { command: "start", description: "Recevoir les signaux en temps réel" },
+      { command: "stop", description: "Désactiver les notifications" },
+      { command: "status", description: "Voir mon abonnement" },
+    ],
+  })
+}
+
+export function getBotUsername(): string | null {
+  if (!BOT_TOKEN) return null
+  const match = BOT_TOKEN.match(/^\d+:(.+)$/)
+  return null
+}
+
+export async function deleteTelegramChat(chatId: string): Promise<void> {
+  if (!BOT_TOKEN || !chatId) return
+  await fetch(`${API_BASE}${BOT_TOKEN}/deleteChat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId }),
+  }).catch(() => {})
+}

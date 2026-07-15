@@ -3,9 +3,10 @@ import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOt
 import { getQueue } from "@nba/lib/queue"
 import { sendPushToUser } from "./push"
 import { publishNotification } from "@nba/lib/redis-pubsub"
+import { sendTelegramMessage } from "./telegram"
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING"
-type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH"
+type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH" | "TELEGRAM"
 
 const TYPE_TO_PREF_KEY: Record<NotificationType, string> = {
   SIGNAL: "signal",
@@ -27,6 +28,32 @@ async function getUserPrefs(userId: string): Promise<Record<string, boolean>> {
 }
 
 export { getUserPrefs }
+
+async function telegramSend(notificationId: string, userId: string, title: string, body: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { metadata: true },
+  })
+  const meta = (user?.metadata || {}) as Record<string, any>
+  if (!meta.telegram_chat_id || meta.telegram_active === false) return
+
+  const delivery = await prisma.notificationDelivery.create({
+    data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
+  }).catch(() => null)
+
+  const result = await sendTelegramMessage(
+    meta.telegram_chat_id,
+    `<b>${title}</b>\n\n${body}`,
+    { parseMode: "HTML" },
+  )
+
+  if (delivery) {
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
+    }).catch(() => {})
+  }
+}
 
 interface NotifyParams {
   userId: string
@@ -130,6 +157,9 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
         )
       })
     }
+
+    // Telegram
+    telegramSend(notification.id, params.userId, params.title, params.body).catch(() => {})
   }
 
   // WebSocket temps réel via Redis Pub/Sub

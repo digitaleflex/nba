@@ -2,10 +2,37 @@ import { prisma } from "../db"
 import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
 import { sendPushToUser } from "./push"
+import { sendTelegramMessage } from "./telegram"
 import { readFile } from "fs/promises"
 import { join } from "path"
 
 const STORAGE_BASE_PATH = process.cwd() + "/storage"
+
+async function sendTelegramToMember(notificationId: string, userId: string, title: string, body: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { metadata: true },
+  })
+  const meta = (user?.metadata || {}) as Record<string, any>
+  if (!meta.telegram_chat_id || meta.telegram_active === false) return
+
+  const delivery = await prisma.notificationDelivery.create({
+    data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
+  }).catch(() => null)
+
+  const result = await sendTelegramMessage(
+    meta.telegram_chat_id,
+    `<b>${title}</b>\n\n${body}`,
+    { parseMode: "HTML" },
+  )
+
+  if (delivery) {
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
+    }).catch(() => {})
+  }
+}
 
 async function readImageAsDataUri(path: string): Promise<string | null> {
   try {
@@ -197,6 +224,9 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             status: pushResult.sent > 0 ? "SENT" : "FAILED",
           },
         })
+
+        // Telegram
+        sendTelegramToMember(notification.id, member.id, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes.").catch(() => {})
         }
       }),
     )
