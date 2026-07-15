@@ -40,7 +40,6 @@ function layout(body: string): string {
   <style>
     @media only screen and (max-width:600px){
       .container{width:100% !important;padding:24px 16px !important}
-      .btn{width:100% !important;display:block !important;text-align:center !important}
     }
   </style>
 </head>
@@ -93,10 +92,10 @@ interface ButtonOptions {
 }
 
 function ctaButton({ url, text }: ButtonOptions): string {
-  return `<table cellpadding="0" cellspacing="0" style="margin:24px 0">
+  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:24px 0" width="100%">
     <tr>
-      <td align="center" style="background-color:#283B5D;border-radius:8px;padding:0">
-        <a href="${url}" class="btn" style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;letter-spacing:-0.2px">${text}</a>
+      <td align="center" bgcolor="#283B5D" style="background-color:#283B5D;border-radius:8px;padding:0" width="100%">
+        <a href="${url}" target="_blank" style="display:block;padding:14px 32px;font-size:15px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;letter-spacing:-0.2px;text-align:center;background-color:#283B5D">${text}</a>
       </td>
     </tr>
   </table>`
