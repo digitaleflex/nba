@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Shield, CheckCircle, XCircle, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff } from "lucide-react"
+import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff } from "lucide-react"
 import { Card, Badge, Button, cn } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
 import { toast } from "sonner"
@@ -94,6 +94,49 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         toast.success("Membre supprimé")
       } else {
         toast.error("Erreur lors de la suppression")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function banMember(email: string) {
+    setUpdating(email)
+    try {
+      const res = await fetch("/api/admin/moderation/bans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, reason: "Banni depuis MembresTab" }),
+      })
+      if (res.ok) {
+        invalidate()
+        fetchMembres()
+        toast.success(`${email} banni et blacklisté`)
+      } else {
+        toast.error("Erreur lors du bannissement")
+      }
+    } catch {
+      toast.error("Erreur réseau")
+    } finally {
+      setUpdating(null)
+    }
+  }
+
+  async function revokeSessions(userId: string) {
+    if (!confirm("Révoquer toutes les sessions de ce membre ?")) return
+    setUpdating(userId)
+    try {
+      const res = await fetch("/api/admin/members/revoke-sessions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      })
+      if (res.ok) {
+        toast.success("Sessions révoquées")
+      } else {
+        toast.error("Erreur")
       }
     } catch {
       toast.error("Erreur réseau")
@@ -328,16 +371,64 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        {!m.isActive && (
+                      <div className="flex items-center justify-end gap-1 flex-wrap">
+                        {m.emailStatus === "BOUNCED" || m.emailStatus === "INVALID" ? (
                           <button
-                            onClick={() => deleteMember(m.id)}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors cursor-pointer"
-                            title="Supprimer"
+                            onClick={() => updateMember(m.id, { emailStatus: "OK" })}
+                            className="p-1.5 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors cursor-pointer"
+                            title="Réinitialiser l'email"
                           >
-                            <Trash2 className="size-3.5" />
+                            <Mail className="size-3.5" />
                           </button>
-                        )}
+                        ) : null}
+
+                        <button
+                          onClick={() => {
+                            if (confirm(`Bannir ${m.email} ? Ce compte sera supprimé et l'email blacklisté.`)) {
+                              banMember(m.email)
+                            }
+                          }}
+                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Bannir & blacklister"
+                        >
+                          <Ban className="size-3.5" />
+                        </button>
+
+                        <div className="relative inline-flex">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const menu = e.currentTarget.nextElementSibling as HTMLElement
+                              if (menu) menu.classList.toggle("hidden")
+                            }}
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
+                            title="Plus d'actions"
+                          >
+                            <MoreHorizontal className="size-3.5" />
+                          </button>
+                          <div className="hidden absolute right-0 top-9 z-30 w-44 bg-card border border-border rounded-lg shadow-lg py-1">
+                            <button
+                              onClick={() => updateMember(m.id, { onboardingStatus: "ACTIVE" })}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                            >
+                              <RotateCw className="size-3" /> Forcer onboarding
+                            </button>
+                            <button
+                              onClick={() => revokeSessions(m.id)}
+                              className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                            >
+                              <Shield className="size-3" /> Révoquer sessions
+                            </button>
+                            {!m.isActive && (
+                              <button
+                                onClick={() => deleteMember(m.id)}
+                                className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
+                              >
+                                <Trash2 className="size-3" /> Supprimer
+                              </button>
+                            )}
+                          </div>
+                        </div>
                       </div>
                     </td>
                   </tr>
