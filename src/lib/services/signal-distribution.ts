@@ -3,6 +3,7 @@ import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
 import { sendPushToUser } from "./push"
 import { sendTelegramMessage } from "./telegram"
+import { sendWhatsAppSignal } from "./whatsapp"
 import { readFile } from "fs/promises"
 import { join } from "path"
 
@@ -25,6 +26,29 @@ async function sendTelegramToMember(notificationId: string, userId: string, titl
     `<b>${title}</b>\n\n${body}`,
     { parseMode: "HTML" },
   )
+
+  if (delivery) {
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
+    }).catch(() => {})
+  }
+}
+
+async function sendWhatsAppToMember(notificationId: string, userId: string, title: string, body: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { whatsapp: true, metadata: true },
+  })
+  const meta = (user?.metadata || {}) as Record<string, any>
+  const phone = user?.whatsapp
+  if (!phone || meta.whatsapp_active === false) return
+
+  const delivery = await prisma.notificationDelivery.create({
+    data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
+  }).catch(() => null)
+
+  const result = await sendWhatsAppSignal(phone, title, body)
 
   if (delivery) {
     await prisma.notificationDelivery.update({
@@ -227,6 +251,8 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
         // Telegram
         sendTelegramToMember(notification.id, member.id, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes.").catch(() => {})
+        // WhatsApp
+        sendWhatsAppToMember(notification.id, member.id, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes.").catch(() => {})
         }
       }),
     )

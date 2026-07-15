@@ -18,7 +18,11 @@ const CACHE_PREFIXES = [
   "dashboard:",
 ]
 
+import { csrfCheck } from "@nba/lib/csrf"
+
 export async function POST(request: NextRequest) {
+  const csrf = csrfCheck(request)
+  if (csrf) return csrf
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
     let purged = 0

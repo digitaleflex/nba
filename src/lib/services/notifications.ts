@@ -4,6 +4,7 @@ import { getQueue } from "@nba/lib/queue"
 import { sendPushToUser } from "./push"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendTelegramMessage } from "./telegram"
+import { sendWhatsAppSignal } from "./whatsapp"
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING"
 type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH" | "TELEGRAM"
@@ -29,6 +30,19 @@ async function getUserPrefs(userId: string): Promise<Record<string, boolean>> {
 
 export { getUserPrefs }
 
+function isInQuietHours(prefs: Record<string, any>): boolean {
+  const qh = prefs.quietHours
+  if (!qh || !qh.start || !qh.end) return false
+  const now = new Date()
+  const current = now.getHours() * 60 + now.getMinutes()
+  const [sh, sm] = qh.start.split(":").map(Number)
+  const [eh, em] = qh.end.split(":").map(Number)
+  const start = sh * 60 + sm
+  const end = eh * 60 + em
+  if (start <= end) return current >= start && current < end
+  return current >= start || current < end
+}
+
 async function telegramSend(notificationId: string, userId: string, title: string, body: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -46,6 +60,29 @@ async function telegramSend(notificationId: string, userId: string, title: strin
     `<b>${title}</b>\n\n${body}`,
     { parseMode: "HTML" },
   )
+
+  if (delivery) {
+    await prisma.notificationDelivery.update({
+      where: { id: delivery.id },
+      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
+    }).catch(() => {})
+  }
+}
+
+async function whatsappSend(notificationId: string, userId: string, title: string, body: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { whatsapp: true, metadata: true },
+  })
+  const meta = (user?.metadata || {}) as Record<string, any>
+  const phone = user?.whatsapp
+  if (!phone || meta.whatsapp_active === false) return
+
+  const delivery = await prisma.notificationDelivery.create({
+    data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
+  }).catch(() => null)
+
+  const result = await sendWhatsAppSignal(phone, title, body)
 
   if (delivery) {
     await prisma.notificationDelivery.update({
@@ -90,6 +127,8 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
   if (typeEnabled) {
+    // Vérifier les heures silencieuses
+    if (isInQuietHours(prefs)) return { id: notification.id }
     // Envoi push web (fire-and-forget, ne bloque pas la réponse)
     const pushDelivery = await prisma.notificationDelivery
       .create({
@@ -160,6 +199,8 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
 
     // Telegram
     telegramSend(notification.id, params.userId, params.title, params.body).catch(() => {})
+    // WhatsApp
+    whatsappSend(notification.id, params.userId, params.title, params.body).catch(() => {})
   }
 
   // WebSocket temps réel via Redis Pub/Sub

@@ -661,6 +661,7 @@ enum NotificationChannel {
   EMAIL
   TELEGRAM
   PUSH
+  WHATSAPP
 }
 
 enum DeliveryStatus {

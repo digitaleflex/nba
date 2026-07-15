@@ -3,6 +3,7 @@ import { createSignal } from "@nba/modules/signals/services/create-signal"
 import { getSignals } from "@nba/modules/signals/services/get-signals"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached } from "@nba/lib/cache"
+import { csrfCheck } from "@nba/lib/csrf"
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,6 +24,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = csrfCheck(req)
+  if (csrf) return csrf
   try {
     await requirePermission("signals.create")
     const body = await req.json()

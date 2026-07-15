@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { notify } from "@nba/lib/services/notifications"
@@ -10,7 +11,11 @@ import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
 const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
-export async function POST(request: Request) {
+import { csrfCheck } from "@nba/lib/csrf"
+
+export async function POST(request: NextRequest) {
+  const csrf = csrfCheck(request)
+  if (csrf) return csrf
   try {
     const session = await getServerSession()
     if (!session) {
