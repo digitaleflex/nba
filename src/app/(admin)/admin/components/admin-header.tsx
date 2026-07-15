@@ -88,6 +88,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
   return (
     <>
+      {/* Mobile search FAB */}
+      <button
+        onClick={() => setIsOpen(true)}
+        className="md:hidden fixed bottom-24 right-5 z-50 size-11 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center cursor-pointer"
+      >
+        <Search className="size-4.5" />
+      </button>
+
       <header className="hidden md:flex h-14 border-b bg-neutral-50/50 dark:bg-neutral-950/50 backdrop-blur-xl sticky top-0 z-30 px-8 items-center justify-between border-neutral-200/60 dark:border-neutral-800/60">
         {/* Search Input Trigger */}
         <button

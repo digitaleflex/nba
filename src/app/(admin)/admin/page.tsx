@@ -285,33 +285,36 @@ function AdminConsoleContent() {
         {/* ============================================================== */}
         {/* SUB-NAVIGATION */}
         {/* ============================================================== */}
-        <div className="flex flex-wrap items-center gap-2">
-          {[
-            { value: "dashboard", label: "Tableau de bord" },
-            { value: "requests", label: "Demandes" },
-            { value: "signals", label: "Signaux" },
-            { value: "kyc", label: "KYC" },
-            { value: "broker", label: "Broker" },
-            { value: "stats", label: "Statistiques" },
-            { value: "analytics", label: "Analytics" },
-            { value: "security", label: "Sécurité" },
-            { value: "emails", label: "E-mails" },
-            { value: "settings", label: "Paramètres" },
-            { value: "audit", label: "Audit" },
-          ].map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => router.push(`/admin?tab=${tab.value}`)}
-              className={cn(
-                "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
-                activeTab === tab.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:bg-muted/50"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        <div className="relative">
+          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
+            {[
+              { value: "dashboard", label: "Tableau de bord" },
+              { value: "requests", label: "Demandes" },
+              { value: "signals", label: "Signaux" },
+              { value: "kyc", label: "KYC" },
+              { value: "broker", label: "Broker" },
+              { value: "stats", label: "Statistiques" },
+              { value: "analytics", label: "Analytics" },
+              { value: "security", label: "Sécurité" },
+              { value: "emails", label: "E-mails" },
+              { value: "settings", label: "Paramètres" },
+              { value: "audit", label: "Audit" },
+            ].map((tab) => (
+              <button
+                key={tab.value}
+                onClick={() => router.push(`/admin?tab=${tab.value}`)}
+                className={cn(
+                  "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start",
+                  activeTab === tab.value
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "border-border text-muted-foreground hover:bg-muted/50"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-background to-transparent md:hidden" />
         </div>
 
         {/* ============================================================== */}
