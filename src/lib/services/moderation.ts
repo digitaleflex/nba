@@ -55,6 +55,15 @@ export async function banEmail(entry: {
   for (const u of users) {
     await prisma.session.deleteMany({ where: { userId: u.id } })
   }
+
+  await prisma.auditLog.create({
+    data: {
+      action: "admin.ban",
+      resourceType: "user",
+      resourceId: entry.email,
+      details: { reason: entry.reason, bannedBy: entry.bannedBy } as any,
+    },
+  }).catch(() => {})
 }
 
 export async function unbanEmail(email: string): Promise<void> {
@@ -62,6 +71,14 @@ export async function unbanEmail(email: string): Promise<void> {
   const filtered = emails.filter((e) => e.email.toLowerCase() !== email.toLowerCase())
   if (filtered.length === emails.length) return
   await setBannedEmails(filtered)
+  await prisma.auditLog.create({
+    data: {
+      action: "admin.unban",
+      resourceType: "user",
+      resourceId: email,
+      details: {} as any,
+    },
+  }).catch(() => {})
 }
 
 export async function isEmailBanned(email: string): Promise<BannedEmail | null> {

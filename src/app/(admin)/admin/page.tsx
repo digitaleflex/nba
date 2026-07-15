@@ -312,6 +312,19 @@ function AdminConsoleContent() {
         } else {
           toast.error("Erreur lors de la suppression.")
         }
+      } else if (actionType === "ban_user") {
+        const res = await fetch("/api/admin/moderation/bans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: extraData.email, reason: extraData.reason }),
+        })
+        if (res.ok) {
+          activeRefetch.current?.()
+          setPanelOpen(false)
+          toast.success(`${extraData.email} banni et blacklisté`)
+        } else {
+          toast.error("Erreur lors du bannissement")
+        }
       } else if (actionType === "send_user_notification") {
         const res = await fetch("/api/admin/notifications", {
           method: "POST",

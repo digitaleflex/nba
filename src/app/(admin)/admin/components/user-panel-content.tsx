@@ -429,9 +429,25 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             ))}
           </div>
 
-          {/* Danger Zone (Suppression) */}
+          {/* Danger Zone (Bannissement + Suppression) */}
           <div className="space-y-2 border-t border-destructive/20 pt-4">
             <span className="text-[10px] text-destructive uppercase font-bold block">Zone de danger</span>
+
+            <Button
+              variant="destructive"
+              size="sm"
+              className="w-full gap-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-500/20"
+              onClick={() => {
+                const reason = prompt("Motif du bannissement (fraude, spam, multi-compte...) :")
+                if (!reason) return
+                if (confirm(`Bannir ${data.email} ?\n\nMotif : ${reason}\n\nLe compte sera supprimé, les sessions révoquées, et l'email blacklisté.`)) {
+                  onAction("ban_user", { id: data.id, email: data.email, reason })
+                }
+              }}
+            >
+              <Ban className="size-3.5" /> Bannir & blacklister
+            </Button>
+
             <Button
               variant="destructive"
               size="sm"

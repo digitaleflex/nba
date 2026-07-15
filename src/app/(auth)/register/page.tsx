@@ -82,7 +82,9 @@ export default function RegisterPage() {
 
     if (err) {
       let message = err.message ?? err.statusText
-      if (err.status === 422 || message.toLowerCase().includes("already exists") || message.toLowerCase().includes("email taken")) {
+      if (message.toLowerCase().includes("banni")) {
+        setError(message)
+      } else if (err.status === 422 || message.toLowerCase().includes("already exists") || message.toLowerCase().includes("email taken")) {
         setError("Ce compte existe déjà. Veuillez vous connecter.")
       } else if (err.status === 400) {
         setError("Données invalides. Veuillez vérifier vos informations.")
