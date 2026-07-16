@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, MailQuestion } from "lucide-react"
-import { Card, Badge, cn } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
+import { Card, Badge, cn, EmptyState } from "@nba/design-system"
 import { CachedGet } from "./types"
 
 interface EmailsTabProps {
@@ -136,7 +135,12 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
           </div>
         </Card>
       ) : (
-        <EmptyState icon={MailQuestion} title="Aucun e-mail trouvé" />
+        <EmptyState
+          icon={MailQuestion}
+          title="Aucun e-mail trouvé"
+          description="Les e-mails envoyés aux membres apparaîtront ici."
+          action={emailStatusFilter !== "ALL" ? { label: "Tous les e-mails", onClick: () => setEmailStatusFilter("ALL") } : undefined}
+        />
       )}
     </div>
   )

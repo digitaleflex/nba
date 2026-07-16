@@ -5,8 +5,7 @@ import { toast } from "sonner"
 import { Loader2, MailQuestion } from "lucide-react"
 import { authClient } from "@nba/lib/auth-client"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
-import { Card, CardContent, Input, Button } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
+import { Card, CardContent, Input, Button, EmptyState } from "@nba/design-system"
 import { CachedGet } from "./types"
 
 interface NotificationsTabProps {
@@ -104,7 +103,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         </div>
       </div>
 
-      <Card className="border-border bg-card/30 max-w-lg">
+      <Card id="notif-compose" className="border-border bg-card/30 max-w-lg scroll-mt-6">
         <CardContent className="p-6 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rédiger une notification système</h3>
           <div className="space-y-3">
@@ -186,7 +185,13 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
             ))}
           </div>
         ) : (
-          <EmptyState icon={MailQuestion} title="Aucune notification envoyée" />
+          <EmptyState
+            icon={MailQuestion}
+            title="Aucune notification envoyée"
+            description="Rédigez et diffusez un message aux membres depuis le formulaire ci-dessus."
+            shortcut="N"
+            action={{ label: "Rédiger une notification", onClick: () => document.getElementById("notif-compose")?.scrollIntoView({ behavior: "smooth", block: "start" }) }}
+          />
         )}
       </div>
     </div>

@@ -21,7 +21,11 @@ import {
   MessageCircle,
   Gauge,
   Activity,
+  Gavel,
+  ShieldCheck,
+  Search,
 } from "lucide-react"
+import { ADMIN_CONTEXTS, getContextForTab } from "@nba/app/(admin)/admin/admin-context"
 
 interface MobileBottomNavProps {
   isAdmin?: boolean
@@ -48,6 +52,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   const activeTab = searchParams.get("tab") || "requests"
 
   const [pendingRequests, setPendingRequests] = useState(0)
+  const [pendingKyc, setPendingKyc] = useState(0)
   useEffect(() => {
     if (!isAdmin) return
     const controller = new AbortController()
@@ -57,6 +62,14 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
         if (d?.total != null) setPendingRequests(d.total)
         else if (Array.isArray(d?.requests)) setPendingRequests(d.requests.length)
         else if (Array.isArray(d)) setPendingRequests(d.length)
+      })
+      .catch(() => {})
+    fetch("/api/admin/kyc?status=PENDING", { signal: controller.signal })
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => {
+        if (d?.total != null) setPendingKyc(d.total)
+        else if (Array.isArray(d?.docs)) setPendingKyc(d.docs.length)
+        else if (Array.isArray(d)) setPendingKyc(d.length)
       })
       .catch(() => {})
     return () => controller.abort()
@@ -113,39 +126,17 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
     },
   ]
 
-  // Liens pour l'espace admin mobile
-  const adminLinks: MobileNavLink[] = [
-    {
-      href: "/admin/control-room",
-      label: "Centre",
-      icon: Gauge,
-      active: pathname === "/admin/control-room",
-    },
-    {
-      href: "/admin?tab=requests",
-      label: "Accès",
-      icon: ListTodo,
-      active: pathname === "/admin" && activeTab === "requests",
-    },
-    {
-      href: "/admin?tab=signals",
-      label: "Signaux",
-      icon: Radio,
-      active: pathname === "/admin" && activeTab === "signals",
-    },
-    {
-      href: "/admin?tab=membres",
-      label: "Membres",
-      icon: Users,
-      active: pathname === "/admin" && activeTab === "users",
-    },
-    {
-      href: "/admin/tracker",
-      label: "Tracker",
-      icon: Activity,
-      active: pathname === "/admin/tracker",
-    },
-  ]
+  // Liens pour l'espace admin mobile : 4 contextes mentaux max
+  const currentContext = getContextForTab(activeTab)
+  const adminLinks: MobileNavLink[] = ADMIN_CONTEXTS.map((context) => {
+    const repr = context.tabs[0]
+    return {
+      href: `/admin?tab=${repr.value}`,
+      label: context.label,
+      icon: context.icon,
+      active: pathname === "/admin" && currentContext === context.id,
+    }
+  })
 
   const links = isAdmin ? adminLinks : userLinks
 
@@ -153,14 +144,32 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   const messagesBadge = unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
 
   return (
-    <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/85 backdrop-blur-lg px-2 select-none">
-      <nav className="flex h-full items-center justify-around">
-        {links.map((link, idx) => {
+    <>
+      {/* FAB Recherche (command palette) — mobile uniquement */}
+      <button
+        onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+        className="md:hidden fixed bottom-20 right-4 z-50 flex items-center gap-2 h-11 pl-3 pr-4 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
+        aria-label="Rechercher"
+      >
+        <Search className="size-4" />
+        <span className="text-xs font-medium">Rechercher…</span>
+      </button>
+
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/85 backdrop-blur-lg px-2 select-none">
+        <nav className="flex h-full items-center justify-around">
+          {links.map((link, idx) => {
           const Icon = link.icon
           const isActive = link.active
           const showBadge = link.href === "/dashboard/messages" && !!messagesBadge
           const showAccesBadge =
             isAdmin && link.href === "/admin?tab=requests" && pendingRequests > 0
+          const showKycBadge =
+            isAdmin && link.href === "/admin?tab=kyc" && pendingKyc > 0
+          const badgeContent = showAccesBadge
+            ? (pendingRequests > 9 ? "9+" : String(pendingRequests))
+            : showKycBadge
+              ? (pendingKyc > 9 ? "9+" : String(pendingKyc))
+              : messagesBadge
 
           if (link.onClick) {
             return (
@@ -191,9 +200,9 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
               )}
               <span className="relative inline-flex">
                 <Icon className={cn("size-5 shrink-0 transition-transform", isActive && "scale-110")} />
-                {(showBadge || showAccesBadge) && (
+                {(showBadge || showAccesBadge || showKycBadge) && (
                   <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card">
-                    {showAccesBadge ? (pendingRequests > 9 ? "9+" : String(pendingRequests)) : messagesBadge}
+                    {badgeContent}
                   </span>
                 )}
               </span>
@@ -205,6 +214,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
         })}
         <PushNotificationToggle compact />
       </nav>
-    </div>
+      </div>
+    </>
   )
 }

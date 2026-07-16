@@ -24,6 +24,7 @@ import { NotificationsTab } from "./features/NotificationsTab"
 import { ModerationTab } from "./features/ModerationTab"
 import { AdminTools } from "./components/admin-tools"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
+import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
@@ -71,6 +72,7 @@ function AdminConsoleContent() {
   const [panelTitle, setPanelTitle] = useState("")
   const [panelType, setPanelType] = useState<"user" | "kyc" | "broker" | "signal" | null>(null)
   const [panelData, setPanelData] = useState<any>(null)
+  const [panelBreadcrumb, setPanelBreadcrumb] = useState<string | undefined>(undefined)
 
   // Operations Center Data
   const [opsData, setOpsData] = useState<any>(null)
@@ -87,8 +89,9 @@ function AdminConsoleContent() {
     setPanelTitle(args.title)
     setPanelType(args.type)
     setPanelData(args.data)
+    setPanelBreadcrumb(args.breadcrumb ?? getTabLabel(activeTab))
     setPanelOpen(true)
-  }, [])
+  }, [activeTab])
 
   // Fetch Operations Center data
   const fetchOperations = useCallback(async () => {
@@ -139,6 +142,9 @@ function AdminConsoleContent() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOperations()
+    // Dashboard live par défaut : auto-refresh 10s
+    const id = setInterval(fetchOperations, 10_000)
+    return () => clearInterval(id)
   }, [fetchOperations])
 
   // Context Panel Action Executions
@@ -202,18 +208,35 @@ function AdminConsoleContent() {
         const roles = await rolesRes.json()
         const role = roles.find((r: any) => r.name === extraData.roleName)
         if (!role) { toast.error("Rôle introuvable."); return }
-        const updateRes = await fetch("/api/admin/members", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: extraData.id, roleId: role.id }),
-        })
-        if (updateRes.ok) {
-          activeRefetch.current?.()
-          setPanelOpen(false)
-          toast.success(`Rôle changé en ${extraData.roleName}`)
-        } else {
-          toast.error("Erreur lors du changement de rôle.")
-        }
+        const prevRole = roles.find((r: any) => r.name === extraData.prevRoleName)
+        await undoableAction(
+          async () => {
+            const updateRes = await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, roleId: role.id }),
+            })
+            if (updateRes.ok) {
+              activeRefetch.current?.()
+              setPanelOpen(false)
+              return true
+            }
+            return false
+          },
+          async () => {
+            if (!prevRole) {
+              toast.error("Rôle précédent introuvable — annulation impossible.")
+              return
+            }
+            await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, roleId: prevRole.id }),
+            })
+            activeRefetch.current?.()
+          },
+          `Rôle changé en ${extraData.roleName}`,
+        )
       } else if (actionType === "revoke_sessions") {
         const res = await fetch("/api/admin/members/revoke-sessions", {
           method: "POST",
@@ -272,24 +295,33 @@ function AdminConsoleContent() {
           "Email réinitialisé",
         )
       } else if (actionType === "toggle_signal_override") {
-        const res = await fetch("/api/admin/members", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userId: extraData.id, signalsAccessOverride: extraData.value }),
-        })
-        if (res.ok) {
-          setPanelData((prev: any) => (prev ? { ...prev, signalsAccessOverride: extraData.value } : prev))
-          activeRefetch.current?.()
-          fetchOperations()
-          setPanelOpen(false)
-          toast.success(
-            extraData.value
-              ? "Accès aux signaux exceptionnel accordé."
-              : "Accès aux signaux exceptionnel révoqué."
-          )
-        } else {
-          toast.error("Erreur lors de la mise à jour de l'accès.")
-        }
+        const prevValue = extraData.prevValue ?? !extraData.value
+        await undoableAction(
+          async () => {
+            const res = await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, signalsAccessOverride: extraData.value }),
+            })
+            if (res.ok) {
+              setPanelData((prev: any) => (prev ? { ...prev, signalsAccessOverride: extraData.value } : prev))
+              activeRefetch.current?.()
+              fetchOperations()
+              setPanelOpen(false)
+              return true
+            }
+            return false
+          },
+          async () => {
+            await fetch("/api/admin/members", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userId: extraData.id, signalsAccessOverride: prevValue }),
+            })
+            setPanelData((prev: any) => (prev ? { ...prev, signalsAccessOverride: prevValue } : prev))
+          },
+          extraData.value ? "Accès aux signaux exceptionnel accordé." : "Accès aux signaux exceptionnel révoqué.",
+        )
       } else if (actionType === "force_onboarding") {
         const res = await fetch("/api/admin/members", {
           method: "PUT",
@@ -352,49 +384,31 @@ function AdminConsoleContent() {
       <div className="space-y-7 animate-in fade-in-50 duration-200">
 
         {/* ============================================================== */}
-        {/* SUB-NAVIGATION */}
+        {/* SUB-NAVIGATION (4 contextes mentaux) */}
         {/* ============================================================== */}
         <div className="relative">
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
             {/* Right fade gradient hint (mobile only) */}
             <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-background to-transparent md:hidden" />
-            {([
-              { label: "Pilotage", tabs: [
-                { value: "dashboard", label: "Tableau de bord" },
-                { value: "stats", label: "Statistiques" },
-                { value: "analytics", label: "Analytics" },
-              ]},
-              { label: "Membres", tabs: [
-                { value: "requests", label: "Demandes" },
-                { value: "membres", label: "Membres" },
-                { value: "kyc", label: "KYC" },
-                { value: "broker", label: "Broker" },
-              ]},
-              { label: "Communication", tabs: [
-                { value: "signals", label: "Signaux" },
-                { value: "emails", label: "E-mails" },
-              ]},
-              { label: "Système", tabs: [
-                { value: "moderation", label: "Modération" },
-                { value: "audit", label: "Audit" },
-                { value: "security", label: "Sécurité" },
-                { value: "settings", label: "Paramètres" },
-              ]},
-            ]).flatMap((group, gi) => {
+            {ADMIN_CONTEXTS.flatMap((context, gi) => {
               const items: React.ReactNode[] = []
+              const isContextActive = getContextForTab(activeTab) === context.id
               if (gi > 0) {
                 items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
               }
               items.push(
                 <span
                   key={`gl-${gi}`}
-                  className="shrink-0 text-[10px] font-semibold text-muted-foreground/50 uppercase tracking-wider select-none"
+                  className={cn(
+                    "shrink-0 text-[10px] font-semibold uppercase tracking-wider select-none",
+                    isContextActive ? "text-primary" : "text-muted-foreground/50"
+                  )}
                 >
-                  {group.label}
+                  {context.label}
                 </span>
               )
-              group.tabs.forEach((tab) => {
+              context.tabs.forEach((tab) => {
                 items.push(
                   <button
                     key={tab.value}
@@ -412,12 +426,10 @@ function AdminConsoleContent() {
               })
               return items
             })}
-        {activeTab === "moderation" && (
-          <ModerationTab />
-        )}
-
-      </div>
-          <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-8 bg-gradient-to-l from-background to-transparent md:hidden" />
+          </div>
+          {activeTab === "moderation" && (
+            <ModerationTab />
+          )}
         </div>
 
         {/* ============================================================== */}
@@ -499,6 +511,7 @@ function AdminConsoleContent() {
         title={panelTitle}
         type={panelType}
         data={panelData}
+        breadcrumb={panelBreadcrumb}
         onAction={handlePanelAction}
       />
     </div>

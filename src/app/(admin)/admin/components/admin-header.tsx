@@ -6,6 +6,7 @@ import { Search, Bell, CheckSquare, User, Loader2, ArrowRight } from "lucide-rea
 import { cn } from "@nba/design-system"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import { NotificationBell } from "@nba/components/notification-bell"
+import { AdminInbox } from "./admin-inbox"
 
 interface SearchResults {
   users: { id: string; name: string; email: string }[]
@@ -120,6 +121,9 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           >
             <CheckSquare className="size-4" />
           </button>
+
+          {/* Inbox admin (KYC / broker / sécurité / système) */}
+          <AdminInbox />
 
           {/* Notifications (temps réel) */}
           <NotificationBell />

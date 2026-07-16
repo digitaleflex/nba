@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { ADMIN_CONTEXTS } from "@nba/app/(admin)/admin/admin-context"
 import {
   LayoutDashboard,
   TrendingUp,
@@ -27,6 +28,8 @@ import {
   Mail,
   LineChart,
   UserCheck,
+  MessageCircle,
+  Inbox,
 } from "lucide-react"
 
 interface MobileMenuProps {
@@ -62,28 +65,47 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
     { href: "/dashboard/notifications", label: "Notifications", icon: Bell, active: pathname.startsWith("/dashboard/notifications") },
   ]
 
-  const adminLinks = [
-    // Supervision
-    { href: "/admin?tab=dashboard", label: "Tableau de bord", icon: LayoutDashboard, group: "Supervision", active: pathname === "/admin" && activeTab === "dashboard" },
-    { href: "/admin/control-room", label: "Control Room", icon: Gauge, group: "Supervision", active: pathname === "/admin/control-room" },
-    { href: "/admin/tracker", label: "Tracker", icon: Activity, group: "Supervision", active: pathname.startsWith("/admin/tracker") },
-    // Communications
-    { href: "/admin?tab=signals", label: "Signaux", icon: Radio, group: "Communications", active: pathname === "/admin" && activeTab === "signals" },
-    { href: "/admin?tab=emails", label: "E-mails", icon: Mail, group: "Communications", active: pathname === "/admin" && activeTab === "emails" },
-    { href: "/admin?tab=notifications", label: "Notifications", icon: Bell, group: "Communications", active: pathname === "/admin" && activeTab === "notifications" },
-    // Membres
-    { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, group: "Membres", active: pathname === "/admin" && activeTab === "requests" },
-    { href: "/admin?tab=users", label: "Utilisateurs", icon: Users, group: "Membres", active: pathname === "/admin" && activeTab === "users" },
-    { href: "/admin?tab=membres", label: "Membres", icon: UserCheck, group: "Membres", active: pathname === "/admin" && activeTab === "membres" },
-    { href: "/admin?tab=kyc", label: "Dossiers KYC", icon: FileCheck, group: "Membres", active: pathname === "/admin" && activeTab === "kyc" },
-    { href: "/admin?tab=broker", label: "Vérification Broker", icon: Link2, group: "Membres", active: pathname === "/admin" && activeTab === "broker" },
-    // Système
-    { href: "/admin?tab=audit", label: "Journal d'audit", icon: Activity, group: "Système", active: pathname === "/admin" && activeTab === "audit" },
-    { href: "/admin?tab=stats", label: "Statistiques", icon: BarChart2, group: "Système", active: pathname === "/admin" && activeTab === "stats" },
-    { href: "/admin?tab=analytics", label: "Analytics", icon: LineChart, group: "Système", active: pathname === "/admin" && activeTab === "analytics" },
-    { href: "/admin?tab=security", label: "Sécurité", icon: Shield, group: "Système", active: pathname === "/admin" && activeTab === "security" },
-    { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, group: "Système", active: pathname === "/admin" && activeTab === "settings" },
-  ]
+  const adminLinks = ADMIN_CONTEXTS.flatMap((context) => {
+    const isActiveTab = (tab: string) => pathname === "/admin" && activeTab === tab
+    const standaloneByContext: Record<string, { href: string; label: string; icon: any; active: boolean }[]> = {
+      surveiller: [
+        { href: "/admin?tab=dashboard", label: "Control Room", icon: Gauge, active: pathname === "/admin" && activeTab === "dashboard" },
+        { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname.startsWith("/admin/tracker") },
+      ],
+      communiquer: [
+        { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
+      ],
+      auditer: [
+        { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
+      ],
+    }
+    const iconMap: Record<string, any> = {
+      dashboard: LayoutDashboard,
+      stats: BarChart2,
+      analytics: LineChart,
+      requests: ListTodo,
+      membres: UserCheck,
+      users: Users,
+      kyc: FileCheck,
+      broker: Link2,
+      signals: Radio,
+      emails: Mail,
+      notifications: Bell,
+      audit: Activity,
+      moderation: Shield,
+      security: Shield,
+      settings: Settings,
+    }
+    const tabLinks = context.tabs.map((t) => ({
+      href: `/admin?tab=${t.value}`,
+      label: t.label,
+      icon: iconMap[t.value] || context.icon,
+      group: context.label,
+      active: isActiveTab(t.value),
+    }))
+    const standalone = (standaloneByContext[context.id] || []).map((s) => ({ ...s, group: context.label }))
+    return [...tabLinks, ...standalone]
+  })
 
   const links = isAdmin ? adminLinks : userLinks
   const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
@@ -122,7 +144,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
             {isAdmin ? (
               (() => {
-                const groups = ["Supervision", "Communications", "Membres", "Système"] as const
+                const groups = ADMIN_CONTEXTS.map((c) => c.label) as string[]
                 return groups.flatMap((group, gi) => {
                   const groupLinks = (links as typeof adminLinks).filter((l) => l.group === group)
                   if (groupLinks.length === 0) return []

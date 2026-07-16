@@ -3,9 +3,11 @@
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
 import { Loader2, ChevronDown } from "lucide-react"
-import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
+import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, cn, SwipeableRow, useMediaQuery, EmptyState } from "@nba/design-system"
+import { Inbox } from "lucide-react"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
 import { AccessRequest, CachedGet } from "./types"
+import { authClient } from "@nba/lib/auth-client"
 
 interface RequestsTabProps {
   cachedGet: CachedGet
@@ -52,6 +54,29 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
   }
 
   const [actingRequestId, setActingRequestId] = useState<string | null>(null)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+  const { data: sessionData } = authClient.useSession()
+  const reviewerId = sessionData?.user?.id
+
+  function swipeApprove(id: string) {
+    setActingRequestId(id)
+    invalidate()
+    fetch(`/api/admin/access-requests/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "APPROVED", reviewerId: reviewerId ?? undefined, notes: "Demande approuvée (swipe)" }),
+    })
+      .then((res) => {
+        if (res.ok) toast.success("Demande approuvée")
+        else toast.error("Erreur lors de l'approbation")
+      })
+      .catch(() => toast.error("Erreur lors de l'approbation"))
+      .finally(() => {
+        setActingRequestId(null)
+        fetchRequests(requestStatusFilter)
+        refreshOps()
+      })
+  }
 
   async function handleReexamine(status: "APPROVED" | "REJECTED" | "REVOKED" | "SUSPENDED") {
     if (!reexamineTarget) return
@@ -158,9 +183,11 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       ) : requests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {requests.map((req) => (
-            <Card key={req.id} className="border-border bg-card/30">
-              <CardContent className="p-5 space-y-4">
+          {requests.map((req) => {
+            const pending = req.status === "PENDING"
+            const card = (
+              <Card key={req.id} className="border-border bg-card/30">
+                <CardContent className="p-5 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
                     <h3 className="font-bold text-foreground text-sm">{req.user.name}</h3>
@@ -240,14 +267,47 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 </div>
               </CardContent>
             </Card>
-          ))}
-        </div>
+            )
+
+            if (!pending) return card
+
+            return (
+              <SwipeableRow
+                key={req.id}
+                disabled={isDesktop}
+                leftActions={
+                  <button
+                    onClick={() => openReject(req.id)}
+                    className="flex h-full w-full items-center justify-center gap-2 bg-rose-600/90 text-white text-[11px] font-medium"
+                  >
+                    ← Refuser
+                  </button>
+                }
+                rightActions={
+                  <button
+                    onClick={() => swipeApprove(req.id)}
+                    className="flex h-full w-full items-center justify-center gap-2 bg-emerald-600/90 text-white text-[11px] font-medium"
+                  >
+                    Approuver →
+                  </button>
+                }
+              >
+                {card}
+              </SwipeableRow>
+            )
+          })}
+          </div>
       ) : (
-        <div className="py-16 text-center border border-dashed border-border rounded-2xl text-muted-foreground select-none">
-          {requestStatusFilter === "ALL"
-            ? "Aucune demande d'accès."
-            : `Aucune demande ${REQUEST_STATUS_LABELS[requestStatusFilter]?.toLowerCase() ?? ""}.`}
-        </div>
+        <EmptyState
+          icon={Inbox}
+          title={requestStatusFilter === "ALL" ? "Aucune demande d'accès" : `Aucune demande ${REQUEST_STATUS_LABELS[requestStatusFilter]?.toLowerCase() ?? ""}`}
+          description="Les nouvelles demandes d'inscription apparaîtront ici. Appuyez sur R pour tout réinitialiser."
+          shortcut="R"
+          action={{
+            label: requestStatusFilter !== "ALL" ? "Toutes les demandes" : "Actualiser",
+            onClick: () => setRequestStatusFilter("ALL"),
+          }}
+        />
       )}
 
       <Dialog open={reexamineOpen} onOpenChange={(o) => !o && setReexamineOpen(false)}>

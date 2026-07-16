@@ -4,7 +4,8 @@ import { useRouter } from "next/navigation"
 import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
 } from "lucide-react"
-import { Card, CardContent, Badge, cn } from "@nba/design-system"
+import { Card, CardContent, Badge, cn, Chart } from "@nba/design-system"
+import { AlertsPanel } from "../components/alerts-panel"
 
 interface DashboardTabProps {
   opsData: any
@@ -23,10 +24,16 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             Surveillez l&apos;état opérationnel et traitez les tâches prioritaires.
           </p>
         </div>
-        <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5">
-          ● Live System
-        </Badge>
+        <div className="flex items-center gap-2">
+          <AlertsPanel />
+          <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5">
+            ● Live System
+          </Badge>
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        <div className="lg:col-span-3 space-y-6">
 
       {errorOps ? (
         <div className="py-20 text-center text-rose-600 text-sm">{errorOps}</div>
@@ -180,23 +187,11 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                 <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
                   Inscriptions (7 derniers jours)
                 </h3>
-                {/* Simple SVG Chart */}
-                <div className="h-48 w-full flex items-end justify-between pt-6 px-4">
-                  {opsData.activityGraph.map((dayData: any, idx: number) => {
-                    const maxCount = Math.max(...opsData.activityGraph.map((d: any) => d.count), 5)
-                    const pct = (dayData.count / maxCount) * 100
-                    return (
-                      <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                        <span className="text-[10px] font-bold text-foreground">{dayData.count}</span>
-                        <div
-                          style={{ height: `${Math.max(5, pct * 0.8)}%` }}
-                          className="w-6 rounded-t-xs bg-primary/20 dark:bg-primary/45 border-t border-primary/50"
-                        />
-                        <span className="text-[9px] text-muted-foreground font-semibold">{dayData.day}</span>
-                      </div>
-                    )
-                  })}
-                </div>
+                <Chart
+                  type="bar"
+                  data={(opsData.activityGraph ?? []).map((d: any) => ({ label: d.day, value: d.count }))}
+                  emptyText="Aucune inscription cette semaine"
+                />
               </CardContent>
             </Card>
 
@@ -271,7 +266,13 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             </CardContent>
           </Card>
         </>
-      )}
+        )}
+        </div>
+
+        <aside className="lg:col-span-1">
+          <AlertsPanel />
+        </aside>
+      </div>
     </div>
   )
 }

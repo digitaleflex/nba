@@ -40,7 +40,7 @@ export default function LoginPage() {
       }
 
       // Fetch direct vers l'API Better Auth (le client authClient avait des soucis de navigation)
-      const res = await fetch("/api/auth/sign-in/email", {
+      const res = await fetch("/api/auth/sign-in", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

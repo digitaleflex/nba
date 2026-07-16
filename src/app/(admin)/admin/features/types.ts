@@ -95,6 +95,8 @@ export interface OpenPanelArgs {
   title: string
   type: PanelType
   data: any
+  /** Libellé du contexte parent pour le breadcrumb mobile du panneau */
+  breadcrumb?: string
 }
 
 export type OpenPanel = (args: OpenPanelArgs) => void

@@ -13,7 +13,7 @@ import {
   Radio,
   Loader2,
 } from "lucide-react"
-import { Card, CardContent, cn } from "@nba/design-system"
+import { Card, CardContent, cn, Chart } from "@nba/design-system"
 
 interface AnalyticsTabProps {
   cachedGet: (url: string, ttlMs?: number) => Promise<{ ok: boolean; data: any }>
@@ -99,8 +99,6 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
     return <div className="py-20 text-center text-rose-600 text-sm">{error}</div>
   }
 
-  const maxBar = Math.max(5, ...data.growth.series.map((d: any) => d.count))
-  const membersTotal = data.membersBreakdown.reduce((a: number, s: any) => a + s.count, 0) || 1
   const plansTotal = data.plansBreakdown.reduce((a: number, s: any) => a + s.count, 0) || 1
 
   return (
@@ -142,19 +140,13 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
       <Card className="border-border bg-card/20">
         <CardContent className="p-6">
           <SectionTitle>Répartition des membres par statut</SectionTitle>
-          <div className="pt-4 space-y-2.5">
-            {data.membersBreakdown.map((s: any) => (
-              <div key={s.status} className="flex items-center gap-3">
-                <span className="text-[11px] w-48 shrink-0 text-muted-foreground">{s.label}</span>
-                <div className="flex-1 h-2.5 rounded-full bg-muted/50 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-primary/60"
-                    style={{ width: `${Math.max(3, (s.count / membersTotal) * 100)}%` }}
-                  />
-                </div>
-                <span className="text-[11px] font-bold w-10 text-right text-foreground">{s.count}</span>
-              </div>
-            ))}
+          <div className="pt-4">
+            <Chart
+              type="funnel"
+              data={data.membersBreakdown.map((s: any) => ({ label: s.label, value: s.count }))}
+              emptyText="Aucun membre"
+              height={140}
+            />
           </div>
         </CardContent>
       </Card>
@@ -294,20 +286,12 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
               <span className="text-muted-foreground">vs période préc.</span>
             </div>
           </div>
-          <div className="h-48 w-full flex items-end justify-between pt-6 px-2">
-            {data.growth.series.map((d: any, idx: number) => {
-              const pct = (d.count / maxBar) * 100
-              return (
-                <div key={idx} className="flex flex-col items-center gap-2 flex-1">
-                  <span className="text-[10px] font-bold text-foreground">{d.count}</span>
-                  <div
-                    style={{ height: `${Math.max(4, pct * 0.8)}%` }}
-                    className="w-6 rounded-t-xs bg-primary/20 dark:bg-primary/45 border-t border-primary/50"
-                  />
-                  <span className="text-[9px] text-muted-foreground font-semibold">{d.label}</span>
-                </div>
-              )
-            })}
+          <div className="pt-4">
+            <Chart
+              type="bar"
+              data={data.growth.series.map((d: any) => ({ label: d.label, value: d.count }))}
+              emptyText="Aucune inscription sur la période"
+            />
           </div>
         </CardContent>
       </Card>

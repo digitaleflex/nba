@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2 } from "lucide-react"
-import { Card, Badge, Button, cn } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
+import { Card, Badge, Button, cn, EmptyState } from "@nba/design-system"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
 
@@ -16,6 +15,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   const [membres, setMembres] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadError, setLoadError] = useState(false)
 
   // Filters
   const [searchQuery, setSearchQuery] = useState("")
@@ -47,9 +47,13 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       if (ok) {
         setMembres(data.members || [])
         setTotal(data.total || 0)
+        setLoadError(false)
+      } else {
+        setLoadError(true)
       }
     } catch (err) {
       console.error(err)
+      setLoadError(true)
     } finally {
       setLoading(false)
     }
@@ -319,8 +323,10 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             <tbody className="divide-y divide-border">
               {loading ? (
                 <tr><td colSpan={9} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+              ) : membres.length === 0 && loadError ? (
+                <tr><td colSpan={9} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
               ) : membres.length === 0 ? (
-                <tr><td colSpan={9} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche." /></td></tr>
+                <tr><td colSpan={9} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche. Appuyez sur M pour réinitialiser." shortcut="M" action={{ label: hasFilters ? "Réinitialiser les filtres" : "Actualiser", onClick: resetFilters }} /></td></tr>
               ) : (
                 membres.map((m: any) => (
                   <tr key={m.id} className="hover:bg-card/30 transition-colors">
