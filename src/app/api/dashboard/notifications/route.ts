@@ -1,14 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { getServerSession } from "@nba/lib/get-session"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const { searchParams } = new URL(req.url)
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))

@@ -1,14 +1,10 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { getServerSession } from "@nba/lib/get-session"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET() {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const requests = await prisma.accessRequest.findMany({
       where: { userId: session.user.id },

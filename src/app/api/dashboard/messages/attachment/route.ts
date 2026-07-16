@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth } from "@nba/lib/auth-utils"
+import { requireActiveUser } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { uploadMessageAttachment } from "@nba/lib/services/messaging"
 
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
   try {
     const blocked = await messageUploadLimit(req, "message-attachment")
     if (blocked) return blocked
-    await requireAuth()
+    await requireActiveUser()
 
     const form = await req.formData()
     const file = form.get("file") as File | null

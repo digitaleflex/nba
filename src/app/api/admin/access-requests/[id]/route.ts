@@ -86,8 +86,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     if (parsed.status === "SUSPENDED" || parsed.status === "REVOKED") {
       await prisma.user.update({
         where: { id: request.userId },
-        data: { onboardingStatus: "SUSPENDED" },
+        data: { onboardingStatus: "SUSPENDED", isActive: false },
       })
+      // Révoquer les sessions + déconnecter le WebSocket
+      await prisma.session.deleteMany({ where: { userId: request.userId } })
+      try {
+        const { getRedisConnection } = await import("@nba/lib/queue")
+        const redis = getRedisConnection()
+        if (redis) {
+          await redis.publish("nba:ws:control", `reset:${request.userId}`)
+        }
+      } catch {}
     }
 
     await logAuditEvent({

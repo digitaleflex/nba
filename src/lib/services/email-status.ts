@@ -133,6 +133,16 @@ export async function markUserComplained(
       },
     })
 
+    // Révoquer les sessions + déconnecter le WebSocket
+    await prisma.session.deleteMany({ where: { userId } })
+    try {
+      const { getRedisConnection } = await import("@nba/lib/queue")
+      const redis = getRedisConnection()
+      if (redis) {
+        await redis.publish("nba:ws:control", `reset:${userId}`)
+      }
+    } catch {}
+
     await logAuditEvent({
       userId: triggeredBy,
       action: "user.email_status_changed",

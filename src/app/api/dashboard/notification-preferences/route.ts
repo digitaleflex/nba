@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { NOTIFICATION_SOUND_IDS } from "@nba/lib/notification-sounds"
 
 const SOUNDS = NOTIFICATION_SOUND_IDS
@@ -19,8 +18,7 @@ const DEFAULT_PREFS = {
 
 export async function GET() {
   try {
-    const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    const session = await requireActiveUser()
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },
@@ -41,8 +39,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    const session = await requireActiveUser()
 
     const body = await req.json()
     const { sound, prefs, quietHours } = body

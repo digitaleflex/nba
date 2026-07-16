@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, messageSendSchema, ValidationError } from "@nba/lib/validations"
 import { getConversationMessages, sendMessage } from "@nba/lib/services/messaging"
@@ -11,7 +11,7 @@ export async function GET(
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const { conversationId } = await params
     const before = req.nextUrl.searchParams.get("before")
     const result = await getConversationMessages(conversationId, session.user.id, {
@@ -28,7 +28,7 @@ export async function POST(
   { params }: { params: Promise<{ conversationId: string }> },
 ) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const limited = await messageRateLimit(req, session.user.id)
     if (limited) return limited
     const { conversationId } = await params

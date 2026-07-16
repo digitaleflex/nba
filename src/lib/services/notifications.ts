@@ -112,6 +112,25 @@ interface NotifyParams {
  * Publie aussi sur Redis Pub/Sub pour notifier en temps réel via WebSocket.
  */
 export async function notify(params: NotifyParams): Promise<{ id: string }> {
+  // Ne pas créer de notification pour un utilisateur suspendu
+  const user = await prisma.user.findUnique({
+    where: { id: params.userId },
+    select: { isActive: true },
+  })
+  if (!user?.isActive) {
+    // Créer la notification in-app quand même (pour audit trail) mais ne pas la distribuer
+    const notification = await prisma.notification.create({
+      data: {
+        userId: params.userId,
+        type: params.type,
+        title: params.title,
+        body: params.body,
+        data: (params.data ?? {}) as any,
+      },
+    })
+    return { id: notification.id }
+  }
+
   const notification = await prisma.notification.create({
     data: {
       userId: params.userId,

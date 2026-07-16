@@ -13,6 +13,12 @@ export async function GET(
     return new NextResponse("Non autorisé", { status: 401 })
   }
 
+  // Vérifier que le compte n'est pas suspendu
+  const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+  if (!me?.isActive) {
+    return new NextResponse("Votre compte a été suspendu", { status: 403 })
+  }
+
   const { path: pathSegments } = await params
   // Décoder les segments pour attraper les variantes URL-encodées (%2F, %2e%2e, etc.)
   const decodedSegments = pathSegments.map((s) => {

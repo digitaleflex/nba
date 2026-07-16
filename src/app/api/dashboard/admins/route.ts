@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }

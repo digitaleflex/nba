@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, startMessageMemberSchema, messageSendSchema, ValidationError } from "@nba/lib/validations"
 import { listConversations, startConversationAsMember } from "@nba/lib/services/messaging"
@@ -9,7 +9,7 @@ const messageRateLimit = rateLimitMiddleware({ window: 60, max: 20 })
 
 export async function GET() {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const conversations = await getCached(
       "conv:" + session.user.id,
       () => listConversations(session.user.id),
@@ -23,7 +23,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const limited = await messageRateLimit(req, session.user.id)
     if (limited) return limited
     const body = await req.json().catch(() => ({}))

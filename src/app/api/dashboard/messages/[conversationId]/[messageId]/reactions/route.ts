@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { validateOrThrow, messageReactionSchema, ValidationError } from "@nba/lib/validations"
 import { reactToMessage } from "@nba/lib/services/messaging"
 
@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ conversationId: string; messageId: string }> },
 ) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const { messageId } = await params
     const body = await req.json().catch(() => ({}))
     const { emoji } = validateOrThrow(messageReactionSchema, body)

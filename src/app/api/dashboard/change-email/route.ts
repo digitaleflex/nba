@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { notify } from "@nba/lib/services/notifications"
 import { emailChangedEmail } from "@nba/lib/email"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
@@ -10,10 +10,7 @@ const emailChangeRateLimit = rateLimitMiddleware({ window: 3600, max: 3 })
 export async function PUT(request: Request) {
   try {
     const requestClone = request.clone()
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const rateLimitRes = await emailChangeRateLimit(requestClone, `email-change:${session.user.id}`)
     if (rateLimitRes) return rateLimitRes
@@ -94,6 +91,9 @@ export async function PUT(request: Request) {
       user: { email: updatedUser.email },
     })
   } catch (error: unknown) {
+    if (error instanceof Error && error.name === "AuthError") {
+      return handleAuthError(error)
+    }
     const message = error instanceof Error ? error.message : "Erreur interne"
     return NextResponse.json({ error: message }, { status: 500 })
   }

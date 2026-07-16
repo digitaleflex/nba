@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import {
   getUserDevices,
   renameDevice,
@@ -9,7 +9,7 @@ import {
 
 export async function GET() {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const devices = await getUserDevices(session.user.id)
     return NextResponse.json(devices)
   } catch (error) {
@@ -19,7 +19,7 @@ export async function GET() {
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const { deviceId, name } = (await req.json()) as {
       deviceId?: string
       name?: string
@@ -39,7 +39,7 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await requireAuth()
+    const session = await requireActiveUser()
     const { deviceId, revokeOthers } = (await req.json()) as {
       deviceId?: string
       revokeOthers?: boolean

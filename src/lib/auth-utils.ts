@@ -37,9 +37,9 @@ export async function requireRole(allowedRoles: string[]) {
   const session = await requireAuth()
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { role: { select: { name: true } } },
+    select: { role: { select: { name: true } }, isActive: true },
   })
-  if (!user || !allowedRoles.includes(user.role.name)) {
+  if (!user || !user.isActive || !allowedRoles.includes(user.role.name)) {
     throw new AuthError("Accès refusé", 403)
   }
   return session
