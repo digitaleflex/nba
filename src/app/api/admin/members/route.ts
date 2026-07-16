@@ -197,10 +197,14 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { deletedAt: new Date() },
-    })
+    await prisma.$transaction([
+      prisma.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date() },
+      }),
+      prisma.session.deleteMany({ where: { userId } }),
+      prisma.account.deleteMany({ where: { userId } }),
+    ])
 
     await logAuditEvent({
       userId: session.user.id,

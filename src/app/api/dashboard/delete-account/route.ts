@@ -43,13 +43,16 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
     }
 
-    // Soft delete + delete all sessions
+    // Soft delete + delete all sessions + remove password credentials
     await prisma.$transaction([
       prisma.user.update({
         where: { id: session.user.id },
         data: { deletedAt: new Date() },
       }),
       prisma.session.deleteMany({
+        where: { userId: session.user.id },
+      }),
+      prisma.account.deleteMany({
         where: { userId: session.user.id },
       }),
     ])

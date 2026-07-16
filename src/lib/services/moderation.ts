@@ -53,7 +53,10 @@ export async function banEmail(entry: {
     select: { id: true },
   })
   for (const u of users) {
-    await prisma.session.deleteMany({ where: { userId: u.id } })
+    await prisma.$transaction([
+      prisma.session.deleteMany({ where: { userId: u.id } }),
+      prisma.account.deleteMany({ where: { userId: u.id } }),
+    ])
   }
 
   await prisma.auditLog.create({
