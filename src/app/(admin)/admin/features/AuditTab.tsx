@@ -171,17 +171,23 @@ function DetailsSection({ details }: { details: Record<string, unknown> | null }
   if (!details || Object.keys(details).length === 0) return null
 
   const d = details as Record<string, unknown>
+  const changes = d.changes && typeof d.changes === "object" && !Array.isArray(d.changes)
+    ? (d.changes as Record<string, unknown>)
+    : null
+  const oldValue = d.oldValue
+  const oldStatus = d.oldStatus
+  const status = d.status
 
   return (
     <div className="mt-2 rounded-lg bg-muted/30 p-3 space-y-2">
-      {d.oldValue !== undefined && (
+      {oldValue !== undefined && (
         <div className="grid grid-cols-2 gap-3 text-[11px]">
           <div>
             <span className="text-muted-foreground block mb-0.5 text-[10px] font-medium uppercase tracking-wider">
               Ancienne valeur
             </span>
             <div className="bg-muted/50 rounded px-2 py-1.5 font-mono text-[11px] leading-relaxed whitespace-pre-wrap break-all">
-              {renderDetailValue(d.oldValue) || <span className="italic text-muted-foreground">vide</span>}
+              {renderDetailValue(oldValue) || <span className="italic text-muted-foreground">vide</span>}
             </div>
           </div>
           <div>
@@ -195,19 +201,19 @@ function DetailsSection({ details }: { details: Record<string, unknown> | null }
         </div>
       )}
 
-      {d.oldStatus !== undefined && d.status !== undefined && d.oldValue === undefined && (
+      {oldStatus !== undefined && status !== undefined && oldValue === undefined && (
         <div className="flex items-center gap-2 text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Statut:</span>
-          <Badge variant="outline" className="text-[10px]">{String(d.oldStatus)}</Badge>
+          <Badge variant="outline" className="text-[10px]">{String(oldStatus)}</Badge>
           <span className="text-muted-foreground">→</span>
-          <Badge variant="outline" className="text-[10px]">{String(d.status)}</Badge>
+          <Badge variant="outline" className="text-[10px]">{String(status)}</Badge>
         </div>
       )}
 
-      {d.changes && typeof d.changes === "object" && !Array.isArray(d.changes) && d.oldValue === undefined && (
+      {changes && (
         <div className="space-y-1">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider block">Modifications</span>
-          {Object.entries(d.changes as Record<string, unknown>).map(([key, value]) => (
+          {Object.entries(changes).map(([key, value]) => (
             <div key={key} className="text-[11px] flex items-center gap-1">
               <span className="text-muted-foreground">{key}:</span>
               <span>{renderDetailValue(value)}</span>
@@ -216,31 +222,31 @@ function DetailsSection({ details }: { details: Record<string, unknown> | null }
         </div>
       )}
 
-      {d.reason && (
+      {!!d.reason && (
         <div className="text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Motif:</span>{" "}
           <span>{String(d.reason)}</span>
         </div>
       )}
-      {d.planId && (
+      {!!d.planId && (
         <div className="text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Plan concerné:</span>{" "}
           <span className="font-mono">{String(d.planId)}</span>
         </div>
       )}
-      {d.bannedBy && (
+      {!!d.bannedBy && (
         <div className="text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Banni par:</span>{" "}
           <span>{String(d.bannedBy)}</span>
         </div>
       )}
-      {d.ip && (
+      {!!d.ip && (
         <div className="text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Adresse IP:</span>{" "}
           <span className="font-mono">{String(d.ip)}</span>
         </div>
       )}
-      {d.userAgent && (
+      {!!d.userAgent && (
         <div className="text-[11px]">
           <span className="text-muted-foreground text-[10px] font-medium uppercase tracking-wider">Navigateur:</span>{" "}
           <span className="truncate max-w-[300px] inline-block align-bottom">{String(d.userAgent)}</span>
