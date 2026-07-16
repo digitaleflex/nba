@@ -65,7 +65,13 @@ export function PushOnboardingBanner() {
         return
       }
 
-      const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      let vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      if (!vapidKey) {
+        try {
+          const r = await fetch("/api/push/vapid-key")
+          if (r.ok) { const d = await r.json(); vapidKey = d.key }
+        } catch {}
+      }
       if (!vapidKey) {
         console.error("VAPID public key not configured")
         toast.error("Configuration des notifications incomplète (clé VAPID manquante).")
