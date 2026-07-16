@@ -37,12 +37,12 @@ export async function GET() {
       }),
       prisma.auditLog.count({
         where: {
-          action: { contains: "FAILED" },
+          action: "LOGIN_FAILED",
           createdAt: { gte: todayStart },
         },
       }),
       prisma.auditLog.findFirst({
-        where: { action: { contains: "FAILED" } },
+        where: { action: "LOGIN_FAILED" },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true },
       }),
@@ -61,7 +61,7 @@ export async function GET() {
         ? new Date(lastFailedAudit.createdAt).toLocaleString("fr-FR")
         : null,
     })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur" }, { status: 500 })
   }
 }

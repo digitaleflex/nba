@@ -16,6 +16,12 @@ export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./comp
 export { Popover, PopoverTrigger, PopoverContent } from "./components/ui/popover"
 export { Skeleton } from "./components/ui/skeleton"
 export { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from "./components/ui/table"
+export { BottomSheet, BottomSheetTrigger, BottomSheetClose, BottomSheetOverlay, BottomSheetContent, BottomSheetHeader } from "./components/bottom-sheet"
+export { SwipeableRow } from "./components/swipeable-row"
+export { Chart } from "./components/chart"
+export type { ChartDatum, ChartColor } from "./components/chart"
+export { EmptyState } from "./components/empty-state"
+export type { EmptyStateAction } from "./components/empty-state"
 
 // Hooks
 export { useDebounce } from "./hooks/use-debounce"

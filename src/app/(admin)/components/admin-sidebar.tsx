@@ -109,7 +109,7 @@ export function AdminSidebar() {
           </p>
           <div className="space-y-0.5">
             <Link href="/admin" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
-              isPathActive("/admin") && tab !== "membres" && tab !== "requests" && tab !== "kyc" && tab !== "broker" && tab !== "moderation" && tab !== "audit" && tab !== "security" && tab !== "settings" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              isPathActive("/admin") && (!tab || tab === "dashboard" || tab === "users" || tab === "stats" || tab === "analytics") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
             )}>
               <LayoutDashboard className="size-4 shrink-0" /> Console
             </Link>

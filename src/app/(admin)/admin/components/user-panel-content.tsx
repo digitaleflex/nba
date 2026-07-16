@@ -172,7 +172,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                   ? "w-full gap-1.5"
                   : "w-full gap-1.5 bg-amber-600 hover:bg-amber-700 text-white border-0"
               }
-              onClick={() => onAction("toggle_signal_override", { id: data.id, value: !data.signalsAccessOverride })}
+              onClick={() => onAction("toggle_signal_override", { id: data.id, value: !data.signalsAccessOverride, prevValue: data.signalsAccessOverride })}
             >
               {data.signalsAccessOverride ? "Révoquer l'accès exceptionnel" : "Accorder l'accès exceptionnel"}
             </Button>
@@ -414,7 +414,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                     ? "bg-primary/10 border-primary/30 text-primary"
                     : "bg-neutral-100/40 dark:bg-neutral-900/40 border-neutral-200/40 dark:border-neutral-800/40 hover:bg-neutral-200/40 dark:hover:bg-neutral-800/40"
                 )}
-                onClick={() => onAction("change_role", { id: data.id, roleName: role.name })}
+                onClick={() => onAction("change_role", { id: data.id, roleName: role.name, prevRoleName: data.role?.name ?? "USER" })}
                 disabled={data.role?.name === role.name}
               >
                 <Shield className="size-3.5 shrink-0" />

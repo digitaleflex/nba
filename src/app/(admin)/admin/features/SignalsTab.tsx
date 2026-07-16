@@ -5,12 +5,10 @@ import dynamic from "next/dynamic"
 import { Play, Copy, Eye, Trash2, Loader2, Inbox, Archive, Search, ChevronLeft, ChevronRight, ArchiveRestore } from "lucide-react"
 import { toast } from "sonner"
 import {
-  Card, CardContent, Badge, Button, cn,
+  Card, CardContent, Badge, Button, cn, EmptyState,
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
-import { useSocket } from "@nba/lib/hooks/use-socket"
 import { Signal, CachedGet, OpenPanel } from "./types"
 
 const SignalEditor = dynamic(
@@ -408,7 +406,17 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
             )}
           </>
         ) : (
-          <EmptyState icon={Inbox} title="Aucun signal" description={searchQuery ? "Aucun résultat pour cette recherche." : "Créez votre premier signal via l'éditeur ci-contre."} />
+          <EmptyState
+            icon={Inbox}
+            title="Aucun signal"
+            description={searchQuery ? "Aucun résultat pour cette recherche." : "Créez votre premier signal via l'éditeur ci-contre."}
+            shortcut="N"
+            action={{
+              label: "Publier un signal",
+              icon: Play,
+              onClick: () => setEditorOpen(true),
+            }}
+          />
         )}
       </div>
 

@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") ?? ""
     const action = searchParams.get("action") ?? ""
     const resourceType = searchParams.get("resourceType") ?? ""
+    const resourceId = searchParams.get("resourceId") ?? ""
+    const view = searchParams.get("view") ?? "timeline"
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "30")))
     const skip = (page - 1) * limit
@@ -52,6 +54,7 @@ export async function GET(request: NextRequest) {
 
     if (action) where.action = action
     if (resourceType) where.resourceType = resourceType
+    if (resourceId) where.resourceId = resourceId
 
     const result = await getCached(
       `audit:${query}:${action}:${resourceType}:${page}:${limit}`,

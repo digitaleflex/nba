@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, FileX } from "lucide-react"
-import { Card, CardContent, Badge, Button, cn } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
+import { Card, CardContent, Badge, Button, cn, EmptyState } from "@nba/design-system"
 import { BrokerVerification, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 
 interface BrokerTabProps {
@@ -19,6 +18,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
   const [brokerPage, setBrokerPage] = useState(1)
   const [brokerTotalPages, setBrokerTotalPages] = useState(1)
   const [brokerStatusFilter, setBrokerStatusFilter] = useState("ALL")
+  const [brokerError, setBrokerError] = useState(false)
 
   const fetchBroker = useCallback(async () => {
     setLoadingBroker(true)
@@ -30,9 +30,13 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
       if (ok) {
         setBrokerDocs(data.docs ?? data)
         setBrokerTotalPages(data.pagination?.totalPages ?? 1)
+        setBrokerError(false)
+      } else {
+        setBrokerError(true)
       }
     } catch (err) {
       console.error(err)
+      setBrokerError(true)
     } finally {
       setLoadingBroker(false)
     }
@@ -154,8 +158,22 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
             </div>
           )}
         </>
+      ) : brokerError ? (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+          <span>Impossible de charger les vérifications broker.</span>
+          <Button size="sm" variant="outline" onClick={() => fetchBroker()}>Réessayer</Button>
+        </div>
       ) : (
-        <EmptyState icon={FileX} title="Aucune vérification broker" />
+        <EmptyState
+          icon={FileX}
+          title="Aucune vérification broker"
+          description="Les demandes de liaison de compte broker apparaîtront ici. Appuyez sur B pour tout réinitialiser."
+          shortcut="B"
+          action={{
+            label: brokerStatusFilter !== "ALL" ? "Toutes les vérifications" : "Actualiser",
+            onClick: () => { setBrokerStatusFilter("ALL"); setBrokerPage(1) },
+          }}
+        />
       )}
     </div>
   )

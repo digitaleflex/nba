@@ -1,17 +1,16 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import {
   Search, ChevronLeft, ChevronRight, Download, Trash2, FileX,
   Shield, User, Monitor, Plus, Check, X, Ban, RefreshCw,
-  LogIn, UserPlus,
+  LogIn, UserPlus, Layers, Boxes, ChevronRight as ChevronRightIcon,
 } from "lucide-react"
 import { toast } from "sonner"
 import {
-  Card, CardContent, Button, Badge, Input,
+  Card, CardContent, Button, Badge, Input, cn, EmptyState,
 } from "@nba/design-system"
-import { cn } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
 import { AuditLog, CachedGet } from "./types"
 
 interface AuditTabProps {
@@ -79,6 +78,29 @@ const ACTION_ICONS: Record<string, typeof Shield> = {
   BAN: Ban,
   REPLAYED: RefreshCw,
   PURGE: Trash2,
+}
+
+function groupByUser(logs: AuditLog[]) {
+  const map = new Map<string, { key: string; name: string; email: string; logs: AuditLog[] }>()
+  for (const log of logs) {
+    const key = log.user?.email || log.user?.name || "system"
+    const existing = map.get(key)
+    if (existing) existing.logs.push(log)
+    else map.set(key, { key, name: log.user?.name || "Système", email: log.user?.email || "", logs: [log] })
+  }
+  return Array.from(map.values()).sort((a, b) => b.logs[0].createdAt.localeCompare(a.logs[0].createdAt))
+}
+
+function groupByResource(logs: AuditLog[]) {
+  const map = new Map<string, { type: string; id: string; logs: AuditLog[] }>()
+  for (const log of logs) {
+    if (!log.resourceId) continue
+    const key = `${log.resourceType}:${log.resourceId}`
+    const existing = map.get(key)
+    if (existing) existing.logs.push(log)
+    else map.set(key, { type: log.resourceType, id: log.resourceId, logs: [log] })
+  }
+  return Array.from(map.values()).sort((a, b) => b.logs[0].createdAt.localeCompare(a.logs[0].createdAt))
 }
 
 function getActionDescription(
@@ -303,6 +325,10 @@ function TimelineSkeleton() {
 }
 
 export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
   const [filters, setFilters] = useState<{ actions: string[]; resourceTypes: string[] }>({
@@ -310,6 +336,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
     resourceTypes: [],
   })
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(false)
   const [purging, setPurging] = useState(false)
   const [exporting, setExporting] = useState(false)
   const [searchInput, setSearchInput] = useState("")
@@ -318,6 +345,49 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
   const [resourceFilter, setResourceFilter] = useState("")
   const [page, setPage] = useState(1)
   const limit = 30
+
+  // Multi-view state (shareable via URL)
+  const [view, setView] = useState<"timeline" | "user" | "resource">(
+    (["timeline", "user", "resource"].includes(searchParams.get("view") ?? "")
+      ? (searchParams.get("view") as "timeline" | "user" | "resource")
+      : "timeline"),
+  )
+  const [selectedResource, setSelectedResource] = useState<{ type: string; id: string } | null>(() => {
+    const rt = searchParams.get("resourceType")
+    const rid = searchParams.get("resourceId")
+    return rt && rid ? { type: rt, id: rid } : null
+  })
+
+  // Keep URL in sync with the active view (shareable links)
+  const syncUrl = useCallback(
+    (nextView: string, res?: { type: string; id: string } | null) => {
+      const params = new URLSearchParams(searchParams.toString())
+      params.set("tab", "audit")
+      params.set("view", nextView)
+      if (res) {
+        params.set("resourceType", res.type)
+        params.set("resourceId", res.id)
+      } else {
+        params.delete("resourceType")
+        params.delete("resourceId")
+      }
+      router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    },
+    [searchParams, pathname, router],
+  )
+
+  const changeView = (v: "timeline" | "user" | "resource") => {
+    setView(v)
+    setSelectedResource(null)
+    setPage(1)
+    syncUrl(v, null)
+  }
+
+  const drillResource = (type: string, id: string) => {
+    setSelectedResource({ type, id })
+    setPage(1)
+    syncUrl("resource", { type, id })
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -334,6 +404,8 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
       if (query) params.set("q", query)
       if (actionFilter) params.set("action", actionFilter)
       if (resourceFilter) params.set("resourceType", resourceFilter)
+      if (selectedResource) params.set("resourceId", selectedResource.id)
+      params.set("view", view)
       params.set("page", String(page))
       params.set("limit", String(limit))
 
@@ -342,35 +414,55 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
         setLogs(data.logs || [])
         setTotal(data.total || 0)
         setFilters(data.filters || { actions: [], resourceTypes: [] })
+        setError(false)
+      } else {
+        setError(true)
       }
     } catch (err) {
       console.error(err)
+      setError(true)
     } finally {
       setLoading(false)
     }
-  }, [cachedGet, query, actionFilter, resourceFilter, page])
+  }, [cachedGet, query, actionFilter, resourceFilter, selectedResource, view, page])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchLogs()
   }, [fetchLogs])
 
   const exportCSV = useCallback(async () => {
     setExporting(true)
     try {
-      const params = new URLSearchParams()
-      if (query) params.set("q", query)
-      if (actionFilter) params.set("action", actionFilter)
-      if (resourceFilter) params.set("resourceType", resourceFilter)
-      params.set("limit", "5000")
+      const baseParams = new URLSearchParams()
+      if (query) baseParams.set("q", query)
+      if (actionFilter) baseParams.set("action", actionFilter)
+      if (resourceFilter) baseParams.set("resourceType", resourceFilter)
+      if (selectedResource) baseParams.set("resourceId", selectedResource.id)
 
-      const { ok, data } = await cachedGet(`/api/admin/audit-logs?${params}`, 0)
-      if (!ok) {
-        toast.error("Erreur lors de l'export")
-        return
+      // The audit API caps `limit` at 100, so paginate to export everything.
+      const allLogs: AuditLog[] = []
+      let page = 1
+      const pageSize = 100
+      for (;;) {
+        const p = new URLSearchParams(baseParams)
+        p.set("page", String(page))
+        p.set("limit", String(pageSize))
+        const { ok, data } = await cachedGet(`/api/admin/audit-logs?${p}`, 0)
+        if (!ok) {
+          toast.error("Erreur lors de l'export")
+          return
+        }
+        const logs: AuditLog[] = data.logs || []
+        allLogs.push(...logs)
+        const total: number = data.total ?? 0
+        if (logs.length < pageSize || allLogs.length >= total) break
+        page++
       }
 
-      const allLogs: AuditLog[] = data.logs || []
-      const BOM = "\ufeff"
+      const BOM = "﻿"
+      const groupLabel =
+        view === "user" ? "Groupe (utilisateur)" : view === "resource" ? "Groupe (ressource)" : "Groupe"
       const headers = [
         "Date",
         "Action",
@@ -379,6 +471,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
         "Utilisateur",
         "Email",
         "IP",
+        groupLabel,
         "Détails",
       ]
       const rows = allLogs.map((log) => [
@@ -389,6 +482,11 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
         log.user?.name ?? "",
         log.user?.email ?? "",
         log.ipAddress ?? "",
+        view === "user"
+          ? log.user?.email || log.user?.name || "système"
+          : view === "resource"
+            ? `${log.resourceType}:${log.resourceId ?? ""}`
+            : "",
         log.details ? JSON.stringify(log.details) : "",
       ])
 
@@ -411,7 +509,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
     } finally {
       setExporting(false)
     }
-  }, [cachedGet, query, actionFilter, resourceFilter])
+  }, [cachedGet, query, actionFilter, resourceFilter, selectedResource, view])
 
   const handlePurge = async () => {
     if (!confirm("Supprimer les logs d'audit de plus de 90 jours ?")) return
@@ -470,6 +568,38 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
             {purging ? "Purge..." : "Purger 90j+"}
           </Button>
         </div>
+      </div>
+
+      {/* View switcher (shareable via ?view=) */}
+      <div className="flex items-center gap-1.5 border-b border-border pb-3">
+        {([
+          { id: "timeline", label: "Timeline", icon: Layers },
+          { id: "user", label: "Par utilisateur", icon: User },
+          { id: "resource", label: "Par ressource", icon: Boxes },
+        ] as const).map((v) => (
+          <button
+            key={v.id}
+            onClick={() => changeView(v.id)}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+              view === v.id
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted/50",
+            )}
+          >
+            <v.icon className="size-3.5" />
+            {v.label}
+          </button>
+        ))}
+        {selectedResource && (
+          <button
+            onClick={() => { setSelectedResource(null); setPage(1); syncUrl("resource", null) }}
+            className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+          >
+            <X className="size-3" />
+            {RESOURCE_LABELS[selectedResource.type] || selectedResource.type} #{selectedResource.id.slice(0, 8)}
+          </button>
+        )}
       </div>
 
       {/* Search + Filters */}
@@ -562,19 +692,86 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
         </div>
       )}
 
-      {/* Log list */}
+      {/* Erreur de chargement — distinct du résultat vide */}
+      {error && !loading && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+          <span>Impossible de charger les logs. Vérifiez votre connexion et réessayez.</span>
+          <Button size="sm" variant="outline" onClick={() => fetchLogs()}>Réessayer</Button>
+        </div>
+      )}
+
+      {/* Log list — multi-view */}
       {loading ? (
         <TimelineSkeleton />
-      ) : logs.length === 0 ? (
+      ) : logs.length === 0 && !error ? (
         <EmptyState
           icon={FileX}
           title="Aucun log trouvé"
           description={
             hasActiveFilters
-              ? "Essayez de modifier vos filtres de recherche."
-              : "Les actions des administrateurs apparaîtront ici."
+              ? "Essayez de modifier vos filtres de recherche. Appuyez sur A pour réinitialiser."
+              : "Les actions des administrateurs apparaîtront ici. Appuyez sur A pour rafraîchir."
           }
+          action={{
+            label: hasActiveFilters ? "Réinitialiser les filtres" : "Actualiser",
+            onClick: () => { setSearchInput(""); setQuery(""); setActionFilter(""); setResourceFilter("") },
+          }}
+          shortcut="A"
         />
+      ) : view === "user" ? (
+        <div className="space-y-4">
+          {groupByUser(logs).map((group) => (
+            <Card key={group.key} className="border-border">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                    <User className="size-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{group.name}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{group.email || "Action système"}</p>
+                  </div>
+                  <Badge variant="outline" className="ml-auto text-[10px]">{group.logs.length} action{group.logs.length > 1 ? "s" : ""}</Badge>
+                </div>
+                <div className="border-t border-border/60 pt-2 space-y-2">
+                  {group.logs.slice(0, 5).map((log) => (
+                    <div key={log.id} className="flex items-center gap-2 text-[11px]">
+                      <span className={cn("size-1.5 rounded-full shrink-0", (ACTION_COLORS[log.action] || "").split(" ")[0])} />
+                      <span className="text-foreground/90 flex-1 truncate">{getActionDescription(log.action, log.resourceType, log.details, log.user)}</span>
+                      <span className="text-muted-foreground/60 shrink-0">{formatRelativeTime(new Date(log.createdAt))}</span>
+                    </div>
+                  ))}
+                  {group.logs.length > 5 && (
+                    <button onClick={() => { setSearchInput(group.email); setQuery(group.email); setPage(1) }} className="text-[10px] text-primary hover:underline cursor-pointer">
+                      Voir les {group.logs.length - 5} autres…
+                    </button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      ) : view === "resource" && !selectedResource ? (
+        <div className="space-y-3">
+          {groupByResource(logs).map((group) => (
+            <button
+              key={`${group.type}:${group.id}`}
+              onClick={() => drillResource(group.type, group.id)}
+              className="w-full text-left flex items-center gap-3 rounded-xl border border-border bg-card/30 p-4 hover:bg-muted/40 transition-colors cursor-pointer"
+            >
+              <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <Boxes className="size-4 text-muted-foreground" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-semibold text-foreground truncate">
+                  {RESOURCE_LABELS[group.type] || group.type} #{group.id.slice(0, 8)}
+                </p>
+                <p className="text-[10px] text-muted-foreground">{group.logs.length} action{group.logs.length > 1 ? "s" : ""} sur cette ressource</p>
+              </div>
+              <ChevronRightIcon className="size-4 text-muted-foreground shrink-0" />
+            </button>
+          ))}
+        </div>
       ) : (
         <div className="space-y-3">
           {logs.map((log) => {
@@ -614,10 +811,17 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
                             <span className="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-medium text-muted-foreground border-border/50">
                               {RESOURCE_LABELS[log.resourceType] || log.resourceType.replace(/_/g, " ")}
                             </span>
-                            {log.resourceId && (
-                              <span className="text-[10px] font-mono text-muted-foreground">
+                            {log.resourceId && !selectedResource && (
+                              <button
+                                onClick={() => drillResource(log.resourceType, log.resourceId!)}
+                                className="text-[10px] font-mono text-primary hover:underline cursor-pointer"
+                                title="Voir toutes les actions sur cette ressource"
+                              >
                                 #{log.resourceId.slice(0, 8)}
-                              </span>
+                              </button>
+                            )}
+                            {log.resourceId && selectedResource && (
+                              <span className="text-[10px] font-mono text-muted-foreground">#{log.resourceId.slice(0, 8)}</span>
                             )}
                           </div>
                         </div>

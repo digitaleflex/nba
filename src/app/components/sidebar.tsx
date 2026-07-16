@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { Button, Badge, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
+import { ADMIN_CONTEXTS } from "@nba/app/(admin)/admin/admin-context"
 import {
   LayoutDashboard,
   Users,
@@ -29,6 +30,8 @@ import {
   Volume2,
   MonitorSmartphone,
   Inbox,
+  Mail,
+  LineChart as LineChartIcon,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -133,48 +136,73 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       icon: React.ComponentType<{ className?: string }>
       active: boolean
     }[]
+    badge?: number
   }
 
   const isActiveTab = (tab: string) => pathname === "/admin" && activeTab === tab
 
-  const adminGroups: AdminGroup[] = [
-    {
-      label: "Supervision",
-      items: [
-        { href: "/admin?tab=dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: isActiveTab("dashboard") },
-        { href: "/admin/control-room", label: "Centre de contrôle", icon: Gauge, active: pathname === "/admin/control-room" },
-        { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname === "/admin/tracker" },
-      ],
-    },
-    {
-      label: "Communications",
-      items: [
-        { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
-        { href: "/admin?tab=signals", label: "Signaux", icon: Radio, active: isActiveTab("signals") },
-        { href: "/admin?tab=notifications", label: "Notifications", icon: Bell, active: isActiveTab("notifications") },
-      ],
-    },
-    {
-      label: "Membres",
-      items: [
-        { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, active: isActiveTab("requests") },
-        { href: "/admin?tab=users", label: "Utilisateurs", icon: Users, active: isActiveTab("users") },
-        { href: "/admin?tab=membres", label: "Membres", icon: Users, active: isActiveTab("membres") },
-        { href: "/admin?tab=kyc", label: "Dossiers KYC", icon: FileCheck, active: isActiveTab("kyc") },
-        { href: "/admin?tab=broker", label: "Vérification Broker", icon: Link2, active: isActiveTab("broker") },
-      ],
-    },
-    {
-      label: "Système",
-      items: [
-        { href: "/admin?tab=audit", label: "Journal d'audit", icon: Activity, active: isActiveTab("audit") },
-        { href: "/admin?tab=stats", label: "Statistiques", icon: BarChart2, active: isActiveTab("stats") },
-        { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
-        { href: "/admin?tab=security", label: "Sécurité", icon: Shield, active: isActiveTab("security") },
-        { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, active: isActiveTab("settings") },
-      ],
-    },
-  ]
+  // Pending KYC count -> badge sur le contexte "Décider"
+  const [pendingKyc, setPendingKyc] = useState(0)
+  useEffect(() => {
+    if (!isAdmin) return
+    const controller = new AbortController()
+    fetch("/api/admin/kyc?status=PENDING", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.total != null) setPendingKyc(d.total)
+        else if (Array.isArray(d?.docs)) setPendingKyc(d.docs.length)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [isAdmin])
+
+  // Routes autonomes (hors tabs) rattachées à leur contexte pour ne rien casser
+  const standaloneByContext: Record<string, AdminGroup["items"]> = {
+    surveiller: [
+      { href: "/admin?tab=dashboard", label: "Centre de contrôle", icon: Gauge, active: pathname === "/admin" && activeTab === "dashboard" },
+      { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname === "/admin/tracker" },
+    ],
+    communiquer: [
+      { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
+    ],
+    auditer: [
+      { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
+    ],
+  }
+
+  // Groupes dérivés des 4 contextes mentaux (Surveiller / Décider / Communiquer / Auditer)
+  const adminGroups: AdminGroup[] = ADMIN_CONTEXTS.map((context) => {
+    const isDecider = context.id === "decider"
+    const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+      dashboard: LayoutDashboard,
+      stats: BarChart2,
+      analytics: LineChartIcon,
+      requests: ListTodo,
+      membres: Users,
+      users: Users,
+      kyc: FileCheck,
+      broker: Link2,
+      signals: Radio,
+      emails: Mail,
+      notifications: Bell,
+      audit: Activity,
+      moderation: Shield,
+      security: Shield,
+      settings: Settings,
+    }
+    const items = context.tabs.map((tab) => ({
+      href: `/admin?tab=${tab.value}`,
+      label: tab.label,
+      icon: iconMap[tab.value] || context.icon,
+      active: isActiveTab(tab.value),
+    }))
+    const standalone = standaloneByContext[context.id] || []
+    return {
+      label: context.label,
+      items: [...items, ...standalone],
+      badge: isDecider && pendingKyc > 0 ? pendingKyc : undefined,
+    }
+  })
 
   const links = isAdmin ? adminGroups.flatMap((g) => g.items) : userLinks
   const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
@@ -223,8 +251,13 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
           {isAdmin && !isCollapsed
             ? adminGroups.map((group) => (
                 <div key={group.label} className="space-y-1">
-                  <p className="px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
+                  <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
                     {group.label}
+                    {group.badge ? (
+                      <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                        {group.badge > 9 ? "9+" : group.badge}
+                      </span>
+                    ) : null}
                   </p>
                   {group.items.map((link) => {
                     const Icon = link.icon

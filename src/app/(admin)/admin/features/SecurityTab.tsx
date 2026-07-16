@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Loader2, EyeOff, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, Button } from "@nba/design-system"
-import { EmptyState } from "@nba/app/components/empty-state"
+import { EmptyState } from "@nba/design-system"
 import { CachedGet } from "./types"
 
 interface SecurityTabProps {
@@ -17,40 +17,44 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
   const [loadingSecurity, setLoadingSecurity] = useState(false)
   const [sessions, setSessions] = useState<any[]>([])
   const [loadingSessions, setLoadingSessions] = useState(false)
+  const [securityError, setSecurityError] = useState(false)
 
-  const fetchSecurity = useCallback(async () => {
+  const refresh = useCallback(async () => {
     setLoadingSecurity(true)
+    setLoadingSessions(true)
+    let failed = false
     try {
       const { ok, data } = await cachedGet("/api/admin/security")
-      if (ok) {
-        setSecurityData(data)
-      }
+      if (ok) setSecurityData(data)
+      else failed = true
     } catch (err) {
       console.error(err)
+      failed = true
     } finally {
       setLoadingSecurity(false)
     }
-  }, [cachedGet])
-
-  const fetchSessions = useCallback(async () => {
-    setLoadingSessions(true)
     try {
       const { ok, data } = await cachedGet("/api/admin/security/sessions")
-      if (ok) {
-        setSessions(data || [])
-      }
+      if (ok) setSessions(data || [])
+      else failed = true
     } catch (err) {
       console.error(err)
+      failed = true
     } finally {
       setLoadingSessions(false)
     }
+    setSecurityError(failed)
   }, [cachedGet])
+
+  const fetchSecurity = refresh
+  const fetchSessions = refresh
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchSecurity()
-    fetchSessions()
-  }, [fetchSecurity, fetchSessions])
+    refresh()
+    const id = setInterval(refresh, 10_000)
+    return () => clearInterval(id)
+  }, [refresh])
 
   async function handleRevokeSession(id: string) {
     if (!confirm("Révoquer cette session ? L'utilisateur devra se reconnecter.")) return
@@ -78,7 +82,17 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
             Surveillez les connexions récentes et détectez d&apos;éventuelles tentatives d&apos;intrusion.
           </p>
         </div>
+        <Button variant="outline" size="sm" onClick={() => refresh()} className="shrink-0">
+          Actualiser
+        </Button>
       </div>
+
+      {securityError && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+          <span>Impossible de charger le centre de sécurité.</span>
+          <Button size="sm" variant="outline" onClick={() => refresh()}>Réessayer</Button>
+        </div>
+      )}
 
       {loadingSecurity ? (
         <div className="py-10 flex justify-center">
@@ -109,7 +123,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     </div>
                   </>
                 ) : (
-                  <EmptyState icon={EyeOff} title="Aucune session active" />
+                  <EmptyState icon={EyeOff} title="Aucune session active" description="Aucune session en cours pour ce compte." />
                 )}
               </div>
             </CardContent>
@@ -134,7 +148,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     </div>
                   </>
                 ) : (
-                  <EmptyState icon={ShieldCheck} title="Aucune tentative suspecte" />
+                  <EmptyState icon={ShieldCheck} title="Aucune tentative suspecte" description="Aucune connexion échouée récente." />
                 )}
               </div>
             </CardContent>
@@ -194,7 +208,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
               </table>
             </div>
           ) : (
-            <EmptyState icon={EyeOff} title="Aucune session enregistrée" />
+            <EmptyState icon={EyeOff} title="Aucune session enregistrée" description="L'historique des sessions récentes est vide." />
           )}
         </CardContent>
       </Card>
