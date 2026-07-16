@@ -7,6 +7,14 @@
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 
+  /* Touch targets — Phase 0 du redesign admin
+     - mobile-tap : 44px (Apple/Google minimum, recommandé)
+     - mobile-dense : 36px (acceptable pour les listes denses)
+     - desktop : 32px (densité actuelle, conservée) */
+  --spacing-touch-mobile: 2.75rem;       /* 44px */
+  --spacing-touch-mobile-dense: 2.25rem; /* 36px */
+  --spacing-touch-desktop: 2rem;         /* 32px */
+
   --color-background: #fafbfc;
   --color-foreground: oklch(0.15 0.01 260);
   --color-card: #ffffff;
