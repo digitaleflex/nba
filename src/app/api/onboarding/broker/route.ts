@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
   }
 
+  // Vérifier que le compte n'est pas suspendu
+  const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+  if (!me?.isActive) {
+    return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
+  }
+
   const userId = session.user.id
 
   const state = await getOnboardingState(userId)

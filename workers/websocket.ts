@@ -60,7 +60,7 @@ async function authenticateSocket(socket: Socket): Promise<{ userId: string } | 
     // Query la session en base
     const session = await prisma.session.findUnique({
       where: { token: sessionToken },
-      include: { user: { select: { id: true } } },
+      include: { user: { select: { id: true, isActive: true } } },
     })
 
     if (!session?.user) {
@@ -70,6 +70,11 @@ async function authenticateSocket(socket: Socket): Promise<{ userId: string } | 
 
     if (new Date(session.expiresAt) < new Date()) {
       console.log(`[ws] Session expired for ${socket.id}`)
+      return null
+    }
+
+    if (!session.user.isActive) {
+      console.log(`[ws] User suspended for ${socket.id}`)
       return null
     }
 

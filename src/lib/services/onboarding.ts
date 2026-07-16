@@ -171,6 +171,14 @@ export async function updateOnboardingStatus(
   userId: string,
   status: OnboardingStatus,
 ): Promise<void> {
+  // Ne pas écraser un statut SUSPENDED — seul un admin peut lever la suspension
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { onboardingStatus: true, isActive: true },
+  })
+  if (!user) return
+  if (!user.isActive || user.onboardingStatus === "SUSPENDED") return
+
   await prisma.user.update({
     where: { id: userId },
     data: { onboardingStatus: status },

@@ -4,6 +4,7 @@ import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
+import { getRedisConnection } from "@nba/lib/queue"
 
 export async function GET(request: NextRequest) {
   try {
@@ -131,7 +132,13 @@ export async function PUT(request: NextRequest) {
     }
 
     const data: Record<string, any> = {}
-    if (typeof isActive === "boolean") data.isActive = isActive
+    if (typeof isActive === "boolean") {
+      data.isActive = isActive
+      // Unifier la suspension : si on désactive, mettre onboardingStatus à SUSPENDED
+      if (!isActive && !onboardingStatus) {
+        data.onboardingStatus = "SUSPENDED"
+      }
+    }
     if (onboardingStatus) data.onboardingStatus = onboardingStatus
     if (typeof signalsAccessOverride === "boolean") data.signalsAccessOverride = signalsAccessOverride
     if (emailStatus) data.emailStatus = emailStatus
@@ -157,6 +164,17 @@ export async function PUT(request: NextRequest) {
         role: { select: { id: true, name: true } },
       },
     })
+
+    // Suspension : révoquer les sessions + déconnecter le WebSocket
+    if (typeof isActive === "boolean" && !isActive) {
+      await prisma.session.deleteMany({ where: { userId } })
+      try {
+        const redis = getRedisConnection()
+        if (redis) {
+          await redis.publish("nba:ws:control", `reset:${userId}`)
+        }
+      } catch {}
+    }
 
     await logAuditEvent({
       userId: session.user.id,

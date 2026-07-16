@@ -1,4 +1,4 @@
-import type { PrismaClient } from "../generated/prisma/client"
+import type { PrismaClient } from "@nba/generated/prisma/client"
 
 /**
  * Hard-deletes a user and all dependent records.

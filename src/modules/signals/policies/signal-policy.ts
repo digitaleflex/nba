@@ -140,9 +140,11 @@ export class SignalPolicy {
         role: {
           select: { name: true },
         },
+        isActive: true,
       },
     })
     if (!user) return false
+    if (!user.isActive) return false
     if (user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN") return true
 
     const audience = await prisma.signalAudience.findMany({

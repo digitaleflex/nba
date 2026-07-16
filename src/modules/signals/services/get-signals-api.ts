@@ -63,11 +63,16 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
       country: true,
       phone: true,
       whatsapp: true,
+      isActive: true,
     },
   })
 
   if (!user) {
     throw new AuthError("Utilisateur non trouvé", 404)
+  }
+
+  if (!user.isActive) {
+    throw new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
   }
 
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"

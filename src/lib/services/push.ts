@@ -36,6 +36,10 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   configure();
   if (!configured) return { sent: 0, failed: 0 };
 
+  // Ne pas envoyer de push à un utilisateur suspendu
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  if (!user?.isActive) return { sent: 0, failed: 0 };
+
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
   });

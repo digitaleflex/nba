@@ -18,6 +18,21 @@ export async function requireAuth() {
   return session
 }
 
+/**
+ * Vérifie l'authentification + que le compte est actif (pas suspendu).
+ */
+export async function requireActiveUser() {
+  const session = await requireAuth()
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { isActive: true },
+  })
+  if (!user || !user.isActive) {
+    throw new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
+  }
+  return session
+}
+
 export async function requireRole(allowedRoles: string[]) {
   const session = await requireAuth()
   const user = await prisma.user.findUnique({
