@@ -200,7 +200,7 @@ export async function DELETE(request: NextRequest) {
     await prisma.$transaction([
       prisma.user.update({
         where: { id: userId },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), isActive: false },
       }),
       prisma.session.deleteMany({ where: { userId } }),
       prisma.account.deleteMany({ where: { userId } }),

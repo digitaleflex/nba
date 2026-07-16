@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { invalidatePrefix } from "@nba/lib/cache"
 
 export async function DELETE(request: Request) {
   try {
@@ -44,11 +45,11 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
     }
 
-    // Soft delete + delete all sessions + remove password credentials
+    // Soft delete + deactivate + delete sessions + remove password credentials
     await prisma.$transaction([
       prisma.user.update({
         where: { id: session.user.id },
-        data: { deletedAt: new Date() },
+        data: { deletedAt: new Date(), isActive: false },
       }),
       prisma.session.deleteMany({
         where: { userId: session.user.id },
@@ -58,14 +59,18 @@ export async function DELETE(request: Request) {
       }),
     ])
 
-    // Audit log (non-blocking)
-    logAuditEvent({
-      userId: session.user.id,
-      action: "DELETE",
-      resourceType: "user",
-      resourceId: session.user.id,
-      details: { selfService: true, userEmail: user.email },
-    }).catch(() => {})
+    // Audit log + cache invalidation (non-blocking)
+    Promise.all([
+      logAuditEvent({
+        userId: session.user.id,
+        action: "DELETE",
+        resourceType: "user",
+        resourceId: session.user.id,
+        details: { selfService: true, userEmail: user.email },
+      }),
+      invalidatePrefix("members:"),
+      invalidatePrefix("ops"),
+    ]).catch(() => {})
 
     // Send confirmation email (non-blocking)
     sendAccountDeletionEmail(user).catch((err) =>
