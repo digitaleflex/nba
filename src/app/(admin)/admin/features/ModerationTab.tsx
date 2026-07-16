@@ -45,7 +45,8 @@ export function ModerationTab() {
   }
 
   async function handleUnban(email: string) {
-    if (!confirm(`Réhabiliter ${email} ?`)) return
+    const confirmed = confirm(`Réhabiliter ${email} ?\n\nL'utilisateur pourra se réinscrire et accéder à nouveau à son compte.`)
+    if (!confirmed) return
     try {
       const res = await fetch("/api/admin/moderation/bans", {
         method: "DELETE",

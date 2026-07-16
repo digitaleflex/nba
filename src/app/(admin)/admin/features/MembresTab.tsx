@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2, Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff } from "lucide-react"
+import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2 } from "lucide-react"
 import { Card, Badge, Button, cn } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
 import { toast } from "sonner"
@@ -84,7 +84,13 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   }
 
   async function deleteMember(userId: string) {
-    if (!confirm("Supprimer définitivement ce membre ?")) return
+    const confirmed = confirm(
+      `Supprimer définitivement ce membre ?\n\n` +
+      `L'utilisateur perdra définitivement toutes ses données, accès aux signaux et à son compte. ` +
+      `Cette action ne peut être annulée."
+    )
+    if (!confirmed) return
+
     setUpdating(userId)
     try {
       const res = await fetch(`/api/admin/members?userId=${userId}`, { method: "DELETE" })
@@ -103,6 +109,14 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   }
 
   async function banMember(email: string) {
+    const confirmed = confirm(
+      `Bannir ${email} ?\n\n` +
+      `Ce compte sera définitivement supprimé et l'email blacklisté.\n` +
+      `L'utilisateur ne pourra plus se connecter sous aucun nom.\n\n` +
+      `Cette action est permanente et irréversible."
+    )
+    if (!confirmed) return
+
     setUpdating(email)
     try {
       const res = await fetch("/api/admin/moderation/bans", {
@@ -125,7 +139,14 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   }
 
   async function revokeSessions(userId: string) {
-    if (!confirm("Révoquer toutes les sessions de ce membre ?")) return
+    const confirmed = confirm(
+      `Révoquer toutes les sessions de ce membre ?\n\n` +
+      `L'utilisateur sera déconnecté de toutes les sessions actives. ` +
+      `Il devra se reconnecter pour utiliser le compte.\n\n` +
+      `Session active : ${new Date().toLocaleString("fr-FR")}"
+    )
+    if (!confirmed) return
+
     setUpdating(userId)
     try {
       const res = await fetch("/api/admin/members/revoke-sessions", {
@@ -375,8 +396,9 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                         {m.emailStatus === "BOUNCED" || m.emailStatus === "INVALID" ? (
                           <button
                             onClick={() => updateMember(m.id, { emailStatus: "OK" })}
-                            className="p-1.5 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-colors cursor-pointer"
-                            title="Réinitialiser l'email"
+                            className="p-1.5 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+                            title="Réinitialiser le statut d'email du membre (peux être nécessaire après le rebond de l'email)"
+                            aria-label="Réinitialiser le statut d'email pour réparation"
                           >
                             <Mail className="size-3.5" />
                           </button>
@@ -384,14 +406,20 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
 
                         <button
                           onClick={() => {
-                            if (confirm(`Bannir ${m.email} ? Ce compte sera supprimé et l'email blacklisté.`)) {
+                            if (confirm(`Bannir ${m.email} ?\nCe compte sera définitivement supprimé et l'email blacklisté.\n\nL'utilisateur ne pourra plus se connecter sous aucun nom.`)) {
                               banMember(m.email)
                             }
                           }}
-                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                          title="Bannir & blacklister"
+                          disabled={updating === m.email}
+                          className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer disabled:opacity-50"
+                          title="Bannir et blacklisted L'utilisateur. Supprime également le compte de manière permanente"
+                          aria-label={`Bannir ${m.email} et blacklisted`}
                         >
-                          <Ban className="size-3.5" />
+                          {updating === m.email ? (
+                            <Loader2 className="size-3.5 animate-spin" />
+                          ) : (
+                            <Ban className="size-3.5" />
+                          )}
                         </button>
 
                         <div className="relative inline-flex">
@@ -401,21 +429,24 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                               const menu = e.currentTarget.nextElementSibling as HTMLElement
                               if (menu) menu.classList.toggle("hidden")
                             }}
-                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors cursor-pointer"
-                            title="Plus d'actions"
+                            className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+                            title="Plus d'actions disponibles sur ce membre"
+                            aria-label="Plus d'actions pour le membre"
                           >
                             <MoreHorizontal className="size-3.5" />
                           </button>
-                          <div className="hidden absolute right-0 top-9 z-30 w-44 bg-card border border-border rounded-lg shadow-lg py-1">
+                          <div className="hidden absolute right-0 top-9 z-30 w-48 bg-card border border-border rounded-lg shadow-lg py-1">
                             <button
                               onClick={() => updateMember(m.id, { onboardingStatus: "ACTIVE" })}
                               className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                              title="Force l'utilisateur à terminer immédiatement l'onboarding et à accéder à tous les services"
                             >
                               <RotateCw className="size-3" /> Forcer onboarding
                             </button>
                             <button
                               onClick={() => revokeSessions(m.id)}
                               className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                              title="Déconnecte toutes les sessions actives de l'utilisateur et force un nouveau login"
                             >
                               <Shield className="size-3" /> Révoquer sessions
                             </button>
@@ -423,6 +454,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                               <button
                                 onClick={() => deleteMember(m.id)}
                                 className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
+                                title="Supprime le compte définitivement et désactive immédiatement toute l'activité"
                               >
                                 <Trash2 className="size-3" /> Supprimer
                               </button>

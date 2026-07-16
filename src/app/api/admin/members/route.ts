@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
+import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function GET(request: NextRequest) {
   try {
@@ -120,7 +121,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const body = await request.json()
     const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = body
 
@@ -156,6 +157,19 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    await logAuditEvent({
+      userId: session.user.id,
+      action: "UPDATE",
+      resourceType: "user",
+      resourceId: userId,
+      details: {
+        changes: Object.keys(data),
+        isActive: data.isActive,
+        onboardingStatus: data.onboardingStatus,
+        roleId: data.roleId,
+      },
+    })
+
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
     return NextResponse.json(updated)
@@ -166,7 +180,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get("userId")
 
@@ -174,12 +188,34 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "userId est requis" }, { status: 400 })
     }
 
-    // Suppression logique
-    const deleted = await prisma.user.update({
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { name: true, email: true },
+    })
+
+    if (!user) {
+      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
+    }
+
+    await prisma.user.update({
       where: { id: userId },
       data: { deletedAt: new Date() },
     })
 
+    await logAuditEvent({
+      userId: session.user.id,
+      action: "DELETE",
+      resourceType: "user",
+      resourceId: userId,
+      details: {
+        softDelete: true,
+        userName: user.name,
+        userEmail: user.email,
+      },
+    })
+
+    await invalidatePrefix("ops")
+    await invalidatePrefix("members:")
     return NextResponse.json({ success: true, message: "Utilisateur supprimé" })
   } catch (error) {
     return handleAuthError(error)
