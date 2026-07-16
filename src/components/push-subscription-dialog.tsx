@@ -20,64 +20,54 @@ function detectBrowser(): BrowserInfo {
   }
   const ua = navigator.userAgent
 
+  const isSafari = ua.includes("Safari") && !ua.includes("Chrome")
+
+  const steps: { title: string; detail: string }[] = [
+    { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "En haut à gauche de l'écran" },
+  ]
+
   if (ua.includes("Edg")) {
-    return {
-      name: "Microsoft Edge",
-      icon: "🌐",
-      steps: [
-        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
-        { title: "Cliquez sur « Autorisations du site »", detail: "Un panneau s'ouvre" },
-        { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
-      ],
-    }
+    steps.push(
+      { title: "Cliquez sur « Autorisations du site »", detail: "Un panneau s'ouvre" },
+      { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "" },
+    )
+    return { name: "Microsoft Edge", icon: "🌐", steps }
   }
 
   if (ua.includes("Firefox")) {
-    return {
-      name: "Firefox",
-      icon: "🦊",
-      steps: [
-        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
-        { title: "Cliquez sur « Paramètres de connexion »", detail: "Ou « Plus d'informations »" },
-        { title: "Dans « Permissions », cherchez « Notifications »", detail: "Décochez « Bloquer les notifications »" },
-      ],
-    }
+    steps.push(
+      { title: "Cliquez sur « Paramètres de connexion »", detail: "Ou « Plus d'informations »" },
+      { title: "Dans la section « Permissions », décochez « Bloquer les notifications »", detail: "" },
+    )
+    return { name: "Firefox", icon: "🦊", steps }
   }
 
   if (ua.includes("OPR") || ua.includes("Opera")) {
-    return {
-      name: "Opera",
-      icon: "🎭",
-      steps: [
-        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
-        { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
-        { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
-      ],
-    }
+    steps.push(
+      { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
+      { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "" },
+    )
+    return { name: "Opera", icon: "🎭", steps }
   }
 
-  if (ua.includes("Safari") && !ua.includes("Chrome")) {
+  if (isSafari) {
     return {
       name: "Safari",
       icon: "🧭",
       steps: [
         { title: "Dans la barre de menu, cliquez sur « Safari »", detail: "En haut de l'écran" },
         { title: "Choisissez « Réglages… » puis l'onglet « Sites web »", detail: "Une fenêtre s'ouvre" },
-        { title: "Dans la colonne de gauche, cliquez sur « Notifications »", detail: "Trouvez ce site et choisissez « Autoriser »" },
+        { title: "À gauche, cliquez sur « Notifications »", detail: "Trouvez le site et choisissez « Autoriser »" },
       ],
     }
   }
 
-  // Chrome / Brave / Chromium par défaut
-  return {
-    name: "Chrome",
-    icon: "▶️",
-    steps: [
-      { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
-      { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
-      { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
-    ],
-  }
+  // Chrome / Brave / Chromium
+  steps.push(
+    { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
+    { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "" },
+  )
+  return { name: "Chrome", icon: "▶️", steps }
 }
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -96,6 +86,7 @@ export function PushSubscriptionDialog() {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [permission, setPermission] = useState<NotificationPermission | null>(null)
+  const [watching, setWatching] = useState(false)
   const browser = useMemo(() => detectBrowser(), [])
 
   useEffect(() => {
@@ -127,6 +118,25 @@ export function PushSubscriptionDialog() {
       })
       .catch(() => {})
   }, [])
+
+  useEffect(() => {
+    if (!show || permission !== "denied") return
+    if (!("permissions" in navigator)) return
+
+    let cancelled = false
+    setWatching(true)
+
+    navigator.permissions.query({ name: "notifications" as PermissionName }).then((status) => {
+      if (cancelled) return
+      status.onchange = () => {
+        if (cancelled || status.state !== "granted") return
+        setWatching(false)
+        handleSubscribe()
+      }
+    })
+
+    return () => { cancelled = true }
+  }, [show, permission])
 
   async function handleSubscribe() {
     setLoading(true)
@@ -235,11 +245,18 @@ export function PushSubscriptionDialog() {
                   </span>
                   <div className="text-xs text-muted-foreground space-y-0.5 min-w-0">
                     <p className="font-medium text-foreground">{step.title}</p>
-                    <p className="text-[10px]">{step.detail}</p>
+                    {step.detail && <p className="text-[10px]">{step.detail}</p>}
                   </div>
                 </div>
               ))}
             </div>
+
+            {watching && (
+              <div className="flex items-center justify-center gap-2 text-[11px] text-emerald-600 bg-emerald-500/5 rounded-lg px-3 py-2">
+                <span className="size-2 rounded-full bg-emerald-500 animate-pulse" />
+                Détection automatique activée&nbsp;: dès que vous autoriserez, l&apos;activation se fera sans rechargement
+              </div>
+            )}
 
             <div className="flex gap-2">
               <Button
@@ -249,13 +266,6 @@ export function PushSubscriptionDialog() {
                 className="flex-1 h-10 text-xs"
               >
                 Plus tard
-              </Button>
-              <Button
-                size="sm"
-                className="flex-1 h-10 text-xs gap-1.5"
-                onClick={() => window.location.reload()}
-              >
-                <RefreshCw className="size-3.5" /> Recharger la page
               </Button>
             </div>
           </div>
