@@ -179,9 +179,6 @@ export default function NotificationsPage() {
             tag: "test-notification",
           })
           setTimeout(() => n.close(), 6000)
-        } else if (typeof window !== "undefined") {
-          // Fallback : alerte navigateur simple
-          alert("Test : votre navigateur ne supporte pas les notifications système.\n\nSon joué : " + selectedSound)
         }
       } catch {
         // silencieux
@@ -189,6 +186,10 @@ export default function NotificationsPage() {
         setTimeout(() => setTestRunning(false), 1000)
       }
     }, 100)
+  }
+
+  function testSoundOnly() {
+    playSound(selectedSound)
   }
 
   const fetchNotifications = useCallback(async (loadMore = false) => {
@@ -213,17 +214,27 @@ export default function NotificationsPage() {
     }
   }, [])
 
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/dashboard/notifications?page=${pageRef.current}&limit=10`)
+      if (!res.ok) return
+      const data = await res.json()
+      setNotifications(data.notifications)
+      setHasMore(pageRef.current < data.pagination.totalPages)
+      setUnreadCount(data.unreadCount)
+    } catch { /* silent refresh */ }
+  }, [])
+
   async function loadMore() {
     setLoadingMore(true)
     await fetchNotifications(true)
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
+    const interval = setInterval(refreshNotifications, 30000)
     return () => clearInterval(interval)
-  }, [fetchNotifications])
+  }, [fetchNotifications, refreshNotifications])
 
   async function markAsRead(id: string) {
     try {
@@ -236,8 +247,15 @@ export default function NotificationsPage() {
   }
 
   async function markAllAsRead() {
-    const unread = notifications.filter((n) => !n.readAt)
-    await Promise.all(unread.map((n) => markAsRead(n.id)))
+    try {
+      const res = await fetch("/api/dashboard/notifications/read-all", { method: "PUT" })
+      if (!res.ok) return
+      const { count } = await res.json()
+      setNotifications((prev) =>
+        prev.map((n) => (n.readAt ? n : { ...n, readAt: new Date().toISOString() }))
+      )
+      setUnreadCount((prev) => Math.max(0, prev - count))
+    } catch {}
   }
 
   async function deleteNotification(id: string) {
@@ -373,7 +391,7 @@ export default function NotificationsPage() {
                       {testRunning ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <TestTube2 className="size-3.5 mr-1.5" />}
                       Tester une notification
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={testNotification} disabled={testRunning}>
+                    <Button size="sm" variant="ghost" onClick={testSoundOnly}>
                       <Volume2 className="size-3.5 mr-1.5" />
                       Tester le son
                     </Button>
