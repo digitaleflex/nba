@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { BellRing, Loader2, X, Volume2, Zap } from "lucide-react"
+import { BellRing, Loader2, X, Volume2, Zap, ShieldAlert, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "@nba/design-system"
 
 const SW_URL = "/sw.js"
 const STORAGE_KEY = "nba-push-dialog-seen"
@@ -23,13 +23,14 @@ export function PushSubscriptionDialog() {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
+  const [permission, setPermission] = useState<NotificationPermission | null>(null)
 
   useEffect(() => {
     if (typeof window === "undefined") return
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) return
-    if (Notification.permission === "denied") return
 
-    // Déjà abonné ? On ne montre rien.
+    setPermission(Notification.permission)
+
     navigator.serviceWorker
       .getRegistration(SW_URL)
       .then((reg) => (reg ? reg.pushManager.getSubscription() : null))
@@ -41,7 +42,6 @@ export function PushSubscriptionDialog() {
         const newCount = count + 1
         localStorage.setItem("nba-visit-count", String(newCount))
 
-        // Affiche au 3e chargement, puis tous les 5 chargements suivants
         if (seen < 2 && newCount >= 3) {
           setShow(true)
           localStorage.setItem(STORAGE_KEY, String(seen + 1))
@@ -61,9 +61,14 @@ export function PushSubscriptionDialog() {
       const reg = await navigator.serviceWorker.register(SW_URL)
       await navigator.serviceWorker.ready
 
+      if (Notification.permission === "denied") {
+        setLoading(false)
+        return
+      }
+
       const perm = await Notification.requestPermission()
+      setPermission(perm)
       if (perm !== "granted") {
-        toast.error("Veuillez autoriser les notifications dans les paramètres de votre navigateur.")
         setLoading(false)
         return
       }
@@ -134,6 +139,47 @@ export function PushSubscriptionDialog() {
             <p className="text-xs text-muted-foreground">
               Vous serez alerté dès qu&apos;un nouveau signal est publié.
             </p>
+          </div>
+        ) : permission === "denied" ? (
+          <div className="p-6 text-center space-y-4">
+            <div className="mx-auto size-14 rounded-full bg-amber-500/10 flex items-center justify-center ring-4 ring-amber-500/20">
+              <ShieldAlert className="size-7 text-amber-500" />
+            </div>
+            <p className="text-sm font-bold text-foreground">Notifications bloquées par le navigateur</p>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              Pour activer les notifications, autorisez ce site dans les paramètres de votre navigateur&nbsp;:
+            </p>
+            <ol className="text-left text-xs text-muted-foreground space-y-1.5">
+              <li className="flex items-start gap-2">
+                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <span>Cliquez sur l&apos;icône <span className="font-mono text-[10px] bg-muted px-1 rounded">🔒</span> dans la barre d&apos;adresse</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <span>Activez <strong>Notifications</strong> → <strong>Autoriser</strong></span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                <span>Rechargez la page</span>
+              </li>
+            </ol>
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShow(false)}
+                className="flex-1 h-10 text-xs"
+              >
+                Plus tard
+              </Button>
+              <Button
+                size="sm"
+                className="flex-1 h-10 text-xs gap-1.5"
+                onClick={() => window.location.reload()}
+              >
+                <RefreshCw className="size-3.5" /> Recharger
+              </Button>
+            </div>
           </div>
         ) : (
           <>
