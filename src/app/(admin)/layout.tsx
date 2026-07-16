@@ -7,7 +7,6 @@ import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { MobilePageTitle } from "@nba/app/components/mobile-page-title"
 import { AdminHeader } from "./admin/components/admin-header"
 import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
-import { Toaster } from "sonner"
 import { ErrorBoundary } from "@nba/app/components/error-boundary"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -56,7 +55,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Mobile Bottom Navigation Bar */}
       <MobileBottomNav isAdmin={true} user={user} />
       </div>
-      <Toaster richColors position="top-center" />
     </MessagingUnreadProvider>
   )
 }

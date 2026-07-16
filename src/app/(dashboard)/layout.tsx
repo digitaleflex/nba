@@ -3,7 +3,6 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import Link from "next/link"
 import { User, Bell } from "lucide-react"
-import { Toaster } from "sonner"
 import { Sidebar } from "@nba/app/components/sidebar"
 import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
@@ -64,7 +63,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <NotificationBell />
+              <Link
+                href="/dashboard/notifications"
+                className="relative p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-neutral-100 dark:hover:bg-neutral-900 transition-colors"
+                title="Notifications"
+              >
+                <Bell className="size-4" />
+              </Link>
               <Link href="/dashboard/profile" title="Modifier mon profil">
                 <div className="size-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
                   <User className="size-3.5 text-primary" />
@@ -81,8 +86,6 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile Bottom Navigation Bar */}
         <MobileBottomNav isAdmin={false} user={user} />
       </div>
-
-      <Toaster richColors position="top-right" />
     </MessagingUnreadProvider>
   )
 }

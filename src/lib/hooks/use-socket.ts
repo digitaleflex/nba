@@ -95,13 +95,25 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     })
 
     socket.on("disconnect", (reason) => {
-      setStatus("disconnected")
-      onDisconnectRef.current?.(reason)
+      if (reason !== "io client disconnect") {
+        // Socket.IO va tenter une reconnexion automatique
+        onDisconnectRef.current?.(reason)
+      } else {
+        setStatus("disconnected")
+        onDisconnectRef.current?.(reason)
+      }
     })
 
     socket.on("connect_error", (err) => {
-      setStatus("error")
       console.warn("[useSocket] connect_error:", err.message)
+    })
+
+    socket.io.on("reconnect_attempt", () => {
+      setStatus("connecting")
+    })
+
+    socket.io.on("reconnect_failed", () => {
+      setStatus("error")
     })
 
     socket.on("notification", (data: unknown) => {
@@ -117,7 +129,10 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   useEffect(() => {
     connect()
     return () => {
-      socketRef.current?.disconnect()
+      if (socketRef.current) {
+        socketRef.current.removeAllListeners()
+        socketRef.current.disconnect()
+      }
       socketRef.current = null
     }
   }, [connect])
@@ -128,7 +143,6 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
     }
     handlersRef.current.get(event)!.add(handler as (data: unknown) => void)
 
-    // Si on a déjà un socket connecté, on ajoute le listener
     if (socketRef.current) {
       socketRef.current.on(event, handler as (...args: unknown[]) => void)
     }
@@ -144,9 +158,13 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   }, [])
 
   const reconnect = useCallback(() => {
-    socketRef.current?.disconnect()
-    socketRef.current?.connect()
-  }, [])
+    if (socketRef.current) {
+      socketRef.current.removeAllListeners()
+      socketRef.current.disconnect()
+    }
+    socketRef.current = null
+    connect()
+  }, [connect])
 
   return { status, socket: socketRef, subscribe, emit, reconnect }
 }

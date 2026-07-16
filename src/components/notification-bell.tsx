@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { Bell, Loader2, CheckCheck, Clock, Wifi, WifiOff } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { useSocket } from "@nba/lib/hooks/use-socket";
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound";
 
@@ -71,6 +72,13 @@ export function NotificationBell() {
       if (cacheRef.current) cacheRef.current = null
       setUnreadCount((c) => c + 1)
       playSound()
+      toast(n.title, {
+        description: n.body,
+        duration: 5000,
+        action: n.data?.linkUrl
+          ? { label: "Voir", onClick: () => window.open(n.data!.linkUrl, "_blank") }
+          : undefined,
+      })
     },
     onDisconnect: () => {
       wsActiveRef.current = false
@@ -106,6 +114,16 @@ export function NotificationBell() {
         topId !== prevTop
       ) {
         playSound()
+        const newNotif = data.notifications[0]
+        if (newNotif) {
+          toast(newNotif.title, {
+            description: newNotif.body,
+            duration: 5000,
+            action: newNotif.data?.linkUrl
+              ? { label: "Voir", onClick: () => window.open(newNotif.data!.linkUrl, "_blank") }
+              : undefined,
+          })
+        }
       }
       setUnreadCount(data.unreadCount);
     } catch {
