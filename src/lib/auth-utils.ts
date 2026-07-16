@@ -67,5 +67,9 @@ export function handleAuthError(error: unknown) {
       { status: 400 },
     )
   }
-  throw error
+  console.error("[auth-utils] Unexpected error:", error)
+  return NextResponse.json(
+    { error: error instanceof Error ? error.message : "Erreur interne du serveur" },
+    { status: 500 },
+  )
 }
