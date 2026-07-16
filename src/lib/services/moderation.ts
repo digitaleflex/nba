@@ -1,4 +1,5 @@
 import { prisma } from "@nba/lib/db"
+import { hardDeleteUser } from "./user-deletion"
 
 interface BannedEmail {
   email: string
@@ -42,21 +43,13 @@ export async function banEmail(entry: {
 
   await setBannedEmails(emails)
 
-  // Soft-delete user + revoke sessions
-  await prisma.user.updateMany({
-    where: { email: entry.email.toLowerCase() },
-    data: { deletedAt: new Date(), isActive: false },
-  })
-
+  // Hard-delete user + all dependent records
   const users = await prisma.user.findMany({
     where: { email: entry.email.toLowerCase() },
     select: { id: true },
   })
   for (const u of users) {
-    await prisma.$transaction([
-      prisma.session.deleteMany({ where: { userId: u.id } }),
-      prisma.account.deleteMany({ where: { userId: u.id } }),
-    ])
+    await hardDeleteUser(prisma, u.id)
   }
 
   await prisma.auditLog.create({

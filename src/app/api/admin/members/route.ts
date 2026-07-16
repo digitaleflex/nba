@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 
 export async function GET(request: NextRequest) {
   try {
@@ -197,14 +198,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
     }
 
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: userId },
-        data: { deletedAt: new Date(), isActive: false },
-      }),
-      prisma.session.deleteMany({ where: { userId } }),
-      prisma.account.deleteMany({ where: { userId } }),
-    ])
+    await hardDeleteUser(prisma, userId)
 
     await logAuditEvent({
       userId: session.user.id,
@@ -212,7 +206,7 @@ export async function DELETE(request: NextRequest) {
       resourceType: "user",
       resourceId: userId,
       details: {
-        softDelete: true,
+        hardDelete: true,
         userName: user.name,
         userEmail: user.email,
       },

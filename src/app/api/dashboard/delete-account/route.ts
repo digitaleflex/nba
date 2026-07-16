@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
@@ -52,19 +53,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
     }
 
-    // Soft delete + deactivate + delete sessions + remove password credentials
-    await prisma.$transaction([
-      prisma.user.update({
-        where: { id: session.user.id },
-        data: { deletedAt: new Date(), isActive: false },
-      }),
-      prisma.session.deleteMany({
-        where: { userId: session.user.id },
-      }),
-      prisma.account.deleteMany({
-        where: { userId: session.user.id },
-      }),
-    ])
+    // Hard delete (removes user + all dependent records)
+    await hardDeleteUser(prisma, session.user.id)
 
     // Audit log + cache invalidation (non-blocking)
     Promise.all([
