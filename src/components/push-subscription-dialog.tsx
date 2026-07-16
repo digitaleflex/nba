@@ -1,12 +1,84 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import { BellRing, Loader2, X, Volume2, Zap, ShieldAlert, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button } from "@nba/design-system"
 
 const SW_URL = "/sw.js"
 const STORAGE_KEY = "nba-push-dialog-seen"
+
+type BrowserInfo = {
+  name: string
+  icon: string
+  steps: { title: string; detail: string }[]
+}
+
+function detectBrowser(): BrowserInfo {
+  if (typeof window === "undefined") {
+    return { name: "Navigateur", icon: "🌐", steps: [] }
+  }
+  const ua = navigator.userAgent
+
+  if (ua.includes("Edg")) {
+    return {
+      name: "Microsoft Edge",
+      icon: "🌐",
+      steps: [
+        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
+        { title: "Cliquez sur « Autorisations du site »", detail: "Un panneau s'ouvre" },
+        { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
+      ],
+    }
+  }
+
+  if (ua.includes("Firefox")) {
+    return {
+      name: "Firefox",
+      icon: "🦊",
+      steps: [
+        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
+        { title: "Cliquez sur « Paramètres de connexion »", detail: "Ou « Plus d'informations »" },
+        { title: "Dans « Permissions », cherchez « Notifications »", detail: "Décochez « Bloquer les notifications »" },
+      ],
+    }
+  }
+
+  if (ua.includes("OPR") || ua.includes("Opera")) {
+    return {
+      name: "Opera",
+      icon: "🎭",
+      steps: [
+        { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
+        { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
+        { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
+      ],
+    }
+  }
+
+  if (ua.includes("Safari") && !ua.includes("Chrome")) {
+    return {
+      name: "Safari",
+      icon: "🧭",
+      steps: [
+        { title: "Dans la barre de menu, cliquez sur « Safari »", detail: "En haut de l'écran" },
+        { title: "Choisissez « Réglages… » puis l'onglet « Sites web »", detail: "Une fenêtre s'ouvre" },
+        { title: "Dans la colonne de gauche, cliquez sur « Notifications »", detail: "Trouvez ce site et choisissez « Autoriser »" },
+      ],
+    }
+  }
+
+  // Chrome / Brave / Chromium par défaut
+  return {
+    name: "Chrome",
+    icon: "▶️",
+    steps: [
+      { title: "Cliquez sur l'icône 🔒 dans la barre d'adresse", detail: "À gauche de l'URL" },
+      { title: "Cliquez sur « Paramètres du site »", detail: "Un panneau s'ouvre" },
+      { title: "À côté de « Notifications », sélectionnez « Autoriser »", detail: "Puis rechargez la page" },
+    ],
+  }
+}
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
@@ -24,6 +96,7 @@ export function PushSubscriptionDialog() {
   const [loading, setLoading] = useState(false)
   const [done, setDone] = useState(false)
   const [permission, setPermission] = useState<NotificationPermission | null>(null)
+  const browser = useMemo(() => detectBrowser(), [])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -149,46 +222,23 @@ export function PushSubscriptionDialog() {
             <div className="space-y-1">
               <p className="text-sm font-bold text-foreground">Notifications bloquées</p>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-xs mx-auto">
-                Vous avez déjà refusé les notifications pour ce site.
-                Pas d&apos;inquiétude, vous pouvez les réactiver en 3 étapes&nbsp;:
+                {browser.name} a bloqué les notifications pour ce site.
+                Suivez ces étapes pour les réactiver&nbsp;:
               </p>
             </div>
 
-            <div className="rounded-xl bg-muted/40 p-4 text-left space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
-                  <p className="font-medium text-foreground">Repérez l&apos;icône dans la barre d&apos;adresse</p>
-                  <div className="flex items-center gap-1.5 bg-background rounded-lg border border-border px-3 py-2 text-[11px] font-mono">
-                    <span className="size-3.5 flex items-center justify-center text-[10px]">🔒</span>
-                    <span className="text-muted-foreground">https://</span>
-                    <span className="text-foreground">access.signauxx.com</span>
+            <div className="rounded-xl bg-muted/40 p-4 text-left space-y-4">
+              {browser.steps.map((step, i) => (
+                <div key={i} className="flex items-start gap-3">
+                  <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <div className="text-xs text-muted-foreground space-y-0.5 min-w-0">
+                    <p className="font-medium text-foreground">{step.title}</p>
+                    <p className="text-[10px]">{step.detail}</p>
                   </div>
                 </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
-                  <p className="font-medium text-foreground">Cliquez dessus et ouvrez les paramètres du site</p>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    <span className="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[10px]">
-                      Notifications <span className="text-destructive">Bloquées</span>
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[10px]">
-                      → <span className="text-emerald-600 font-medium">Autoriser</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
-                  <p className="font-medium text-foreground">Rechargez la page pour appliquer</p>
-                  <p className="text-[10px]">Cliquez sur le bouton ci-dessous une fois le paramètre modifié.</p>
-                </div>
-              </div>
+              ))}
             </div>
 
             <div className="flex gap-2">
