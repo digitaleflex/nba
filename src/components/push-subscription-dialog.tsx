@@ -141,29 +141,57 @@ export function PushSubscriptionDialog() {
             </p>
           </div>
         ) : permission === "denied" ? (
-          <div className="p-6 text-center space-y-4">
+          <div className="p-6 text-center space-y-5">
             <div className="mx-auto size-14 rounded-full bg-amber-500/10 flex items-center justify-center ring-4 ring-amber-500/20">
               <ShieldAlert className="size-7 text-amber-500" />
             </div>
-            <p className="text-sm font-bold text-foreground">Notifications bloquées par le navigateur</p>
-            <p className="text-xs text-muted-foreground leading-relaxed">
-              Pour activer les notifications, autorisez ce site dans les paramètres de votre navigateur&nbsp;:
-            </p>
-            <ol className="text-left text-xs text-muted-foreground space-y-1.5">
-              <li className="flex items-start gap-2">
-                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
-                <span>Cliquez sur l&apos;icône <span className="font-mono text-[10px] bg-muted px-1 rounded">🔒</span> dans la barre d&apos;adresse</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
-                <span>Activez <strong>Notifications</strong> → <strong>Autoriser</strong></span>
-              </li>
-              <li className="flex items-start gap-2">
-                <span className="size-4 rounded-full bg-muted text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
-                <span>Rechargez la page</span>
-              </li>
-            </ol>
-            <div className="flex gap-2 pt-2">
+
+            <div className="space-y-1">
+              <p className="text-sm font-bold text-foreground">Notifications bloquées</p>
+              <p className="text-xs text-muted-foreground leading-relaxed max-w-xs mx-auto">
+                Vous avez déjà refusé les notifications pour ce site.
+                Pas d&apos;inquiétude, vous pouvez les réactiver en 3 étapes&nbsp;:
+              </p>
+            </div>
+
+            <div className="rounded-xl bg-muted/40 p-4 text-left space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">1</span>
+                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
+                  <p className="font-medium text-foreground">Repérez l&apos;icône dans la barre d&apos;adresse</p>
+                  <div className="flex items-center gap-1.5 bg-background rounded-lg border border-border px-3 py-2 text-[11px] font-mono">
+                    <span className="size-3.5 flex items-center justify-center text-[10px]">🔒</span>
+                    <span className="text-muted-foreground">https://</span>
+                    <span className="text-foreground">access.signauxx.com</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">2</span>
+                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
+                  <p className="font-medium text-foreground">Cliquez dessus et ouvrez les paramètres du site</p>
+                  <div className="flex flex-wrap gap-1.5 mt-1">
+                    <span className="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[10px]">
+                      Notifications <span className="text-destructive">Bloquées</span>
+                    </span>
+                    <span className="inline-flex items-center gap-1 rounded bg-background border border-border px-2.5 py-1 text-[10px]">
+                      → <span className="text-emerald-600 font-medium">Autoriser</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <span className="size-5 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">3</span>
+                <div className="text-xs text-muted-foreground space-y-1 min-w-0">
+                  <p className="font-medium text-foreground">Rechargez la page pour appliquer</p>
+                  <p className="text-[10px]">Cliquez sur le bouton ci-dessous une fois le paramètre modifié.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -177,7 +205,7 @@ export function PushSubscriptionDialog() {
                 className="flex-1 h-10 text-xs gap-1.5"
                 onClick={() => window.location.reload()}
               >
-                <RefreshCw className="size-3.5" /> Recharger
+                <RefreshCw className="size-3.5" /> Recharger la page
               </Button>
             </div>
           </div>
