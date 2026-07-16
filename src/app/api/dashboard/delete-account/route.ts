@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
+import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function DELETE(request: Request) {
   try {
@@ -56,6 +57,15 @@ export async function DELETE(request: Request) {
         where: { userId: session.user.id },
       }),
     ])
+
+    // Audit log (non-blocking)
+    logAuditEvent({
+      userId: session.user.id,
+      action: "DELETE",
+      resourceType: "user",
+      resourceId: session.user.id,
+      details: { selfService: true, userEmail: user.email },
+    }).catch(() => {})
 
     // Send confirmation email (non-blocking)
     sendAccountDeletionEmail(user).catch((err) =>
