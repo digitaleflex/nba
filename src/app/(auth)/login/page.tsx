@@ -28,6 +28,17 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
+      // Vérifier si le compte est banni/supprimé avant d'envoyer les identifiants
+      const statusRes = await fetch(`/api/auth/check-login?email=${encodeURIComponent(email)}`)
+      if (statusRes.ok) {
+        const status = await statusRes.json()
+        if (status.status !== "ok") {
+          setError(status.message)
+          setLoading(false)
+          return
+        }
+      }
+
       // Fetch direct vers l'API Better Auth (le client authClient avait des soucis de navigation)
       const res = await fetch("/api/auth/sign-in/email", {
         method: "POST",
