@@ -10,6 +10,7 @@ services:
       target: runner
       args:
         NEXT_PUBLIC_APP_URL: "https://access.signauxx.com"
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: "${NEXT_PUBLIC_VAPID_PUBLIC_KEY}"
     networks:
       - nba
       - proxy

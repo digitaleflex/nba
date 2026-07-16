@@ -87,7 +87,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
     const confirmed = confirm(
       `Supprimer définitivement ce membre ?\n\n` +
       `L'utilisateur perdra définitivement toutes ses données, accès aux signaux et à son compte. ` +
-      `Cette action ne peut être annulée."
+      `Cette action ne peut être annulée.`
     )
     if (!confirmed) return
 
@@ -113,7 +113,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       `Bannir ${email} ?\n\n` +
       `Ce compte sera définitivement supprimé et l'email blacklisté.\n` +
       `L'utilisateur ne pourra plus se connecter sous aucun nom.\n\n` +
-      `Cette action est permanente et irréversible."
+      `Cette action est permanente et irréversible.`
     )
     if (!confirmed) return
 
@@ -143,7 +143,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       `Révoquer toutes les sessions de ce membre ?\n\n` +
       `L'utilisateur sera déconnecté de toutes les sessions actives. ` +
       `Il devra se reconnecter pour utiliser le compte.\n\n` +
-      `Session active : ${new Date().toLocaleString("fr-FR")}"
+      `Session active : ${new Date().toLocaleString("fr-FR")}`
     )
     if (!confirmed) return
 

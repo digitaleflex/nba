@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { toast } from "sonner"
 import { Button } from "@nba/design-system"
 import { Bell, BellOff, Loader2 } from "lucide-react"
 
@@ -64,6 +65,7 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
       const perm = await Notification.requestPermission()
       setPermission(perm)
       if (perm !== "granted") {
+        toast.error("Veuillez autoriser les notifications dans les paramètres de votre navigateur.")
         setLoading(false)
         return
       }
@@ -72,6 +74,7 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if (!vapidKey) {
         console.error("VAPID public key not configured")
+        toast.error("Configuration des notifications incomplète (clé VAPID manquante).")
         setLoading(false)
         return
       }
@@ -94,12 +97,15 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
       })
 
       if (res.ok) {
+        toast.success("Notifications activées avec succès !")
         setSubscribed(true)
       } else {
         await sub.unsubscribe()
+        toast.error("Échec de l&apos;activation côté serveur. Veuillez réessayer.")
       }
     } catch (err) {
       console.error("Push subscription failed:", err)
+      toast.error("Impossible d&apos;activer les notifications. Vérifiez que votre navigateur supporte les notifications push.")
     } finally {
       setLoading(false)
     }

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { BellRing, Loader2, X, Volume2, Zap } from "lucide-react"
+import { toast } from "sonner"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
 
 const SW_URL = "/sw.js"
@@ -62,12 +63,14 @@ export function PushSubscriptionDialog() {
 
       const perm = await Notification.requestPermission()
       if (perm !== "granted") {
+        toast.error("Veuillez autoriser les notifications dans les paramètres de votre navigateur.")
         setLoading(false)
         return
       }
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
       if (!vapidKey) {
+        toast.error("Configuration des notifications incomplète (clé VAPID manquante).")
         setLoading(false)
         return
       }
@@ -89,13 +92,16 @@ export function PushSubscriptionDialog() {
       })
 
       if (res.ok) {
+        toast.success("Notifications activées avec succès !")
         setDone(true)
         setTimeout(() => setShow(false), 2000)
       } else {
         await sub.unsubscribe()
+        toast.error("Échec de l&apos;activation côté serveur. Veuillez réessayer.")
       }
     } catch (err) {
       console.error("Push subscription failed:", err)
+      toast.error("Impossible d&apos;activer les notifications. Vérifiez que votre navigateur supporte les notifications push.")
     } finally {
       setLoading(false)
     }
