@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const pushSubscribeRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
 interface SubscribeBody {
   endpoint: string
@@ -15,6 +18,9 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
+
+    const rateLimitRes = await pushSubscribeRateLimit(req, `push-subscribe:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body: SubscribeBody = await req.json()
     if (!body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {

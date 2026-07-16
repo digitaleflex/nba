@@ -30,7 +30,7 @@ export async function getOnboardingState(
   userId: string,
 ): Promise<OnboardingState> {
   const [user, lastKyc, lastBroker] = await Promise.all([
-    prisma.user.findUniqueOrThrow({
+    prisma.user.findUnique({
       where: { id: userId },
       select: {
         emailVerified: true,
@@ -45,7 +45,10 @@ export async function getOnboardingState(
       where: { userId },
       orderBy: { createdAt: "desc" },
     }),
-  ]);
+  ])
+  if (!user) {
+    throw new Error("Utilisateur introuvable")
+  }
 
   const checklist: OnboardingChecklist = {
     emailVerified: user.emailVerified,

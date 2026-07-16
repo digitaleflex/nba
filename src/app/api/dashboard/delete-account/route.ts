@@ -4,13 +4,20 @@ import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const deleteAccountRateLimit = rateLimitMiddleware({ window: 3600, max: 2 })
 
 export async function DELETE(request: Request) {
   try {
+    const requestClone = request.clone()
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
+
+    const rateLimitRes = await deleteAccountRateLimit(requestClone, `delete-account:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
     const { password } = body

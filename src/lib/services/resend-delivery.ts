@@ -4,7 +4,16 @@ import { prisma } from "@nba/lib/db"
 // In-memory cache to avoid hammering the Resend API on every Tracker load.
 // Keyed by Resend message id, with a short TTL.
 const CACHE_TTL_MS = 60_000
+const CACHE_MAX_SIZE = 500
 const cache = new Map<string, { status: ResendEmailStatus | null; ts: number }>()
+
+function setCache(key: string, entry: { status: ResendEmailStatus | null; ts: number }) {
+  if (cache.size >= CACHE_MAX_SIZE) {
+    const firstKey = cache.keys().next().value
+    if (firstKey !== undefined) cache.delete(firstKey)
+  }
+  cache.set(key, entry)
+}
 
 export interface ResendEmailStatus {
   id: string
@@ -37,21 +46,21 @@ export async function getResendEmailStatus(
   const resend = getResend()
   if (!resend) {
     // No API key configured (e.g. local dev): we cannot fetch real status.
-    cache.set(externalId, { status: null, ts: Date.now() })
+    setCache(externalId, { status: null, ts: Date.now() })
     return null
   }
 
   try {
     const { data, error } = await resend.emails.get(externalId)
     if (error) {
-      cache.set(externalId, { status: null, ts: Date.now() })
+      setCache(externalId, { status: null, ts: Date.now() })
       return null
     }
     const status = data as unknown as ResendEmailStatus
-    cache.set(externalId, { status, ts: Date.now() })
+    setCache(externalId, { status, ts: Date.now() })
     return status
   } catch {
-    cache.set(externalId, { status: null, ts: Date.now() })
+    setCache(externalId, { status: null, ts: Date.now() })
     return null
   }
 }
@@ -155,7 +164,7 @@ export async function getResendStatusMap(
   const resend = getResend()
   if (!resend) {
     // No API key: cannot fetch real statuses.
-    for (const id of missing) cache.set(id, { status: null, ts: Date.now() })
+    for (const id of missing) setCache(id, { status: null, ts: Date.now() })
     return map
   }
 
@@ -165,7 +174,7 @@ export async function getResendStatusMap(
     if (!error && data) {
       for (const e of (data as unknown as any[])) {
         if (!e?.id || cache.has(e.id)) continue
-        cache.set(e.id, { status: e as unknown as ResendEmailStatus, ts: Date.now() })
+        setCache(e.id, { status: e as unknown as ResendEmailStatus, ts: Date.now() })
       }
     }
   } catch {
@@ -178,9 +187,9 @@ export async function getResendStatusMap(
     stillMissing.map(async (id) => {
       try {
         const { data, error } = await resend.emails.get(id)
-        cache.set(id, { status: error ? null : (data as unknown as ResendEmailStatus), ts: Date.now() })
+        setCache(id, { status: error ? null : (data as unknown as ResendEmailStatus), ts: Date.now() })
       } catch {
-        cache.set(id, { status: null, ts: Date.now() })
+        setCache(id, { status: null, ts: Date.now() })
       }
     }),
   )

@@ -1,5 +1,5 @@
-import { SignalsView } from "./components/signals-view"
+import { redirect } from "next/navigation"
 
 export default function SignalsPage() {
-  return <SignalsView />
+  redirect("/dashboard/signals")
 }

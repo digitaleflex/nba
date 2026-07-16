@@ -4,6 +4,9 @@ import { getServerSession } from "@nba/lib/get-session"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { Resend } from "resend"
 import { supportTicketEmail } from "@nba/lib/email"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const supportRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,6 +14,9 @@ export async function POST(req: NextRequest) {
     if (!session) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
     }
+
+    const rateLimitRes = await supportRateLimit(req, `support:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const { subject, message } = await req.json()
 

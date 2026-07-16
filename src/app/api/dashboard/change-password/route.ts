@@ -3,13 +3,20 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { notify, sendEmailSync } from "@nba/lib/services/notifications"
 import { passwordChangedEmail } from "@nba/lib/email"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const passwordChangeRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
 export async function PUT(request: Request) {
   try {
+    const requestClone = request.clone()
     const session = await getServerSession()
     if (!session) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
+
+    const rateLimitRes = await passwordChangeRateLimit(requestClone, `password-change:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
     const { currentPassword, newPassword } = body
