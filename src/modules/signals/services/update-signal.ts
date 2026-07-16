@@ -1,16 +1,16 @@
 import { prisma } from "@nba/lib/db"
-import { signalCreateSchema } from "../validators/signal-schema"
+import { signalUpdateSchema } from "../validators/signal-schema"
 import { AuthError } from "@nba/lib/auth-utils"
 import { SignalPolicy } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
 
 export interface UpdateSignalInput {
-  content: string
+  content?: string
   imageUrl?: string | null
   imageUrls?: string[]
-  planIds: string[]
-  status: "DRAFT" | "PUBLISHED"
+  planIds?: string[]
+  status?: "DRAFT" | "PUBLISHED" | "ARCHIVED"
   scheduledAt?: string | null
 }
 
@@ -30,11 +30,11 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     throw new AuthError("Accès refusé", 403)
   }
 
-  const parsed = signalCreateSchema.parse(input)
+  const parsed = signalUpdateSchema.parse(input)
 
   // 2. Handle scheduled publishing / BullMQ job management
   const isScheduled = !!parsed.scheduledAt && new Date(parsed.scheduledAt).getTime() > Date.now()
-  const nextStatus = isScheduled ? "DRAFT" : parsed.status
+  const nextStatus = isScheduled ? "DRAFT" : (parsed.status ?? signal.status)
 
   // Cancel existing BullMQ job if any
   if (signal.jobId) {
@@ -52,29 +52,37 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
   const nextVersion = signal.currentVersion + 1
 
   // Handle first image legacy url
-  const legacyImageUrl = parsed.imageUrls && parsed.imageUrls.length > 0
-    ? parsed.imageUrls[0]
-    : (parsed.imageUrl || null)
+  const existingImageUrls = (signal.imageUrls as string[]) ?? []
+  const imageUrls = parsed.imageUrls ?? existingImageUrls
+  const legacyImageUrl = imageUrls.length > 0
+    ? imageUrls[0]
+    : (parsed.imageUrl ?? signal.imageUrl ?? null)
 
-  // 3. Update the database record
+  // 3. Build update data
+  const updateData: Record<string, unknown> = {
+    currentVersion: nextVersion,
+  }
+
+  if (parsed.content !== undefined) updateData.content = parsed.content
+  if (parsed.imageUrl !== undefined) updateData.imageUrl = parsed.imageUrl
+  if (parsed.imageUrls !== undefined) updateData.imageUrls = parsed.imageUrls
+  updateData.status = nextStatus
+  updateData.publishedAt = (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : signal.publishedAt
+  if (parsed.scheduledAt !== undefined) {
+    updateData.scheduledAt = isScheduled ? new Date(parsed.scheduledAt!) : null
+  }
+  updateData.jobId = null
+
+  if (parsed.planIds !== undefined) {
+    updateData.audience = {
+      deleteMany: {},
+      create: parsed.planIds.map((planId: string) => ({ planId })),
+    }
+  }
+
   const updatedSignal = await prisma.signal.update({
     where: { id },
-    data: {
-      content: parsed.content,
-      imageUrl: legacyImageUrl,
-      imageUrls: parsed.imageUrls || [],
-      status: nextStatus,
-      publishedAt: (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : signal.publishedAt,
-      scheduledAt: isScheduled ? new Date(parsed.scheduledAt!) : null,
-      jobId: null, // will be populated below if scheduled
-      currentVersion: nextVersion,
-      audience: {
-        deleteMany: {}, // Clear old audience plans
-        create: parsed.planIds.map((planId) => ({
-          planId,
-        })),
-      },
-    },
+    data: updateData,
     include: {
       audience: {
         include: {
@@ -84,16 +92,18 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     },
   })
 
-  // 4. Create new SignalVersion history entry
-  await prisma.signalVersion.create({
-    data: {
-      signalId: signal.id,
-      version: nextVersion,
-      content: parsed.content,
-      imageUrls: parsed.imageUrls || [],
-      updatedBy: userId,
-    },
-  })
+  // 4. Create new SignalVersion history entry (only if content changed)
+  if (parsed.content !== undefined) {
+    await prisma.signalVersion.create({
+      data: {
+        signalId: signal.id,
+        version: nextVersion,
+        content: parsed.content,
+        imageUrls: imageUrls,
+        updatedBy: userId,
+      },
+    })
+  }
 
   let queueFailed = false
   let newJobId: string | null = null

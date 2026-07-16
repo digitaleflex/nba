@@ -6,6 +6,7 @@ interface SignalPagination {
   page?: number
   limit?: number
   status?: string
+  search?: string
 }
 
 export async function getSignals(options: SignalPagination = {}) {
@@ -26,11 +27,12 @@ export async function getSignals(options: SignalPagination = {}) {
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
 
   if (isAdmin) {
-    const { page = 1, limit = 50, status } = options
+    const { page = 1, limit = 50, status, search } = options
     const skip = (page - 1) * limit
 
     const where: any = { deletedAt: null }
     if (status) where.status = status
+    if (search) where.content = { contains: search, mode: "insensitive" }
 
     const [signals, total] = await Promise.all([
       prisma.signal.findMany({

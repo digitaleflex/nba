@@ -12,9 +12,11 @@ export async function GET(req: NextRequest) {
     const page = Number(searchParams.get("page") ?? 1)
     const limit = Number(searchParams.get("limit") ?? 50)
     const status = searchParams.get("status") ?? undefined
+    const search = searchParams.get("search") ?? undefined
+    const cacheKey = `signals:${status ?? "all"}:${search ?? ""}:${page}:${limit}`
     const result = await getCached(
-      `signals:${status ?? "all"}:${page}:${limit}`,
-      () => getSignals({ page, limit, status }),
+      cacheKey,
+      () => getSignals({ page, limit, status, search }),
       15,
     )
     return NextResponse.json(result)
