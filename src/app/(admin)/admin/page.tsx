@@ -22,6 +22,7 @@ import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
 import { ModerationTab } from "./features/ModerationTab"
+import { FormationTab } from "./features/FormationTab"
 import { AdminTools } from "./components/admin-tools"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 
@@ -391,6 +392,7 @@ function AdminConsoleContent() {
                 { value: "audit", label: "Audit" },
                 { value: "security", label: "Sécurité" },
                 { value: "settings", label: "Paramètres" },
+                { value: "formation", label: "Formation" },
               ]},
             ]).flatMap((group, gi) => {
               const items: React.ReactNode[] = []
@@ -499,6 +501,10 @@ function AdminConsoleContent() {
 
         {activeTab === "audit" && (
           <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+        )}
+
+        {activeTab === "formation" && (
+          <FormationTab />
         )}
 
       </div>

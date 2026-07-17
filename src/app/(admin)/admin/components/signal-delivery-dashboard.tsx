@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Badge, cn } from "@nba/design-system"
 import { useSocket } from "@nba/lib/hooks/use-socket"
+import { InfoTooltip } from "./info-tooltip"
 
 interface ChannelStat {
   channel: string
@@ -66,8 +67,8 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
         }
         const data = (await res.json()) as DeliveryReport
         setReport(data)
-      } catch (err: any) {
-        setError(err?.message ?? "Erreur de chargement")
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : "Erreur de chargement")
       } finally {
         setLoading(false)
       }
@@ -112,8 +113,9 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
           Diffusion en temps réel
+          <InfoTooltip content="Tableau de bord live de l'envoi du signal vers chaque membre (email, push, telegram, whatsapp). Il se met à jour automatiquement à chaque accusé de réception ou d'échec renvoyé par les prestataires." />
         </span>
         <span className="flex items-center gap-1.5 text-[10px]">
           <span
@@ -127,10 +129,29 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
       </div>
 
       <div className="grid grid-cols-4 gap-2">
-        <Metric label="Destinataires" value={report.recipientCount} />
-        <Metric label="Délivrés" value={report.sent} tone="ok" />
-        <Metric label="Échecs" value={report.failed + report.bounced} tone={report.failed + report.bounced > 0 ? "bad" : "ok"} />
-        <Metric label="En attente" value={report.pending} tone="warn" />
+        <Metric
+          label="Destinataires"
+          value={report.recipientCount}
+          tip="Nombre de membres ciblés par ce signal (selon les groupes d'abonnement associés)."
+        />
+        <Metric
+          label="Délivrés"
+          value={report.sent}
+          tone="ok"
+          tip="Notifications confirmées comme bien arrivées chez le membre (email délivré, push accepté, etc.)."
+        />
+        <Metric
+          label="Échecs"
+          value={report.failed + report.bounced}
+          tone={report.failed + report.bounced > 0 ? "bad" : "ok"}
+          tip="Envois rejetés ou signalés : 'FAILED' = erreur d'envoi (boîte mail invalide, quota), 'BOUNCED' = email rejeté par le serveur destinataire ou marqué spam."
+        />
+        <Metric
+          label="En attente"
+          value={report.pending}
+          tone="warn"
+          tip="Notifications encore en cours de traitement (pas encore accusées de réception ni d'échec)."
+        />
       </div>
 
       <div className="space-y-2">
@@ -141,8 +162,19 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
           return (
             <div key={c.channel} className="space-y-1">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="font-medium text-foreground">
+                <span className="flex items-center gap-1 font-medium text-foreground">
                   {CHANNEL_LABELS[c.channel] || c.channel}
+                  <InfoTooltip
+                    side="left"
+                    content={
+                      {
+                        EMAIL: "Email envoyé via Resend. Le statut passe en 'délivré' quand le serveur du membre accepte le message.",
+                        PUSH: "Notification push navigateur/web (webhook interne). Échoue si le membre n'a pas autorisé les notifications.",
+                        TELEGRAM: "Message envoyé sur le chat Telegram du membre. Nécessite une liaison Telegram active dans son profil.",
+                        WHATSAPP: "Message envoyé sur WhatsApp du membre via l'API. Nécessite une liaison WhatsApp active.",
+                      }[c.channel] || "Canal de notification."
+                    }
+                  />
                 </span>
                 <span className="text-muted-foreground">
                   {c.sent}/{sum} ·{" "}
@@ -165,15 +197,17 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
       </div>
 
       {successRate < 100 && total > 0 && (
-        <p className="text-[10px] text-muted-foreground">
+        <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
           Taux de délivrance : <span className="text-foreground font-semibold">{successRate}%</span>
+          <InfoTooltip content="Pourcentage de notifications arrivées avec succès par rapport au total envoyé (délivrés ÷ total). Un taux < 100% indique des échecs à investiguer dans la section ci-dessous." />
         </p>
       )}
 
       {report.failures.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+          <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
             Échecs de livraison {report.failures.length >= 50 ? "(50 premiers)" : ""}
+            <InfoTooltip content="Liste des envois en erreur, avec l'email du membre et le motif renvoyé par le prestataire. Sert au support pour relancer ou corriger un abonnement." />
           </span>
           <div className="max-h-40 overflow-y-auto rounded-xl border divide-y">
             {report.failures.map((f, idx) => (
@@ -212,10 +246,12 @@ function Metric({
   label,
   value,
   tone = "neutral",
+  tip,
 }: {
   label: string
   value: number
   tone?: "neutral" | "ok" | "bad" | "warn"
+  tip?: string
 }) {
   return (
     <div className="rounded-xl border bg-neutral-50 dark:bg-neutral-900/40 p-2 text-center">
@@ -230,7 +266,10 @@ function Metric({
       >
         {value}
       </p>
-      <p className="text-[9px] uppercase text-muted-foreground mt-0.5">{label}</p>
+      <p className="flex items-center justify-center gap-1 text-[9px] uppercase text-muted-foreground mt-0.5">
+        {label}
+        {tip && <InfoTooltip content={tip} />}
+      </p>
     </div>
   )
 }
