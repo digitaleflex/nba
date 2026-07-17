@@ -39,7 +39,18 @@ async function cachedGet(url: string, ttlMs = 20000): Promise<{ ok: boolean; dat
     return { ok: true, data: hit.data }
   }
   const res = await fetch(url)
-  if (!res.ok) return { ok: false, data: null }
+  if (!res.ok) {
+    // On ne remonte que le message user-friendly ('error') renvoyé par l'API,
+    // jamais le corps brut (évite toute fuite de données techniques).
+    let errMsg: string | null = null
+    try {
+      const body = (await res.json()) as { error?: string }
+      errMsg = body?.error ?? null
+    } catch {
+      // corps non-JSON : on garde null
+    }
+    return { ok: false, data: errMsg ? { error: errMsg } : null }
+  }
   const data = await res.json()
   adminCache.set(url, { time: Date.now(), data })
   return { ok: true, data }

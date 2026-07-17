@@ -80,7 +80,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
           setTotalPages(data.pagination.pages ?? data.pagination.totalPages ?? 1)
         }
       } else {
-        toast.error("Erreur de chargement des signaux")
+        toast.error(data?.error ?? "Erreur de chargement des signaux")
       }
     } catch {
       toast.error("Erreur de chargement des signaux")

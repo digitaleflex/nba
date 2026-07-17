@@ -229,7 +229,15 @@ export function SignalsView() {
           window.location.href = "/login"
           return
         }
-        throw new Error("Erreur lors du chargement")
+        // Message user-friendly renvoyé par l'API (pas de détails techniques).
+        let msg = "Erreur lors du chargement des signaux"
+        try {
+          const body = (await res.json()) as { error?: string }
+          if (body?.error) msg = body.error
+        } catch {
+          // corps non-JSON : on garde le message générique
+        }
+        throw new Error(msg)
       }
 
       const data: ApiResponse = await res.json()
@@ -297,8 +305,8 @@ export function SignalsView() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
-            <p className="font-semibold text-destructive">Erreur de chargement</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="font-semibold text-destructive">{error}</p>
+            <p className="text-sm text-muted-foreground">Si le problème persiste, contactez le support.</p>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
               Réessayer
             </Button>
