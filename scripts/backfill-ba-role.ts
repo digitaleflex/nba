@@ -1,6 +1,7 @@
-// Backfill : synchronise la colonne ba_role (rôle better-auth, utilisé par
-// l'impersonation admin) avec le RBAC custom (role.name) pour tous les users.
-// À exécuter une fois après l'ajout du champ ba_role :
+// Backfill : initialise la colonne ba_role (rôle better-auth, utilisé par
+// l'impersonation admin) à partir du RBAC custom. "admin" pour ADMIN/
+// SUPER_ADMIN, "user" sinon. À exécuter une fois après l'ajout du champ
+// ba_role (prisma db push) :
 //   pnpm tsx scripts/backfill-ba-role.ts
 import { prisma } from "../src/lib/db"
 
@@ -11,13 +12,14 @@ async function main() {
   })
   let updated = 0
   for (const u of users) {
+    const baRole = ["ADMIN", "SUPER_ADMIN"].includes(u.role.name) ? "admin" : "user"
     await prisma.user.update({
       where: { id: u.id },
-      data: { baRole: u.role.name },
+      data: { baRole },
     })
     updated++
   }
-  console.log(`ba_role synchronisé pour ${updated} utilisateur(s).`)
+  console.log(`ba_role initialisé pour ${updated} utilisateur(s).`)
 }
 
 main()

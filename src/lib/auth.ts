@@ -10,6 +10,13 @@ const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 ].filter(Boolean) as string[]
 
+// Rôles better-auth (utilisés uniquement par le plugin admin pour l'
+// impersonation). Découplés du RBAC custom (Role/Permission) : ici "admin"
+// = droit d'impersonner, mappé sur ba_role. adminUserIds: [] bypass la
+// validation de adminRoles (qui exigerait de redéclarer tous les rôles) ;
+// l'admin est reconnu via ba_role = "admin" (initialisé par le backfill).
+const ADMIN_USER_IDS: string[] = []
+
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
@@ -80,16 +87,12 @@ export const auth = betterAuth({
   plugins: [
     // Impersonation admin : permet à un ADMIN/SUPER_ADMIN de se connecter
     // "en tant que" un membre pour voir son compte de son point de vue.
-    // L'impersonation est activée par défaut dans le plugin admin().
-    // Le rôle better-auth est mappé sur la colonne `ba_role` (synchronisée
-    // avec le RBAC custom via les changements de rôle admin).
+    // Le rôle better-auth (admin/user) est mappé sur la colonne ba_role
+    // (synchronisée avec le RBAC custom). Les admins existants sont
+    // initialisés via scripts/backfill-ba-role.ts (ba_role = "admin").
     admin({
-      adminRoles: ["ADMIN", "SUPER_ADMIN"],
-      defaultRole: "MEMBER",
-      // better-auth lit le rôle admin sur user.role ; on le mappe vers la
-      // colonne ba_role (synchronisée avec le RBAC custom). Le cast est
-      // nécessaire : le typage strict d'InferOptionSchema n'expose pas
-      // fieldName ici bien qu'il soit supporté à l'exécution.
+      adminUserIds: ADMIN_USER_IDS,
+      defaultRole: "user",
       schema: {
         user: {
           fields: {
