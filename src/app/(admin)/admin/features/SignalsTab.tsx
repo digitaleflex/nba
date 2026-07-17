@@ -10,6 +10,7 @@ import {
   Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@nba/design-system"
 import { EmptyState } from "@nba/app/components/empty-state"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 import { Signal, CachedGet, OpenPanel } from "./types"
 
 const SignalEditor = dynamic(
@@ -80,7 +81,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
           setTotalPages(data.pagination.pages ?? data.pagination.totalPages ?? 1)
         }
       } else {
-        toast.error("Erreur de chargement des signaux")
+        toast.error(data?.error ?? "Erreur de chargement des signaux")
       }
     } catch {
       toast.error("Erreur de chargement des signaux")
@@ -92,6 +93,17 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
   useEffect(() => {
     fetchSignals()
   }, [fetchSignals])
+
+  // Temps réel : un signal publié apparaît instantanément dans la console admin
+  // (canal 'signal' diffusé à la room 'admins' par le serveur WebSocket).
+  const { subscribe } = useSocket()
+  useEffect(() => {
+    const off = subscribe("signal", () => {
+      invalidate()
+      fetchSignals()
+    })
+    return off
+  }, [subscribe, invalidate, fetchSignals])
 
   function handleConfirm(id: string, type: "delete" | "publish" | "duplicate" | "archive" | "unarchive") {
     const labels: Record<string, { title: string; description: string; confirmLabel: string }> = {

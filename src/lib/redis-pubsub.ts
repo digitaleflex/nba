@@ -74,4 +74,21 @@ export async function publishMessageRead(userId: string, payload: unknown): Prom
   }
 }
 
+/**
+ * Publie un événement générique sur un canal Redis (ex: nba:signal:admin,
+ * nba:signal:user:<id>). Utilisé pour le feed signals temps réel et le
+ * dashboard de diffusion admin.
+ */
+export async function publishSignalEvent(channel: string, payload: unknown): Promise<void> {
+  const conn = getConnection()
+  if (!conn) return
+  try {
+    await conn.publish(channel, JSON.stringify(payload))
+  } catch (err) {
+    console.error("[pubsub] publish signal event failed:", err)
+  } finally {
+    conn.disconnect()
+  }
+}
+
 export { pubsubEnabled, redisUrl, getConnection }

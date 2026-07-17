@@ -91,6 +91,11 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
     socket.on("connect", () => {
       setStatus("connected")
+      // Ré-attache tous les handlers enregistrés via subscribe() (même si
+      // subscribe a été appelé avant la connexion)
+      for (const [event, set] of handlersRef.current) {
+        set.forEach((h) => socket.on(event, h as (...args: unknown[]) => void))
+      }
       onConnectRef.current?.()
     })
 

@@ -158,6 +158,7 @@ async function processDeliveryEvent(args: {
       where: { id: delivery.id },
       data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
     })
+    await notifySignalDeliveryUpdate(delivery.id)
     // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
     if (type === "email.bounced") {
       await markUserBounced(emailId).catch((err) =>
@@ -180,6 +181,7 @@ async function processDeliveryEvent(args: {
         where: { id: delivery.id },
         data: { status: "FAILED", errorMessage: `email.failed: ${reason}`, lastEventAt: eventTs },
       })
+      await notifySignalDeliveryUpdate(delivery.id)
       await alertAdmin(type, emailId, event.data)
     } else if (type === "email.suppressed") {
       // Bonus #74 : Resend refuse l'envoi (destinataire sur suppression list)
@@ -192,6 +194,7 @@ async function processDeliveryEvent(args: {
       where: { id: delivery.id },
       data: { status: "SENT", sentAt: eventTs, lastEventAt: eventTs },
     })
+    await notifySignalDeliveryUpdate(delivery.id)
   } else if (isStale && !isTerminalNegative) {
     // Event non-terminal mais obsolete : on stocke dans email_events
     // (deja fait) mais on ne touche pas au statut.
@@ -221,6 +224,32 @@ async function alertAdmin(type: string, emailId: string, data?: ResendWebhookEve
     })
   } catch {
     // L'alerte ne doit jamais bloquer le traitement du webhook
+  }
+}
+
+/**
+ * Notifie le canal temps réel admin (nba:signal:admin) qu'un statut de
+ * livraison email a changé pour un signal, afin que le dashboard de
+ * diffusion admin se rafraîchisse en direct. Fire-and-forget.
+ */
+async function notifySignalDeliveryUpdate(deliveryId: string) {
+  try {
+    const link = await prisma.notificationDelivery.findUnique({
+      where: { id: deliveryId },
+      select: {
+        notification: { select: { data: true } },
+      },
+    })
+    const signalId = (link?.notification.data as Record<string, unknown> | null)?.signalId
+    if (!signalId || typeof signalId !== "string") return
+    const { publishSignalEvent } = await import("@nba/lib/redis-pubsub")
+    await publishSignalEvent(`nba:signal:admin`, {
+      type: "delivery_update",
+      signalId,
+      at: new Date().toISOString(),
+    })
+  } catch (err) {
+    console.error("[resend-webhook] notifySignalDeliveryUpdate failed:", err)
   }
 }
 
