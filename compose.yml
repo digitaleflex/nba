@@ -54,13 +54,8 @@ services:
       - "traefik.http.routers.nba-ws.entrypoints=websecure"
       - "traefik.http.routers.nba-ws.tls=true"
       - "traefik.http.routers.nba-ws.tls.certresolver=letsencrypt"
-      # Connexions WS longues : timeout généreux pour ne pas couper les
-      # sockets temps réel (Socket.IO heartbeat ~25s keep-alive).
-      - "traefik.http.routers.nba-ws.timeout=3600s"
       - "traefik.http.services.nba-ws.loadbalancer.server.port=3001"
       - "traefik.http.services.nba-ws.loadbalancer.server.timeout=3600s"
-      # Désactive le buffering des réponses (requis pour le streaming WS).
-      - "traefik.http.services.nba-ws.loadbalancer.passhostheader=true"
 
   nba-redis:
     image: valkey/valkey:8-alpine
