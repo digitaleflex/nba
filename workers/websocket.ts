@@ -37,8 +37,12 @@ const io = new SocketIOServer(httpServer, {
   },
   path: "/socket.io/",
   transports: ["websocket", "polling"],
-  pingTimeout: 30000,
-  pingInterval: 25000,
+  // Heartbeat serré : keep-alive < 60s pour survivre aux proxies/CDN
+  // (Cloudflare coupe les connexions inactives > 100s).
+  pingTimeout: 20000,
+  pingInterval: 15000,
+  // Augmente la taille max des payloads (images de signaux en base64).
+  maxHttpBufferSize: 1e7,
 })
 
 // ── Adapter Redis (multi-instance) ──
