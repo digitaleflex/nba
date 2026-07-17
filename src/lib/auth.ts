@@ -85,8 +85,6 @@ export const auth = betterAuth({
     // (qui exigerait de redéclarer tous les rôles) ; l'admin est reconnu via
     // ba_role = "admin" (initialisé par le backfill).
     admin({
-      adminRoles: ["ADMIN", "SUPER_ADMIN"],
-      defaultRole: "MEMBER",
       adminUserIds: [],
       schema: {
         user: {
