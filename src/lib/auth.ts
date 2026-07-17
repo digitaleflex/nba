@@ -9,15 +9,6 @@ const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 ].filter(Boolean) as string[]
 
-// Rôles better-auth (utilisés uniquement par le plugin admin pour l'
-// impersonation). Découplés du RBAC custom (Role/Permission) : ici "admin"
-// = droit d'impersonner, mappé sur ba_role. adminUserIds: [] bypass la
-// validation de adminRoles (qui exigerait de redéclarer tous les rôles) ;
-// l'admin est reconnu via ba_role = "admin" (initialisé par le backfill).
-// NOTE: désactivé temporairement — la colonne ba_role n'existe pas encore
-// en prod (db push + backfill requis). Réactiver après migration DB.
-// const ADMIN_USER_IDS: string[] = []
-
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
     provider: "postgresql",
