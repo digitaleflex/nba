@@ -198,6 +198,15 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
             createdAt: notification.createdAt,
           })
+
+          // Canal temps réel dédié aux signaux (feed instantané + synchronisé)
+          await publish(`nba:signal:user:${member.id}`, {
+            signalId: signal.id,
+            publishedAt: signal.publishedAt,
+            imageUrl: signal.imageUrl,
+            imageUrls: signal.imageUrls,
+            audience: signal.audience.map((a: any) => a.plan.name),
+          })
         } catch (err) {
           console.error("[signal] pubsub failed:", err)
         }
@@ -256,6 +265,20 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
         }
       }),
     )
+  }
+
+  // Diffuse aux admins connectés (console admin) pour affichage instantané
+  try {
+    await publish(`nba:signal:admin`, {
+      signalId: signal.id,
+      publishedAt: signal.publishedAt,
+      imageUrl: signal.imageUrl,
+      imageUrls: signal.imageUrls,
+      audience: signal.audience.map((a: any) => a.plan.name),
+      creatorId: signal.createdBy,
+    })
+  } catch (err) {
+    console.error("[signal] admin pubsub failed:", err)
   }
 
   await logAuditEvent({

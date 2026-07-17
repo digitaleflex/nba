@@ -41,7 +41,7 @@ const io = new SocketIOServer(httpServer, {
 })
 
 // ── Authentification par cookie de session signé ──
-async function authenticateSocket(socket: Socket): Promise<{ userId: string } | null> {
+async function authenticateSocket(socket: Socket): Promise<{ userId: string; role: string } | null> {
   try {
     const cookieHeader = socket.handshake.headers.cookie
     const signedCookie = extractSessionToken(cookieHeader, COOKIE_NAME)
@@ -60,7 +60,7 @@ async function authenticateSocket(socket: Socket): Promise<{ userId: string } | 
     // Query la session en base
     const session = await prisma.session.findUnique({
       where: { token: sessionToken },
-      include: { user: { select: { id: true, isActive: true } } },
+      include: { user: { select: { id: true, isActive: true, role: { select: { name: true } } } } },
     })
 
     if (!session?.user) {
@@ -78,7 +78,7 @@ async function authenticateSocket(socket: Socket): Promise<{ userId: string } | 
       return null
     }
 
-    return { userId: session.user.id }
+    return { userId: session.user.id, role: session.user.role?.name ?? "USER" }
   } catch (err) {
     console.error(`[ws] Auth error for ${socket.id}:`, err)
     return null
@@ -92,6 +92,7 @@ io.use(async (socket, next) => {
     return next(new Error("Unauthorized: invalid or missing session"))
   }
   socket.data.userId = auth.userId
+  socket.data.role = auth.role
   next()
 })
 
@@ -100,8 +101,13 @@ const onlineCounts = new Map<string, number>()
 
 io.on("connection", (socket) => {
   const userId = socket.data.userId as string
+  const role = (socket.data.role as string) ?? "USER"
   const room = `user:${userId}`
   socket.join(room)
+  // Les admins rejoignent la room 'admins' pour recevoir les signaux en temps réel
+  if (role === "ADMIN" || role === "SUPER_ADMIN") {
+    socket.join("admins")
+  }
   console.log(`[ws] socket connected: user=${userId} socket=${socket.id}`)
 
   socket.emit("connected", { userId, socketId: socket.id })
@@ -192,6 +198,23 @@ if (REDIS_URL) {
     }
   })
 
+  // Canal dédié aux signaux de trading (temps réel, synchronisé pour tous)
+  sub.psubscribe("nba:signal:user:*", (err) => {
+    if (err) {
+      console.error("[ws] Redis signal psubscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:signal:user:*")
+    }
+  })
+
+  sub.subscribe("nba:signal:admin", (err) => {
+    if (err) {
+      console.error("[ws] Redis signal:admin subscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:signal:admin")
+    }
+  })
+
   // Canal de contrôle admin (ex: reset realtime d'un user)
   sub.subscribe("nba:ws:control", (err) => {
     if (err) {
@@ -203,6 +226,20 @@ if (REDIS_URL) {
 
   sub.on("message", (channel, message) => {
     try {
+      if (channel === "nba:signal:admin") {
+        // Diffuse le signal à tous les admins connectés (room 'admins')
+        const adminRoom = io.sockets.adapter.rooms.get("admins")
+        if (adminRoom && adminRoom.size > 0) {
+          try {
+            const payload = JSON.parse(message)
+            io.to("admins").emit("signal", payload)
+            console.log(`[ws] 📈 Forwarded signal to ${adminRoom.size} admin socket(s)`)
+          } catch (err) {
+            console.error("[ws] Failed to parse/forward admin signal:", err)
+          }
+        }
+        return
+      }
       if (channel !== "nba:ws:control") return
       if (message.startsWith("reset:")) {
         const targetUserId = message.slice("reset:".length)
@@ -232,6 +269,23 @@ if (REDIS_URL) {
     } else if (channel.startsWith("nba:read:user:")) {
       event = "message_read"
       userId = channel.replace("nba:read:user:", "")
+    } else if (channel.startsWith("nba:signal:user:")) {
+      event = "signal"
+      userId = channel.replace("nba:signal:user:", "")
+    }
+    if (event === "signal") {
+      const room = `user:${userId}`
+      const sockets = io.sockets.adapter.rooms.get(room)
+      if (sockets && sockets.size > 0) {
+        try {
+          const payload = JSON.parse(message)
+          io.to(room).emit(event, payload)
+          console.log(`[ws] 📈 Forwarded signal to ${sockets.size} socket(s) for user ${userId.slice(0, 8)}...`)
+        } catch (err) {
+          console.error("[ws] Failed to parse/forward signal:", err)
+        }
+      }
+      return
     }
     const room = `user:${userId}`
     const sockets = io.sockets.adapter.rooms.get(room)

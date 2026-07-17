@@ -16,6 +16,7 @@ import {
   Archive,
 } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 import { MobileFilterSheet } from "./mobile-filter-sheet"
 
 interface SignalData {
@@ -195,6 +196,10 @@ export function SignalsView() {
   const debouncedSearch = useDebounce(searchQuery, 300)
   const lastFetchRef = useRef(0)
 
+  // Temps réel : un signal publié déclenche un refresh instantané et synchronisé
+  // pour tous les abonnés connectés (canal 'signal' du serveur WebSocket).
+  const { subscribe } = useSocket()
+
   const availableFilters = useMemo(() => {
     if (!summary || !summary.group || summary.group === "Tous les signaux") {
       return FILTERS
@@ -260,6 +265,15 @@ export function SignalsView() {
   useEffect(() => {
     fetchSignals(1, false)
   }, [fetchSignals])
+
+  useEffect(() => {
+    const off = subscribe<{ signalId?: string }>("signal", () => {
+      // Refresh la vue courante ; le nouveau signal apparaîtra s'il correspond
+      // au filtre actif (un signal fraîchement publié est "non lu").
+      fetchSignals(1, false)
+    })
+    return off
+  }, [subscribe, fetchSignals])
 
   useEffect(() => {
     const onVisible = () => {
