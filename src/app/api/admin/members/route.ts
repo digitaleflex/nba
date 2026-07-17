@@ -149,6 +149,9 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: "Rôle invalide" }, { status: 400 })
       }
       data.roleId = roleId
+      // Synchronise le rôle better-auth (utilisé par l'impersonation admin)
+      // avec le RBAC custom.
+      data.baRole = role.name
     }
 
     const updated = await prisma.user.update({
@@ -164,6 +167,19 @@ export async function PUT(request: NextRequest) {
         role: { select: { id: true, name: true } },
       },
     })
+
+    // Si le rôle admin est retir, on révoque les sessions pour forcer une
+    // re-connexion (la session better-auth ne porterait plus le rôle admin).
+    if (roleId) {
+      const role = await prisma.role.findUnique({ where: { id: roleId } })
+      if (role && !["ADMIN", "SUPER_ADMIN"].includes(role.name)) {
+        await prisma.session.deleteMany({ where: { userId } })
+        try {
+          const redis = getRedisConnection()
+          if (redis) await redis.publish("nba:ws:control", `reset:${userId}`)
+        } catch {}
+      }
+    }
 
     // Suspension : révoquer les sessions + déconnecter le WebSocket
     if (typeof isActive === "boolean" && !isActive) {

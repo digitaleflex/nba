@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
+import { admin } from "better-auth/plugins"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
@@ -76,7 +77,29 @@ export const auth = betterAuth({
       },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    // Impersonation admin : permet à un ADMIN/SUPER_ADMIN de se connecter
+    // "en tant que" un membre pour voir son compte de son point de vue.
+    // L'impersonation est activée par défaut dans le plugin admin().
+    // Le rôle better-auth est mappé sur la colonne `ba_role` (synchronisée
+    // avec le RBAC custom via les changements de rôle admin).
+    admin({
+      adminRoles: ["ADMIN", "SUPER_ADMIN"],
+      defaultRole: "MEMBER",
+      // better-auth lit le rôle admin sur user.role ; on le mappe vers la
+      // colonne ba_role (synchronisée avec le RBAC custom). Le cast est
+      // nécessaire : le typage strict d'InferOptionSchema n'expose pas
+      // fieldName ici bien qu'il soit supporté à l'exécution.
+      schema: {
+        user: {
+          fields: {
+            role: { fieldName: "ba_role" },
+          },
+        },
+      } as any,
+    }),
+    nextCookies(),
+  ],
 })
 
 export type Session = typeof auth.$Infer.Session

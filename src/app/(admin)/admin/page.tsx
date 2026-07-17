@@ -352,6 +352,19 @@ function AdminConsoleContent() {
         } else {
           toast.error("Erreur lors de l'envoi de la notification.")
         }
+      } else if (actionType === "impersonate") {
+        const res = await fetch(`/api/admin/members/${extraData.id}/impersonate`, {
+          method: "POST",
+        })
+        if (res.ok) {
+          toast.success("Connexion en tant que l'utilisateur…")
+          // better-auth a posé un nouveau cookie de session : on force un
+          // full reload pour adopter la session du membre côté client.
+          window.location.href = "/dashboard"
+        } else {
+          const body = await res.json().catch(() => ({}))
+          toast.error(body.error || "Impossible de vous connecter en tant que cet utilisateur.")
+        }
       }
     } catch (err) {
       console.error(err)
