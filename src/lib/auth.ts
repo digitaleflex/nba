@@ -1,6 +1,5 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
-import { admin } from "better-auth/plugins"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
@@ -15,7 +14,9 @@ const trustedOrigins = [
 // = droit d'impersonner, mappé sur ba_role. adminUserIds: [] bypass la
 // validation de adminRoles (qui exigerait de redéclarer tous les rôles) ;
 // l'admin est reconnu via ba_role = "admin" (initialisé par le backfill).
-const ADMIN_USER_IDS: string[] = []
+// NOTE: désactivé temporairement — la colonne ba_role n'existe pas encore
+// en prod (db push + backfill requis). Réactiver après migration DB.
+// const ADMIN_USER_IDS: string[] = []
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -85,22 +86,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    // Impersonation admin : permet à un ADMIN/SUPER_ADMIN de se connecter
-    // "en tant que" un membre pour voir son compte de son point de vue.
-    // Le rôle better-auth (admin/user) est mappé sur la colonne ba_role
-    // (synchronisée avec le RBAC custom). Les admins existants sont
-    // initialisés via scripts/backfill-ba-role.ts (ba_role = "admin").
-    admin({
-      adminUserIds: ADMIN_USER_IDS,
-      defaultRole: "user",
-      schema: {
-        user: {
-          fields: {
-            role: { fieldName: "ba_role" },
-          },
-        },
-      } as any,
-    }),
     nextCookies(),
   ],
 })
