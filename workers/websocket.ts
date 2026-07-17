@@ -132,6 +132,46 @@ io.on("connection", (socket) => {
     socket.emit("pong", { ts: Date.now() })
   })
 
+  // Replay : comblé la fenêtre de perte d'event (worker WS down/reconnect
+  // au moment d'un PUBLISH Redis). Le client envoie le dernier signal vu ;
+  // on renvoie les signaux publiés depuis lors.
+  socket.on("signal:resync", async (data: { since?: string } | undefined) => {
+    try {
+      const since = data?.since ? new Date(data.since) : new Date(Date.now() - 60_000)
+      if (isNaN(since.getTime())) return
+      const recent = await prisma.signal.findMany({
+        where: {
+          status: "PUBLISHED",
+          publishedAt: { gt: since },
+          createdBy: { not: userId },
+        },
+        orderBy: { publishedAt: "asc" },
+        take: 50,
+        select: {
+          id: true,
+          publishedAt: true,
+          imageUrl: true,
+          imageUrls: true,
+          audience: { select: { plan: { select: { name: true } } } },
+          createdBy: true,
+        },
+      })
+      for (const s of recent) {
+        socket.emit("signal", {
+          type: "signal.created",
+          signalId: s.id,
+          publishedAt: s.publishedAt,
+          imageUrl: s.imageUrl,
+          imageUrls: s.imageUrls,
+          audience: s.audience.map((a: any) => a.plan.name),
+          creatorId: s.createdBy,
+        })
+      }
+    } catch (err) {
+      console.error("[ws] signal:resync failed:", err)
+    }
+  })
+
   // ── Indicateur "en train d'écrire" ──
   socket.on("typing", (data: { to?: string; conversationId?: string; typing?: boolean }) => {
     const to = data?.to

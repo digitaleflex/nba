@@ -203,7 +203,7 @@ export function SignalsView() {
 
   // Temps réel : un signal publié déclenche un refresh instantané et synchronisé
   // pour tous les abonnés connectés (canal 'signal' du serveur WebSocket).
-  const { subscribe, status } = useSocket()
+  const { subscribe, socket, status } = useSocket()
 
   const availableFilters = useMemo(() => {
     if (!summary || !summary.group || summary.group === "Tous les signaux") {
@@ -290,6 +290,29 @@ export function SignalsView() {
     })
     return off
   }, [subscribe, fetchSignals])
+
+  // Replay au (re)connect : comblé la fenêtre de perte d'event (worker WS
+  // indisponible au moment d'un PUBLISH Redis). On demande les signaux
+  // publiés depuis le plus récent déjà affiché.
+  useEffect(() => {
+    const sock = socket.current
+    if (!sock) return
+    const onConnect = () => {
+      const latest = signals
+        .map((s) => new Date(s.publishedAt || s.createdAt).getTime())
+        .filter((t) => !isNaN(t))
+      sock.emit("signal:resync", {
+        since: latest.length
+          ? new Date(Math.max(...latest)).toISOString()
+          : new Date(Date.now() - 60_000).toISOString(),
+      })
+    }
+    if (sock.connected) onConnect()
+    sock.on("connect", onConnect)
+    return () => {
+      sock.off("connect", onConnect)
+    }
+  }, [socket, signals])
 
   useEffect(() => {
     const onVisible = () => {

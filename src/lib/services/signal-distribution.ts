@@ -201,6 +201,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
           // Canal temps réel dédié aux signaux (feed instantané + synchronisé)
           await publish(`nba:signal:user:${member.id}`, {
+            type: "signal.created",
             signalId: signal.id,
             publishedAt: signal.publishedAt,
             imageUrl: signal.imageUrl,
@@ -270,6 +271,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
   // Diffuse aux admins connectés (console admin) pour affichage instantané
   try {
     await publish(`nba:signal:admin`, {
+      type: "signal.created",
       signalId: signal.id,
       publishedAt: signal.publishedAt,
       imageUrl: signal.imageUrl,

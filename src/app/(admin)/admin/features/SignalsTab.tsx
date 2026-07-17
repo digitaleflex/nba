@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import { Play, Copy, Eye, Trash2, Loader2, Inbox, Archive, Search, ChevronLeft, ChevronRight, ArchiveRestore } from "lucide-react"
 import { toast } from "sonner"
@@ -96,14 +96,47 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
 
   // Temps réel : un signal publié apparaît instantanément dans la console admin
   // (canal 'signal' diffusé à la room 'admins' par le serveur WebSocket).
-  const { subscribe } = useSocket()
+  const { subscribe, socket } = useSocket()
+  const seenSignalIds = useRef<Set<string>>(new Set())
   useEffect(() => {
-    const off = subscribe("signal", () => {
+    const off = subscribe("signal", (payload: any) => {
+      const signalId = payload?.signalId
+      // Dédup : ignore un signal déjà traité (reconnect + replay peuvent
+      // renvoyer un event déjà affiché) pour éviter un refetch en rafale.
+      if (signalId) {
+        if (seenSignalIds.current.has(signalId)) return
+        seenSignalIds.current.add(signalId)
+      }
       invalidate()
       fetchSignals()
     })
     return off
   }, [subscribe, invalidate, fetchSignals])
+
+  // Au (re)connect, demande le replay des signaux publiés pendant une éventuelle
+  // fenêtre de perte (worker WS indisponible au moment du PUBLISH Redis).
+  useEffect(() => {
+    const sock = socket.current
+    if (!sock) return
+    const onConnect = () => {
+      sock.emit("signal:resync", {
+        since: signals.length
+          ? new Date(
+              Math.max(
+                ...signals
+                  .map((s) => new Date(s.publishedAt ?? s.createdAt).getTime())
+                  .filter((t) => !isNaN(t)),
+              ),
+            ).toISOString()
+          : new Date(Date.now() - 60_000).toISOString(),
+      })
+    }
+    if (sock.connected) onConnect()
+    sock.on("connect", onConnect)
+    return () => {
+      sock.off("connect", onConnect)
+    }
+  }, [socket, signals])
 
   function handleConfirm(id: string, type: "delete" | "publish" | "duplicate" | "archive" | "unarchive") {
     const labels: Record<string, { title: string; description: string; confirmLabel: string }> = {
