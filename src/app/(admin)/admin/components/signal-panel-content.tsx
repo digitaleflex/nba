@@ -1,6 +1,7 @@
 "use client"
 
 import { Badge, cn } from "@nba/design-system"
+import { SignalDeliveryDashboard } from "./signal-delivery-dashboard"
 
 interface SignalPanelContentProps {
   data: any
@@ -77,6 +78,12 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {data.status === "PUBLISHED" && (
+        <div className="border-t pt-4">
+          <SignalDeliveryDashboard signalId={data.id} />
         </div>
       )}
     </div>

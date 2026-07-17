@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
-import { Card, CardContent, Badge, Input, Button } from "@nba/design-system"
+import { Card, CardContent, Badge, Input, Button, cn } from "@nba/design-system"
 import {
   Radio,
   Search,
@@ -101,10 +101,13 @@ function getDateGroup(dateStr: string): string {
   return target.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
 }
 
-function SignalCard({ signal }: { signal: SignalData }) {
+function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?: boolean }) {
   return (
     <Link href={`/dashboard/signals/${signal.id}`} className="block">
-      <Card className="relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer">
+      <Card className={cn(
+        "relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer",
+        justArrived && "ring-2 ring-primary/60 animate-[pulse_1.2s_ease-in-out_1]"
+      )}>
         {!signal.read && (
           <div className="absolute right-3 top-3 z-10">
             <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5 animate-pulse">
@@ -195,10 +198,12 @@ export function SignalsView() {
 
   const debouncedSearch = useDebounce(searchQuery, 300)
   const lastFetchRef = useRef(0)
+  const [liveArrivals, setLiveArrivals] = useState<Set<string>>(new Set())
+  const liveArrivalsRef = useRef<Set<string>>(new Set())
 
   // Temps réel : un signal publié déclenche un refresh instantané et synchronisé
   // pour tous les abonnés connectés (canal 'signal' du serveur WebSocket).
-  const { subscribe } = useSocket()
+  const { subscribe, status } = useSocket()
 
   const availableFilters = useMemo(() => {
     if (!summary || !summary.group || summary.group === "Tous les signaux") {
@@ -267,7 +272,18 @@ export function SignalsView() {
   }, [fetchSignals])
 
   useEffect(() => {
-    const off = subscribe<{ signalId?: string }>("signal", () => {
+    const off = subscribe<{ signalId?: string }>("signal", (payload) => {
+      // Marque le signal comme arrivé en temps réel pour animer sa carte
+      // (uniquement si on connaît son id, sinon on se contente du refresh).
+      if (payload?.signalId) {
+        liveArrivalsRef.current.add(payload.signalId)
+        setLiveArrivals(new Set(liveArrivalsRef.current))
+        // Nettoie le flag d'animation après la transition visuelle
+        setTimeout(() => {
+          liveArrivalsRef.current.delete(payload.signalId as string)
+          setLiveArrivals(new Set(liveArrivalsRef.current))
+        }, 1600)
+      }
       // Refresh la vue courante ; le nouveau signal apparaîtra s'il correspond
       // au filtre actif (un signal fraîchement publié est "non lu").
       fetchSignals(1, false)
@@ -334,7 +350,16 @@ export function SignalsView() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Signaux</h1>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            Signaux
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <span className={cn(
+                "inline-block h-2 w-2 rounded-full",
+                status === "connected" ? "bg-emerald-400 animate-pulse" : "bg-neutral-500"
+              )} />
+              {status === "connected" ? "En direct" : "Connexion…"}
+            </span>
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -457,7 +482,7 @@ export function SignalsView() {
               </div>
               <div className="grid gap-3">
                 {sigs.map((sig) => (
-                  <SignalCard key={sig.id} signal={sig} />
+                  <SignalCard key={sig.id} signal={sig} justArrived={liveArrivals.has(sig.id)} />
                 ))}
               </div>
             </div>
