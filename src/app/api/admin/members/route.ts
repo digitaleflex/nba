@@ -149,6 +149,9 @@ export async function PUT(request: NextRequest) {
         return NextResponse.json({ error: "Rôle invalide" }, { status: 400 })
       }
       data.roleId = roleId
+      // Synchronise le rôle better-auth (utilisé par l'impersonation admin)
+      // avec le RBAC custom : "admin" pour ADMIN/SUPER_ADMIN, sinon "user".
+      data.baRole = ["ADMIN", "SUPER_ADMIN"].includes(role.name) ? "admin" : "user"
     }
 
     const updated = await prisma.user.update({

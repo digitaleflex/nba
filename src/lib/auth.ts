@@ -1,5 +1,6 @@
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
+import { admin } from "better-auth/plugins"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
@@ -77,6 +78,24 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    // Impersonation admin : permet à un ADMIN/SUPER_ADMIN de se connecter
+    // "en tant que" un membre pour voir son compte de son point de vue.
+    // Le rôle better-auth est lu sur la colonne `ba_role` (synchronisée avec
+    // le RBAC custom). adminUserIds: [] bypass la validation de adminRoles
+    // (qui exigerait de redéclarer tous les rôles) ; l'admin est reconnu via
+    // ba_role = "admin" (initialisé par le backfill).
+    admin({
+      adminRoles: ["ADMIN", "SUPER_ADMIN"],
+      defaultRole: "MEMBER",
+      adminUserIds: [],
+      schema: {
+        user: {
+          fields: {
+            role: { fieldName: "ba_role" },
+          },
+        },
+      } as any,
+    }),
     nextCookies(),
   ],
 })
