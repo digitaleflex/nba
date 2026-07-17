@@ -1,5 +1,6 @@
 import { createServer } from "http"
 import { Server as SocketIOServer, Socket } from "socket.io"
+import { createAdapter } from "@socket.io/redis-adapter"
 import IORedis from "ioredis"
 import "dotenv/config"
 import { prisma } from "./ws-prisma"
@@ -39,6 +40,17 @@ const io = new SocketIOServer(httpServer, {
   pingTimeout: 30000,
   pingInterval: 25000,
 })
+
+// ── Adapter Redis (multi-instance) ──
+// Permet de scaler le worker WS sur plusieurs instances : les rooms/events
+// sont partagés via Redis. En mono-instance (config actuelle) l'adapter est
+// quand même actif (idempotent) et prépare le scale-out sans rupture.
+if (REDIS_URL) {
+  const pub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null })
+  const sub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null })
+  io.adapter(createAdapter(pub, sub))
+  console.log("[ws] Redis adapter enabled (multi-instance ready)")
+}
 
 // ── Authentification par cookie de session signé ──
 async function authenticateSocket(socket: Socket): Promise<{ userId: string; role: string } | null> {

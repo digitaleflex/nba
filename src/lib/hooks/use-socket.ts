@@ -37,6 +37,96 @@ interface UseSocketReturn {
  *   return off
  * }, [subscribe])
  */
+// Singleton partagé : une seule connexion Socket.IO par onglet, quel que soit
+// le nombre de composants utilisant useSocket(). Évite de multiplier les
+// sockets (un par hook) et préserve les handlers entre les montages.
+interface SocketSingleton {
+  socket: Socket
+  handlers: Map<string, Set<(data: unknown) => void>>
+  refCount: number
+}
+const socketSingleton: { current: SocketSingleton | null } = { current: null }
+
+function getWsUrl(options: UseSocketOptions): string {
+  const url = options.url || process.env.NEXT_PUBLIC_WS_URL
+  if (url) return url
+  if (typeof window === "undefined") return "http://localhost:3001"
+  return window.location.protocol === "https:"
+    ? window.location.origin
+    : `http://${window.location.hostname}:3001`
+}
+
+function acquireSocket(options: UseSocketOptions): SocketSingleton {
+  if (socketSingleton.current) {
+    socketSingleton.current.refCount += 1
+    return socketSingleton.current
+  }
+
+  const socket = io(getWsUrl(options), {
+    path: options.path ?? "/socket.io/",
+    withCredentials: true,
+    transports: ["websocket", "polling"],
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 10000,
+    timeout: 10000,
+    autoConnect: false,
+  })
+
+  const singleton: SocketSingleton = {
+    socket,
+    handlers: new Map(),
+    refCount: 1,
+  }
+  socketSingleton.current = singleton
+
+  socket.on("connect", () => {
+    // Ré-attache tous les handlers enregistrés (même si subscribe a été
+    // appelé avant la connexion).
+    for (const [event, set] of singleton.handlers) {
+      set.forEach((h) => socket.on(event, h as (...args: unknown[]) => void))
+    }
+  })
+
+  socket.on("disconnect", (reason) => {
+    if (reason !== "io client disconnect") {
+      // Socket.IO tente une reconnexion automatique
+    }
+  })
+
+  socket.on("connect_error", (err) => {
+    console.warn("[useSocket] connect_error:", err.message)
+  })
+
+  socket.io.on("reconnect_attempt", () => {
+    // état géré par les consommateurs via status
+  })
+
+  socket.io.on("reconnect_failed", () => {
+    // état géré par les consommateurs
+  })
+
+  socket.on("notification", (data: unknown) => {
+    const set = singleton.handlers.get("notification")
+    if (set) set.forEach((h) => h(data))
+  })
+
+  if (options.autoConnect !== false) socket.connect()
+  return singleton
+}
+
+function releaseSocket(): void {
+  const s = socketSingleton.current
+  if (!s) return
+  s.refCount -= 1
+  if (s.refCount <= 0) {
+    s.socket.removeAllListeners()
+    s.socket.disconnect()
+    socketSingleton.current = null
+  }
+}
+
 export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   const {
     url,
@@ -63,81 +153,49 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
 
   const connect = useCallback(() => {
     if (typeof window === "undefined") return
+    const singleton = acquireSocket({ url, path, autoConnect })
+    socketRef.current = singleton.socket
+    handlersRef.current = singleton.handlers
 
-    const wsUrl =
-      url ||
-      process.env.NEXT_PUBLIC_WS_URL ||
-      (window.location.protocol === "https:"
-        ? window.location.origin
-        : `http://${window.location.hostname}:3001`)
-
-    if (socketRef.current?.connected) return
-
-    setStatus("connecting")
-
-    const socket = io(wsUrl, {
-      path,
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-      reconnection: true,
-      reconnectionAttempts: Infinity,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 10000,
-      timeout: 10000,
-      autoConnect: false,
-    })
-
-    socketRef.current = socket
-
-    socket.on("connect", () => {
+    if (singleton.socket.connected) {
       setStatus("connected")
-      // Ré-attache tous les handlers enregistrés via subscribe() (même si
-      // subscribe a été appelé avant la connexion)
-      for (const [event, set] of handlersRef.current) {
-        set.forEach((h) => socket.on(event, h as (...args: unknown[]) => void))
-      }
-      onConnectRef.current?.()
-    })
+    } else {
+      setStatus("connecting")
+    }
+  }, [url, path, autoConnect])
 
-    socket.on("disconnect", (reason) => {
+  useEffect(() => {
+    connect()
+    const sock = socketRef.current
+    if (!sock) return
+
+    const onConnect = () => {
+      setStatus("connected")
+      onConnectRef.current?.()
+    }
+    const onDisconnect = (reason: string) => {
       if (reason !== "io client disconnect") {
-        // Socket.IO va tenter une reconnexion automatique
+        setStatus("connecting")
         onDisconnectRef.current?.(reason)
       } else {
         setStatus("disconnected")
         onDisconnectRef.current?.(reason)
       }
-    })
+    }
+    const onReconnectAttempt = () => setStatus("connecting")
+    const onReconnectFailed = () => setStatus("error")
 
-    socket.on("connect_error", (err) => {
-      console.warn("[useSocket] connect_error:", err.message)
-    })
+    sock.on("connect", onConnect)
+    sock.on("disconnect", onDisconnect)
+    sock.io.on("reconnect_attempt", onReconnectAttempt)
+    sock.io.on("reconnect_failed", onReconnectFailed)
 
-    socket.io.on("reconnect_attempt", () => {
-      setStatus("connecting")
-    })
-
-    socket.io.on("reconnect_failed", () => {
-      setStatus("error")
-    })
-
-    socket.on("notification", (data: unknown) => {
-      onNotificationRef.current?.(data)
-      // Dispatch aux handlers enregistrés via subscribe()
-      const set = handlersRef.current.get("notification")
-      if (set) set.forEach((h) => h(data))
-    })
-
-    if (autoConnect) socket.connect()
-  }, [url, path, autoConnect])
-
-  useEffect(() => {
-    connect()
     return () => {
-      if (socketRef.current) {
-        socketRef.current.removeAllListeners()
-        socketRef.current.disconnect()
-      }
+      sock.off("connect", onConnect)
+      sock.off("disconnect", onDisconnect)
+      sock.io.off("reconnect_attempt", onReconnectAttempt)
+      sock.io.off("reconnect_failed", onReconnectFailed)
+      releaseSocket()
       socketRef.current = null
     }
   }, [connect])
@@ -163,10 +221,7 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
   }, [])
 
   const reconnect = useCallback(() => {
-    if (socketRef.current) {
-      socketRef.current.removeAllListeners()
-      socketRef.current.disconnect()
-    }
+    releaseSocket()
     socketRef.current = null
     connect()
   }, [connect])
