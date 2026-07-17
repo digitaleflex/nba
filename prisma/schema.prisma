@@ -33,12 +33,6 @@ model User {
   emailStatus       EmailStatus       @default(OK) @map("email_status")
   emailStatusAt     DateTime?         @map("email_status_at")
 
-  // Rôle lu par better-auth (plugin admin / impersonation). Synchronisé avec
-  // le RBAC custom (role.name) : "admin" pour ADMIN/SUPER_ADMIN, sinon "user".
-  // Optionnel (nullable) : laisser null = membre standard. Initialisé par le
-  // backfill après la migration.
-  baRole            String?           @map("ba_role")
-
   sessions            Session[]
   accounts            Account[]
   role                Role                  @relation(fields: [roleId], references: [id])
