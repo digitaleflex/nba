@@ -11,6 +11,7 @@ import { LiveRefresh } from "./live-refresh"
 import { SignalTableClient } from "./signal-table-client"
 import { UserTimeline } from "./user-timeline"
 import { RetryButton } from "./retry-button"
+import { TrackerTabs } from "./tracker-tabs"
 import IORedis from "ioredis"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
@@ -75,15 +76,22 @@ export const dynamic = "force-dynamic"
 export default async function SignalTrackerPage({
   searchParams: sp,
 }: {
-  searchParams: Promise<{ q?: string; status?: string }>
+  searchParams: Promise<{ q?: string; status?: string; range?: string }>
 }) {
   const searchParams = await sp
   const query = searchParams.q?.toLowerCase() ?? ""
-  const filterStatus = searchParams.status ?? ""
+  const range = searchParams.range ?? "7d"
+  const rangeMs = range === "24h" ? 24 * 60 * 60 * 1000
+    : range === "7d" ? 7 * 24 * 60 * 60 * 1000
+    : range === "30d" ? 30 * 24 * 60 * 60 * 1000
+    : 0
 
   const where: any = { status: "PUBLISHED", deletedAt: null }
   if (query) {
     where.content = { contains: query, mode: "insensitive" }
+  }
+  if (rangeMs > 0) {
+    where.publishedAt = { gte: new Date(Date.now() - rangeMs) }
   }
 
   const signals = await prisma.signal.findMany({
@@ -269,11 +277,29 @@ export default async function SignalTrackerPage({
     { recipients: 0, inAppRead: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pushSent: 0, pushFailed: 0 },
   )
 
-  const statusCounts = {
-    all: rows.length,
-    delivered: rows.reduce((a, r) => a + r.delivered, 0),
-    bounced: rows.reduce((a, r) => a + r.bounced, 0),
-    pending: rows.reduce((a, r) => a + r.pending, 0),
+  const deliveryRate = totals.emailsSent > 0 ? Math.round((totals.delivered / totals.emailsSent) * 100) : 0
+  const bounceRate = totals.emailsSent > 0 ? Math.round((totals.bounced / totals.emailsSent) * 100) : 0
+  const openRate = totals.delivered > 0 ? Math.round((totals.opened / totals.delivered) * 100) : 0
+
+  // Alerts
+  const alerts: { type: "error" | "warning"; message: string }[] = []
+  if (workerHealth.signalWorker === "inactif") alerts.push({ type: "error", message: "Le worker de distribution des signaux est inactif" })
+  if (workerHealth.notifWorker === "inactif") alerts.push({ type: "error", message: "Le worker de notification est inactif" })
+  if (bounceRate > 5) alerts.push({ type: "warning", message: `Taux de bounce élevé (${bounceRate} %) — vérifiez la qualité des emails` })
+  if (workerHealth.pendingJobs > 10) alerts.push({ type: "warning", message: `${workerHealth.pendingJobs} jobs en attente dans la file signaux` })
+
+  // Per-plan aggregate stats
+  const planStats = new Map<string, { users: number; delivered: number; bounced: number; opened: number; sent: number }>()
+  for (const row of rows) {
+    for (const u of row.perUser) {
+      if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, delivered: 0, bounced: 0, opened: 0, sent: 0 })
+      const s = planStats.get(u.plan)!
+      s.users++
+      if (u.emailBucket === "delivered") s.delivered++
+      else if (u.emailBucket === "bounced") s.bounced++
+      else if (u.emailBucket === "opened") s.opened++
+      if (u.emailBucket !== "unknown" && u.emailBucket !== "pas d'email") s.sent++
+    }
   }
 
   // Build per-user timeline data (aggregate all signals per user)
@@ -321,7 +347,7 @@ export default async function SignalTrackerPage({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* Header — always visible */}
       <div>
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité</h1>
@@ -335,75 +361,191 @@ export default async function SignalTrackerPage({
         </div>
       </div>
 
-      {/* Worker Status Bar */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <WorkerKpi label="Worker signaux" value={workerHealth.signalWorker} />
-        <WorkerKpi label="Worker emails" value={workerHealth.notifWorker} />
-        <WorkerKpi label="Jobs en attente" value={String(workerHealth.pendingJobs)} />
-        <WorkerKpi label="Signaux analysés" value={String(rows.length)} />
-      </div>
+      <TrackerTabs
+        dashboard={
+          <>
+            {/* Worker Status */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <WorkerKpi label="Worker signaux" value={workerHealth.signalWorker} />
+              <WorkerKpi label="Worker emails" value={workerHealth.notifWorker} />
+              <WorkerKpi label="Jobs en attente" value={String(workerHealth.pendingJobs)} />
+              <WorkerKpi label="Signaux analysés" value={String(rows.length)} />
+            </div>
 
-      {/* Filtres + actions */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <form className="flex items-center gap-2">
-          <input
-            name="q"
-            defaultValue={query}
-            placeholder="Rechercher un signal..."
-            className="h-9 rounded-lg border border-border bg-background px-3 text-xs w-40 md:w-64 outline-none focus:border-primary"
-          />
-          <button
-            type="submit"
-            className="h-9 rounded-lg bg-primary text-primary-foreground px-4 text-xs font-medium hover:bg-primary/90"
-          >
-            Filtrer
-          </button>
-          {query && (
-            <Link
-              href="/admin/tracker"
-              className="h-9 rounded-lg border border-border px-3 text-xs flex items-center text-muted-foreground hover:text-foreground"
-            >
-              Réinitialiser
-            </Link>
-          )}
-        </form>
-        <RetryButton serverAction={handleRetryAll} />
-      </div>
+            {/* Alerts */}
+            {alerts.length > 0 && (
+              <div className="space-y-2">
+                {alerts.map((a, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      "rounded-xl border px-4 py-3 text-xs font-medium flex items-center gap-2",
+                      a.type === "error"
+                        ? "border-destructive/30 bg-destructive/5 text-destructive"
+                        : "border-amber-500/30 bg-amber-500/5 text-amber-600",
+                    )}
+                  >
+                    <span className={cn("size-2 rounded-full shrink-0", a.type === "error" ? "bg-destructive" : "bg-amber-500")} />
+                    {a.message}
+                  </div>
+                ))}
+              </div>
+            )}
 
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <Kpi label="Signaux" value={rows.length} />
-        <Kpi label="Destinataires" value={totals.recipients} />
-        <Kpi label="In-app lus" value={totals.inAppRead} tone="info" />
-        <Kpi label="Emails envoyés" value={totals.emailsSent} />
-        <Kpi label="Délivrés" value={totals.delivered} tone="success" />
-        <Kpi label="Ouverts" value={totals.opened} tone="info" />
-        <Kpi label="Bounces" value={totals.bounced} tone="danger" />
-        <Kpi label="Plaintes" value={totals.complained} tone="danger" />
-        <Kpi label="Push envoyés" value={totals.pushSent} />
-        <Kpi label="Push échoués" value={totals.pushFailed} tone="danger" />
-      </div>
+            {/* KPIs — top 4 toujours visibles, reste toggleable sur mobile */}
+            <MobileKpis
+              items={[
+                { label: "Signaux", value: rows.length },
+                { label: "Destinataires", value: totals.recipients },
+                { label: "Délivrés", value: totals.delivered, tone: "success" },
+                { label: "Taux délivrabilité", value: deliveryRate, suffix: "%", tone: deliveryRate >= 95 ? "success" : deliveryRate >= 80 ? "info" : "danger" },
+                { label: "Taux d'ouverture", value: openRate, suffix: "%", tone: openRate >= 40 ? "success" : openRate >= 20 ? "info" : "danger" },
+                { label: "Bounces", value: totals.bounced, tone: "danger" },
+                { label: "Taux de bounce", value: bounceRate, suffix: "%", tone: bounceRate <= 2 ? "success" : bounceRate <= 5 ? "info" : "danger" },
+                { label: "Plaintes", value: totals.complained, tone: "danger" },
+                { label: "Emails envoyés", value: totals.emailsSent },
+                { label: "Ouverts", value: totals.opened, tone: "info" },
+                { label: "In-app lus", value: totals.inAppRead, tone: "info" },
+                { label: "Push envoyés", value: totals.pushSent },
+                { label: "Push échoués", value: totals.pushFailed, tone: "danger" },
+              ]}
+            />
 
-      {/* Tableau des signaux (cliquable — cliquer sur une ligne pour voir le détail par utilisateur) */}
-      <SignalTableClient
-        rows={rows.map((r) => ({
-          ...r,
-          publishedAt: r.publishedAt?.toISOString() ?? null,
-        }))}
+            {/* Delivery funnel */}
+            {totals.emailsSent > 0 && (
+              <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+                <h3 className="text-sm font-semibold">Entonnoir de livraison</h3>
+                <div className="space-y-2">
+                  <FunnelBar label="Emails envoyés" value={totals.emailsSent} pct={100} color="bg-primary" />
+                  <FunnelBar label="Délivrés" value={totals.delivered} pct={deliveryRate} color="bg-success" />
+                  <FunnelBar label="Ouverts" value={totals.opened} pct={openRate} color="bg-info" />
+                  <FunnelBar label="Bounces" value={totals.bounced} pct={bounceRate} color="bg-destructive" />
+                </div>
+              </div>
+            )}
+
+            {/* Per-plan summary */}
+            {planStats.size > 0 && (
+              <div className="rounded-xl border border-border bg-card overflow-hidden">
+                <div className="px-4 py-3 border-b border-border bg-muted/20">
+                  <h3 className="text-sm font-semibold">Délivrabilité par plan</h3>
+                </div>
+                <div className="divide-y divide-border/50">
+                  {Array.from(planStats.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([plan, s]) => {
+                    const planDeliveryRate = s.sent > 0 ? Math.round((s.delivered / s.sent) * 100) : 0
+                    return (
+                      <div key={plan} className="flex items-center justify-between px-4 py-3">
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium truncate">{plan}</div>
+                          <div className="text-[10px] text-muted-foreground">{s.users} utilisateurs · {s.sent} emails</div>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs tabular-nums">
+                          <span className={cn("font-semibold", planDeliveryRate >= 95 ? "text-success" : planDeliveryRate >= 80 ? "text-info" : "text-destructive")}>
+                            {planDeliveryRate}%
+                          </span>
+                          <div className="w-16 h-1.5 rounded-full bg-muted overflow-hidden">
+                            <div
+                              className={cn("h-full rounded-full transition-all", planDeliveryRate >= 95 ? "bg-success" : planDeliveryRate >= 80 ? "bg-info" : "bg-destructive")}
+                              style={{ width: `${planDeliveryRate}%` }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </>
+        }
+        signals={
+          <>
+            {/* Filtres + actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <form className="flex items-center gap-2 flex-wrap">
+                <input
+                  name="q"
+                  defaultValue={query}
+                  placeholder="Rechercher un signal..."
+                  className="h-9 rounded-lg border border-border bg-background px-3 text-xs w-40 md:w-64 outline-none focus:border-primary"
+                />
+                <input type="hidden" name="range" value={range} />
+                <button
+                  type="submit"
+                  className="h-9 rounded-lg bg-primary text-primary-foreground px-4 text-xs font-medium hover:bg-primary/90"
+                >
+                  Filtrer
+                </button>
+                {(query || range !== "7d") && (
+                  <Link
+                    href="/admin/tracker"
+                    className="h-9 rounded-lg border border-border px-3 text-xs flex items-center text-muted-foreground hover:text-foreground"
+                  >
+                    Réinitialiser
+                  </Link>
+                )}
+              </form>
+              <div className="flex items-center gap-1">
+                {(["24h", "7d", "30d", "all"] as const).map((r) => {
+                  const href = `/admin/tracker?range=${r}${query ? `&q=${encodeURIComponent(query)}` : ""}`
+                  return (
+                    <Link
+                      key={r}
+                      href={href}
+                      className={cn(
+                        "h-7 rounded-md px-2.5 text-[10px] font-medium flex items-center transition-colors",
+                        range === r
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground border border-border",
+                      )}
+                    >
+                      {r === "24h" ? "24h" : r === "7d" ? "7j" : r === "30d" ? "30j" : "Tout"}
+                    </Link>
+                  )
+                })}
+              </div>
+              <RetryButton serverAction={handleRetryAll} />
+            </div>
+
+            {/* Tableau des signaux */}
+            <SignalTableClient
+              rows={rows.map((r) => ({
+                ...r,
+                publishedAt: r.publishedAt?.toISOString() ?? null,
+              }))}
+            />
+          </>
+        }
+        timeline={
+          <>
+            <UserTimeline users={users} />
+          </>
+        }
       />
-
-      {/* Timeline individuelle par utilisateur */}
-      <UserTimeline users={users} />
     </div>
   )
 }
 
-function Kpi({ label, value, tone }: { label: string; value: number; tone?: "success" | "info" | "danger" }) {
+function Kpi({ label, value, tone, suffix }: { label: string; value: number; tone?: string; suffix?: string }) {
   const color =
     tone === "success" ? "text-success" : tone === "info" ? "text-info" : tone === "danger" ? "text-destructive" : "text-foreground"
   return (
     <div className="rounded-xl border border-border bg-card p-3">
-      <div className={`text-2xl font-bold tabular-nums ${color}`}>{value}</div>
+      <div className={`text-2xl font-bold tabular-nums ${color}`}>{value}{suffix ?? ""}</div>
       <div className="text-xs text-muted-foreground mt-0.5">{label}</div>
+    </div>
+  )
+}
+
+function FunnelBar({ label, value, pct, color }: { label: string; value: number; pct: number; color: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-28 text-xs text-muted-foreground shrink-0">{label}</span>
+      <div className="flex-1 h-5 rounded-md bg-muted overflow-hidden relative">
+        <div className={`h-full rounded-md transition-all ${color}`} style={{ width: `${Math.max(pct, 2)}%` }} />
+      </div>
+      <span className="w-16 text-right text-xs font-semibold tabular-nums">{value}</span>
+      <span className="w-10 text-right text-[10px] text-muted-foreground tabular-nums">{pct}%</span>
     </div>
   )
 }
@@ -419,5 +561,39 @@ function WorkerKpi({ label, value }: { label: string; value: string }) {
         {value}
       </span>
     </div>
+  )
+}
+
+function MobileKpis({ items }: {
+  items: { label: string; value: number; tone?: string; suffix?: string }[]
+}) {
+  return (
+    <>
+      {/* Desktop: tout */}
+      <div className="hidden md:grid md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {items.map((k) => (
+          <Kpi key={k.label} {...k} />
+        ))}
+      </div>
+      {/* Mobile: top 4 + toggle */}
+      <div className="md:hidden space-y-2">
+        <div className="grid grid-cols-2 gap-2">
+          {items.slice(0, 4).map((k) => (
+            <Kpi key={k.label} {...k} />
+          ))}
+        </div>
+        <details className="group">
+          <summary className="cursor-pointer text-xs text-primary font-medium hover:underline px-1 py-1">
+            <span className="group-open:hidden">Voir tous les indicateurs ({items.length - 4} de plus)</span>
+            <span className="hidden group-open:inline">Masquer les indicateurs</span>
+          </summary>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {items.slice(4).map((k) => (
+              <Kpi key={k.label} {...k} />
+            ))}
+          </div>
+        </details>
+      </div>
+    </>
   )
 }

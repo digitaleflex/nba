@@ -55,7 +55,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
               setSelectedUserId(null)
             }}
             placeholder="Nom ou email..."
-            className="h-9 w-full rounded-lg border border-border bg-background px-3 text-xs outline-none focus:border-primary"
+            className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary"
           />
           {query && filtered.length > 0 && !selectedUserId && (
             <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-background shadow-lg z-10 max-h-48 overflow-y-auto">
@@ -66,7 +66,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
                     setSelectedUserId(u.id)
                     setQuery(`${u.name} — ${u.email}`)
                   }}
-                  className="w-full text-left px-3 py-2 text-xs hover:bg-muted/50 transition-colors"
+                  className="w-full text-left px-3 py-3 text-sm hover:bg-muted/50 transition-colors"
                 >
                   <span className="font-medium">{u.name}</span>
                   <span className="text-muted-foreground ml-2">{u.email}</span>
@@ -169,7 +169,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
                 setSelectedUserId(null)
                 setQuery("")
               }}
-              className="text-xs text-primary hover:underline"
+              className="h-9 w-full rounded-lg border border-border text-xs text-primary font-medium hover:bg-muted/30 transition-colors flex items-center justify-center gap-1.5"
             >
               ← Changer d&apos;utilisateur
             </button>

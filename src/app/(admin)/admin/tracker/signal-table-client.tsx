@@ -164,7 +164,55 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                 </div>
 
                 {/* Per-user detail grouped by plan */}
-                <div className="overflow-x-auto">
+                {/* Mobile cards */}
+                <div className="md:hidden divide-y divide-border/50">
+                  {(() => {
+                    const grouped = new Map<string, typeof r.perUser>()
+                    for (const u of r.perUser) {
+                      const list = grouped.get(u.plan) || []
+                      list.push(u)
+                      grouped.set(u.plan, list)
+                    }
+                    const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
+                    if (entries.length === 0) {
+                      return (
+                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                          Aucun destinataire pour ce signal.
+                        </div>
+                      )
+                    }
+                    return entries.flatMap(([plan, users]) => [
+                      <div key={`plan-${plan}`} className="px-4 py-2 bg-muted/20 text-[10px] font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <User className="size-3" />
+                        {plan}
+                        <span className="font-normal text-muted-foreground/60">({users.length})</span>
+                      </div>,
+                      ...users.map((u, i) => (
+                        <div key={`${u.email}-${i}`} className="px-4 py-3 space-y-1.5">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium truncate">{u.name}</span>
+                            <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                            {u.email}
+                          </div>
+                          <div className="flex flex-wrap items-center gap-3 text-[10px]">
+                            <span className="inline-flex items-center gap-1">
+                              <span className="size-1.5 rounded-full bg-primary" />
+                              Push&nbsp;: {u.pushStatus ?? "—"}
+                            </span>
+                            <span className="inline-flex items-center gap-1">
+                              <span className={cn("size-1.5 rounded-full", u.inAppRead ? "bg-info" : "bg-muted-foreground")} />
+                              In-app&nbsp;: {u.inAppRead ? "lu" : "non lu"}
+                            </span>
+                          </div>
+                        </div>
+                      )),
+                    ])
+                  })()}
+                </div>
+                {/* Desktop table */}
+                <div className="hidden md:block overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="text-muted-foreground bg-muted/5">
                       <tr className="text-left">
