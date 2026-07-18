@@ -129,39 +129,16 @@ export class SignalPolicy {
 
   /**
    * Vérifie si un membre a le droit de visualiser un signal.
-   * Un membre peut voir un signal si et seulement si il possède une demande
-   * d'accès approuvée (APPROVED) pour l'un des plans ciblés par le signal.
-   * Les administrateurs ont accès à tous les signaux.
+   * Accès accordé à tous les utilisateurs actifs sans condition.
    */
   static async canView(userId: string, signalId: string): Promise<boolean> {
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        role: {
-          select: { name: true },
-        },
-        isActive: true,
-      },
+      select: { isActive: true },
     })
     if (!user) return false
     if (!user.isActive) return false
-    if (user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN") return true
 
-    const audience = await prisma.signalAudience.findMany({
-      where: { signalId },
-      select: { planId: true },
-    })
-    const planIds = audience.map((a: any) => a.planId)
-    if (planIds.length === 0) return false
-
-    const approvedRequest = await prisma.accessRequest.findFirst({
-      where: {
-        userId,
-        planId: { in: planIds },
-        status: "APPROVED",
-      },
-    })
-
-    return !!approvedRequest
+    return true
   }
 }

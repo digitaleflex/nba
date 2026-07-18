@@ -58,12 +58,12 @@ describe("distributeSignal", () => {
     ;(prisma.signal.update as any).mockResolvedValue({})
   })
 
-  it("distribue aux membres approuvés actifs (hors expéditeur) et crée notification + livraison + push WS + email", async () => {
+  it("distribue aux membres actifs (hors expéditeur) et crée notification + livraison + push WS + email", async () => {
     const signal = publishedSignal()
     ;(prisma.signal.findUnique as any).mockResolvedValue(signal)
     ;(prisma.user.findMany as any).mockImplementation(async (args: any) => {
       let res = [
-        { id: SENDER, email: "sender@x.com" }, // expéditeur => exclu
+        { id: SENDER, email: "sender@x.com" },
         { id: "m1", email: "m1@x.com" },
         { id: "m2", email: "m2@x.com" },
       ]
@@ -108,7 +108,7 @@ describe("distributeSignal", () => {
     expect(emails.map((e: any) => e.to).sort()).toEqual(["m1@x.com", "m2@x.com"])
     expect(emails.every((e: any) => e.subject === "Sujet signal")).toBe(true)
 
-    // 2 notifications push web envoyées (unitaire + in-app + email + push)
+    // 2 notifications push web envoyées
     expect(sendPushToUser).toHaveBeenCalledTimes(2)
     const pushUsers = (sendPushToUser as any).mock.calls.map((c: any) => c[0])
     expect(pushUsers).toEqual(expect.arrayContaining(["m1", "m2"]))
@@ -116,7 +116,6 @@ describe("distributeSignal", () => {
 
   it("exclut l'expéditeur (pas d'echo de son propre signal)", async () => {
     ;(prisma.signal.findUnique as any).mockResolvedValue(publishedSignal())
-    // seul l'expéditeur est membre approuvé
     ;(prisma.user.findMany as any).mockImplementation(async (args: any) => {
       let res = [{ id: SENDER, email: "sender@x.com" }]
       const notId = args?.where?.id?.not
@@ -168,25 +167,19 @@ describe("distributeSignal", () => {
     expect(result.recipientCount).toBe(1)
   })
 
-  it("inclut les membres signalsAccessOverride même hors groupe ciblé (et leur envoie email+push)", async () => {
+  it("distribue à tous les membres actifs sans condition", async () => {
     ;(prisma.signal.findUnique as any).mockResolvedValue(publishedSignal())
     let capturedWhere: any = null
     ;(prisma.user.findMany as any).mockImplementation(async (args: any) => {
       capturedWhere = args?.where
-      return [{ id: "ovr", email: "ovr@x.com" }]
+      return [{ id: "m1", email: "m1@x.com" }]
     })
 
     const result = await distributeSignal("sig-1", { publish: publish as any, enqueueEmail: enqueueEmail as any })
 
-    expect(capturedWhere.OR).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ signalsAccessOverride: true }),
-      ]),
-    )
+    expect(capturedWhere.isActive).toBe(true)
+    expect(capturedWhere.deletedAt).toBe(null)
+    expect(capturedWhere.OR).toBeUndefined()
     expect(result.recipientCount).toBe(1)
-    // Email + push web bien déclenchés pour le membre override
-    expect(enqueueEmail).toHaveBeenCalledTimes(1)
-    expect(enqueueEmail.mock.calls[0][1].to).toBe("ovr@x.com")
-    expect(sendPushToUser).toHaveBeenCalledWith("ovr", expect.any(Object))
   })
 })

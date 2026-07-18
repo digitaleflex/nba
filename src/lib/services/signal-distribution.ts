@@ -135,19 +135,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
     where: {
       isActive: true,
       deletedAt: null,
-      id: { not: signal.createdBy }, // Exclure l'expéditeur (echo)
-      OR: [
-        {
-          accessRequests: {
-            some: {
-              planId: { in: planIds },
-              status: "APPROVED",
-            },
-          },
-        },
-        // Membres avec override : reçoivent tous les signaux (email + push) même hors groupe
-        { signalsAccessOverride: true },
-      ],
+      id: { not: signal.createdBy },
     },
   })
 
