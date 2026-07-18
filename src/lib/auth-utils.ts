@@ -83,8 +83,12 @@ export function handleAuthError(error: unknown) {
     )
   }
   console.error("[auth-utils] Unexpected error:", error)
+  // Message générique rassurant : aucun détail technique ne fuit vers le client.
   return NextResponse.json(
-    { error: error instanceof Error ? error.message : "Erreur interne du serveur" },
+    {
+      error:
+        "Une erreur inattendue est survenue de notre côté. Réessayez dans quelques instants, ou contactez le support.",
+    },
     { status: 500 },
   )
 }

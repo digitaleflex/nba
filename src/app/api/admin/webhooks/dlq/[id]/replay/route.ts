@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { markDlqReplayed, abandonDlq } from "@nba/lib/services/webhook-dlq"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { serverError } from "@nba/lib/api-error"
 
 /**
  * Rejoue une entree DLQ : re-publie l'event dans la logique applicative
@@ -33,12 +34,9 @@ export async function POST(
     try {
       const body = dlq.rawBody ?? JSON.stringify(dlq.payload)
       event = JSON.parse(body)
-    } catch (e: any) {
+    } catch (e: unknown) {
       await markDlqReplayed(id, false)
-      return NextResponse.json(
-        { ok: false, error: `Invalid payload: ${e.message}` },
-        { status: 500 },
-      )
+      return serverError(e, "POST /api/admin/webhooks/dlq/[id]/replay")
     }
 
     const type = event.type
@@ -164,19 +162,16 @@ export async function POST(
       })
 
       return NextResponse.json({ ok: true, replayed: true, type, emailId })
-    } catch (err: any) {
+    } catch (err: unknown) {
       await markDlqReplayed(id, false)
       await logAuditEvent({
         userId: session.user.id,
         action: "webhook.dlq.replay_failed",
         resourceType: "webhook_dlq",
         resourceId: id,
-        details: { error: err?.message },
+        details: { error: err instanceof Error ? err.message : "Erreur" },
       })
-      return NextResponse.json(
-        { ok: false, error: `Replay failed: ${err?.message}` },
-        { status: 500 },
-      )
+      return serverError(err, "POST /api/admin/webhooks/dlq/[id]/replay")
     }
   } catch (error) {
     return handleAuthError(error)

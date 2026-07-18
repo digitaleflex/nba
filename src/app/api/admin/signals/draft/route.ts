@@ -3,6 +3,7 @@ import { updateSignal } from "@nba/modules/signals/services/update-signal"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
+import { serverError } from "@nba/lib/api-error"
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,6 +52,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Brouillon invalide", details: err.errors }, { status: 400 })
     }
     console.error("[signals/draft] failed:", err)
-    return NextResponse.json({ error: err?.message ?? "Erreur d'enregistrement du brouillon" }, { status: 500 })
+    return serverError(err, "POST /api/admin/signals/draft")
   }
 }

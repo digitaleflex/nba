@@ -94,10 +94,10 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         <div className="size-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary">
-                          {member.name.slice(0, 2).toUpperCase()}
+                          {(member.name || member.email || "?").slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-semibold text-foreground">{member.name}</p>
+                          <p className="font-semibold text-foreground">{member.name || "—"}</p>
                           <p className="text-[10px] text-muted-foreground">{member.email}</p>
                         </div>
                       </div>

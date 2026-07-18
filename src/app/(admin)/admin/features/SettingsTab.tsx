@@ -32,7 +32,9 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
           smtpPort: data.smtp_port ?? "",
           smtpTls: data.smtp_tls ?? "",
           smtpUser: data.smtp_user ?? "",
-          smtpPass: data.smtp_pass ?? "",
+          // Ne jamais pré-remplir le mot de passe en clair (fuite via DevTools/state).
+          // L'utilisateur doit le saisir pour le changer ; vide = inchangé.
+          smtpPass: "",
           smtpFrom: data.smtp_from ?? "",
         })
       }
@@ -106,7 +108,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
                 <label className="text-[10px] text-muted-foreground uppercase font-bold">Mot de passe</label>
                 <Input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Laissé vide = inchangé"
                   className="bg-background border-border text-xs text-foreground"
                   value={settings.smtpPass}
                   onChange={(e) => setSettings((s) => ({ ...s, smtpPass: e.target.value }))}
@@ -129,10 +131,14 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
                 onClick={async () => {
                   setSavingSettings(true)
                   try {
+                    // N'envoie le mot de passe que s'il a été modifié (non vide),
+                    // sinon on le retire pour ne pas écraser la valeur enregistrée.
+                    const payload: Record<string, string> = { ...settings }
+                    if (!payload.smtpPass) delete payload.smtpPass
                     const res = await fetch("/api/admin/settings", {
                       method: "PUT",
                       headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify(settings),
+                      body: JSON.stringify(payload),
                     })
                     if (res.ok) {
                       toast.success("Paramètres SMTP enregistrés avec succès.")

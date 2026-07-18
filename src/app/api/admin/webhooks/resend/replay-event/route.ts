@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { replayEmailEvent } from "@nba/lib/services/webhook-replay"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { serverError } from "@nba/lib/api-error"
 
 /**
  * Rejoue le processing d'un ancien event stocke dans email_events.
@@ -37,8 +38,8 @@ export async function POST(req: NextRequest) {
     let parsed: any
     try {
       parsed = typeof event.raw === "string" ? JSON.parse(event.raw) : (event.raw as any)
-    } catch (e: any) {
-      return NextResponse.json({ ok: false, error: `Invalid raw JSON: ${e.message}` }, { status: 500 })
+    } catch (e: unknown) {
+      return serverError(e, "POST /api/admin/webhooks/resend/replay-event")
     }
 
     const result = await replayEmailEvent({

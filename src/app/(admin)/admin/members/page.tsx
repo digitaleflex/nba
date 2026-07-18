@@ -63,8 +63,10 @@ export default function AdminMembersPage() {
       const res = await fetch(`/api/admin/members?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setMembers(data.members)
-        setTotal(data.total)
+        setMembers(Array.isArray(data.members) ? data.members : [])
+        setTotal(data.total || 0)
+      } else {
+        setMembers([])
       }
     } finally {
       setLoading(false)
@@ -278,11 +280,11 @@ export default function AdminMembersPage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex size-8 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                        {member.name.charAt(0).toUpperCase()}
+                        {(member.name || member.email || "?").charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-xs text-muted-foreground">{member.role.name}</p>
+                        <p className="font-medium">{member.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{member.role?.name ?? "—"}</p>
                       </div>
                     </div>
                   </td>

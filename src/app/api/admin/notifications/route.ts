@@ -8,6 +8,7 @@ import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { serverError } from "@nba/lib/api-error"
 
 const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
@@ -139,8 +140,8 @@ export async function POST(request: NextRequest) {
 
     await invalidatePrefix("ops")
     return NextResponse.json({ success: true, count: users.length })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "POST /api/admin/notifications")
   }
 }
 
@@ -177,7 +178,7 @@ export async function GET() {
     )
 
     return NextResponse.json({ notifications })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "GET /api/admin/notifications")
   }
 }

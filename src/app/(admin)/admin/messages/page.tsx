@@ -99,7 +99,7 @@ export default function AdminMessagesPage() {
     const res = await fetch("/api/admin/messages")
     if (res.ok) {
       const data = await res.json()
-      setConversations(data.conversations)
+      setConversations(Array.isArray(data.conversations) ? data.conversations : [])
     }
   }, [])
 
@@ -113,8 +113,8 @@ export default function AdminMessagesPage() {
     const res = await fetch(`/api/admin/messages/${id}`)
     if (res.ok) {
       const data = await res.json()
-      setMessages(data.messages)
-      setHasMore(data.hasMore)
+      setMessages(Array.isArray(data.messages) ? data.messages : [])
+      setHasMore(!!data.hasMore)
       scrollIntentRef.current = "bottom"
       setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)))
     }
@@ -133,8 +133,9 @@ export default function AdminMessagesPage() {
     const res = await fetch(`/api/admin/messages/${id}?before=${encodeURIComponent(oldest.createdAt)}`)
     if (res.ok) {
       const data = await res.json()
-      setMessages((prev) => [...data.messages, ...prev])
-      setHasMore(data.hasMore)
+      const older = Array.isArray(data.messages) ? data.messages : []
+      setMessages((prev) => [...older, ...prev])
+      setHasMore(!!data.hasMore)
     }
     loadingOlderRef.current = false
     setLoadingOlder(false)
