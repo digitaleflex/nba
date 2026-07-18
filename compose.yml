@@ -44,21 +44,14 @@ services:
       - nba-storage:/app/storage
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
-      - "traefik.http.routers.nba-app.priority=100"
-      - "traefik.http.routers.nba-app.entrypoints=websecure"
-      - "traefik.http.routers.nba-app.tls=true"
-      - "traefik.http.routers.nba-app.tls.certresolver=letsencrypt"
-      - "traefik.http.routers.nba-app.service=nba-app"
+      # Router + middleware définis en file provider (traefik.yml) :
+      # voir nba-html / nba-nocache / nba-nohtmlcache.
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.path=/api/public/health"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=5s"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
       - "traefik.http.middlewares.nba-retry.retry.attempts=5"
       - "traefik.http.middlewares.nba-retry.retry.initialInterval=500ms"
-      - "traefik.http.routers.nba-app.middlewares=nba-retry"
-      # Le cache des chunks /_next/static est géré côté Traefik
-      # (voir middleware nba-nocache + router nba-static dans traefik.yml).
       # WebSocket (Socket.IO) : route /socket.io/ vers le worker sur le port 3001
       - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && PathPrefix(`/socket.io/`)"
       - "traefik.http.routers.nba-ws.priority=200"
