@@ -40,6 +40,10 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
+    // Désactive l'envoi auto de l'email de vérification better-auth à l'inscription :
+    // la vérification est gérée par notre propre OTP onboarding (/api/onboarding/send-otp),
+    // évitant un double email (lien better-auth + OTP) redondant et confus pour l'utilisateur.
+    sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user, url)
     },
