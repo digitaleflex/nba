@@ -9,6 +9,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
   Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@nba/design-system"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 import { Signal, CachedGet, OpenPanel } from "./types"
 
 const SignalEditor = dynamic(
