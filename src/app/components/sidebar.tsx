@@ -72,14 +72,10 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     router.refresh()
   }
 
-  // Liens pour l'espace utilisateur
+  // Liens pour l'espace utilisateur — volontairement bref : le produit tourne
+  // autour des signaux. "Mes Signaux" est l'entree principale, le reste est
+  // secondaire (taches ponctuelles ou parametrage).
   const userLinks = [
-    {
-      href: "/dashboard",
-      label: "Tableau de bord",
-      icon: LayoutDashboard,
-      active: pathname === "/dashboard",
-    },
     {
       href: "/dashboard/signals",
       label: "Mes Signaux",
@@ -109,12 +105,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Support",
       icon: MessageCircle,
       active: pathname === "/dashboard/support",
-    },
-    {
-      href: "/dashboard/messages",
-      label: "Messages",
-      icon: MessageCircle,
-      active: pathname.startsWith("/dashboard/messages"),
     },
   ]
 
