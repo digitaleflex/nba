@@ -181,7 +181,41 @@ body {
   ) 1;
 }
 
-/* ─── Animations ─── */
+/* ─── Animations (with Safari support) ─── */
+
+/* Safari needs explicit -webkit- keyframes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  @-webkit-keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 20px oklch(0.35 0.06 260 / 0.15);
+    }
+    50% {
+      box-shadow: 0 0 30px oklch(0.35 0.06 260 / 0.3),
+                  0 0 60px oklch(0.35 0.06 260 / 0.1);
+    }
+  }
+
+  @-webkit-keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @-webkit-keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
+
+  .animate-pulse-glow {
+    -webkit-animation: pulse-glow 3s ease-in-out infinite;
+  }
+  .animate-shimmer {
+    -webkit-animation: shimmer 2s ease-in-out infinite;
+  }
+  .animate-float {
+    -webkit-animation: float 3s ease-in-out infinite;
+  }
+}
+
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 20px oklch(0.35 0.06 260 / 0.15);
@@ -238,4 +272,145 @@ body {
 
 .dark ::-webkit-scrollbar-thumb {
   background: oklch(1 0 0 / 0.1);
+}
+
+/* ─── Apple / Safari / Touch Optimizations ─── */
+
+/* Remove tap highlight on iOS Safari */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent iOS text size adjust on orientation change */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Prevent callout (copy/paste menu) on interactive touch elements */
+.no-callout {
+  -webkit-touch-callout: none;
+}
+
+/* Improve touch scrolling on iOS */
+.smooth-scroll,
+.overflow-auto,
+.overflow-y-auto,
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove 300ms tap delay, prevent double-tap zoom on interactive elements */
+button,
+a,
+input,
+select,
+textarea,
+[role="button"],
+[tabindex]:not([tabindex="-1"]) {
+  touch-action: manipulation;
+}
+
+/* Better touch feedback on mobile */
+@media (hover: none) and (pointer: coarse) {
+  .touch-feedback:active {
+    background-color: var(--color-muted);
+    transition: background-color 0ms;
+  }
+
+  button:not(:disabled):active,
+  [role="button"]:not(:disabled):active,
+  a:active {
+    opacity: 0.8;
+    transition: opacity 0ms;
+  }
+}
+
+/* Safe area insets for notched iPhones */
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.safe-left {
+  padding-left: env(safe-area-inset-left, 0px);
+}
+.safe-right {
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.safe-x {
+  padding-left: env(safe-area-inset-left, 0px);
+  padding-right: env(safe-area-inset-right, 0px);
+}
+.safe-y {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Fixed bottom elements safe area (e.g. tab bars) */
+.fixed-bottom-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+}
+
+/* Prevent rubber-band / overscroll on modals & drawers */
+.overscroll-none {
+  overscroll-behavior: none;
+}
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* iOS momentum scroll snap */
+.momentum-scroll {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: scroll;
+}
+
+/* Force GPU compositing for smooth animations */
+.gpu {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Safari-friendly backface visibility for card flips, etc. */
+.backface-hidden {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* Prevent user selection on interactive touch areas */
+.select-none {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Enhanced pressable with Safari support */
+.pressable:active {
+  transform: scale(0.98);
+}
+
+/* Dark mode scrollbar for WebKit (already above) */
+
+/* ─── Safari @supports queries ─── */
+
+/* Enhanced blur for Safari (needs vendor prefix) */
+@supports (-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px)) {
+  .glass,
+  .glass-strong {
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .glass-strong {
+    -webkit-backdrop-filter: blur(20px);
+    backdrop-filter: blur(20px);
+  }
+}
+
+/* Improved font rendering for Apple devices */
+@supports (font: -apple-system-body) {
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, var(--font-sans), "Segoe UI", Roboto, sans-serif;
+    letter-spacing: 0.01em;
+  }
 }

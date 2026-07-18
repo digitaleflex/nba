@@ -1,6 +1,7 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider, ToastProvider } from "@nba/design-system";
+import { ThemeProvider, ToastProvider, TopLoader } from "@nba/design-system";
 import { ImpersonationBanner } from "./components/impersonation-banner";
 import "./globals.css";
 
@@ -29,28 +30,12 @@ export const metadata: Metadata = {
     template: "%s | NeverBrokeAgain",
   },
   description: "Plateforme de signaux de trading premium",
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#030711" },
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-  ],
-  manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [{ url: "/icon.png", sizes: "32x32", type: "image/png" }],
-    apple: "/logo.png",
-    other: [
-      { rel: "apple-touch-icon-precomposed", url: "/icons/icon-192x192.png" },
-    ],
-  },
   appleWebApp: {
     capable: true,
     title: "NeverBrokeAgain",
     statusBarStyle: "black-translucent",
   },
-  other: {
-    "mobile-web-app-capable": "yes",
-    "msapplication-TileImage": "/icons/icon-192x192.png",
-    "msapplication-TileColor": "#030711",
-  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "NeverBrokeAgain",
     description: "Plateforme de signaux de trading premium",
@@ -58,6 +43,18 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#030711" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -73,6 +70,9 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col noise">
         <ThemeProvider>
+          <Suspense fallback={null}>
+            <TopLoader />
+          </Suspense>
           <ImpersonationBanner />
           {children}
           <ToastProvider />

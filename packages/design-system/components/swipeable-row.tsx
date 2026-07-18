@@ -128,7 +128,9 @@ export function SwipeableRow({
         )}
         style={{
           transform: `translateX(${offset}px)`,
+          WebkitTransform: `translateX(${offset}px)`,
           transition: isDragging ? "none" : "transform 200ms ease-out",
+          WebkitTransition: isDragging ? "none" : "-webkit-transform 200ms ease-out",
         }}
         onClickCapture={(e) => {
           if (openSide && Math.abs(offset) > 0) {
