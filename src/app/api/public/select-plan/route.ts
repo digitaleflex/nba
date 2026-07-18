@@ -105,6 +105,8 @@ export async function POST(req: NextRequest) {
     }
     throw error
   } finally {
-    redis?.disconnect().catch(() => {})
+    if (redis) {
+      try { redis.disconnect() } catch {} 
+    }
   }
 }
