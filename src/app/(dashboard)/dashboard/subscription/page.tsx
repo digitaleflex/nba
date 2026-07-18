@@ -146,8 +146,8 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     fetch("/api/dashboard/subscription")
-      .then((r) => r.json())
-      .then((subData) => setAccessRequests(subData.requests || []))
+      .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
+      .then((subData) => setAccessRequests(Array.isArray(subData.requests) ? subData.requests : []))
       .catch(() => setError("Erreur de chargement"))
       .finally(() => setLoading(false))
   }, [])

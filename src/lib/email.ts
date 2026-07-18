@@ -90,7 +90,7 @@ function layout(body: string): string {
           <td style="padding-top:20px;text-align:center">
             <p class="footer-text" style="margin:0;font-size:12px;color:#6B7280;line-height:1.6">
               ${APP_NAME} &mdash; Signaux traders premium<br/>
-              <a href="${APP_DOMAIN}/contact" style="color:#283B5D;text-decoration:none;font-weight:500;font-size:12px">Nous contacter</a>
+              <a href="${APP_DOMAIN}/dashboard/support" style="color:#283B5D;text-decoration:none;font-weight:500;font-size:12px">Nous contacter</a>
             </p>
           </td>
         </tr>
@@ -719,7 +719,7 @@ export function accessRevokedEmail(user: TemplateUser, planName: string, reason:
         Contactez notre équipe support pour plus d'informations.
       </p>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/support`, text: "Contacter le support" })}
     `),
   }
 }
@@ -748,7 +748,7 @@ export function accountSuspendedEmail(user: TemplateUser, reason: string): { sub
         Si vous pensez qu'il s'agit d'une erreur, contactez notre équipe support.
       </p>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/support`, text: "Contacter le support" })}
     `),
   }
 }
@@ -824,7 +824,7 @@ export function newAccessRequestAdminEmail(
         </tr>
       </table>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/admin/access-requests`, text: "Voir la demande" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=requests`, text: "Voir la demande" })}
     `),
   }
 }

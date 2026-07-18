@@ -102,8 +102,8 @@ export default function MessagesPage() {
     const res = await fetch("/api/dashboard/messages")
     if (res.ok) {
       const data = await res.json()
-      setConversations(data.conversations)
-      syncFromServer(data.conversations)
+      setConversations(Array.isArray(data.conversations) ? data.conversations : [])
+      syncFromServer(Array.isArray(data.conversations) ? data.conversations : [])
     }
   }, [syncFromServer])
 
@@ -119,8 +119,8 @@ export default function MessagesPage() {
     const res = await fetch(`/api/dashboard/messages/${id}`)
     if (res.ok) {
       const data = await res.json()
-      setMessages(data.messages)
-      setHasMore(data.hasMore)
+      setMessages(Array.isArray(data.messages) ? data.messages : [])
+      setHasMore(data.hasMore ?? false)
       scrollIntentRef.current = "bottom"
       setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)))
     }
@@ -139,7 +139,7 @@ export default function MessagesPage() {
     const res = await fetch(`/api/dashboard/messages/${id}?before=${encodeURIComponent(oldest.createdAt)}`)
     if (res.ok) {
       const data = await res.json()
-      setMessages((prev) => [...data.messages, ...prev])
+      setMessages((prev) => [...(Array.isArray(data.messages) ? data.messages : []), ...prev])
       setHasMore(data.hasMore)
     }
     loadingOlderRef.current = false
@@ -196,7 +196,7 @@ export default function MessagesPage() {
       setSending(false)
       if (res.ok) {
         const data = await res.json()
-        setMessages((prev) => prev.map((m) => (m.id === tempId ? data.message : m)))
+        setMessages((prev) => prev.map((m) => (m.id === tempId && data.message ? data.message : m)))
         setQuoted(null)
         setComposerQuoted(null)
         loadConversations()

@@ -26,7 +26,7 @@ export default async function SignalsPage() {
     redirect("/login")
   }
 
-  const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
+  const isAdmin = user.role?.name === "ADMIN" || user.role?.name === "SUPER_ADMIN"
   const hasApprovedAccess = isAdmin || user.signalsAccessOverride || user.accessRequests.length > 0
 
   if (hasApprovedAccess) {

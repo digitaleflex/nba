@@ -70,11 +70,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetch("/api/dashboard/profile")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
       .then((data) => {
+        if (!data.user) return
         setProfile(data.user)
         setForm({
-          name: data.user.name,
+          name: data.user.name ?? "",
           phone: data.user.phone || "",
           whatsapp: data.user.whatsapp || "",
           country: data.user.country || "",
@@ -298,7 +299,7 @@ export default function ProfilePage() {
               <p className="font-semibold text-lg">{profile?.name}</p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               <Badge variant="outline" className="text-[10px] mt-1">
-                {profile?.role.name}
+                {profile?.role?.name}
               </Badge>
             </div>
           </div>

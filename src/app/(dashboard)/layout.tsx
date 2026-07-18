@@ -22,7 +22,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const user = {
     ...session.user,
-    role: userDb?.role.name,
+    role: userDb?.role?.name,
   }
 
   return (

@@ -51,7 +51,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     })
   ])
 
-  const isUserAdmin = userDb?.role.name === "ADMIN" || userDb?.role.name === "SUPER_ADMIN"
+  const isUserAdmin = userDb?.role?.name === "ADMIN" || userDb?.role?.name === "SUPER_ADMIN"
   const userPlanIds = new Set(approvedRequests.map((r) => r.planId))
 
   if (!signal || signal.deletedAt) {

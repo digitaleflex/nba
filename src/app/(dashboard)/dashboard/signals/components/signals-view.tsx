@@ -251,13 +251,14 @@ export function SignalsView() {
       }
 
       const data: ApiResponse = await res.json()
+      const sigs = Array.isArray(data.signals) ? data.signals : []
       if (append) {
-        setSignals((prev) => [...prev, ...data.signals])
+        setSignals((prev) => [...prev, ...sigs])
       } else {
-        setSignals(data.signals)
+        setSignals(sigs)
       }
-      setPagination(data.pagination)
-      setSummary(data.summary)
+      setPagination(data.pagination ?? { page: 1, totalPages: 1, totalCount: 0 })
+      setSummary(data.summary ?? {})
       lastFetchRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")

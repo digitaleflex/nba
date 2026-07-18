@@ -87,7 +87,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetch("/api/dashboard/notification-preferences")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Erreur"); return r.json() })
       .then((data) => {
         setSelectedSound(data.sound)
         setPrefs(data.prefs || {})
@@ -198,14 +198,15 @@ export default function NotificationsPage() {
       const res = await fetch(`/api/dashboard/notifications?page=${nextPage}&limit=10`)
       if (!res.ok) throw new Error("Erreur")
       const data = await res.json()
+      const notifications = Array.isArray(data.notifications) ? data.notifications : []
       if (loadMore) {
-        setNotifications((prev) => [...prev, ...data.notifications])
+        setNotifications((prev) => [...prev, ...notifications])
       } else {
-        setNotifications(data.notifications)
+        setNotifications(notifications)
       }
       pageRef.current = nextPage
-      setHasMore(nextPage < data.pagination.totalPages)
-      setUnreadCount(data.unreadCount)
+      setHasMore(nextPage < (data.pagination?.totalPages ?? 0))
+      setUnreadCount(data.unreadCount ?? 0)
     } catch {
       setError("Erreur de chargement")
     } finally {
@@ -219,9 +220,9 @@ export default function NotificationsPage() {
       const res = await fetch(`/api/dashboard/notifications?page=${pageRef.current}&limit=10`)
       if (!res.ok) return
       const data = await res.json()
-      setNotifications(data.notifications)
-      setHasMore(pageRef.current < data.pagination.totalPages)
-      setUnreadCount(data.unreadCount)
+      setNotifications(Array.isArray(data.notifications) ? data.notifications : [])
+      setHasMore(pageRef.current < (data.pagination?.totalPages ?? 0))
+      setUnreadCount(data.unreadCount ?? 0)
     } catch { /* silent refresh */ }
   }, [])
 
@@ -254,7 +255,7 @@ export default function NotificationsPage() {
       setNotifications((prev) =>
         prev.map((n) => (n.readAt ? n : { ...n, readAt: new Date().toISOString() }))
       )
-      setUnreadCount((prev) => Math.max(0, prev - count))
+      setUnreadCount((prev) => Math.max(0, prev - (count ?? prev)))
     } catch {}
   }
 

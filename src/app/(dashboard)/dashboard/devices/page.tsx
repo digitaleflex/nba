@@ -39,8 +39,8 @@ export default function DevicesPage() {
     try {
       const res = await fetch("/api/dashboard/devices")
       if (!res.ok) throw new Error("Erreur")
-      const data = (await res.json()) as Device[]
-      setDevices(data)
+      const data = await res.json()
+      setDevices(Array.isArray(data) ? data : [])
     } catch {
       toast.error("Impossible de charger les appareils")
     } finally {

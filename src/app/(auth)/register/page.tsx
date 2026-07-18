@@ -65,8 +65,8 @@ export default function RegisterPage() {
 
   useEffect(() => {
     fetch("/api/public/plans")
-      .then((r) => r.json())
-      .then(setPlans)
+      .then((r) => { if (!r.ok) throw new Error("Erreur"); return r.json() })
+      .then((data) => setPlans(Array.isArray(data) ? data : []))
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
