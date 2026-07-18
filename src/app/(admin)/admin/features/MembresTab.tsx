@@ -383,19 +383,48 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                       </button>
                     </td>
                     <td className="px-4 py-3 hidden lg:table-cell">
-                      <button
-                        onClick={() => updateMember(m.id, { signalsAccessOverride: !m.signalsAccessOverride })}
-                        className={cn(
-                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors",
-                          m.signalsAccessOverride
-                            ? "bg-amber-500/10 text-amber-600"
-                            : "bg-muted/50 text-muted-foreground hover:bg-muted"
-                        )}
-                        title="Override : reçoit tous les signaux même sans abonnement"
-                      >
-                        <Radio className="size-3" />
-                        {m.signalsAccessOverride ? "Tous signaux" : "Normal"}
-                      </button>
+                      {(() => {
+                        const hasSubscription = (m.accessRequests?.length ?? 0) > 0
+                        const overrideActive = m.signalsAccessOverride
+                        if (hasSubscription) {
+                          if (overrideActive) {
+                            return (
+                              <button
+                                onClick={() => updateMember(m.id, { signalsAccessOverride: false })}
+                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors bg-rose-500/10 text-rose-600"
+                                title="Incohérent : ce membre a déjà un abonnement, l'override est inutile. Cliquez pour remettre à l'état normal."
+                              >
+                                <Radio className="size-3" />
+                                Incohérent
+                              </button>
+                            )
+                          }
+                          return (
+                            <span
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted/50 text-muted-foreground cursor-not-allowed"
+                              title="Ce membre a déjà un abonnement actif : l'override est inutile."
+                            >
+                              <Radio className="size-3" />
+                              Normal
+                            </span>
+                          )
+                        }
+                        return (
+                          <button
+                            onClick={() => updateMember(m.id, { signalsAccessOverride: !m.signalsAccessOverride })}
+                            className={cn(
+                              "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors",
+                              m.signalsAccessOverride
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-muted/50 text-muted-foreground hover:bg-muted"
+                            )}
+                            title="Override : reçoit tous les signaux même sans abonnement"
+                          >
+                            <Radio className="size-3" />
+                            {m.signalsAccessOverride ? "Tous signaux" : "Normal"}
+                          </button>
+                        )
+                      })()}
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1 flex-wrap">

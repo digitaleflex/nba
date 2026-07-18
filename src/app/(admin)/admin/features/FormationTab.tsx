@@ -106,6 +106,26 @@ export function FormationTab() {
       tags: ["ADMIN", "SUPER_ADMIN", "MEMBRE"],
     },
     {
+      icon: <Radio className="size-5 text-amber-400" />,
+      title: "Accès exceptionnel (Override)",
+      body: (
+        <p>
+          L'<b>Override</b> est un accès gratuit et exceptionnel qui fait recevoir <b>tous les signaux</b> à un membre, même s'il n'a <b>aucun abonnement</b>. Il est utile pour donner un accès VIP ou de test sans souscription.
+        </p>
+      ),
+      tags: ["VIP", "Accès total", "Sans abonnement"],
+    },
+    {
+      icon: <Radio className="size-5 text-amber-400" />,
+      title: "Override & abonnement : règle",
+      body: (
+        <p>
+          Si le membre a <b>déjà un abonnement</b> actif, l'override est <b>inutile et incohérent</b> : il a déjà accès à tous les signaux de ses plans. Le bouton est alors désactivé, et s'il était activé par erreur il apparaît en <b>« Incohérent »</b> — cliquez dessus pour le remettre à l'état normal. N'activez l'override que pour les membres <b>sans abonnement</b>.
+        </p>
+      ),
+      tags: ["Règle", "Cohérence"],
+    },
+    {
       icon: <Radio className="size-5 text-primary" />,
       title: "Le tableau de bord de diffusion",
       body: (
