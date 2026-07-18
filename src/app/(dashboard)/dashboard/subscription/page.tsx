@@ -188,7 +188,7 @@ export default function SubscriptionPage() {
         <p className="text-sm text-muted-foreground">Gérez vos accès aux groupes de diffusion</p>
       </div>
 
-      {/* CTA : quand aucun abonnement actif (pas d'APPROVED) */}
+      {/* CTA : cas exceptionnel (aucun abonnement actif) */}
       {approved.length === 0 && (
         <Card className="border-warning/30 bg-warning/5">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -199,15 +199,15 @@ export default function SubscriptionPage() {
               </p>
               <p className="text-sm text-muted-foreground max-w-md">
                 {rejected.length > 0
-                  ? "Votre demande précédente a été refusée. Sélectionnez un autre plan."
+                  ? "Votre demande précédente a été refusée."
                   : pending.length > 0
-                    ? "Votre demande est en cours de traitement. Vous pouvez modifier votre choix."
-                    : "Sélectionnez un plan pour accéder aux groupes de diffusion."}
+                    ? "Votre demande est en cours de traitement."
+                    : "Votre accès aux signaux n'est pas encore actif."}
               </p>
             </div>
-            <Link href="/dashboard/subscription/select">
+            <Link href="/dashboard/signals">
               <Button variant="default" size="sm">
-                {pending.length > 0 ? "Modifier mon choix" : rejected.length > 0 ? "Choisir un autre plan" : "Choisir un abonnement"}
+                Voir les signaux
               </Button>
             </Link>
           </CardContent>

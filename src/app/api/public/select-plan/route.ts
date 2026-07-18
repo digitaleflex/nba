@@ -34,9 +34,11 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Create the new request
+    // Create the new request — approuvee automatiquement pour un acces immediat
+    // aux signaux (le plan a deja ete choisi a l'inscription, ce qui empeche la
+    // triche sur le niveau d'acces). Plus de validation manuelle = moins de friction.
     const newRequest = await prisma.accessRequest.create({
-      data: { userId: session.user.id, planId: parsed.planId },
+      data: { userId: session.user.id, planId: parsed.planId, status: "APPROVED" },
     })
 
     // Log audit event
