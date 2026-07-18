@@ -19,14 +19,16 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        // Les chunks buildés (_next/static) changent à chaque déploiement.
-        // On force la revalidation (no-cache) pour éviter qu'un navigateur/CDN
-        // ne serve un chunk orphelin d'un build précédent (404 + ChunkLoadError).
+        // Les chunks buildés (_next/static) changent de nom (hash) à chaque build.
+        // Un cache court (1h) + must-revalidate évite le flash sans style (FOUC)
+        // tout en garantissant la fraîcheur après un déploiement. Le no-store
+        // sur le HTML (via Traefik nba-nohtmlcache) assure que l'HTML référence
+        // toujours les bons chunks.
         source: "/_next/static/:path*",
         headers: [
           {
             key: "Cache-Control",
-            value: "no-cache, no-store, must-revalidate",
+            value: "public, max-age=3600, must-revalidate",
           },
         ],
       },
