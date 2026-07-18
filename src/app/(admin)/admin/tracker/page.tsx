@@ -172,8 +172,8 @@ export default async function SignalTrackerPage({
       const externalId = emailDelivery?.externalId ?? null
       if (externalId) allExternalIds.push(externalId)
       perUser.push({
-        email: n.user.email,
-        name: n.user.name,
+        email: n.user?.email ?? "inconnu",
+        name: n.user?.name ?? "inconnu",
         externalId,
         plan: userPlanMap.get(n.userId) || signal.audience.map((a: any) => a.plan.name).join(", "),
         emailBucket: "unknown",

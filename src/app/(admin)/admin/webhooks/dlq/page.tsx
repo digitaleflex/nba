@@ -36,8 +36,8 @@ export default function DlqPage() {
       const res = await fetch(`/api/admin/webhooks/dlq?status=${filter}&limit=50`)
       if (!res.ok) throw new Error("Erreur de chargement")
       const data = await res.json()
-      setItems(data.items)
-      setStats(data.stats)
+      setItems(Array.isArray(data.items) ? data.items : [])
+      setStats(data.stats ?? { pending: 0, replayed: 0, abandoned: 0 })
     } catch (err: any) {
       toast.error(err.message)
     } finally {

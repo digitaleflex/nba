@@ -37,7 +37,7 @@ export async function GET() {
           q.disconnect()
           return { name, ...counts }
         } catch (e) {
-          return { name, error: String(e) }
+          return { name, error: "Erreur de connexion à la file d'attente" }
         }
       }),
     )

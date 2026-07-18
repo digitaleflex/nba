@@ -26,7 +26,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
       const url = debouncedSearchUser ? `/api/admin/members?q=${encodeURIComponent(debouncedSearchUser)}` : "/api/admin/members"
       const { ok, data } = await cachedGet(url)
       if (ok) {
-        setMembers(data.members || [])
+        setMembers(Array.isArray(data.members) ? data.members : [])
       }
     } catch (err) {
       console.error(err)

@@ -70,9 +70,11 @@ export default function AdminAuditPage() {
       const res = await fetch(`/api/admin/audit-logs?${params}`)
       if (res.ok) {
         const data = await res.json()
-        setLogs(data.logs)
-        setTotal(data.total)
-        setFilters(data.filters)
+        setLogs(Array.isArray(data.logs) ? data.logs : [])
+        setTotal(data.total ?? 0)
+        setFilters(data.filters ?? { actions: [], resourceTypes: [] })
+      } else {
+        console.error("Échec de chargement des logs d'audit")
       }
     } finally {
       setLoading(false)
