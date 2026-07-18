@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, Loader2, ChevronLeft, ChevronRight, Shield, Clock, User } from "lucide-react"
+import { Search, Loader2, ChevronLeft, ChevronRight, Shield, Clock, User, ChevronDown } from "lucide-react"
 import { Button, Input, Card, CardContent, Badge, cn } from "@nba/design-system"
 
 interface AuditLog {
@@ -29,10 +29,45 @@ const ACTION_LABELS: Record<string, string> = {
   "signal.updated": "Signal modifié",
   "signal.duplicated": "Signal dupliqué",
   "signal.deleted": "Signal supprimé",
+  "signal.publish": "Distribution signaux",
   "kyc.approved": "KYC approuvé",
   "kyc.rejected": "KYC refusé",
   "broker.approved": "Broker approuvé",
   "broker.rejected": "Broker refusé",
+  "subscription.reselect": "Choix de service",
+  "subscription.reselect_duplicate": "Demande existante",
+  "email.bounced": "Email rejeté",
+  "email.complained": "Plainte spam",
+  "email.suppressed": "Email supprimé",
+  "user.suspend": "Utilisateur suspendu",
+  "user.reactivate": "Utilisateur réactivé",
+  "user.change_role": "Rôle modifié",
+  "user.revoke_sessions": "Sessions révoquées",
+  "impersonation.start": "Début impersonation",
+  "impersonation.stop": "Fin impersonation",
+  "signal.override_on": "Override activé",
+  "signal.override_off": "Override désactivé",
+  "notification.send": "Notification envoyée",
+  "admin.queues.retry": "Relance files d'attente",
+}
+
+const RESOURCE_LABELS: Record<string, string> = {
+  access_request: "Demande d'accès",
+  signal: "Signal",
+  user: "Utilisateur",
+  kyc_document: "Document KYC",
+  kyc: "KYC",
+  broker_verification: "Vérification Broker",
+  broker: "Broker",
+  subscription: "Abonnement",
+  system: "Système",
+  notification: "Notification",
+  session: "Session",
+  role: "Rôle",
+}
+
+function formatResource(resourceType: string): string {
+  return RESOURCE_LABELS[resourceType] ?? resourceType.replace(/_/g, " ")
 }
 
 function formatAction(action: string): string {
@@ -40,10 +75,76 @@ function formatAction(action: string): string {
 }
 
 function getActionColor(action: string): string {
-  if (action.includes("approved")) return "bg-success/10 text-success border-success/20"
-  if (action.includes("rejected") || action.includes("deleted")) return "bg-destructive/10 text-destructive border-destructive/20"
-  if (action.includes("created") || action.includes("published")) return "bg-primary/10 text-primary border-primary/20"
+  if (action.includes("approved") || action.includes("reactivate") || action.includes("override_on"))
+    return "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+  if (action.includes("rejected") || action.includes("deleted") || action.includes("suspend") || action.includes("revoked") || action.includes("revoke") || action.includes("override_off") || action.includes("bounced") || action.includes("complained") || action.includes("suppressed"))
+    return "bg-rose-500/10 text-rose-500 border-rose-500/20"
+  if (action.includes("created") || action.includes("published") || action.includes("publish") || action.includes("send"))
+    return "bg-blue-500/10 text-blue-500 border-blue-500/20"
+  if (action.includes("scheduled") || action.includes("duplicated") || action.includes("updated") || action.includes("reselect") || action.includes("change"))
+    return "bg-amber-500/10 text-amber-500 border-amber-500/20"
   return "bg-muted text-muted-foreground border-border"
+}
+
+function formatDetails(details: Record<string, unknown> | null): string | null {
+  if (!details) return null
+  const lines: string[] = []
+  const d = details as Record<string, any>
+
+  // Statut avant/après
+  if (d.fromStatus && d.toStatus) {
+    lines.push(`${d.fromStatus} → ${d.toStatus}`)
+  } else if (d.status) {
+    lines.push(`Statut : ${d.status}`)
+  }
+
+  // Plans / groupes
+  if (Array.isArray(d.recipientPlans) && d.recipientPlans.length > 0) {
+    lines.push(`Groupes : ${d.recipientPlans.join(", ")}`)
+  } else if (Array.isArray(d.plans) && d.plans.length > 0) {
+    lines.push(`Groupes : ${d.plans.join(", ")}`)
+  } else if (d.planName) {
+    lines.push(`Groupe : ${d.planName}`)
+  }
+
+  // Destinataires
+  if (typeof d.recipientCount === "number") {
+    lines.push(`${d.recipientCount} destinataire${d.recipientCount > 1 ? "s" : ""}`)
+  }
+
+  // Email
+  if (d.email && d.email !== d.from) {
+    lines.push(`Email : ${d.email}`)
+  }
+
+  // File d'attente
+  if (d.queueFailed) lines.push("⚠️ Échec file d'attente")
+  if (d.isScheduled) lines.push("Programmé")
+
+  return lines.length > 0 ? lines.join("  •  ") : null
+}
+
+function getResourceSummary(log: AuditLog): string {
+  const d = log.details as Record<string, any> | null
+
+  // Pour un signal : afficher le début du contenu
+  if (log.resourceType === "signal" && d?.content) {
+    const preview = typeof d.content === "string" ? d.content.slice(0, 80) : ""
+    return preview ? `« ${preview}${d.content.length > 80 ? "…" : ""} »` : ""
+  }
+
+  // Pour une demande d'accès : afficher le plan
+  if (log.resourceType === "access_request") {
+    const plan = d?.planName || (Array.isArray(d?.recipientPlans) ? d.recipientPlans[0] : null)
+    return plan ? `pour « ${plan} »` : ""
+  }
+
+  // Pour un email : afficher l'email concerné
+  if (log.resourceType === "user" && d?.email) {
+    return `(${d.email})`
+  }
+
+  return ""
 }
 
 export default function AdminAuditPage() {
@@ -55,6 +156,7 @@ export default function AdminAuditPage() {
   const [actionFilter, setActionFilter] = useState("")
   const [resourceFilter, setResourceFilter] = useState("")
   const [page, setPage] = useState(1)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const limit = 30
 
   const fetchLogs = useCallback(async () => {
@@ -73,19 +175,24 @@ export default function AdminAuditPage() {
         setLogs(Array.isArray(data.logs) ? data.logs : [])
         setTotal(data.total ?? 0)
         setFilters(data.filters ?? { actions: [], resourceTypes: [] })
-      } else {
-        console.error("Échec de chargement des logs d'audit")
       }
     } finally {
       setLoading(false)
     }
   }, [query, actionFilter, resourceFilter, page])
 
-  useEffect(() => {
-    fetchLogs()
-  }, [fetchLogs])
+  useEffect(() => { fetchLogs() }, [fetchLogs])
 
   const totalPages = Math.ceil(total / limit)
+
+  function toggleExpand(id: string) {
+    setExpanded((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -109,7 +216,7 @@ export default function AdminAuditPage() {
         <select
           value={actionFilter}
           onChange={(e) => { setActionFilter(e.target.value); setPage(1) }}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none text-muted-foreground focus:text-foreground min-w-[160px]"
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none min-w-[180px]"
         >
           <option value="">Toutes les actions</option>
           {filters.actions.map((a) => (
@@ -119,11 +226,11 @@ export default function AdminAuditPage() {
         <select
           value={resourceFilter}
           onChange={(e) => { setResourceFilter(e.target.value); setPage(1) }}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none text-muted-foreground focus:text-foreground min-w-[160px]"
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none min-w-[180px]"
         >
           <option value="">Toutes les ressources</option>
           {filters.resourceTypes.map((r) => (
-            <option key={r} value={r}>{r.replace(/_/g, " ")}</option>
+            <option key={r} value={r}>{formatResource(r)}</option>
           ))}
         </select>
       </div>
@@ -141,50 +248,86 @@ export default function AdminAuditPage() {
         </Card>
       ) : (
         <div className="space-y-3">
-          {logs.map((log) => (
-            <Card key={log.id} className="relative overflow-hidden">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent" />
-              <CardContent className="pt-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0 flex-1 space-y-1">
+          {logs.map((log) => {
+            const detailText = formatDetails(log.details)
+            const resourcePreview = getResourceSummary(log)
+            const isExpanded = expanded.has(log.id)
+            const hasRawDetails = log.details && Object.keys(log.details).length > 0
+
+            return (
+              <Card key={log.id} className="relative overflow-hidden">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/5 to-transparent" />
+                <CardContent className="pt-4 pb-3">
+                  <div className="flex flex-col gap-2">
+                    {/* Ligne 1 : action + ressource + date */}
                     <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={cn("border", getActionColor(log.action))}>
+                      <Badge className={cn("border text-[11px] font-medium", getActionColor(log.action))}>
                         {formatAction(log.action)}
                       </Badge>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-medium">
-                        {log.resourceType.replace(/_/g, " ")}
+                      <span className="text-xs text-muted-foreground font-medium">
+                        {formatResource(log.resourceType)}
                       </span>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                      {log.user && (
-                        <span className="flex items-center gap-1">
-                          <User className="size-3" />
-                          {log.user.name}
+                      {resourcePreview && (
+                        <span className="text-xs text-muted-foreground truncate max-w-[300px]" title={resourcePreview}>
+                          {resourcePreview}
                         </span>
                       )}
-                      <span className="flex items-center gap-1">
+                      <span className="text-[11px] text-muted-foreground/60 ml-auto flex items-center gap-1 shrink-0">
                         <Clock className="size-3" />
-                        {new Date(log.createdAt).toLocaleString("fr-FR")}
+                        {new Date(log.createdAt).toLocaleString("fr-FR", {
+                          day: "2-digit", month: "2-digit", year: "2-digit",
+                          hour: "2-digit", minute: "2-digit",
+                        })}
                       </span>
+                    </div>
+
+                    {/* Ligne 2 : utilisateur */}
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
+                      {log.user ? (
+                        <span className="flex items-center gap-1">
+                          <User className="size-3 shrink-0" />
+                          {log.user.name}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 italic">
+                          <User className="size-3 shrink-0" />
+                          Système
+                        </span>
+                      )}
                       {log.ipAddress && (
-                        <span className="text-[10px] font-mono">{log.ipAddress}</span>
+                        <span className="font-mono text-[10px] text-muted-foreground/60">
+                          {log.ipAddress}
+                        </span>
+                      )}
+                      {hasRawDetails && (
+                        <button
+                          onClick={() => toggleExpand(log.id)}
+                          className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                        >
+                          Détails
+                          <ChevronDown className={cn("size-3 transition-transform", isExpanded && "rotate-180")} />
+                        </button>
                       )}
                     </div>
-                    {log.resourceId && (
-                      <p className="text-[10px] font-mono text-muted-foreground">
-                        ID: {log.resourceId}
+
+                    {/* Ligne 3 : détails formatés */}
+                    {detailText && (
+                      <p className="text-xs text-muted-foreground leading-relaxed">
+                        {detailText}
                       </p>
                     )}
-                    {log.details && Object.keys(log.details).length > 0 && (
-                      <pre className="mt-1 rounded-lg bg-muted/30 p-2 text-[10px] font-mono leading-relaxed overflow-x-auto">
+
+                    {/* Détails bruts (expandable) */}
+                    {isExpanded && hasRawDetails && (
+                      <pre className="mt-1 rounded-lg bg-muted/40 p-2.5 text-[10px] font-mono leading-relaxed overflow-x-auto border border-border/50">
                         {JSON.stringify(log.details, null, 2)}
                       </pre>
                     )}
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       )}
 
@@ -194,20 +337,10 @@ export default function AdminAuditPage() {
             Page {page} sur {totalPages} ({total} résultat{total !== 1 ? "s" : ""})
           </p>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page <= 1}
-              onClick={() => setPage((p) => p - 1)}
-            >
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
               <ChevronLeft className="size-4" />
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={page >= totalPages}
-              onClick={() => setPage((p) => p + 1)}
-            >
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
               <ChevronRight className="size-4" />
             </Button>
           </div>
