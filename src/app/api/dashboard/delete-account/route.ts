@@ -3,10 +3,11 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
-import { hardDeleteUser } from "@nba/lib/services/user-deletion"
+import { softDeleteUser } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
+const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
 const deleteAccountRateLimit = rateLimitMiddleware({ window: 3600, max: 2 })
 
 export async function DELETE(request: Request) {
@@ -50,8 +51,8 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
     }
 
-    // Hard delete (removes user + all dependent records)
-    await hardDeleteUser(prisma, session.user.id)
+    // Soft delete: anonymise l'email + désactive le compte + supprime les sessions
+    await softDeleteUser(prisma, session.user.id)
 
     // Audit log + cache invalidation (non-blocking)
     Promise.all([
@@ -60,7 +61,7 @@ export async function DELETE(request: Request) {
         action: "DELETE",
         resourceType: "user",
         resourceId: session.user.id,
-        details: { selfService: true, userEmail: user.email },
+        details: { selfService: true, userEmail: user.email, softDelete: true },
       }),
       invalidatePrefix("members:"),
       invalidatePrefix("ops"),
@@ -71,7 +72,20 @@ export async function DELETE(request: Request) {
       console.error("[delete-account] email failed:", err)
     )
 
-    return NextResponse.json({ success: true })
+    // Clear session cookies
+    const response = NextResponse.json({ success: true })
+    const isSecure = process.env.NODE_ENV === "production"
+    for (const cookieName of SESSION_COOKIE_NAMES) {
+      response.cookies.set(cookieName, "", {
+        maxAge: 0,
+        path: "/",
+        httpOnly: true,
+        secure: cookieName.startsWith("__Secure-") ? true : isSecure,
+        sameSite: "lax",
+      })
+    }
+
+    return response
   } catch (error: any) {
     if (error instanceof Error && error.name === "AuthError") {
       return handleAuthError(error)

@@ -4,6 +4,7 @@ import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
 import { isEmailBanned } from "./services/moderation"
+import { purgeSoftDeletedUser } from "./services/user-deletion"
 
 const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
@@ -69,6 +70,7 @@ export const auth = betterAuth({
           if (banned) {
             throw new Error(`Ce compte a été banni : ${banned.reason}. Contactez le support.`)
           }
+          await purgeSoftDeletedUser(prisma, user.email)
         },
         after: async (user) => {
           await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
