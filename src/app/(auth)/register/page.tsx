@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { authClient } from "@nba/lib/auth-client"
+import { toast } from "sonner"
 import { Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Check } from "lucide-react"
 
@@ -86,6 +87,10 @@ export default function RegisterPage() {
         setError(message)
       } else if (err.status === 422 || message.toLowerCase().includes("already exists") || message.toLowerCase().includes("email taken")) {
         setError("Ce compte existe déjà. Veuillez vous connecter.")
+        toast.error("Un compte existe déjà avec cet email.")
+        setTimeout(() => router.push("/login"), 1800)
+        setLoading(false)
+        return
       } else if (err.status === 400) {
         setError("Données invalides. Veuillez vérifier vos informations.")
       } else {
@@ -95,11 +100,23 @@ export default function RegisterPage() {
       return
     }
 
-    await fetch("/api/public/select-plan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ planId: selectedPlan }),
-    })
+    toast.success("Compte créé ! Préparation de votre espace…")
+
+    // Liaison du plan choisi. En cas d'échec (réseau/serveur), on continue
+    // vers l'onboarding : l'accès signal est recalculé côté serveur et
+    // l'utilisateur pourra compléter depuis son espace. Pas de blocage silencieux.
+    try {
+      const res = await fetch("/api/public/select-plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: selectedPlan }),
+      })
+      if (!res.ok) {
+        toast.warning("Votre service sera à confirmer depuis votre espace.")
+      }
+    } catch {
+      toast.warning("Votre service sera à confirmer depuis votre espace.")
+    }
 
     // Clear persisted form data after successful registration
     const keys = Object.keys(sessionStorage)

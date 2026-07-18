@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Input, Button } from "@nba/design-system"
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, AlertCircle } from "lucide-react"
+import { Input, Button, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
+import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, AlertCircle, HelpCircle } from "lucide-react"
 import { getPasswordStrength, RULES } from "./password-utils"
 
 interface StepSecurityProps {
@@ -23,7 +23,17 @@ export function StepSecurity({ password, onChangePassword, onPrev, onNext }: Ste
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground text-center">Créez un mot de passe sécurisé</p>
       <div className="space-y-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-foreground">Mot de passe</label>
+        <div className="flex items-center gap-1.5">
+          <label htmlFor="password" className="text-sm font-medium text-foreground">Mot de passe</label>
+          <Tooltip>
+            <TooltipTrigger>
+              <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground cursor-help" />
+            </TooltipTrigger>
+            <TooltipContent>
+              Utilisez au moins 8 caractères avec majuscule, chiffre et caractère spécial pour sécuriser votre compte.
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <div className="relative">
           <Input
             id="password"

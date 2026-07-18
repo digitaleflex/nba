@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Button, Input, Card, CardContent } from "@nba/design-system"
-import { TrendingUp, Eye, EyeOff } from "lucide-react"
+import { toast } from "sonner"
+import { Button, Input, Card, CardContent, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
+import { TrendingUp, Eye, EyeOff, HelpCircle } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -33,8 +34,10 @@ export default function LoginPage() {
       if (statusRes.ok) {
         const status = await statusRes.json()
         if (status.status !== "ok") {
-          setError(status.message)
-          setLoading(false)
+          const message = status.message ?? "Ce compte ne peut pas se connecter pour le moment."
+          const params = new URLSearchParams({ status: status.status })
+          if (message) params.set("reason", message)
+          window.location.href = `/blocked?${params.toString()}`
           return
         }
       }
@@ -49,10 +52,14 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.message ?? "Identifiants invalides")
+        const message = data.message ?? "Identifiants invalides"
+        setError(message)
+        toast.error(message)
         setLoading(false)
         return
       }
+
+      toast.success("Connexion réussie ! Redirection…")
 
       // Le Set-Cookie est posé par le serveur. On navigue directement.
       // window.location.href force un full reload pour s'assurer que
@@ -139,12 +146,19 @@ export default function LoginPage() {
                 {loading ? "Connexion…" : "Se connecter"}
               </Button>
               <div className="text-center">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Mot de passe oublié ?
-                </Link>
+                <Tooltip>
+                  <TooltipTrigger
+                    render={
+                      <Link
+                        href="/forgot-password"
+                        className="text-xs text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+                      />
+                    }
+                  >
+                    Mot de passe oublié ? <HelpCircle className="size-3" />
+                  </TooltipTrigger>
+                  <TooltipContent>Recevez un lien de réinitialisation par email.</TooltipContent>
+                </Tooltip>
               </div>
             </CardContent>
           </form>

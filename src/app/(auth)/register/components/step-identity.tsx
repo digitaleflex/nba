@@ -20,7 +20,7 @@ export function StepIdentity({
   onPrev,
   onNext,
 }: StepIdentityProps) {
-  const isValid = !!firstName && !!lastName
+  const isValid = firstName.trim().length >= 2 && lastName.trim().length >= 2
 
   return (
     <div className="space-y-4">
@@ -57,6 +57,11 @@ export function StepIdentity({
           Suivant <ArrowRight className="size-4" />
         </Button>
       </div>
+      {!isValid && (
+        <p className="text-xs text-muted-foreground text-center">
+          Indiquez votre prénom et votre nom (2 caractères minimum) pour continuer.
+        </p>
+      )}
     </div>
   )
 }
