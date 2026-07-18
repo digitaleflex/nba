@@ -1,3 +1,5 @@
+name: nba
+
 services:
   app:
     image: ghcr.io/digitaleflex/nba

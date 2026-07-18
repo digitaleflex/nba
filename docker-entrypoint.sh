@@ -38,16 +38,11 @@ echo "Database is ready."
 # du container. Raison : race avec pgbouncer qui detient parfois
 # l'advisory lock Prisma (P1002 timeout).
 
-# Seed database (idempotent - uses upsert)
-echo "Seeding database..."
-pnpm db:seed
-
-# Create admin user if env vars are set
-if [ -n "$ADMIN_EMAIL" ] && [ -n "$ADMIN_PASSWORD" ]; then
-  echo "Creating admin user..."
-  ADMIN_NAME="${ADMIN_NAME:-$(echo $ADMIN_EMAIL | cut -d'@' -f1)}"
-  pnpm tsx scripts/createAdmin.ts --email="$ADMIN_EMAIL" --password="$ADMIN_PASSWORD" --name="$ADMIN_NAME" || true
-fi
+# NOTE: db:seed et createAdmin sont executes en ONE-SHOT au deploiement
+# (cf. .github/workflows/deploy.yml : `docker compose run --rm app ...`),
+# PAS ici a chaque boot. Raison : accelerer le demarrage du container et
+# eviter qu'un seed lent/bloquant ne retarde le healthcheck (et donc le
+# basculement Traefik zero-down).
 
 # Ensure storage directory exists and is owned by nextjs user
 mkdir -p /app/storage

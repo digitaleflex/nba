@@ -45,75 +45,23 @@ jobs:
           script: |
             set -e
             cd /home/audest/nba
-            echo "=== git pull ==="
-            git pull
 
-            echo "=== Migrations (avant le boot du container pour eviter le race pgbouncer) ==="
-            pnpm prisma migrate deploy 2>&1 | tail -10
+            echo "=== Pull nouvelles images ==="
+            docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
 
-            echo "=== Rolling deploy : pull image ==="
-            docker compose pull app 2>&1 | tail -3
+            echo "=== Migrations Prisma (one-shot, avant le boot) ==="
+            docker compose -f compose.yml run --rm app npx prisma migrate deploy 2>&1 | tail -15
 
-            # Recuperer l'ID de l'ancien container (si il existe)
-            OLD_CID=$(docker ps -q -f name=nba-app-1 2>/dev/null || echo "")
-            echo "Old container: ${OLD_CID:-none}"
+            echo "=== Seed (one-shot, idempotent) ==="
+            docker compose -f compose.yml run --rm app pnpm db:seed 2>&1 | tail -10
 
-            # Demarrer un container temporaire a cote de l'ancien
-            # Les deux ont les memes labels Traefik → Traefik equilibre entre les deux
-            echo "=== Starting temp container alongside current ==="
-            docker compose run -d --name nba-app-next --no-deps --service-ports app
+            echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
+            # compose demarre le nouveau container, attend son healthcheck (Traefik
+            # ne le route qu'une fois healthy), puis stop l'ancien. Aucune coupure.
+            docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
 
-            # Attendre que le nouveau container soit healthy
-            echo "=== Waiting for new container to be healthy ==="
-            NEW_HEALTHY=false
-            for i in $(seq 1 12); do
-              HEALTH=$(docker inspect --format='{{.State.Health.Status}}' nba-app-next 2>/dev/null || echo "starting")
-              echo "  Check $i/12: health=$HEALTH"
-              if [ "$HEALTH" = "healthy" ]; then
-                NEW_HEALTHY=true
-                echo "  ✓ New container healthy"
-                break
-              fi
-              sleep 5
-            done
-
-            # Si le nouveau container n'est pas healthy → rollback (l'ancien continue de servir)
-            if [ "$NEW_HEALTHY" != "true" ]; then
-              echo "✗ New container failed to become healthy. Rolling back..."
-              docker rm -f nba-app-next 2>/dev/null || true
-              exit 1
-            fi
-
-            # Stopper l'ancien container proprement
-            if [ -n "$OLD_CID" ]; then
-              echo "=== Stopping old container gracefully ==="
-              docker stop --time 30 "$OLD_CID" || true
-              docker rm "$OLD_CID" 2>/dev/null || true
-            fi
-
-            # Creer le nouveau container Compose-manage (image deja pull)
-            echo "=== Creating Compose-managed container ==="
-            docker compose up -d --force-recreate --no-deps app
-
-            # Attendre que le container Compose soit healthy
-            echo "=== Waiting for Compose container healthy ==="
-            for i in $(seq 1 12); do
-              HEALTH=$(docker inspect --format='{{.State.Health.Status}}' nba-app-1 2>/dev/null || echo "starting")
-              echo "  Check $i/12: health=$HEALTH"
-              if [ "$HEALTH" = "healthy" ]; then
-                echo "  ✓ Compose container healthy"
-                break
-              fi
-              sleep 5
-            done
-
-            # Nettoyer le container temporaire
-            echo "=== Cleaning up ==="
-            docker rm -f nba-app-next 2>/dev/null || true
-
-            # Lancer/recycler les services auxiliaires (worker, bull-board)
-            echo "=== Starting aux services ==="
-            docker compose up -d --no-deps worker bull-board 2>&1 | tail -5
+            echo "=== Nettoyage des images orphelines ==="
+            docker image prune -f
 
             echo "=== Deploy complete ==="
-            docker compose ps app worker bull-board
+            docker compose -f compose.yml ps app worker bull-board
