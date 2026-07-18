@@ -291,6 +291,11 @@ model Device {
   fingerprint  String   @map("fingerprint")
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
+  deviceType   String?  @map("device_type") // desktop | mobile | tablet
+  brand        String?  @map("brand")       // Apple | Samsung | Google | Xiaomi | ...
+  model        String?  @map("model")       // iPhone | iPad | Galaxy S23 | ...
+  os           String?  @map("os")          // iOS | Android | Windows | macOS | Linux
+  browser      String?  @map("browser")     // Safari | Chrome | Firefox | Edge | ...
   lastSeenAt   DateTime @default(now()) @map("last_seen_at")
   trusted      Boolean  @default(true) @map("trusted")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -301,6 +306,8 @@ model Device {
   @@unique([userId, fingerprint])
   @@index([userId])
   @@index([fingerprint])
+  @@index([deviceType])
+  @@index([brand])
   @@map("devices")
 }
 
@@ -310,6 +317,11 @@ model DeviceVerification {
   deviceFingerprint String    @map("device_fingerprint")
   ipAddress         String?   @map("ip_address")
   userAgent         String?   @map("user_agent")
+  deviceType        String?   @map("device_type")
+  brand             String?   @map("brand")
+  model             String?   @map("model")
+  os                String?   @map("os")
+  browser           String?   @map("browser")
   verificationCode  String    @map("verification_code")
   expiresAt         DateTime  @map("expires_at")
   verifiedAt        DateTime? @map("verified_at")

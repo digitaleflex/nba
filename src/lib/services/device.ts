@@ -1,5 +1,6 @@
 import { randomInt } from "crypto"
 import { prisma } from "../db"
+import { parseUserAgent, type ParsedUserAgent } from "../ua-parser"
 import { sendDeviceVerificationEmail } from "./notifications"
 
 function generateCode(): string {
@@ -12,8 +13,14 @@ function fingerprint(req: Request): string {
   return `${ip}|${ua}`
 }
 
+function deviceInfo(req: Request): ParsedUserAgent {
+  const ua = req.headers.get("user-agent") ?? null
+  return parseUserAgent(ua)
+}
+
 export async function detectNewDevice(userId: string, req: Request): Promise<boolean> {
   const fp = fingerprint(req)
+  const parsed = deviceInfo(req)
 
   const existing = await prisma.device.findUnique({
     where: { userId_fingerprint: { userId, fingerprint: fp } },
@@ -22,7 +29,16 @@ export async function detectNewDevice(userId: string, req: Request): Promise<boo
   if (existing) {
     await prisma.device.update({
       where: { id: existing.id },
-      data: { lastSeenAt: new Date(), ipAddress: fp.split("|")[0], userAgent: fp.split("|")[1] },
+      data: {
+        lastSeenAt: new Date(),
+        ipAddress: fp.split("|")[0],
+        userAgent: fp.split("|")[1],
+        deviceType: parsed.deviceType,
+        brand: parsed.brand,
+        model: parsed.model,
+        os: parsed.os,
+        browser: parsed.browser,
+      },
     })
     return false
   }
@@ -32,6 +48,7 @@ export async function detectNewDevice(userId: string, req: Request): Promise<boo
 
 export async function sendVerificationCode(userId: string, email: string, req: Request) {
   const fp = fingerprint(req)
+  const parsed = deviceInfo(req)
   const code = generateCode()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
 
@@ -41,6 +58,11 @@ export async function sendVerificationCode(userId: string, email: string, req: R
       deviceFingerprint: fp,
       ipAddress: fp.split("|")[0],
       userAgent: fp.split("|")[1],
+      deviceType: parsed.deviceType,
+      brand: parsed.brand,
+      model: parsed.model,
+      os: parsed.os,
+      browser: parsed.browser,
       verificationCode: code,
       expiresAt,
     },
@@ -58,6 +80,7 @@ export async function sendVerificationCode(userId: string, email: string, req: R
 
 export async function verifyDeviceCode(userId: string, code: string, req: Request) {
   const fp = fingerprint(req)
+  const parsed = deviceInfo(req)
 
   const verification = await prisma.deviceVerification.findFirst({
     where: {
@@ -89,6 +112,11 @@ export async function verifyDeviceCode(userId: string, code: string, req: Reques
         fingerprint: fp,
         ipAddress: fp.split("|")[0],
         userAgent: fp.split("|")[1],
+        deviceType: parsed.deviceType,
+        brand: parsed.brand,
+        model: parsed.model,
+        os: parsed.os,
+        browser: parsed.browser,
         name: `Appareil - ${new Date().toLocaleDateString()}`,
       },
     })

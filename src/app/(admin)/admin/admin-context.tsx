@@ -37,6 +37,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "dashboard", label: "Tableau de bord" },
       { value: "stats", label: "Statistiques" },
       { value: "analytics", label: "Analytics" },
+      { value: "devices", label: "Appareils" },
     ],
   },
   {
@@ -70,6 +71,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "moderation", label: "Modération" },
       { value: "security", label: "Sécurité" },
       { value: "settings", label: "Paramètres" },
+      { value: "formation", label: "Formation" },
     ],
   },
 ]

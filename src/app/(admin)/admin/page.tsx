@@ -23,6 +23,7 @@ import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
 import { ModerationTab } from "./features/ModerationTab"
 import { FormationTab } from "./features/FormationTab"
+import { DevicesTab } from "./features/DevicesTab"
 import { AdminTools } from "./components/admin-tools"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
@@ -529,6 +530,10 @@ function AdminConsoleContent() {
 
         {activeTab === "formation" && (
           <FormationTab />
+        )}
+
+        {activeTab === "devices" && (
+          <DevicesTab />
         )}
 
       </div>
