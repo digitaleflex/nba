@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
+import { serverError } from "@nba/lib/api-error"
 
 const ONBOARDING_LABELS: Record<string, string> = {
   REGISTERED: "Inscrit (non onboardé)",
@@ -187,7 +188,7 @@ export async function GET(request: Request) {
     )
 
     return NextResponse.json(data)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "GET /api/admin/analytics")
   }
 }

@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
 import { getBannedList } from "@nba/lib/services/moderation"
+import { serverError } from "@nba/lib/api-error"
 
 /**
  * Centre de contrôle admin : données temps réel pour le monitoring opérationnel.
@@ -262,7 +263,7 @@ export async function GET() {
     )
 
     return NextResponse.json(data)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "GET /api/admin/control-room")
   }
 }

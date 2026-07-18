@@ -56,8 +56,13 @@ export async function getCached<T>(
     try {
       const cached = await redis.get(fullKey)
       if (cached != null) {
-        hits++
-        return JSON.parse(cached) as T
+        try {
+          hits++
+          return JSON.parse(cached) as T
+        } catch {
+          // Valeur corrompue dans le cache : on l'ignore et on re-fetch.
+          await invalidateKey(key).catch(() => {})
+        }
       }
     } catch {
       markUnavailable()

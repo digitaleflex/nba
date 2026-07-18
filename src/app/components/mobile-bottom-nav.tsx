@@ -145,16 +145,6 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
 
   return (
     <>
-      {/* FAB Recherche (command palette) — mobile uniquement */}
-      <button
-        onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
-        className="md:hidden fixed bottom-20 right-4 z-50 flex items-center gap-2 h-11 pl-3 pr-4 rounded-full bg-primary text-primary-foreground shadow-lg active:scale-95 transition-transform"
-        aria-label="Rechercher"
-      >
-        <Search className="size-4" />
-        <span className="text-xs font-medium">Rechercher…</span>
-      </button>
-
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 h-16 border-t bg-card/85 backdrop-blur-lg px-2 select-none">
         <nav className="flex h-full items-center justify-around">
           {links.map((link, idx) => {
@@ -212,6 +202,14 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
             </Link>
           )
         })}
+        <button
+          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+          className="flex flex-col items-center justify-center flex-1 h-full gap-1 text-muted-foreground active:text-primary transition-colors relative"
+          aria-label="Rechercher"
+        >
+          <Search className="size-5 shrink-0" />
+          <span className="text-[10px] font-medium tracking-tight">Recherche</span>
+        </button>
         <PushNotificationToggle compact />
       </nav>
       </div>

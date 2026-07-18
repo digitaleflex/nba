@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { serverError } from "@nba/lib/api-error"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"

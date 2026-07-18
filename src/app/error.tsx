@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, Home } from "lucide-react"
+import { AutoRetryCountdown } from "@nba/components/auto-retry-countdown"
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error) }, [error])
@@ -18,24 +19,27 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <h1 className="text-4xl font-bold tracking-tight">500</h1>
           <p className="text-lg font-semibold">Erreur serveur</p>
           <p className="text-sm text-muted-foreground">
-            Une erreur inattendue s&rsquo;est produite. Veuillez réessayer.
+            Une erreur inattendue est survenue de notre côté. Pas d&rsquo;inquiétude, vos données sont en sécurité. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
         </div>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="size-4" />
-            Réessayer
-          </button>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <Home className="size-4" />
-            Accueil
-          </Link>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={reset}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="size-4" />
+              Réessayer
+            </button>
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Home className="size-4" />
+              Accueil
+            </Link>
+          </div>
+          <AutoRetryCountdown seconds={10} onRetry={reset} label="Nouvelle tentative" />
         </div>
       </div>
     </div>
