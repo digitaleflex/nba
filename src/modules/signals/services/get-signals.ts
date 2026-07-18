@@ -142,13 +142,13 @@ export async function deleteSignal(id: string) {
   })
 }
 
-import { SignalPolicy } from "../policies/signal-policy"
+import { canViewSignal, canUpdateSignal } from "../policies/signal-policy"
 
 export async function getSignalById(id: string) {
   const session = await getServerSession()
   if (!session) throw new AuthError("Non autorisé", 401)
 
-  const hasAccess = await SignalPolicy.canView(session.user.id, id)
+  const hasAccess = await canViewSignal(session.user.id, id)
   if (!hasAccess) {
     throw new AuthError("Accès refusé", 403)
   }
@@ -167,7 +167,7 @@ export async function getSignalVersions(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
   if (!signal) throw new Error("Signal introuvable")
 
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
   return prisma.signalVersion.findMany({
@@ -183,7 +183,7 @@ export async function getSignalStats(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
   if (!signal) throw new Error("Signal introuvable")
 
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
   const [uniqueMembers, aggregate, firstReadRow, reads] = await Promise.all([
@@ -263,7 +263,7 @@ export async function getSignalDelivery(
   const signal = await prisma.signal.findUnique({ where: { id } })
   if (!signal) throw new Error("Signal introuvable")
 
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
   const notificationIds = (

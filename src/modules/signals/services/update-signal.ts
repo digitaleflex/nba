@@ -1,7 +1,7 @@
 import { prisma } from "@nba/lib/db"
 import { signalUpdateSchema } from "../validators/signal-schema"
 import { AuthError } from "@nba/lib/auth-utils"
-import { SignalPolicy } from "../policies/signal-policy"
+import { canUpdateSignal } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
 
@@ -25,7 +25,7 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
   }
 
   // 1. Check permissions using SignalPolicy
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) {
     throw new AuthError("Accès refusé", 403)
   }

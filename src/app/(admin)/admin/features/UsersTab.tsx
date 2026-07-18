@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Search, Loader2 } from "lucide-react"
 import { Card, Badge, Button, Input, cn } from "@nba/design-system"
 import { Member, CachedGet, OpenPanel, RegisterRefetch } from "./types"
-import { useDebounce } from "./useDebounce"
+import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 
 interface UsersTabProps {
   cachedGet: CachedGet
@@ -18,7 +18,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
   const [members, setMembers] = useState<Member[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [searchUser, setSearchUser] = useState(initialSearch)
-  const debouncedSearchUser = useDebounce(searchUser, 300)
+  const debouncedSearchUser = useDebouncedValue(searchUser, 300)
 
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)

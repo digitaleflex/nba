@@ -14,14 +14,7 @@ export const signalCreateSchema = z.object({
   scheduledAt: z.string().nullable().optional(), // ISO string or empty
 })
 
-export const signalUpdateSchema = z.object({
-  content: z.string().min(1, "Le contenu du signal est requis").optional(),
-  imageUrl: z.string().nullable().optional(),
-  imageUrls: z.array(safePath).max(5, "Maximum 5 images autorisées").optional(),
-  planIds: z.array(z.string().uuid("ID de groupe invalide")).min(1, "Au moins un groupe requis").optional(),
-  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
-  scheduledAt: z.string().nullable().optional(),
-})
+export const signalUpdateSchema = signalCreateSchema.partial()
 
 export type SignalCreateInput = z.infer<typeof signalCreateSchema>
 

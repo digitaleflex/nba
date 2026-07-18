@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import { Card, CardContent, Badge, Input, Button, cn } from "@nba/design-system"
+import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import {
   Radio,
   Search,
@@ -176,15 +177,6 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
   )
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
-}
-
 export function SignalsView() {
   const [signals, setSignals] = useState<SignalData[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -196,7 +188,7 @@ export function SignalsView() {
   const [error, setError] = useState<string | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const lastFetchRef = useRef(0)
   const [liveArrivals, setLiveArrivals] = useState<Set<string>>(new Set())
   const liveArrivalsRef = useRef<Set<string>>(new Set())

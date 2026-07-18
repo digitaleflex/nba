@@ -14,8 +14,9 @@ vi.mock("@nba/lib/auth-utils", () => ({
     }
   },
 }))
+const { canPublishSignal } = vi.hoisted(() => ({ canPublishSignal: vi.fn() }))
 vi.mock("../policies/signal-policy", () => ({
-  SignalPolicy: { canPublish: vi.fn(async () => true) },
+  canPublishSignal,
 }))
 vi.mock("@nba/lib/services/audit", () => ({
   logAuditEvent: vi.fn(async () => {}),
@@ -26,7 +27,6 @@ vi.mock("@nba/lib/queue", () => ({
 
 import { publishSignal } from "./publish-signal"
 import { prisma } from "@nba/lib/db"
-import { SignalPolicy } from "../policies/signal-policy"
 import { signalDistributionQueue } from "@nba/lib/queue"
 
 describe("publishSignal", () => {
@@ -34,6 +34,7 @@ describe("publishSignal", () => {
     vi.clearAllMocks()
     ;(prisma.signal.update as any).mockResolvedValue({})
     ;(signalDistributionQueue.add as any).mockResolvedValue({})
+    canPublishSignal.mockResolvedValue(true)
   })
 
   it("publie et enqueue la distribution quand l'utilisateur a le droit", async () => {
@@ -45,7 +46,7 @@ describe("publishSignal", () => {
 
     const result = await publishSignal("sig-1", "admin-1")
 
-    expect(SignalPolicy.canPublish).toHaveBeenCalled()
+    expect(canPublishSignal).toHaveBeenCalled()
     expect(prisma.signal.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: expect.objectContaining({ status: "PUBLISHED" }) }),
     )
@@ -57,8 +58,8 @@ describe("publishSignal", () => {
   })
 
   it("lève AuthError si l'utilisateur n'a pas le droit de publier", async () => {
+    canPublishSignal.mockResolvedValue(false)
     ;(prisma.signal.findUnique as any).mockResolvedValue({ id: "sig-1", jobId: null })
-    ;(SignalPolicy.canPublish as any).mockResolvedValue(false)
 
     await expect(publishSignal("sig-1", "admin-1")).rejects.toMatchObject({ status: 403 })
     expect(signalDistributionQueue.add).not.toHaveBeenCalled()

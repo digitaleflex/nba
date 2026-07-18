@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getStorage } from "@nba/lib/storage"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
+import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 
 export async function GET(
   req: NextRequest,
@@ -137,7 +137,7 @@ export async function GET(
       })
 
       if (matchingSignal) {
-        const hasAccess = await SignalPolicy.canView(session.user.id, matchingSignal.id)
+        const hasAccess = await canViewSignal(session.user.id, matchingSignal.id)
         if (!hasAccess) {
           return new NextResponse("Accès refusé", { status: 403 })
         }

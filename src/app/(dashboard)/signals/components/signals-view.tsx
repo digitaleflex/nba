@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react"
 import Link from "next/link"
 import { Card, CardContent, Badge, Input, Button } from "@nba/design-system"
+import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import {
   Radio,
   Search,
@@ -158,15 +159,6 @@ function SignalCard({ signal }: { signal: SignalData }) {
   )
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
-}
-
 export function SignalsView() {
   const [signals, setSignals] = useState<SignalData[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -177,7 +169,7 @@ export function SignalsView() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
 
   const fetchSignals = useCallback(async (pageNum: number, append: boolean) => {
     const params = new URLSearchParams()

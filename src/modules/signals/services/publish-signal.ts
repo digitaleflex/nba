@@ -1,6 +1,6 @@
 import { prisma } from "@nba/lib/db"
 import { AuthError } from "@nba/lib/auth-utils"
-import { SignalPolicy } from "../policies/signal-policy"
+import { canPublishSignal } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
 
@@ -14,7 +14,7 @@ export async function publishSignal(id: string, userId: string) {
   }
 
   // Check publish permissions AND ownership for the user
-  const allowed = await SignalPolicy.canPublish(userId, signal)
+  const allowed = await canPublishSignal(userId, signal)
   if (!allowed) {
     throw new AuthError("Accès refusé", 403)
   }

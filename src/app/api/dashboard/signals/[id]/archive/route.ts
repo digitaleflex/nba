@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
+import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function POST(
@@ -12,7 +12,7 @@ export async function POST(
 
     const { id } = await params
 
-    const allowed = await SignalPolicy.canView(session.user.id, id)
+    const allowed = await canViewSignal(session.user.id, id)
     if (!allowed) {
       return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
     }

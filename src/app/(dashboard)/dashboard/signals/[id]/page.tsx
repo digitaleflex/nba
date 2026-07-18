@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
-import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
+import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 import { Card, CardContent, Badge } from "@nba/design-system"
 import { Calendar, User, ChevronLeft } from "lucide-react"
 import { parseSimpleMarkdown } from "@nba/lib/utils"
@@ -59,7 +59,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
   }
 
   // Check access policy
-  const canView = await SignalPolicy.canView(session.user.id, signal.id)
+  const canView = await canViewSignal(session.user.id, signal.id)
   if (!canView) {
     redirect("/dashboard/signals")
   }

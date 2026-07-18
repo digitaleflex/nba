@@ -36,22 +36,6 @@ export async function sendTelegramMessage(
   return { ok: true, messageId: data.result?.message_id }
 }
 
-export async function setBotCommands() {
-  if (!BOT_TOKEN) return
-  await apiCall("setMyCommands", {
-    commands: [
-      { command: "start", description: "Recevoir les signaux en temps réel" },
-      { command: "stop", description: "Désactiver les notifications" },
-      { command: "status", description: "Voir mon abonnement" },
-    ],
-  })
-}
-
-export function getBotUsername(): string | null {
-  if (!BOT_TOKEN) return null
-  const match = BOT_TOKEN.match(/^\d+:(.+)$/)
-  return null
-}
 
 export async function deleteTelegramChat(chatId: string): Promise<void> {
   if (!BOT_TOKEN || !chatId) return
