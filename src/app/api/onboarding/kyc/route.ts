@@ -40,6 +40,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Fichier requis" }, { status: 400 })
   }
 
+  if (!front.type.startsWith("image/")) {
+    return NextResponse.json(
+      { error: "Le fichier doit être une image" },
+      { status: 400 },
+    )
+  }
+  if (back && !back.type.startsWith("image/")) {
+    return NextResponse.json(
+      { error: "Le fichier verso doit être une image" },
+      { status: 400 },
+    )
+  }
+
   const storage = getStorage()
 
   const [frontResult, backResult] = await Promise.all([

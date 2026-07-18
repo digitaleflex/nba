@@ -1,6 +1,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { Readable } from "stream"
 import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
+import { validateUpload, safeExtension } from "./validate"
 
 export class S3StorageProvider implements StorageProvider {
   private client: S3Client
@@ -28,8 +29,9 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async upload(file: File, subDir: string): Promise<UploadResult> {
-    const ext = file.name.split(".").pop()
-    const fileName = `${crypto.randomUUID()}.${ext || "bin"}`
+    await validateUpload(file)
+
+    const fileName = `${crypto.randomUUID()}${safeExtension(file)}`
     const key = `${subDir}/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
 

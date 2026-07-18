@@ -60,6 +60,13 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  if (!video.type.startsWith("video/")) {
+    return NextResponse.json(
+      { error: "Le fichier doit être une vidéo" },
+      { status: 400 },
+    )
+  }
+
   const storage = getStorage()
   const videoResult = await storage.upload(video, "broker")
 
