@@ -3,11 +3,31 @@ import IORedis from "ioredis"
 const redisUrl = process.env.REDIS_URL?.trim()
 const pubsubEnabled = Boolean(redisUrl)
 
+const globalForPubSub = globalThis as unknown as { redisPub?: IORedis }
+
+let pubAvailable = true
+let pubUnavailableUntil = 0
+
 function getConnection(): IORedis | null {
   if (!pubsubEnabled || !redisUrl) return null
-  return new IORedis(redisUrl, {
-    maxRetriesPerRequest: null,
-  })
+  if (!pubAvailable) {
+    if (Date.now() < pubUnavailableUntil) return null
+    pubAvailable = true
+  }
+  if (!globalForPubSub.redisPub) {
+    globalForPubSub.redisPub = new IORedis(redisUrl, {
+      maxRetriesPerRequest: 1,
+      connectTimeout: 3000,
+      commandTimeout: 1500,
+      lazyConnect: true,
+    })
+  }
+  return globalForPubSub.redisPub
+}
+
+function markUnavailable() {
+  pubAvailable = false
+  pubUnavailableUntil = Date.now() + 30000
 }
 
 export const CHANNEL_PREFIX = "nba:notif:"
@@ -26,69 +46,31 @@ export function readChannel(userId: string): string {
   return `${READ_PREFIX}user:${userId}`
 }
 
-/**
- * Publie un événement sur le canal Redis d'un utilisateur.
- * Le serveur WebSocket subscribe à ces canaux et forward aux clients connectés.
- */
-export async function publishNotification(userId: string, payload: unknown): Promise<void> {
-  const conn = getConnection()
-  if (!conn) return
-  try {
-    await conn.publish(userChannel(userId), JSON.stringify(payload))
-  } catch (err) {
-    console.error("[pubsub] publish failed:", err)
-  } finally {
-    conn.disconnect()
-  }
-}
-
-/**
- * Publie un message de chat sur le canal Redis d'un utilisateur.
- * Le serveur WebSocket subscribe à ces canaux et forward aux clients connectés.
- */
-export async function publishMessage(userId: string, payload: unknown): Promise<void> {
-  const conn = getConnection()
-  if (!conn) return
-  try {
-    await conn.publish(messageChannel(userId), JSON.stringify(payload))
-  } catch (err) {
-    console.error("[pubsub] publish message failed:", err)
-  } finally {
-    conn.disconnect()
-  }
-}
-
-/**
- * Publie un accusé de lecture (message lu) sur le canal Redis de l'expéditeur.
- * Le serveur WebSocket forward l'event "message_read" au client concerné.
- */
-export async function publishMessageRead(userId: string, payload: unknown): Promise<void> {
-  const conn = getConnection()
-  if (!conn) return
-  try {
-    await conn.publish(readChannel(userId), JSON.stringify(payload))
-  } catch (err) {
-    console.error("[pubsub] publish message read failed:", err)
-  } finally {
-    conn.disconnect()
-  }
-}
-
-/**
- * Publie un événement générique sur un canal Redis (ex: nba:signal:admin,
- * nba:signal:user:<id>). Utilisé pour le feed signals temps réel et le
- * dashboard de diffusion admin.
- */
-export async function publishSignalEvent(channel: string, payload: unknown): Promise<void> {
+async function publish(channel: string, payload: unknown): Promise<void> {
   const conn = getConnection()
   if (!conn) return
   try {
     await conn.publish(channel, JSON.stringify(payload))
   } catch (err) {
-    console.error("[pubsub] publish signal event failed:", err)
-  } finally {
-    conn.disconnect()
+    console.error("[pubsub] publish failed:", err)
+    markUnavailable()
   }
+}
+
+export async function publishNotification(userId: string, payload: unknown): Promise<void> {
+  await publish(userChannel(userId), payload)
+}
+
+export async function publishMessage(userId: string, payload: unknown): Promise<void> {
+  await publish(messageChannel(userId), payload)
+}
+
+export async function publishMessageRead(userId: string, payload: unknown): Promise<void> {
+  await publish(readChannel(userId), payload)
+}
+
+export async function publishSignalEvent(channel: string, payload: unknown): Promise<void> {
+  await publish(channel, payload)
 }
 
 export { pubsubEnabled, redisUrl, getConnection }

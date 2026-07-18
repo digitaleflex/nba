@@ -50,10 +50,27 @@ const io = new SocketIOServer(httpServer, {
 // sont partagés via Redis. En mono-instance (config actuelle) l'adapter est
 // quand même actif (idempotent) et prépare le scale-out sans rupture.
 if (REDIS_URL) {
-  const pub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null })
-  const sub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null })
+  const pub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null, connectTimeout: 5000, commandTimeout: 5000 })
+  const sub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null, connectTimeout: 5000, commandTimeout: 5000 })
+  pub.on("error", (err) => console.error("[ws] Redis adapter pub error:", err.message))
+  sub.on("error", (err) => console.error("[ws] Redis adapter sub error:", err.message))
   io.adapter(createAdapter(pub, sub))
   console.log("[ws] Redis adapter enabled (multi-instance ready)")
+}
+
+// Shared connection pour typing indicator (évite de créer une connexion par event)
+let typingPub: IORedis | null = null
+function getTypingPub(): IORedis | null {
+  if (!REDIS_URL) return null
+  if (!typingPub) {
+    typingPub = new IORedis(REDIS_URL, {
+      maxRetriesPerRequest: 1,
+      connectTimeout: 3000,
+      commandTimeout: 1500,
+      lazyConnect: true,
+    })
+  }
+  return typingPub
 }
 
 // ── Authentification par cookie de session signé ──
@@ -193,26 +210,27 @@ io.on("connection", (socket) => {
     const to = data?.to
     if (!to) return
     const channel = `nba:typing:user:${to}`
-    try {
-      const pub = new IORedis(REDIS_URL!, { maxRetriesPerRequest: null })
-      pub.publish(
-        channel,
-        JSON.stringify({
-          from: userId,
-          conversationId: data.conversationId,
-          typing: data.typing ?? true,
-        }),
-      )
-      pub.disconnect()
-    } catch (err) {
-      console.error("[ws] typing publish failed:", err)
-    }
+    const pub = getTypingPub()
+    if (!pub) return
+    pub.publish(
+      channel,
+      JSON.stringify({
+        from: userId,
+        conversationId: data.conversationId,
+        typing: data.typing ?? true,
+      }),
+    ).catch((err) => console.error("[ws] typing publish failed:", err))
   })
 })
 
 // ── Subscribe Redis Pub/Sub : forward aux clients Socket.IO ──
 if (REDIS_URL) {
-  const sub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null })
+  const sub = new IORedis(REDIS_URL, {
+    maxRetriesPerRequest: null,
+    connectTimeout: 5000,
+    commandTimeout: 5000,
+    retryStrategy: (t) => Math.min(t * 200, 2000),
+  })
 
   sub.on("error", (err) => {
     console.error("[ws] Redis sub error:", err.message)

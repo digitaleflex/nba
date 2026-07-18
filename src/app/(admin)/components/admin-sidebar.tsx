@@ -21,6 +21,7 @@ import {
   Settings,
   MessageSquare,
   CircleHelp,
+  Database,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 
@@ -31,6 +32,8 @@ const GROUPS = [
       { href: "/admin", label: "Console", icon: LayoutDashboard, match: "/admin" },
       { href: "/admin/control-room", label: "Control Room", icon: Gauge, match: "/admin/control-room" },
       { href: "/admin/tracker", label: "Tracker", icon: Activity, match: "/admin/tracker" },
+      { href: "/admin/cache", label: "Cache & Services", icon: Database, match: "/admin/cache" },
+      { href: "/admin/queues", label: "Files BullMQ", icon: Activity, match: "/admin/queues" },
     ],
   },
   {
@@ -116,12 +119,22 @@ export function AdminSidebar() {
               <Gauge className="size-4 shrink-0" /> Control Room
             </Link>
             <Link href="/admin/tracker" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
-              isPathActive("/admin/tracker") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-            )}>
-              <Activity className="size-4 shrink-0" /> Tracker
-            </Link>
-          </div>
-        </div>
+               isPathActive("/admin/tracker") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+             )}>
+               <Activity className="size-4 shrink-0" /> Tracker
+             </Link>
+             <Link href="/admin/cache" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
+                isPathActive("/admin/cache") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}>
+                <Database className="size-4 shrink-0" /> Cache & Services
+              </Link>
+             <Link href="/admin/queues" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
+               isPathActive("/admin/queues") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+             )}>
+               <Activity className="size-4 shrink-0" /> Files BullMQ
+             </Link>
+           </div>
+         </div>
 
         {/* Membres */}
         <div>

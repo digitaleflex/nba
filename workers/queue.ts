@@ -5,10 +5,23 @@ import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
 
-// Stable connection initialization with proper typing (casting options to avoid TS issues)
+// Stable connection initialization with timeouts and circuit breaker
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
   maxRetriesPerRequest: null,
+  connectTimeout: 5000,
+  commandTimeout: 5000,
+  retryStrategy: (times: number) => {
+    if (times > 10) {
+      console.error(`[worker] Redis unavailable after ${times} retries`)
+      return null
+    }
+    return Math.min(times * 200, 2000)
+  },
 } as any)
+
+connection.on("error", (err: Error) => {
+  console.error("[worker] Redis connection error:", err.message)
+})
 
 // ── File Cleanup Queue ──
 export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any, skipVersionCheck: true })

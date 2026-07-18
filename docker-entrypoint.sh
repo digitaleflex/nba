@@ -3,6 +3,24 @@ set -e
 
 echo "=== NeverBrokeAgain - App Startup ==="
 
+APP_PID=""
+cleanup() {
+    echo "Received stop signal. Graceful shutdown..."
+    if [ -n "$APP_PID" ] && kill -0 "$APP_PID" 2>/dev/null; then
+        kill -TERM "$APP_PID" 2>/dev/null
+        # Wait up to 25s for the process to exit cleanly
+        for i in $(seq 1 25); do
+            if ! kill -0 "$APP_PID" 2>/dev/null; then
+                break
+            fi
+            sleep 1
+        done
+    fi
+    echo "Shutdown complete."
+    exit 0
+}
+trap cleanup SIGTERM SIGINT
+
 # Wait for database to be ready. Neon is configured through DATABASE_URL.
 if [ -z "$DATABASE_URL" ]; then
   echo "DATABASE_URL is required."
@@ -38,6 +56,7 @@ chown -R nextjs:nodejs /app/storage
 echo "=== Setup complete. Starting app... ==="
 
 # Build the PM2 ecosystem dynamically based on WS_ENABLED
+# Both modes use a background process pattern so cleanup() trap works.
 if [ "$WS_ENABLED" = "true" ]; then
   echo "Starting WebSocket + Next.js via PM2..."
   ECOSYSTEM_FILE="/app/ecosystem.config.cjs"
@@ -49,6 +68,8 @@ module.exports = {
       script: "server.js",
       instances: 1,
       autorestart: true,
+      kill_timeout: 30000,
+      listen_timeout: 3000,
       max_memory_restart: "1500M",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
     },
@@ -59,6 +80,7 @@ module.exports = {
       interpreter_args: "tsx",
       instances: 1,
       autorestart: true,
+      kill_timeout: 10000,
       max_memory_restart: "256M",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
     },
@@ -66,7 +88,11 @@ module.exports = {
 }
 EOF
   chown nextjs:nodejs "$ECOSYSTEM_FILE"
-  exec su -s /bin/sh -c "exec npx pm2-runtime start $ECOSYSTEM_FILE" nextjs
+  su -s /bin/sh -c 'npx pm2-runtime start /app/ecosystem.config.cjs & wait $!' nextjs &
+  APP_PID=$!
+  wait $APP_PID
 else
-  exec su -s /bin/sh -c 'exec node server.js' nextjs
+  su -s /bin/sh -c 'node server.js & wait $!' nextjs &
+  APP_PID=$!
+  wait $APP_PID
 fi

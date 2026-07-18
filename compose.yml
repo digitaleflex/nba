@@ -33,10 +33,11 @@ services:
           memory: 1024M
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/public/health', (r) => { r.on('data', () => {}); r.on('end', () => { process.exit(r.statusCode < 400 ? 0 : 1) }) }).on('error', () => process.exit(1))"]
-      interval: 30s
-      timeout: 10s
+      interval: 5s
+      timeout: 5s
       retries: 3
-      start_period: 40s
+      start_period: 30s
+    stop_grace_period: 30s
     volumes:
       - nba-storage:/app/storage
     labels:
@@ -48,6 +49,12 @@ services:
       - "traefik.http.routers.nba-app.tls.certresolver=letsencrypt"
       - "traefik.http.routers.nba-app.service=nba-app"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.path=/api/public/health"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
+      - "traefik.http.middlewares.nba-retry.retry.attempts=5"
+      - "traefik.http.middlewares.nba-retry.retry.initialInterval=500ms"
+      - "traefik.http.routers.nba-app.middlewares=nba-retry"
       # WebSocket (Socket.IO) : route /socket.io/ vers le worker sur le port 3001
       - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && PathPrefix(`/socket.io/`)"
       - "traefik.http.routers.nba-ws.priority=200"
@@ -109,6 +116,41 @@ services:
           cpus: "1.0"
           memory: 512M
     restart: unless-stopped
+
+  bull-board:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["node", "/app/workers/bull-board.js"]
+    networks:
+      - nba
+      - proxy
+    env_file: .env
+    environment:
+      BULL_BOARD_PORT: "3002"
+    depends_on:
+      nba-redis:
+        condition: service_started
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3002/health', (r) => { r.resume(); r.on('end', () => process.exit(r.statusCode < 500 ? 0 : 1)) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nba-bull.rule=Host(`access.signauxx.com`) && PathPrefix(`/admin/queues`)"
+      - "traefik.http.routers.nba-bull.priority=150"
+      - "traefik.http.routers.nba-bull.entrypoints=websecure"
+      - "traefik.http.routers.nba-bull.tls=true"
+      - "traefik.http.routers.nba-bull.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nba-bull.loadbalancer.server.port=3002"
 
   nba-imgproxy:
     image: darthsim/imgproxy:latest

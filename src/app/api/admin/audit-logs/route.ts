@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
           filters,
         }
       },
-      30,
+      300,
     )
 
     return NextResponse.json(result)

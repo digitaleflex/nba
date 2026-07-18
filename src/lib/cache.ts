@@ -2,18 +2,21 @@ import IORedis from "ioredis"
 
 const PREFIX = "nba:cache:v1:"
 
-// Connexion singleton (sur le même modèle que src/lib/queue.ts).
 const globalForCache = globalThis as unknown as { redisCache?: IORedis }
 
 let available = true
 let unavailableUntil = 0
+
+let hits = 0
+let misses = 0
+let invalidations = 0
 
 function getRedis(): IORedis | null {
   const url = process.env.REDIS_URL?.trim()
   if (!url) return null
   if (!available) {
     if (Date.now() < unavailableUntil) return null
-    available = true // on retente après la fenêtre de cooldown
+    available = true
   }
   if (!globalForCache.redisCache) {
     globalForCache.redisCache = new IORedis(url, {
@@ -31,10 +34,17 @@ function markUnavailable() {
   unavailableUntil = Date.now() + 30000
 }
 
-/**
- * Lit une valeur depuis le cache Redis, ou l'exécute via `fetcher` et la stocke (TTL).
- * Jamais bloquant : en cas d'erreur Redis, on retombe sur le fetcher.
- */
+export function getStats() {
+  const total = hits + misses
+  return {
+    hits,
+    misses,
+    invalidations,
+    total,
+    ratio: total > 0 ? `${((hits / total) * 100).toFixed(1)}%` : "N/A",
+  }
+}
+
 export async function getCached<T>(
   key: string,
   fetcher: () => Promise<T>,
@@ -45,11 +55,15 @@ export async function getCached<T>(
   if (redis) {
     try {
       const cached = await redis.get(fullKey)
-      if (cached != null) return JSON.parse(cached) as T
+      if (cached != null) {
+        hits++
+        return JSON.parse(cached) as T
+      }
     } catch {
       markUnavailable()
     }
   }
+  misses++
   const value = await fetcher()
   if (redis) {
     try {
@@ -65,7 +79,8 @@ export async function invalidateKey(key: string): Promise<void> {
   const redis = getRedis()
   if (!redis) return
   try {
-    await redis.del(PREFIX + key)
+    await redis.unlink(PREFIX + key)
+    invalidations++
   } catch {
     markUnavailable()
   }
@@ -78,9 +93,12 @@ export async function invalidatePrefix(prefix: string): Promise<void> {
   try {
     let cursor = "0"
     do {
-      const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 100)
+      const [next, keys] = await redis.scan(cursor, "MATCH", pattern, "COUNT", 500)
       cursor = next
-      if (keys.length) await redis.del(...keys)
+      if (keys.length) {
+        await redis.unlink(...keys)
+        invalidations += keys.length
+      }
     } while (cursor !== "0")
   } catch {
     markUnavailable()

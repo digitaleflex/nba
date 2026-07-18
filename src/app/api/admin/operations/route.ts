@@ -161,7 +161,7 @@ export async function GET() {
       },
     }
       },
-      20,
+      5,
     )
 
     return NextResponse.json(data)

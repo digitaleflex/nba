@@ -12,9 +12,9 @@ const FALLBACK_PLANS = [
 ]
 
 export async function GET() {
-  const plans = await getCached(
-    "plans",
-    async () => {
+    const plans = await getCached(
+      "plans",
+      async () => {
       try {
         const { prisma } = await import("@nba/lib/db")
         return await prisma.subscriptionPlan.findMany({

@@ -38,9 +38,17 @@ function createNoopQueue(queueName: string): QueueLike {
   };
 }
 
+let queueConnAvailable = true
+let queueConnUnavailableUntil = 0
+
 function getRedisConnection() {
   if (!queueEnabled || !redisUrl) {
     return null;
+  }
+
+  if (!queueConnAvailable) {
+    if (Date.now() < queueConnUnavailableUntil) return null
+    queueConnAvailable = true
   }
 
   const globalForRedis = globalThis as unknown as {
@@ -50,7 +58,22 @@ function getRedisConnection() {
   if (!globalForRedis.redisConnection) {
     globalForRedis.redisConnection = new IORedis(redisUrl, {
       maxRetriesPerRequest: null,
+      connectTimeout: 5000,
+      commandTimeout: 5000,
+      retryStrategy: (times) => {
+        if (times > 10) {
+          console.error(`[queue] Redis unavailable after ${times} retries, cooling down for 30s`)
+          queueConnAvailable = false
+          queueConnUnavailableUntil = Date.now() + 30000
+          return null
+        }
+        return Math.min(times * 200, 2000)
+      },
     });
+
+    globalForRedis.redisConnection.on("error", (err) => {
+      console.error("[queue] Redis connection error:", err.message)
+    })
   }
 
   return globalForRedis.redisConnection;

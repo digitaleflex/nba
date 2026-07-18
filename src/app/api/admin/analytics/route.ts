@@ -183,7 +183,7 @@ export async function GET(request: Request) {
           },
         }
       },
-      30,
+      60,
     )
 
     return NextResponse.json(data)

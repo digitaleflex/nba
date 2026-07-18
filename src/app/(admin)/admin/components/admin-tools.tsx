@@ -8,6 +8,7 @@ import { toast } from "sonner"
 export function AdminTools() {
   const [busy, setBusy] = useState<string | null>(null)
   const [queues, setQueues] = useState<any[] | null>(null)
+  const [cacheStats, setCacheStats] = useState<any>(null)
 
   async function purgeCache() {
     if (!confirm("Purger le cache Redis ? Cela peut ralentir temporairement les requêtes.")) return
@@ -33,6 +34,19 @@ export function AdminTools() {
       toast.success(`Jobs en échec relancés (${d.retried}).`)
     } catch {
       toast.error("Erreur lors de la relance des files.")
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  async function fetchCacheStats() {
+    setBusy("stats")
+    try {
+      const res = await fetch("/api/admin/cache/stats")
+      if (!res.ok) throw new Error()
+      setCacheStats(await res.json())
+    } catch {
+      toast.error("Erreur lors de la lecture des stats cache.")
     } finally {
       setBusy(null)
     }
@@ -64,9 +78,17 @@ export function AdminTools() {
         <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === "retry"} onClick={retryQueues}>
           <RotateCw className="size-3.5" /> Relancer jobs en échec
         </Button>
+        <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === "stats"} onClick={fetchCacheStats}>
+          <RefreshCw className="size-3.5" /> Cache stats
+        </Button>
         <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === "stats"} onClick={refreshQueues}>
           <RefreshCw className="size-3.5" /> Files (stats)
         </Button>
+        {cacheStats && (
+          <span className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border">
+            Cache: {cacheStats.hits} hits / {cacheStats.misses} misses ({cacheStats.ratio}) · {cacheStats.invalidations} invalidations
+          </span>
+        )}
         {queues && (
           <div className="flex flex-wrap gap-2 ml-1">
             {queues.map((q: any) => (
