@@ -7,6 +7,7 @@ import {
   Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages, Camera
 } from "lucide-react"
 import countries from "@nba/lib/countries.json"
+import { toast } from "sonner"
 import { Avatar, AvatarImage, AvatarFallback } from "@nba/design-system"
 
 interface UserProfile {
@@ -211,7 +212,9 @@ export default function ProfilePage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Erreur")
-      window.location.href = "/login"
+      toast.success("Votre compte a bien été supprimé.")
+      // Redirection vers une page explicative plutôt qu'un /login brut.
+      window.location.href = "/blocked?status=deleted"
     } catch (err: any) {
       setDeleteError(err.message)
     } finally {

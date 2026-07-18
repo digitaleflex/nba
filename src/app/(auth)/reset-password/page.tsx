@@ -3,6 +3,7 @@
 import { useState, use } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import { toast } from "sonner"
 import { authClient } from "@nba/lib/auth-client"
 import { Button, Input, Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Eye, EyeOff, CheckCircle, ArrowLeft } from "lucide-react"
@@ -36,7 +37,7 @@ export default function ResetPasswordPage({
     }
 
     if (!token) {
-      setError("Token invalide")
+      setError("Ce lien de réinitialisation est incomplet ou invalide. Demandez-en un nouveau.")
       return
     }
 
@@ -48,12 +49,15 @@ export default function ResetPasswordPage({
     })
 
     if (err) {
-      setError(err.message ?? err.statusText)
+      const message = err.message ?? err.statusText
+      setError(message)
+      toast.error(message)
       setLoading(false)
       return
     }
 
     setDone(true)
+    toast.success("Mot de passe réinitialisé avec succès.")
     setLoading(false)
   }
 
@@ -150,10 +154,21 @@ export default function ResetPasswordPage({
                 />
               </div>
               {error && (
-                <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
-                  <span className="size-1.5 rounded-full bg-destructive shrink-0" />
-                  {error}
-                </p>
+                <div className="space-y-2">
+                  <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
+                    <span className="size-1.5 rounded-full bg-destructive shrink-0" />
+                    {error}
+                  </p>
+                  {error.includes("lien") && (
+                    <Link
+                      href="/forgot-password"
+                      className="text-sm font-medium text-primary hover:text-primary/80 transition-colors inline-flex items-center gap-1"
+                    >
+                      <ArrowLeft className="size-3.5" />
+                      Demander un nouveau lien
+                    </Link>
+                  )}
+                </div>
               )}
               <Button type="submit" className="w-full h-9" disabled={loading || !token}>
                 {loading ? "Réinitialisation…" : "Réinitialiser le mot de passe"}
