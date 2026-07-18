@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
+import { Chart } from "@nba/design-system"
+import type { ChartDatum } from "@nba/design-system"
 
 interface Stats {
   winRate: number
@@ -68,6 +70,51 @@ export function StatsDashboard() {
         <KPI label="PnL" value={`${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(0)}€`} color={stats.totalPnl >= 0 ? "emerald" : "rose"} />
         <KPI label="Streak" value={`🔥 ${stats.streaks.currentWinStreak}`} sub={`Record: ${stats.streaks.bestWinStreak}`} />
       </div>
+
+      {/* Graphique PnL cumulé */}
+      {stats.byDay.length > 1 && (
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-semibold mb-3">📈 PnL cumulé</h3>
+          <Chart
+            type="line"
+            data={stats.byDay.slice().reverse().map(d => ({
+              label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+              value: d.pnl,
+              color: d.pnl >= 0 ? "emerald" as const : "rose" as const,
+            }))}
+            height={180}
+          />
+        </div>
+      )}
+
+      {/* Barres Win/Loss par jour */}
+      {stats.byDay.filter(d => d.count > 0).length > 0 && (
+        <div className="rounded-lg border bg-card p-4">
+          <h3 className="text-sm font-semibold mb-3">📊 Win/Loss par jour</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <Chart
+              type="bar"
+              data={stats.byDay.slice(0, 14).reverse().map(d => ({
+                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                value: d.wins,
+                color: "emerald" as const,
+              }))}
+              height={140}
+              emptyText="Pas de données"
+            />
+            <Chart
+              type="bar"
+              data={stats.byDay.slice(0, 14).reverse().map(d => ({
+                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                value: d.count - d.wins,
+                color: "rose" as const,
+              }))}
+              height={140}
+              emptyText="Pas de données"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Par paire + Par mood */}
       <div className="grid md:grid-cols-2 gap-4">

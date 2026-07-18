@@ -906,6 +906,86 @@ export function supportTicketEmail(
 }
 
 // ══════════════════════════════════════
+//  JOURNAL : RAPPORT HEBDOMADAIRE
+// ══════════════════════════════════════
+
+export function weeklyJournalReport(
+  user: TemplateUser,
+  stats: {
+    totalTrades: number
+    wins: number
+    losses: number
+    winRate: number
+    totalPnl: number
+    bestPair: string
+    worstPair: string
+    streak: number
+  },
+): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  const advice = stats.winRate >= 60
+    ? "Excellente semaine ! Continue sur cette lancée mais ne deviens pas trop confiant. Garde ta discipline."
+    : stats.winRate >= 45
+    ? "Semaine correcte. Essaie de réduire tes pertes en attendant les confirmations de signal avant d'entrer."
+    : "Semaine difficile. Rappelle-toi : le trading est un marathon, pas un sprint. Limite-toi à 1 ou 2 paires cette semaine."
+
+  return {
+    subject: `📊 Ton résumé de la semaine — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:22px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom} 👋
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Voici ton résumé de trading de la semaine.
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:12px;padding:20px;margin:16px 0">
+        <table cellpadding="0" cellspacing="0" style="width:100%">
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Trades</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.totalTrades}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Gagnés / Perdus</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.wins}W / ${stats.losses}L</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Win rate</td>
+            <td style="padding:6px 0;font-size:14px;font-weight:600;text-align:right;color:${stats.winRate >= 50 ? '#10AF6E' : '#DC3545'}">${stats.winRate}%</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">PnL</td>
+            <td style="padding:6px 0;font-size:14px;font-weight:600;text-align:right;color:${stats.totalPnl >= 0 ? '#10AF6E' : '#DC3545'}">${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(0)}€</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Meilleure paire</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.bestPair || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Pire paire</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.worstPair || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Win streak</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">🔥 ${stats.streak}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background-color:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:13px;color:#0369A1;line-height:1.5"><strong>💡 Conseil :</strong> ${advice}</p>
+      </div>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/journal`, text: "Voir mon journal complet" })}
+
+      <p style="margin:16px 0 0 0;font-size:12px;color:#6A758B">
+        Ce rapport est généré automatiquement chaque lundi. Tu peux consulter tes stats en temps réel dans ton journal de trading.
+      </p>
+    `),
+  }
+}
+
+// ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
 

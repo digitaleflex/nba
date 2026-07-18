@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { checkPsychology } from "@nba/lib/services/journal-psychology"
 
 const tradeCreateSchema = z.object({
   signalId: z.string().uuid().nullable().optional(),
@@ -126,6 +127,9 @@ export async function POST(request: NextRequest) {
     } else if (parsed.result === "LOSS") {
       await updateStreak(session.user.id, "LOSS_STREAK")
     }
+
+    // Psychologie : détecter patterns après chaque trade (fire and forget)
+    checkPsychology(session.user.id).catch(() => {})
 
     return NextResponse.json({ trade }, { status: 201 })
   } catch (error) {
