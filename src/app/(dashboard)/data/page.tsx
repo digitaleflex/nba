@@ -37,10 +37,9 @@ export default function DataPage() {
 
   async function handleExport() {
     try {
-      const res = await fetch("/api/dashboard/profile")
+      const res = await fetch("/api/dashboard/export-data")
       if (!res.ok) throw new Error()
-      const data = await res.json()
-      const blob = new Blob([JSON.stringify(data.user, null, 2)], { type: "application/json" })
+      const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement("a")
       a.href = url
