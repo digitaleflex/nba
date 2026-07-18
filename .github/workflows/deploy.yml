@@ -50,8 +50,9 @@ jobs:
             docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
 
             echo "=== Backup preventive (lecture seule, aucune mutation données) ==="
-            # Script non-destructif : dump DB + fichiers. Ne touche pas aux donnees actives.
-            docker compose -f compose.yml run --rm --entrypoint "sh -c 'tsx scripts/backup.sh || true'" app 2>&1 | tail -10 || true
+            # backup.sh = pg_dump (read-only) + upload B2. Non-destructif.
+            # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
+            docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker 2>&1 | tail -15 || true
 
             echo "=== Migrations Prisma (one-shot, avant le boot) ==="
             # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint

@@ -25,6 +25,15 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: npx prisma generate
+      - name: Verify lockfile is in sync with package.json
+        run: |
+          pnpm install --frozen-lockfile --lockfile-only
+          if ! git diff --quiet pnpm-lock.yaml; then
+            echo "::error::pnpm-lock.yaml is out of sync with package.json. Run 'pnpm install' locally and commit the lockfile."
+            git --no-pager diff pnpm-lock.yaml | head -30
+            exit 1
+          fi
+          echo "✅ lockfile in sync"
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
