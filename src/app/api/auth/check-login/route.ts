@@ -10,12 +10,13 @@ export async function GET(req: NextRequest) {
 
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
-    select: { deletedAt: true, isActive: true },
+    select: { deletedAt: true, isActive: true, suspendedAt: true, updatedAt: true },
   })
 
   if (user?.deletedAt) {
     return NextResponse.json({
       status: "deleted",
+      at: user.deletedAt.toISOString(),
       message: "Ce compte a été supprimé.",
     })
   }
@@ -23,6 +24,7 @@ export async function GET(req: NextRequest) {
   if (user && !user.isActive) {
     return NextResponse.json({
       status: "inactive",
+      at: (user.suspendedAt ?? user.updatedAt).toISOString(),
       message: "Ce compte est désactivé. Contactez le support.",
     })
   }
@@ -31,6 +33,7 @@ export async function GET(req: NextRequest) {
   if (banned) {
     return NextResponse.json({
       status: "banned",
+      at: banned.bannedAt,
       message: `Ce compte a été banni : ${banned.reason}. Contactez le support.`,
     })
   }

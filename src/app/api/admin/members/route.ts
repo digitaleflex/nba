@@ -138,6 +138,8 @@ export async function PUT(request: NextRequest) {
       if (!isActive && !onboardingStatus) {
         data.onboardingStatus = "SUSPENDED"
       }
+      // Horodatage à la seconde près de la suspension (pour affichage utilisateur).
+      data.suspendedAt = !isActive ? new Date() : null
     }
     if (onboardingStatus) data.onboardingStatus = onboardingStatus
     if (typeof signalsAccessOverride === "boolean") data.signalsAccessOverride = signalsAccessOverride
@@ -198,6 +200,7 @@ export async function PUT(request: NextRequest) {
         changes: Object.keys(data),
         isActive: data.isActive,
         onboardingStatus: data.onboardingStatus,
+        suspendedAt: data.suspendedAt ?? null,
         roleId: data.roleId,
       },
     })

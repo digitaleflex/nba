@@ -37,6 +37,7 @@ export default function LoginPage() {
           const message = status.message ?? "Ce compte ne peut pas se connecter pour le moment."
           const params = new URLSearchParams({ status: status.status })
           if (message) params.set("reason", message)
+          if (status.at) params.set("at", status.at)
           window.location.href = `/blocked?${params.toString()}`
           return
         }

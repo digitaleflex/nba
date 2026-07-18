@@ -2,7 +2,7 @@ import Link from "next/link"
 import { ShieldX, Mail, ArrowLeft } from "lucide-react"
 
 interface BlockedPageProps {
-  searchParams: Promise<{ reason?: string; status?: string }>
+  searchParams: Promise<{ reason?: string; status?: string; at?: string }>
 }
 
 const STATUS_COPY: Record<string, { title: string; message: string }> = {
@@ -23,13 +23,25 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
   },
 }
 
+function formatTimestamp(at?: string): string | null {
+  if (!at) return null
+  const d = new Date(at)
+  if (Number.isNaN(d.getTime())) return null
+  // Horodatage à la seconde près, en heure locale de l'utilisateur.
+  return d.toLocaleString("fr-FR", {
+    dateStyle: "long",
+    timeStyle: "medium",
+  })
+}
+
 export default async function BlockedPage({ searchParams }: BlockedPageProps) {
-  const { reason, status } = await searchParams
+  const { reason, status, at } = await searchParams
   const copy = STATUS_COPY[status ?? ""] ?? {
     title: "Accès temporairement indisponible",
     message:
       "Votre compte ne peut pas se connecter pour le moment. Notre équipe peut vous aider à résoudre la situation.",
   }
+  const timestamp = formatTimestamp(at)
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -41,6 +53,11 @@ export default async function BlockedPage({ searchParams }: BlockedPageProps) {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">{copy.title}</h1>
           <p className="text-sm text-muted-foreground">{copy.message}</p>
+          {timestamp && (
+            <p className="text-xs text-muted-foreground/80 mt-2 rounded-lg bg-muted/40 px-3 py-2">
+              Intervention effectuée le {timestamp}
+            </p>
+          )}
           {reason && (
             <p className="text-xs text-muted-foreground/80 mt-2 rounded-lg bg-muted/40 px-3 py-2">
               Motif : {reason}
