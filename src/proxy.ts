@@ -193,19 +193,6 @@ function redirectTo(target: string, request: NextRequest) {
 export default async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // ─── 0. Cache des chunks buildés (/_next/static) ─────────────────────────
-  // Next les sert avec "immutable" par défaut, ce qui empêche le navigateur
-  // de revalider : après un rebuild, l'ancienne URL de chunk 404 et la page
-  // casse (CSS/JS manquants). On force no-store pour une revalidation sys.
-  if (pathname.startsWith("/_next/static/")) {
-    const response = NextResponse.next();
-    response.headers.set(
-      "Cache-Control",
-      "no-cache, no-store, must-revalidate, max-age=0",
-    );
-    return response;
-  }
-
   // ─── 1. Skip auth for public routes ──────────────────────────────────────
   if (
     pathname.startsWith(AUTH_API_PREFIX) ||
@@ -267,7 +254,6 @@ export default async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Inclut /_next/static pour forcer le no-store sur les chunks buildés
-    "/((?!_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)",
   ],
 };
