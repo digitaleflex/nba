@@ -28,7 +28,6 @@ import {
   CreditCard,
   MessageCircle,
   Volume2,
-  MonitorSmartphone,
   Inbox,
   Mail,
   LineChart as LineChartIcon,
@@ -117,14 +116,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       icon: MessageCircle,
       active: pathname.startsWith("/dashboard/messages"),
     },
-    {
-      href: "/dashboard/devices",
-      label: "Appareils",
-      icon: MonitorSmartphone,
-      active:
-        pathname.startsWith("/dashboard/devices") ||
-        pathname.startsWith("/dashboard/verify-device"),
-    },
   ]
 
   // Liens d'administration groupés par section
@@ -162,10 +153,14 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       { href: "/admin?tab=dashboard", label: "Centre de contrôle", icon: Gauge, active: pathname === "/admin" && activeTab === "dashboard" },
       { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname === "/admin/tracker" },
     ],
+    decider: [
+      { href: "/admin/members", label: "Annuaire membres", icon: Users, active: pathname === "/admin/members" },
+    ],
     communiquer: [
       { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
     ],
     auditer: [
+      { href: "/admin/audit", label: "Journal d'audit (complet)", icon: FileCheck, active: pathname === "/admin/audit" },
       { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
     ],
   }
