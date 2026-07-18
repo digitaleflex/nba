@@ -48,12 +48,13 @@ export default function CguPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold mb-2">4. Vérification KYC</h2>
+            <h2 className="text-lg font-semibold mb-2">4. Activation du compte</h2>
             <p className="text-muted-foreground">
-              L&apos;accès complet à la plateforme nécessite une vérification d&apos;identité
-              (KYC) et de compte broker. Ces vérifications sont obligatoires pour des raisons
-              réglementaires et de sécurité. Les documents fournis sont traités de manière
-              confidentielle et supprimés après vérification.
+              L&apos;inscription nécessite le choix d&apos;un plan et la validation des
+              informations fournies. L&apos;accès aux signaux est activé automatiquement après
+              création du compte. Conformément à notre Politique de confidentialité, certaines
+              fonctionnalités peuvent faire l&apos;objet de vérifications complémentaires.
+              Les documents éventuellement fournis sont traités de manière confidentielle.
             </p>
           </section>
 
@@ -94,7 +95,30 @@ export default function CguPage() {
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold mb-2">9. Contact</h2>
+            <h2 className="text-lg font-semibold mb-2">9. Suppression de compte et données</h2>
+            <p className="text-muted-foreground">
+              Vous pouvez à tout moment supprimer votre compte et exporter vos données depuis la
+              page <span className="font-mono text-foreground">Mes données</span>. La suppression
+              est définitive, anonymise vos informations personnelles et révoque vos sessions
+              actives. Elle n&apos;affecte pas les obligations légales de conservation qui
+              pourraient s&apos;appliquer.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-2">10. Avertissement sur les risques</h2>
+            <p className="text-muted-foreground">
+              Les signaux fournis ne constituent pas un conseil en investissement. Veuillez
+              consulter notre{" "}
+              <a href="/risk-disclaimer" className="text-primary hover:text-primary/80">
+                avertissement sur les risques
+              </a>{" "}
+              avant toute utilisation du service.
+            </p>
+          </section>
+
+          <section>
+            <h2 className="text-lg font-semibold mb-2">11. Contact</h2>
             <p className="text-muted-foreground">
               Pour toute question concernant ces CGU, contactez-nous à
               <span className="font-mono text-foreground"> legal@signauxx.com</span>.

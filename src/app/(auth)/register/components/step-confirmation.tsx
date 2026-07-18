@@ -108,7 +108,9 @@ export function StepConfirmation({
           En créant votre compte, vous acceptez nos{" "}
           <Link href="/cgu" className="text-primary hover:text-primary/80">Conditions Générales</Link>{" "}
           et notre{" "}
-          <Link href="/privacy" className="text-primary hover:text-primary/80">Politique de confidentialité</Link>
+          <Link href="/privacy" className="text-primary hover:text-primary/80">Politique de confidentialité</Link>.
+          Consultez notre{" "}
+          <Link href="/risk-disclaimer" className="text-primary hover:text-primary/80">avertissement sur les risques</Link>.
         </p>
       </div>
       <div className="mt-6">
