@@ -8,7 +8,6 @@ type TabId = "dashboard" | "signals" | "timeline"
 
 const TABS = [
   { id: "dashboard" as TabId, label: "Résumé", icon: LayoutDashboard },
-  { id: "signals" as TabId, label: "Signaux", icon: Bell },
   { id: "timeline" as TabId, label: "Membres", icon: Clock },
 ]
 

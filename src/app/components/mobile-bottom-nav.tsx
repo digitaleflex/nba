@@ -26,6 +26,7 @@ import {
   Search,
 } from "lucide-react"
 import { ADMIN_CONTEXTS, getContextForTab } from "@nba/app/(admin)/admin/admin-context"
+import { useCommandPalette } from "@nba/components/command-palette"
 
 interface MobileBottomNavProps {
   isAdmin?: boolean
@@ -140,6 +141,8 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
 
   const links = isAdmin ? adminLinks : userLinks
 
+  const { openPalette } = useCommandPalette()
+
   const { unreadTotal } = useMessagingUnread()
   const messagesBadge = unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
 
@@ -203,7 +206,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
           )
         })}
         <button
-          onClick={() => window.dispatchEvent(new CustomEvent("open-command-palette"))}
+          onClick={openPalette}
           className="flex flex-col items-center justify-center flex-1 h-full gap-1 text-muted-foreground active:text-primary transition-colors relative"
           aria-label="Rechercher"
         >

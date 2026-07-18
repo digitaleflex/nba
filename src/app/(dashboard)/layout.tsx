@@ -9,6 +9,7 @@ import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
 import { ErrorBoundary } from "@nba/app/components/error-boundary"
 import { MessagingUnreadProvider } from "@nba/lib/messaging-unread"
+import { CommandPaletteProvider } from "@nba/components/command-palette"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -26,6 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <MessagingUnreadProvider>
+      <CommandPaletteProvider>
       <div className="flex min-h-dvh flex-col md:flex-row noise">
         {/* Desktop Sidebar */}
         <Sidebar isAdmin={false} user={user} />
@@ -86,6 +88,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {/* Mobile Bottom Navigation Bar */}
         <MobileBottomNav isAdmin={false} user={user} />
       </div>
+      </CommandPaletteProvider>
     </MessagingUnreadProvider>
   )
 }

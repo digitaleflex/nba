@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback, createContext, useContext } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Users, Megaphone, Zap, Loader2, CornerDownLeft } from "lucide-react"
 import { Dialog, DialogContent, Input, useMediaQuery } from "@nba/design-system"
@@ -339,6 +339,8 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   const [open, setOpen] = useState(false)
   const router = useRouter()
 
+  const openPalette = useCallback(() => setOpen(true), [])
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       const isMod = isMac() ? e.metaKey : e.ctrlKey
@@ -372,9 +374,17 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   }, [router])
 
   return (
-    <>
+    <CommandPaletteContext.Provider value={{ openPalette }}>
       {children}
       <CommandPalette open={open} onOpenChange={setOpen} />
-    </>
+    </CommandPaletteContext.Provider>
   )
+}
+
+const CommandPaletteContext = createContext<{ openPalette: () => void }>({
+  openPalette: () => {},
+})
+
+export function useCommandPalette() {
+  return useContext(CommandPaletteContext)
 }
