@@ -33,7 +33,7 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const router = useRouter()
-  const activeTab = searchParams.get("tab") || "requests"
+  const activeTab = searchParams.get("tab") || ""
 
   const [pendingRequests, setPendingRequests] = useState(0)
   useEffect(() => {
@@ -56,6 +56,12 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
     router.push("/login")
     router.refresh()
   }
+
+  // Mémorise le dernier onglet actif pour les sous-pages admin sans ?tab=
+  const [lastActiveTab, setLastActiveTab] = useState("requests")
+  useEffect(() => {
+    if (activeTab) setLastActiveTab(activeTab)
+  }, [activeTab])
 
   const userLinks: MobileNavLink[] = [
     {
@@ -86,14 +92,16 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
     },
   ]
 
-  const currentContext = getContextForTab(activeTab)
+  const effectiveTab = activeTab || lastActiveTab
+  const currentContext = getContextForTab(effectiveTab)
+  const isAdminArea = pathname.startsWith("/admin")
   const adminLinks: MobileNavLink[] = ADMIN_CONTEXTS.map((context) => {
     const repr = context.tabs[0]
     return {
       href: `/admin?tab=${repr.value}`,
       label: context.label,
       icon: context.icon,
-      active: pathname === "/admin" && currentContext === context.id,
+      active: isAdminArea && currentContext === context.id,
     }
   })
 
