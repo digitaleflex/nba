@@ -167,7 +167,7 @@ describe("distributeSignal", () => {
     expect(result.recipientCount).toBe(1)
   })
 
-  it("distribue à tous les membres actifs sans condition", async () => {
+  it("ne distribue qu'aux membres avec accès APPROVED ou override", async () => {
     ;(prisma.signal.findUnique as any).mockResolvedValue(publishedSignal())
     let capturedWhere: any = null
     ;(prisma.user.findMany as any).mockImplementation(async (args: any) => {
@@ -179,7 +179,10 @@ describe("distributeSignal", () => {
 
     expect(capturedWhere.isActive).toBe(true)
     expect(capturedWhere.deletedAt).toBe(null)
-    expect(capturedWhere.OR).toBeUndefined()
+    expect(capturedWhere.OR).toEqual([
+      { accessRequests: { some: { planId: { in: ["plan-1"] }, status: "APPROVED" } } },
+      { signalsAccessOverride: true },
+    ])
     expect(result.recipientCount).toBe(1)
   })
 })

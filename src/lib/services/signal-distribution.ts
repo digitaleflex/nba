@@ -136,6 +136,17 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
       isActive: true,
       deletedAt: null,
       id: { not: signal.createdBy },
+      OR: [
+        {
+          accessRequests: {
+            some: {
+              planId: { in: planIds },
+              status: "APPROVED",
+            },
+          },
+        },
+        { signalsAccessOverride: true },
+      ],
     },
   })
 

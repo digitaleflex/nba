@@ -9,6 +9,9 @@ vi.mock("@nba/lib/db", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    accessRequest: {
+      findMany: vi.fn(),
+    },
     signal: {
       count: vi.fn(),
       findMany: vi.fn(),
@@ -21,6 +24,9 @@ vi.mock("@nba/lib/db", () => ({
       findMany: vi.fn(),
     },
     signalArchive: {
+      findMany: vi.fn(),
+    },
+    subscriptionPlan: {
       findMany: vi.fn(),
     },
   },
@@ -62,7 +68,9 @@ describe("getSignalsApi", () => {
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-123",
+      role: { name: "MEMBER" },
       isActive: false,
+      signalsAccessOverride: false,
     } as any)
 
     await expect(getSignalsApi({})).rejects.toThrowError(
@@ -70,15 +78,24 @@ describe("getSignalsApi", () => {
     )
   })
 
-  it("allows access and returns signals for any active user", async () => {
+  it("allows access and returns signals for user with approved plan", async () => {
     vi.mocked(getServerSession).mockResolvedValue({
       user: { id: "user-123", email: "test@example.com" },
     } as any)
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue({
       id: "user-123",
+      role: { name: "MEMBER" },
       isActive: true,
+      signalsAccessOverride: false,
     } as any)
+
+    vi.mocked(prisma.accessRequest.findMany).mockResolvedValue([
+      { planId: "plan-1" },
+    ] as any)
+    vi.mocked(prisma.subscriptionPlan.findMany).mockResolvedValue([
+      { name: "Forex Plan" },
+    ] as any)
 
     vi.mocked(prisma.signal.count).mockResolvedValue(1)
     vi.mocked(prisma.signal.findMany).mockResolvedValue([
@@ -101,5 +118,58 @@ describe("getSignalsApi", () => {
     const result = await getSignalsApi({})
     expect(result.signals).toHaveLength(1)
     expect(result.signals[0].content).toBe("Test signal")
+  })
+
+  it("allows access and returns signals for users with signalsAccessOverride", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-123", email: "test@example.com" },
+    } as any)
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user-123",
+      role: { name: "MEMBER" },
+      isActive: true,
+      signalsAccessOverride: true,
+    } as any)
+
+    vi.mocked(prisma.signal.count).mockResolvedValue(1)
+    vi.mocked(prisma.signal.findMany).mockResolvedValue([
+      {
+        id: "sig-1",
+        content: "Test signal",
+        imageUrl: null,
+        imageUrls: [],
+        publishedAt: new Date(),
+        createdAt: new Date(),
+        creator: { name: "Admin" },
+        audience: [{ plan: { name: "Forex" } }],
+      },
+    ] as any)
+    vi.mocked(prisma.signalRead.findMany).mockResolvedValue([])
+    vi.mocked(prisma.signalRead.count).mockResolvedValue(0)
+    vi.mocked(prisma.signalFavorite.findMany).mockResolvedValue([])
+    vi.mocked(prisma.signalArchive.findMany).mockResolvedValue([])
+
+    const result = await getSignalsApi({})
+    expect(result.signals).toHaveLength(1)
+  })
+
+  it("returns empty for user without approved plan", async () => {
+    vi.mocked(getServerSession).mockResolvedValue({
+      user: { id: "user-123", email: "test@example.com" },
+    } as any)
+
+    vi.mocked(prisma.user.findUnique).mockResolvedValue({
+      id: "user-123",
+      role: { name: "MEMBER" },
+      isActive: true,
+      signalsAccessOverride: false,
+    } as any)
+
+    vi.mocked(prisma.accessRequest.findMany).mockResolvedValue([])
+
+    const result = await getSignalsApi({})
+    expect(result.signals).toHaveLength(0)
+    expect(result.pagination.total).toBe(0)
   })
 })

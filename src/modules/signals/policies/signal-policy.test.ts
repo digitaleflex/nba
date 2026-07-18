@@ -7,6 +7,12 @@ vi.mock("@nba/lib/db", () => ({
     user: {
       findUnique: vi.fn(),
     },
+    signalAudience: {
+      findMany: vi.fn(),
+    },
+    accessRequest: {
+      findFirst: vi.fn(),
+    },
   },
 }))
 
@@ -54,30 +60,74 @@ describe("SignalPolicy", () => {
   })
 
   describe("canView", () => {
-    it("allows active users", async () => {
+    it("allows users with approved access to a targeted plan", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: "user-member",
+        role: { name: "MEMBER" },
         isActive: true,
+        signalsAccessOverride: false,
+      } as any)
+      vi.mocked(prisma.signalAudience.findMany).mockResolvedValue([
+        { planId: "plan-forex" }
+      ] as any)
+      vi.mocked(prisma.accessRequest.findFirst).mockResolvedValue({
+        id: "req-1",
+        status: "APPROVED"
       } as any)
 
       const allowed = await SignalPolicy.canView("user-member", "signal-1")
       expect(allowed).toBe(true)
     })
 
+    it("allows admin users unconditionally", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "admin-1",
+        role: { name: "ADMIN" },
+        isActive: true,
+        signalsAccessOverride: false,
+      } as any)
+
+      const allowed = await SignalPolicy.canView("admin-1", "signal-1")
+      expect(allowed).toBe(true)
+    })
+
+    it("allows users with signalsAccessOverride", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "override-user",
+        role: { name: "MEMBER" },
+        isActive: true,
+        signalsAccessOverride: true,
+      } as any)
+
+      const allowed = await SignalPolicy.canView("override-user", "signal-1")
+      expect(allowed).toBe(true)
+    })
+
     it("denies inactive users", async () => {
       vi.mocked(prisma.user.findUnique).mockResolvedValue({
         id: "user-member",
+        role: { name: "MEMBER" },
         isActive: false,
+        signalsAccessOverride: false,
       } as any)
 
       const allowed = await SignalPolicy.canView("user-member", "signal-1")
       expect(allowed).toBe(false)
     })
 
-    it("denies non-existent users", async () => {
-      vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
+    it("denies users without approved access request", async () => {
+      vi.mocked(prisma.user.findUnique).mockResolvedValue({
+        id: "user-member",
+        role: { name: "MEMBER" },
+        isActive: true,
+        signalsAccessOverride: false,
+      } as any)
+      vi.mocked(prisma.signalAudience.findMany).mockResolvedValue([
+        { planId: "plan-forex" }
+      ] as any)
+      vi.mocked(prisma.accessRequest.findFirst).mockResolvedValue(null)
 
-      const allowed = await SignalPolicy.canView("unknown", "signal-1")
+      const allowed = await SignalPolicy.canView("user-member", "signal-1")
       expect(allowed).toBe(false)
     })
   })
