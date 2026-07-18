@@ -19,6 +19,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
+        // Les chunks buildés (_next/static) changent à chaque déploiement.
+        // On force la revalidation (no-cache) pour éviter qu'un navigateur/CDN
+        // ne serve un chunk orphelin d'un build précédent (404 + ChunkLoadError).
+        source: "/_next/static/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
+      {
         source: "/(.*)",
         headers: [
           {
