@@ -49,11 +49,19 @@ jobs:
             echo "=== Pull nouvelles images ==="
             docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
 
+            echo "=== Backup preventive (lecture seule, aucune mutation données) ==="
+            # Script non-destructif : dump DB + fichiers. Ne touche pas aux donnees actives.
+            docker compose -f compose.yml run --rm --entrypoint "sh -c 'tsx scripts/backup.sh || true'" app 2>&1 | tail -10 || true
+
             echo "=== Migrations Prisma (one-shot, avant le boot) ==="
-            docker compose -f compose.yml run --rm app npx prisma migrate deploy 2>&1 | tail -15
+            # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint
+            # du Dockerfile lance le serveur et ignore l'arg). Non-destructif : applique
+            # uniquement les migrations manquantes. Timeout anti-blocage advisory lock pgbouncer.
+            timeout 300 docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app 2>&1 | tail -20
 
             echo "=== Seed (one-shot, idempotent) ==="
-            docker compose -f compose.yml run --rm app pnpm db:seed 2>&1 | tail -10
+            # --entrypoint force l'execution reelle du seed (upsert, non-destructif).
+            timeout 180 docker compose -f compose.yml run --rm --entrypoint "pnpm db:seed" app 2>&1 | tail -10
 
             echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
             # compose demarre le nouveau container, attend son healthcheck (Traefik
