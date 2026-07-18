@@ -7,7 +7,7 @@ import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
 import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
-import { MessageSquare, Loader2, Search, Plus, X, Circle, Send } from "lucide-react"
+import { MessageSquare, Loader2, Search, Plus, X, Circle, Send, ArrowLeft, ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 
 interface Other {
@@ -465,7 +465,7 @@ export default function MessagesPage() {
         <CardContent className="p-0">
           <div className="grid md:grid-cols-[320px_1fr] min-h-[70vh]">
             {/* Liste des conversations */}
-            <div className="border-r border-border/60 flex flex-col max-h-[70vh]">
+            <div className={`border-r border-border/60 flex flex-col max-h-[70vh] ${selectedId ? "hidden md:flex" : ""}`}>
               <div className="p-3 border-b border-border/60 space-y-2">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
@@ -539,7 +539,7 @@ export default function MessagesPage() {
             </div>
 
             {/* Fil de discussion */}
-            <div className="flex flex-col min-h-[70vh]">
+            <div className={`flex flex-col min-h-[70vh] ${!selectedId ? "hidden md:flex" : ""}`}>
               {!selected ? (
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center text-muted-foreground">
                   <MessageSquare className="size-10" />
@@ -551,6 +551,13 @@ export default function MessagesPage() {
               ) : (
                 <>
                   <div className="flex items-center gap-3 px-4 py-3 border-b border-border/60">
+                    <button
+                      onClick={() => setSelectedId(null)}
+                      className="md:hidden flex items-center justify-center size-9 rounded-full hover:bg-muted transition-colors -ml-1 shrink-0"
+                      aria-label="Retour aux conversations"
+                    >
+                      <ChevronLeft className="size-5" />
+                    </button>
                     <div className="relative">
                       <Avatar className="size-9">
                         <AvatarFallback>{initials(selected.other?.name ?? "?")}</AvatarFallback>

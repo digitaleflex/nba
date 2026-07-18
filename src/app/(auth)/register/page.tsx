@@ -159,7 +159,7 @@ export default function RegisterPage() {
                 {i < step ? <Check className="size-3 sm:size-4" /> : i + 1}
               </div>
               <span
-                className={`hidden sm:inline text-xs sm:text-sm ${i === step ? "font-medium text-foreground" : "text-muted-foreground"}`}
+                className={`inline text-[10px] sm:text-xs ${i === step ? "font-medium text-foreground" : "text-muted-foreground"} ${i !== step && "hidden sm:inline"}`}
               >
                 {label}
               </span>

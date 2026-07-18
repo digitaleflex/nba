@@ -427,8 +427,8 @@ function AdminConsoleContent() {
                 <span
                   key={`gl-${gi}`}
                   className={cn(
-                    "shrink-0 text-[10px] font-semibold uppercase tracking-wider select-none",
-                    isContextActive ? "text-primary" : "text-muted-foreground/50"
+                    "shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none",
+                    isContextActive ? "text-primary" : "text-muted-foreground/70"
                   )}
                 >
                   {context.label}

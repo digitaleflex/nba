@@ -287,7 +287,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[9px] uppercase",
+                          "text-[11px] uppercase",
                           sig.status === "PUBLISHED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                           sig.status === "DRAFT" && "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
                           sig.status === "ARCHIVED" && "bg-rose-500/10 text-rose-600 border-rose-500/20"
@@ -305,13 +305,13 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                     </p>
 
                     <div className="flex justify-between items-center pt-2 border-t border-border/60">
-                      <span className="text-[9px] text-muted-foreground">Créé par : {sig.creator?.name || "Admin"}</span>
+                      <span className="text-[11px] text-muted-foreground">Créé par : {sig.creator?.name || "Admin"}</span>
                       <div className="flex gap-1.5">
                         {sig.status === "DRAFT" && (
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-9 text-emerald-500 hover:text-emerald-600 cursor-pointer"
+                            className="size-11 text-emerald-500 hover:text-emerald-600 cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "publish")}
                             title="Publier"
                           >
@@ -322,7 +322,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                            className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "unarchive")}
                             title="Restaurer"
                           >
@@ -332,7 +332,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                            className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "archive")}
                             title="Archiver"
                           >
@@ -342,7 +342,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() => handleConfirm(sig.id, "duplicate")}
                           title="Dupliquer"
                         >
@@ -351,7 +351,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-9 text-muted-foreground hover:text-foreground cursor-pointer"
+                          className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() => onOpenPanel({ title: "Détails du Signal", type: "signal", data: sig })}
                           title="Détails"
                         >
@@ -360,7 +360,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="size-9 text-muted-foreground hover:text-destructive cursor-pointer"
+                          className="size-11 text-muted-foreground hover:text-destructive cursor-pointer"
                           onClick={() => handleConfirm(sig.id, "delete")}
                           title="Supprimer"
                         >
