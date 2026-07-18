@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { render, screen } from "@testing-library/react"
 import userEvent from "@testing-library/user-event"
 import LoginPage from "./page"
@@ -19,8 +19,38 @@ vi.mock("@nba/lib/auth-client", () => ({
   },
 }))
 
+// La page interroge /api/auth/check-login (fetch global) AVANT le signIn.
+// On remplace fetch par un mock qui répond "ok" pour check-login ; le signIn
+// est géré par le mock authClient, pas par la réponse fetch.
+const realFetch = globalThis.fetch
+const mockFetch = vi.fn((input: string | URL | Request) => {
+  const url = typeof input === "string" ? input : (input as Request).url
+  if (url.includes("/api/auth/check-login")) {
+    return Promise.resolve({ ok: true, json: async () => ({ status: "ok" }) })
+  }
+  return Promise.resolve({ ok: true, json: async () => ({}) })
+})
+
+let assignedHref = ""
 beforeEach(() => {
   vi.clearAllMocks()
+  mockFetch.mockClear()
+  // @ts-expect-error - remplacement du fetch global pour le test
+  globalThis.fetch = mockFetch
+  // @ts-expect-error - window.location mutable pour capturer la redirection
+  delete window.location
+  // @ts-expect-error - objet location factice
+  window.location = {
+    href: "",
+    assign: (v: string) => {
+      assignedHref = v
+    },
+  }
+})
+
+afterEach(() => {
+  // Isolation : on restaure le fetch réel pour ne pas polluer les autres tests.
+  globalThis.fetch = realFetch
 })
 
 describe("LoginPage", () => {
@@ -54,6 +84,7 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText("Mot de passe"), "wrong")
     await user.click(screen.getByText("Se connecter"))
 
+    expect(mockSignInEmail).toHaveBeenCalled()
     expect(await screen.findByText("Identifiants invalides")).toBeDefined()
   })
 
@@ -66,7 +97,8 @@ describe("LoginPage", () => {
     await user.type(screen.getByLabelText("Mot de passe"), "correct")
     await user.click(screen.getByText("Se connecter"))
 
-    expect(mockPush).toHaveBeenCalledWith("/")
+    // La page force un full reload vers /dashboard (cookie de session).
+    expect(assignedHref).toBe("/dashboard")
   })
 
   it("toggles password visibility", async () => {
