@@ -57,9 +57,8 @@ services:
       - "traefik.http.middlewares.nba-retry.retry.attempts=5"
       - "traefik.http.middlewares.nba-retry.retry.initialInterval=500ms"
       - "traefik.http.routers.nba-app.middlewares=nba-retry"
-      # Le cache des chunks /_next/static est géré côté app via src/middleware.ts
-      # (Next les sert avec "immutable" par défaut, impossible à surcharger
-      # proprement via Traefik sans erreur de config).
+      # Le cache des chunks /_next/static est géré côté Traefik
+      # (voir middleware nba-nocache + router nba-static dans traefik.yml).
       # WebSocket (Socket.IO) : route /socket.io/ vers le worker sur le port 3001
       - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && PathPrefix(`/socket.io/`)"
       - "traefik.http.routers.nba-ws.priority=200"
