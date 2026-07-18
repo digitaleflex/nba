@@ -137,6 +137,14 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             initialArchived={!!archive} 
           />
 
+          {/* Journal : lien rapide vers le formulaire de trade */}
+          <Link
+            href={`/dashboard/journal?tab=trades&signalId=${signal.id}`}
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 text-sm font-medium text-primary transition-colors min-h-[44px]"
+          >
+            📓 J'ai tradé ce signal
+          </Link>
+
           {/* Graphics Gallery */}
           {Array.isArray(signal.imageUrls) && (signal.imageUrls as string[]).length > 0 ? (
             <div className="space-y-4 pt-2">

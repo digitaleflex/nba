@@ -7,7 +7,7 @@ import { authClient } from "@nba/lib/auth-client"
 import { cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
-import { LayoutDashboard, TrendingUp, Radio, Shield, Bell, MessageCircle, Activity, Gavel, ShieldCheck, Search, LogOut } from "lucide-react"
+import { LayoutDashboard, TrendingUp, Radio, Shield, Bell, MessageCircle, Activity, Gavel, ShieldCheck, Search, LogOut, BookOpen } from "lucide-react"
 import { ADMIN_CONTEXTS, getContextForTab } from "@nba/app/(admin)/admin/admin-context"
 import { useCommandPalette } from "@nba/components/command-palette"
 
@@ -69,6 +69,12 @@ export function MobileBottomNav({ isAdmin = false, user }: MobileBottomNavProps)
       label: "Signaux",
       icon: TrendingUp,
       active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+    },
+    {
+      href: "/dashboard/journal",
+      label: "Journal",
+      icon: BookOpen,
+      active: pathname.startsWith("/dashboard/journal"),
     },
     {
       href: "/dashboard/verification",

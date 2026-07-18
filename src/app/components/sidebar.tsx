@@ -31,6 +31,7 @@ import {
   Inbox,
   Mail,
   LineChart as LineChartIcon,
+  BookOpen,
 } from "lucide-react"
 interface SidebarProps {
   isAdmin?: boolean
@@ -81,6 +82,12 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       label: "Mes Signaux",
       icon: TrendingUp,
       active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+    },
+    {
+      href: "/dashboard/journal",
+      label: "Journal",
+      icon: BookOpen,
+      active: pathname.startsWith("/dashboard/journal"),
     },
     {
       href: "/dashboard/verification",
