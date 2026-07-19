@@ -71,8 +71,8 @@ echo "Redis is ready."
 # basculement Traefik zero-down).
 
 # Ensure storage directory exists and is owned by nextjs user
-mkdir -p /app/storage
-chown -R nextjs:nodejs /app/storage
+mkdir -p /app/storage >/dev/null 2>&1 || true
+chown -R nextjs:nodejs /app/storage >/dev/null 2>&1 || true
 
 echo "=== Setup complete. Starting app... ==="
 
