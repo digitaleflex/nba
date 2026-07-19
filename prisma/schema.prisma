@@ -606,6 +606,7 @@ model AuditLog {
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
   createdAt    DateTime @default(now()) @map("created_at")
+  searchText   String?  @map("search_text")
 
   user User? @relation(fields: [userId], references: [id])
 
