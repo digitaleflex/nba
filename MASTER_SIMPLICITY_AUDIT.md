@@ -34,7 +34,7 @@ Chiffres : ~46 000 lignes `src/` (ts+tsx), 115 route handlers, 40 pages, 38 mod�
 | Évolutivité | 6 | Ajouter un domaine : quel pattern ? `lib/services` ou `modules/` ? Non tranché. |
 | Cohérence | 5 | 2 helpers de 500 (`serverError` vs `handleAuthError`), 2 conventions de service, doublons de features. |
 | Prévisibilité | 6 | Bon (conventions Next respectées) sauf `admin-context.tsx` (faux Context) et routes qui bypassent les helpers. |
-| Dette technique | 6 | Faible dette « pure » ; dette = duplication + 6 deps mortes + 1 fichier mort. |
+| Dette technique | 6 | Faible dette « pure » ; dette = duplication + 4 deps mortes (supprimées) + 1 fichier mort (supprimé). |
 | Sur-ingénierie | 8 | Peu d'abstractions prématurées réelles. `storage/` justifié (2 impls). |
 | **Global** | **6,2 / 10** | Bon socle, à consolider par dé-duplication. |
 
@@ -126,15 +126,18 @@ Obsolètes app : `EmailStatsMonthly`, `EmailReputationHistory` (écrits par scri
 
 ## 6. Code à supprimer (impact zéro, vérifié)
 
+> **MàJ exécution (2026-07-19)** : les lignes marquées ✅ FAIT ont été appliquées et committées (`chore: supprime code mort`).
+> ⚠️ **Correction d'audit** : `@base-ui/react` et `class-variance-authority` ont d'abord été signalés morts par un scan limité à `src/`, mais sont en réalité **massivement utilisés par `packages/design-system/`** (workspace monorepo). Ils **NE doivent PAS** être supprimés du `package.json` racine (`@base-ui/react` n'est déclaré que là, il résout les composants design-system).
+
 | Élément | Preuve | Action |
 |---|---|---|
-| `src/lib/form-lock.ts` | 0 import (`acquireLock/releaseLock/withLock/formLockKey` jamais utilisés) | SUPPRIMER |
-| dep `@base-ui/react` | 0 référence dans src/workers/scripts | SUPPRIMER |
-| dep `dompurify` | 0 référence | SUPPRIMER |
-| dep `@types/dompurify` | 0 réf + mal placé (devrait être devDep) | SUPPRIMER |
-| dep `class-variance-authority` | 0 `cva` | SUPPRIMER |
-| dep `node-telegram-bot-api` | Telegram via API HTTP directe (`services/telegram.ts`) | SUPPRIMER |
-| dep `use-sound` | sons via `howler` (`use-notification-sound.ts`) | SUPPRIMER |
+| `src/lib/form-lock.ts` | 0 import (`acquireLock/releaseLock/withLock/formLockKey` jamais utilisés) | ✅ FAIT — SUPPRIMÉ |
+| dep `dompurify` | 0 référence | ✅ FAIT — SUPPRIMÉ |
+| dep `@types/dompurify` | 0 réf + mal placé (devrait être devDep) | ✅ FAIT — SUPPRIMÉ |
+| dep `node-telegram-bot-api` | Telegram via API HTTP directe (`services/telegram.ts`) | ✅ FAIT — SUPPRIMÉ |
+| dep `use-sound` | sons via `howler` (`use-notification-sound.ts`) | ✅ FAIT — SUPPRIMÉ |
+| ~~dep `@base-ui/react`~~ | ⚠️ **GARDER** — utilisé par `packages/design-system` (13 composants) | ANNULÉ |
+| ~~dep `class-variance-authority`~~ | ⚠️ **GARDER** — `cva()` dans design-system (button/badge/tabs) | ANNULÉ |
 | `EmailStatsMonthly` (Prisma) | écrit par script, jamais lu par l'app | ÉVALUER suppression |
 | `EmailReputationHistory` (Prisma) | idem, redondant avec `EmailEvent` | ÉVALUER suppression |
 | index `Signal @@index([status])` | couvert par `[status, deletedAt]` / `[status, createdAt]` | SUPPRIMER |
@@ -151,12 +154,14 @@ Obsolètes app : `EmailStatsMonthly`, `EmailReputationHistory` (écrits par scri
 ## 7. Plan de refactoring (priorisé, phases indépendantes, non cassant)
 
 ### Quick Wins (< 1 j, risque ~nul)
-1. Supprimer `src/lib/form-lock.ts` + 6 deps mortes (`pnpm remove …`). Vérifier `pnpm build`.
-2. Renommer `admin-context.tsx` → `admin-nav-config.ts`.
-3. `AuditTab` : réutiliser `lib/audit/labels.ts` au lieu de redéclarer.
-4. Retirer les `useMemo` inutiles de `signals-view.tsx`.
-5. Centraliser `isAdminRole()` dans `auth-utils.ts` (remplacer les 5 sites).
-6. Déplacer les `MASTER_*_AUDIT.md` vers `docs/reviews/`.
+1. ✅ **FAIT** — Supprimé `src/lib/form-lock.ts` + 4 deps mortes (`dompurify`, `@types/dompurify`, `node-telegram-bot-api`, `use-sound`). `@base-ui/react` et `class-variance-authority` conservés (utilisés par design-system).
+2. `admin-context.tsx` : déjà en `.ts` (pas de JSX). Renommage de base optionnel, laissé tel quel (faible valeur / risque d'oubli d'import).
+3. `AuditTab` : réutiliser `lib/audit/labels.ts` — **reporté** : maps locales non équivalentes (`ACTION_COLORS` string vs `getActionColor` union) → à traiter avec la fusion audit (phase profonde), pas sans risque.
+4. Retirer les `useMemo` inutiles de `signals-view.tsx` — **reporté** : modifie le rendu, nécessite vérif visuelle.
+5. ⏳ `isAdminRole()` ajouté dans `auth-utils.ts` (helper prêt, non committé car mêlé à un autre travail en cours sur le même fichier). Migration des 5 sites : à faire ensuite.
+6. Déplacer les `MASTER_*_AUDIT.md` vers `docs/reviews/` — à faire.
+
+> **Note prod** : audit exécuté alors que la base pointée est la **PROD** (Neon) et qu'un travail « journal » non mergé est en cours (schema + migration `20260720110000_journal_improvements` non appliquée → 500 sur `/api/dashboard/journal/*` et `/signals`). **Aucune opération DB effectuée.** La migration journal doit passer par le pipeline de déploiement, hors périmètre de cet audit.
 
 ### Refactoring moyen (2–4 j)
 7. **Wrapper API** `route(handler, { auth: "active"｜"role:ADMIN"｜"permission:x" })` encapsulant `requireX` + `serverError` ; migrer ~70 routes ; supprimer `handleAuthError` au profit de `serverError`. **Corrige la faille `isActive`.**
