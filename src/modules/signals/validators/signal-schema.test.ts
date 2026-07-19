@@ -18,7 +18,7 @@ describe("signalCreateSchema", () => {
   it("passes with all optional and required fields", () => {
     const result = signalCreateSchema.safeParse({
       content: "📈 EUR/USD BUY NOW",
-      imageUrl: "signals/graph.png",
+      imageUrl: "signals/550e8400-e29b-41d4-a716-446655440000.png",
       planIds: [validUUID],
       status: "PUBLISHED",
     })
