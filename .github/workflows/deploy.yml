@@ -44,11 +44,12 @@ jobs:
           echo "Verification des nouvelles migrations pour operations destructives..."
           BEFORE_SHA="${{ github.event.before }}"
           DESTRUCTIVE_FOUND=0
+          # --diff-filter=A : uniquement les fichiers AJOUTES (nouvelles migrations).
+          # Les migrations existantes deja deployeees ne sont pas scannees.
           if [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
-            NEW_FILES=$(git diff --name-only "$BEFORE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' || true)
+            NEW_FILES=$(git diff --diff-filter=A --name-only "$BEFORE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' || true)
           else
-            # Premier push ou force-push : on verifie les migrations des 2 derniers commits
-            NEW_FILES=$(git log --name-only --pretty=format: -2 -- 'prisma/migrations/*/migration.sql' | sort -u)
+            NEW_FILES=$(git diff --diff-filter=A --name-only HEAD~1 HEAD -- 'prisma/migrations/*/migration.sql' || true)
           fi
           if [ -z "$NEW_FILES" ]; then
             echo "Aucune nouvelle migration dans ce push."
