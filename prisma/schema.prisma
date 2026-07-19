@@ -385,24 +385,26 @@ model BrokerVerification {
 }
 
 model Signal {
-  id             String           @id @default(uuid()) @db.Uuid
-  content        String
-  imageUrl       String?          @map("image_url") // Pour compatibilité ascendante (premier graphique)
-  imageUrls      Json             @default("[]") @db.JsonB // Jusqu'à 5 images
-  status         SignalStatus     @default(DRAFT)
-  createdBy      String           @map("created_by") @db.Uuid
-  publishedAt    DateTime?        @map("published_at")
-  scheduledAt    DateTime?        @map("scheduled_at") // Date programmée de publication
-  jobId          String?          @map("job_id")       // Job ID BullMQ pour la programmation
-  currentVersion Int              @default(1) @map("current_version")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  deletedAt      DateTime?        @map("deleted_at")
+  id                  String       @id @default(uuid()) @db.Uuid
+  content             String
+  imageUrl            String?      @map("image_url")
+  imageUrls           Json         @default("[]") @db.JsonB
+  suggestedStopLoss   Decimal?     @map("suggested_stop_loss") @db.Decimal(12, 5)
+  suggestedTakeProfit Decimal?     @map("suggested_take_profit") @db.Decimal(12, 5)
+  status              SignalStatus @default(DRAFT)
+  createdBy           String       @map("created_by") @db.Uuid
+  publishedAt         DateTime?    @map("published_at")
+  scheduledAt         DateTime?    @map("scheduled_at")
+  jobId               String?      @map("job_id")
+  currentVersion      Int          @default(1) @map("current_version")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  deletedAt           DateTime?    @map("deleted_at")
 
-  creator  User            @relation(fields: [createdBy], references: [id])
-  audience SignalAudience[]
-  versions SignalVersion[]
-  reads    SignalRead[]
+  creator   User           @relation(fields: [createdBy], references: [id])
+  audience  SignalAudience[]
+  versions  SignalVersion[]
+  reads     SignalRead[]
   favorites SignalFavorite[]
   archives  SignalArchive[]
   trades    Trade[]
@@ -412,8 +414,8 @@ model Signal {
   @@index([publishedAt])
   @@index([scheduledAt])
   @@index([deletedAt])
-  @@index([status, deletedAt]) // Index composite très fréquent pour le filtrage par statut et soft delete
-  @@index([status, createdAt]) // Admin list: filter by status + sort by date
+  @@index([status, deletedAt])
+  @@index([status, createdAt])
   @@map("signals")
 }
 

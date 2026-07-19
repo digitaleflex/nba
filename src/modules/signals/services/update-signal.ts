@@ -9,6 +9,8 @@ export interface UpdateSignalInput {
   content?: string
   imageUrl?: string | null
   imageUrls?: string[]
+  suggestedStopLoss?: number
+  suggestedTakeProfit?: number
   planIds?: string[]
   status?: "DRAFT" | "PUBLISHED" | "ARCHIVED"
   scheduledAt?: string | null
@@ -24,7 +26,6 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     throw new Error("Signal introuvable")
   }
 
-  // 1. Check permissions using SignalPolicy
   const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) {
     throw new AuthError("Accès refusé", 403)
@@ -32,11 +33,9 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
 
   const parsed = signalUpdateSchema.parse(input)
 
-  // 2. Handle scheduled publishing / BullMQ job management
   const isScheduled = !!parsed.scheduledAt && new Date(parsed.scheduledAt).getTime() > Date.now()
   const nextStatus = isScheduled ? "DRAFT" : (parsed.status ?? signal.status)
 
-  // Cancel existing BullMQ job if any
   if (signal.jobId) {
     try {
       const job = await signalDistributionQueue.getJob(signal.jobId).catch(() => null)
@@ -48,25 +47,22 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     }
   }
 
-  // Increment version number
-  const nextVersion = signal.currentVersion + 1
+  const imageUrls = parsed.imageUrls ?? (signal.imageUrls as string[])
+  const imageUrl = parsed.imageUrl ?? imageUrls[0] ?? null
+  const contentChanged = parsed.content !== undefined && parsed.content !== signal.content
+  const version = contentChanged ? signal.currentVersion + 1 : signal.currentVersion
 
-  // Handle first image legacy url
-  const existingImageUrls = (signal.imageUrls as string[]) ?? []
-  const imageUrls = parsed.imageUrls ?? existingImageUrls
-  const legacyImageUrl = imageUrls.length > 0
-    ? imageUrls[0]
-    : (parsed.imageUrl ?? signal.imageUrl ?? null)
-
-  // 3. Build update data
-  const updateData: Record<string, unknown> = {
-    currentVersion: nextVersion,
-  }
+  const updateData: any = {}
 
   if (parsed.content !== undefined) updateData.content = parsed.content
-  if (parsed.imageUrl !== undefined) updateData.imageUrl = parsed.imageUrl
-  if (parsed.imageUrls !== undefined) updateData.imageUrls = parsed.imageUrls
+  if (parsed.imageUrl !== undefined || parsed.imageUrls !== undefined) {
+    updateData.imageUrl = imageUrl
+    updateData.imageUrls = imageUrls
+  }
+  if (parsed.suggestedStopLoss !== undefined) updateData.suggestedStopLoss = parsed.suggestedStopLoss
+  if (parsed.suggestedTakeProfit !== undefined) updateData.suggestedTakeProfit = parsed.suggestedTakeProfit
   updateData.status = nextStatus
+  if (contentChanged) updateData.currentVersion = version
   updateData.publishedAt = (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : signal.publishedAt
   if (parsed.scheduledAt !== undefined) {
     updateData.scheduledAt = isScheduled ? new Date(parsed.scheduledAt!) : null
@@ -80,35 +76,32 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     }
   }
 
-  const updatedSignal = await prisma.signal.update({
-    where: { id },
-    data: updateData,
-    include: {
-      audience: {
-        include: {
-          plan: true,
-        },
-      },
-    },
-  })
-
-  // 4. Create new SignalVersion history entry (only if content changed)
-  if (parsed.content !== undefined) {
-    await prisma.signalVersion.create({
-      data: {
-        signalId: signal.id,
-        version: nextVersion,
-        content: parsed.content,
-        imageUrls: imageUrls,
-        updatedBy: userId,
+  const [updatedSignal] = await prisma.$transaction(async (tx) => {
+    const s = await tx.signal.update({
+      where: { id },
+      data: updateData,
+      include: {
+        audience: { include: { plan: true } },
       },
     })
-  }
+
+    if (contentChanged) {
+      await tx.signalVersion.create({
+        data: {
+          signalId: s.id,
+          version,
+          content: parsed.content!,
+          imageUrls,
+          updatedBy: userId,
+        },
+      })
+    }
+
+    return [s]
+  })
 
   let queueFailed = false
-  let newJobId: string | null = null
 
-  // 5. Schedule/Publish job if needed
   if (isScheduled) {
     try {
       const delay = new Date(parsed.scheduledAt!).getTime() - Date.now()
@@ -117,18 +110,15 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
         { signalId: signal.id },
         { delay }
       )
-      newJobId = job.id || null
-      
       await prisma.signal.update({
         where: { id: signal.id },
-        data: { jobId: newJobId },
+        data: { jobId: job.id || null },
       })
     } catch (err) {
       console.error("[signal] BullMQ failed during rescheduling:", err)
       queueFailed = true
     }
   } else if (parsed.status === "PUBLISHED" && signal.status !== "PUBLISHED") {
-    // Only queue distribution if publishing a previously unpublished signal
     try {
       await signalDistributionQueue.add(`distribute-${signal.id}`, {
         signalId: signal.id,
@@ -147,14 +137,12 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     details: {
       fromStatus: signal.status,
       toStatus: nextStatus,
-      version: nextVersion,
+      version,
+      contentChanged,
       isScheduled,
       queueFailed,
     },
   })
 
-  return {
-    ...updatedSignal,
-    queueFailed,
-  }
+  return { ...updatedSignal, queueFailed }
 }

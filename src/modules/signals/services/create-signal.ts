@@ -8,6 +8,8 @@ export interface CreateSignalInput {
   content: string
   imageUrl?: string | null
   imageUrls?: string[]
+  suggestedStopLoss?: number
+  suggestedTakeProfit?: number
   planIds: string[]
   status: "DRAFT" | "PUBLISHED"
   scheduledAt?: string | null
@@ -18,51 +20,44 @@ export async function createSignal(input: CreateSignalInput) {
   const parsed = signalCreateSchema.parse(input)
 
   const isScheduled = !!parsed.scheduledAt && new Date(parsed.scheduledAt).getTime() > Date.now()
-  // If scheduled, the initial status must be DRAFT until the worker publishes it
   const initialStatus = isScheduled ? "DRAFT" : parsed.status
+  const imageUrl = parsed.imageUrls?.[0] ?? parsed.imageUrl ?? null
 
-  // Store first image url in legacy imageUrl for backward compatibility
-  const legacyImageUrl = parsed.imageUrls && parsed.imageUrls.length > 0
-    ? parsed.imageUrls[0]
-    : (parsed.imageUrl || null)
-
-  const signal = await prisma.signal.create({
-    data: {
-      content: parsed.content,
-      imageUrl: legacyImageUrl,
-      imageUrls: parsed.imageUrls || [],
-      status: initialStatus,
-      createdBy: session.user.id,
-      publishedAt: (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : null,
-      scheduledAt: isScheduled ? new Date(parsed.scheduledAt!) : null,
-      audience: {
-        create: parsed.planIds.map((planId) => ({
-          planId,
-        })),
-      },
-    },
-    include: {
-      audience: {
-        include: {
-          plan: true,
+  const [signal] = await prisma.$transaction(async (tx) => {
+    const s = await tx.signal.create({
+      data: {
+        content: parsed.content,
+        imageUrl,
+        imageUrls: parsed.imageUrls || [],
+        suggestedStopLoss: parsed.suggestedStopLoss ?? null,
+        suggestedTakeProfit: parsed.suggestedTakeProfit ?? null,
+        status: initialStatus,
+        createdBy: session.user.id,
+        publishedAt: (!isScheduled && parsed.status === "PUBLISHED") ? new Date() : null,
+        scheduledAt: isScheduled ? new Date(parsed.scheduledAt!) : null,
+        audience: {
+          create: parsed.planIds.map((planId) => ({ planId })),
         },
       },
-    },
-  })
+      include: {
+        audience: { include: { plan: true } },
+      },
+    })
 
-  // Create version 1 history record
-  await prisma.signalVersion.create({
-    data: {
-      signalId: signal.id,
-      version: 1,
-      content: parsed.content,
-      imageUrls: parsed.imageUrls || [],
-      updatedBy: session.user.id,
-    },
+    await tx.signalVersion.create({
+      data: {
+        signalId: s.id,
+        version: 1,
+        content: parsed.content,
+        imageUrls: parsed.imageUrls || [],
+        updatedBy: session.user.id,
+      },
+    })
+
+    return [s]
   })
 
   let queueFailed = false
-  let jobId: string | null = null
 
   if (isScheduled) {
     try {
@@ -72,11 +67,9 @@ export async function createSignal(input: CreateSignalInput) {
         { signalId: signal.id },
         { delay }
       )
-      jobId = job.id || null
-      
       await prisma.signal.update({
         where: { id: signal.id },
-        data: { jobId },
+        data: { jobId: job.id || null },
       })
     } catch (err) {
       console.error("[signal] BullMQ failed during scheduling:", err)
@@ -95,8 +88,8 @@ export async function createSignal(input: CreateSignalInput) {
 
   await logAuditEvent({
     userId: session.user.id,
-    action: parsed.status === "PUBLISHED" 
-      ? (isScheduled ? "signal.schedule" : "signal.publish") 
+    action: parsed.status === "PUBLISHED"
+      ? (isScheduled ? "signal.schedule" : "signal.publish")
       : "signal.draft",
     resourceType: "signal",
     resourceId: signal.id,
@@ -109,8 +102,5 @@ export async function createSignal(input: CreateSignalInput) {
     },
   })
 
-  return {
-    ...signal,
-    queueFailed,
-  }
+  return { ...signal, queueFailed }
 }

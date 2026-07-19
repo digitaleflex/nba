@@ -114,74 +114,67 @@ export async function POST(request: NextRequest) {
       swap: parsed.swap,
     })
 
-    const trade = await prisma.trade.create({
-      data: {
-        userId: session.user.id,
-        signalId: parsed.signalId ?? null,
-        pair: parsed.pair.toUpperCase(),
-        direction: parsed.direction,
-        result: parsed.result,
-        entryPrice: parsed.entryPrice,
-        exitPrice: parsed.exitPrice,
-        stopLoss: parsed.stopLoss ?? null,
-        takeProfit: parsed.takeProfit ?? null,
-        lotSize: parsed.lotSize,
-        pnl,
-        spread: parsed.spread ?? 0,
-        commission: parsed.commission ?? 0,
-        swap: parsed.swap ?? 0,
-        mood: parsed.mood,
-        confidence: parsed.confidence,
-        note: parsed.note,
-        tags: parsed.tags ?? [],
-        tradedAt: parsed.tradedAt ? new Date(parsed.tradedAt) : new Date(),
-        sessionId: undefined,
-      },
-    })
-
-    const activeSession = await prisma.journalSession.findFirst({
-      where: { userId: session.user.id, isActive: true },
-    })
-    if (activeSession) {
-      await prisma.trade.update({
-        where: { id: trade.id },
-        data: { sessionId: activeSession.id },
+    const created = await prisma.$transaction(async (tx) => {
+      const activeSession = await tx.journalSession.findFirst({
+        where: { userId: session.user.id, isActive: true },
       })
-    }
 
-    if (parsed.result === "WIN") {
-      await updateStreak(session.user.id, "WIN_STREAK")
-    } else if (parsed.result === "LOSS") {
-      await updateStreak(session.user.id, "LOSS_STREAK")
-    }
+      const trade = await tx.trade.create({
+        data: {
+          userId: session.user.id,
+          signalId: parsed.signalId ?? null,
+          sessionId: activeSession?.id ?? null,
+          pair: parsed.pair.toUpperCase(),
+          direction: parsed.direction,
+          result: parsed.result,
+          entryPrice: parsed.entryPrice,
+          exitPrice: parsed.exitPrice,
+          stopLoss: parsed.stopLoss ?? null,
+          takeProfit: parsed.takeProfit ?? null,
+          lotSize: parsed.lotSize,
+          pnl,
+          spread: parsed.spread ?? 0,
+          commission: parsed.commission ?? 0,
+          swap: parsed.swap ?? 0,
+          mood: parsed.mood,
+          confidence: parsed.confidence,
+          note: parsed.note,
+          tags: parsed.tags ?? [],
+          tradedAt: parsed.tradedAt ? new Date(parsed.tradedAt) : new Date(),
+        },
+        include: { signal: { select: { id: true, content: true, createdAt: true } } },
+      })
 
-    checkPsychology(session.user.id).catch(() => {})
+      if (parsed.result === "WIN" || parsed.result === "LOSS") {
+        const streakType = parsed.result === "WIN" ? "WIN_STREAK" : "LOSS_STREAK"
+        const existing = await tx.streak.findUnique({
+          where: { userId_type: { userId: session.user.id, type: streakType } },
+        })
+        if (existing) {
+          const count = existing.count + 1
+          await tx.streak.update({
+            where: { id: existing.id },
+            data: { count, bestCount: count > existing.bestCount ? count : existing.bestCount },
+          })
+        } else {
+          await tx.streak.create({
+            data: { userId: session.user.id, type: streakType, count: 1, bestCount: 1 },
+          })
+        }
+      }
 
-    return NextResponse.json({ trade }, { status: 201 })
+      return trade
+    })
+
+    checkPsychology(session.user.id).catch((err) => {
+      console.error(`[journal] checkPsychology failed (userId=${session.user.id}):`, err)
+    })
+
+    return NextResponse.json({ trade: created }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({ error: error.issues[0].message }, { status: 400 })
     }
     return handleAuthError(error)
-  }
-}
-
-async function updateStreak(userId: string, type: "WIN_STREAK" | "LOSS_STREAK") {
-  const existing = await prisma.streak.findUnique({
-    where: { userId_type: { userId, type } },
-  })
-  if (existing) {
-    const count = existing.count + 1
-    await prisma.streak.update({
-      where: { id: existing.id },
-      data: {
-        count,
-        bestCount: count > existing.bestCount ? count : existing.bestCount,
-      },
-    })
-  } else {
-    await prisma.streak.create({
-      data: { userId, type, count: 1, bestCount: 1 },
-    })
   }
 }
