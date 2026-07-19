@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { X, ArrowUp, ArrowDown } from "lucide-react"
+import { useState, useMemo } from "react"
+import { X, ArrowUp, ArrowDown, Plus, Tag } from "lucide-react"
 import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
 import { toast } from "sonner"
 
@@ -13,6 +13,11 @@ const MOODS = [
   { value: "GREEDY", emoji: "🤑", label: "Gourmand", color: "bg-purple-500/20 hover:bg-purple-500/30" },
   { value: "REVENGE", emoji: "😡", label: "Revenge", color: "bg-red-500/20 hover:bg-red-500/30" },
 ]
+
+function getContractSize(pair: string): number {
+  const forex = ["AUDCAD","AUDCHF","AUDJPY","AUDNZD","AUDUSD","CADCHF","CADJPY","CHFJPY","EURAUD","EURCAD","EURCHF","EURGBP","EURJPY","EURNZD","EURUSD","GBPAUD","GBPCAD","GBPCHF","GBPJPY","GBPNZD","GBPUSD","NZDCAD","NZDCHF","NZDJPY","NZDUSD","USDCAD","USDCHF","USDJPY","USDMXN","USDCNH","XAUUSD","XAGUSD"]
+  return forex.includes(pair.toUpperCase()) ? 100000 : 1
+}
 
 interface TradeFormProps {
   signalId: string | null
@@ -26,20 +31,51 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const [result, setResult] = useState<"WIN" | "LOSS" | "BREAKEVEN">("WIN")
   const [entryPrice, setEntryPrice] = useState("")
   const [exitPrice, setExitPrice] = useState("")
+  const [stopLoss, setStopLoss] = useState("")
+  const [takeProfit, setTakeProfit] = useState("")
   const [lotSize, setLotSize] = useState("0.01")
+  const [spread, setSpread] = useState("")
   const [mood, setMood] = useState<string | null>(null)
   const [confidence, setConfidence] = useState(0)
   const [note, setNote] = useState("")
+  const [tagInput, setTagInput] = useState("")
+  const [tags, setTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
 
   const entry = parseFloat(entryPrice) || 0
   const exit = parseFloat(exitPrice) || 0
   const lot = parseFloat(lotSize) || 0
+  const spreadVal = parseFloat(spread) || 0
   const dir = direction === "BUY" ? 1 : -1
-  const pnl = result === "BREAKEVEN" ? 0 : (exit - entry) * lot * dir
-  const rr = entry && exit ? (Math.abs(exit - entry) / (entry * 0.001)).toFixed(1) : "—"
+  const contractSize = getContractSize(pair)
+
+  const pnl = useMemo(() => {
+    if (result === "BREAKEVEN" || !entry || !exit || !lot) return 0
+    return Math.round(((exit - entry) * lot * contractSize * dir - spreadVal) * 100) / 100
+  }, [entry, exit, lot, contractSize, dir, spreadVal, result])
+
+  const rr = useMemo(() => {
+    const sl = parseFloat(stopLoss)
+    const tp = parseFloat(takeProfit)
+    if (!sl || !tp || !entry) return null
+    const risk = Math.abs(entry - sl)
+    const reward = Math.abs(tp - entry)
+    return risk > 0 ? Math.round((reward / risk) * 10) / 10 : null
+  }, [entry, stopLoss, takeProfit])
 
   const disablePrice = result === "BREAKEVEN"
+
+  function addTag() {
+    const t = tagInput.trim().toUpperCase()
+    if (t && !tags.includes(t) && tags.length < 10) {
+      setTags([...tags, t])
+      setTagInput("")
+    }
+  }
+
+  function removeTag(t: string) {
+    setTags(tags.filter(x => x !== t))
+  }
 
   async function handleSubmit() {
     if (!pair.trim()) return toast.error("La paire est requise")
@@ -57,10 +93,14 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           result,
           entryPrice: entry,
           exitPrice: exit,
+          stopLoss: parseFloat(stopLoss) || undefined,
+          takeProfit: parseFloat(takeProfit) || undefined,
           lotSize: lot,
+          spread: spreadVal || undefined,
           mood: mood || undefined,
           confidence: confidence || undefined,
           note: note || undefined,
+          tags: tags.length > 0 ? tags : undefined,
         }),
       })
       if (!res.ok) throw new Error("Erreur")
@@ -75,7 +115,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
 
   return (
     <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             {signalId ? "Trade depuis un signal" : "Nouveau trade"}
@@ -83,7 +123,6 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
-          {/* Paire */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Paire</label>
             <Input
@@ -95,7 +134,6 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             />
           </div>
 
-          {/* Direction */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Direction</label>
             <div className="flex gap-2">
@@ -120,7 +158,6 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           </div>
 
-          {/* Résultat */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Résultat</label>
             <div className="flex gap-2">
@@ -143,7 +180,6 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           </div>
 
-          {/* Prix */}
           <div className={`grid grid-cols-2 gap-3 ${disablePrice ? "opacity-40 pointer-events-none" : ""}`}>
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Prix entrée</label>
@@ -158,7 +194,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Prix sortie</label>
               <Input
-                placeholder="1.08700"
+                placeholder="1.09000"
                 value={exitPrice}
                 onChange={(e) => setExitPrice(e.target.value)}
                 className="font-mono"
@@ -167,8 +203,32 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           </div>
 
-          {/* Lot et infos calculées */}
-          <div className="grid grid-cols-3 gap-3">
+          {result !== "BREAKEVEN" && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Stop Loss</label>
+                <Input
+                  placeholder="1.08200"
+                  value={stopLoss}
+                  onChange={(e) => setStopLoss(e.target.value)}
+                  className="font-mono"
+                  inputMode="decimal"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground mb-1 block">Take Profit</label>
+                <Input
+                  placeholder="1.09500"
+                  value={takeProfit}
+                  onChange={(e) => setTakeProfit(e.target.value)}
+                  className="font-mono"
+                  inputMode="decimal"
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-xs font-medium text-muted-foreground mb-1 block">Lot</label>
               <Input
@@ -178,19 +238,37 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
                 inputMode="decimal"
               />
             </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
-              <span className="text-[10px] text-muted-foreground uppercase">PnL</span>
-              <span className={cn("text-sm font-mono font-bold", pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
-                {pnl.toFixed(2)}€
-              </span>
-            </div>
-            <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
-              <span className="text-[10px] text-muted-foreground uppercase">R:R</span>
-              <span className="text-sm font-mono font-bold">{rr}</span>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Spread (coût)</label>
+              <Input
+                placeholder="0"
+                value={spread}
+                onChange={(e) => setSpread(e.target.value)}
+                className="font-mono"
+                inputMode="decimal"
+              />
             </div>
           </div>
 
-          {/* Mood */}
+          {!disablePrice && (
+            <div className="grid grid-cols-3 gap-2">
+              <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
+                <span className="text-[10px] text-muted-foreground uppercase">PnL net</span>
+                <span className={cn("text-sm font-mono font-bold", pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
+                  {pnl.toFixed(2)}€
+                </span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
+                <span className="text-[10px] text-muted-foreground uppercase">R:R</span>
+                <span className="text-sm font-mono font-bold">{rr ?? "—"}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
+                <span className="text-[10px] text-muted-foreground uppercase">Contract</span>
+                <span className="text-sm font-mono font-bold">{contractSize.toLocaleString()}</span>
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Émotion</label>
             <div className="flex gap-1 justify-between">
@@ -210,7 +288,6 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           </div>
 
-          {/* Confiance */}
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Confiance</label>
             <div className="flex gap-1">
@@ -230,7 +307,32 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           </div>
 
-          {/* Note */}
+          <div>
+            <label className="text-xs font-medium text-muted-foreground mb-1 block">Tags</label>
+            <div className="flex gap-2 mb-2 flex-wrap">
+              {tags.map(t => (
+                <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
+                  <Tag className="size-3" />
+                  {t}
+                  <button onClick={() => removeTag(t)} className="hover:text-rose-400 ml-0.5">×</button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <Input
+                placeholder="Ajouter un tag"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value.toUpperCase())}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag() } }}
+                className="font-mono text-xs flex-1"
+                maxLength={30}
+              />
+              <Button size="icon" variant="outline" onClick={addTag} disabled={!tagInput.trim()}>
+                <Plus className="size-4" />
+              </Button>
+            </div>
+          </div>
+
           <div>
             <label className="text-xs font-medium text-muted-foreground mb-1 block">Note (optionnel)</label>
             <textarea

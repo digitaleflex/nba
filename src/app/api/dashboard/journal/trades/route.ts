@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { checkPsychology } from "@nba/lib/services/journal-psychology"
+import { calculatePnl } from "@nba/lib/services/pnl"
 
 const tradeCreateSchema = z.object({
   signalId: z.string().uuid().nullable().optional(),
@@ -12,10 +13,16 @@ const tradeCreateSchema = z.object({
   result: z.enum(["WIN", "LOSS", "BREAKEVEN"]),
   entryPrice: z.number().positive(),
   exitPrice: z.number().positive(),
+  stopLoss: z.number().positive().optional(),
+  takeProfit: z.number().positive().optional(),
   lotSize: z.number().positive().max(100).default(0.01),
+  spread: z.number().min(0).optional(),
+  commission: z.number().min(0).optional(),
+  swap: z.number().min(0).optional(),
   mood: z.enum(["CONFIDENT","NEUTRAL","ANXIOUS","FEARFUL","GREEDY","REVENGE"]).optional(),
   confidence: z.number().int().min(1).max(5).optional(),
   note: z.string().max(500).optional(),
+  tags: z.array(z.string().max(30)).max(10).optional(),
   tradedAt: z.string().datetime().optional(),
 })
 
@@ -30,6 +37,7 @@ export async function GET(request: NextRequest) {
     const pair = searchParams.get("pair")
     const result = searchParams.get("result")
     const signalId = searchParams.get("signalId")
+    const search = searchParams.get("search")
     const sort = searchParams.get("sort") ?? "tradedAt:desc"
     const [sortField, sortDir] = sort.split(":") as [string, "asc" | "desc"]
 
@@ -37,6 +45,13 @@ export async function GET(request: NextRequest) {
     if (pair) where.pair = pair.toUpperCase()
     if (result) where.result = result
     if (signalId) where.signalId = signalId
+    if (search) {
+      where.OR = [
+        { pair: { contains: search.toUpperCase() } },
+        { note: { contains: search, mode: "insensitive" } },
+        { tags: { has: search.toUpperCase() } },
+      ]
+    }
 
     const [trades, total, activeSession, pairs] = await Promise.all([
       prisma.trade.findMany({
@@ -54,10 +69,10 @@ export async function GET(request: NextRequest) {
           _count: { select: { trades: true } },
         },
       }),
-      prisma.trade.findMany({
+      prisma.trade.groupBy({
+        by: ["pair"],
         where: { userId: session.user.id, deletedAt: null },
-        select: { pair: true },
-        distinct: ["pair"],
+        _count: { pair: true },
         orderBy: { pair: "asc" },
       }),
     ])
@@ -87,9 +102,17 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = tradeCreateSchema.parse(body)
 
-    const direction = parsed.direction === "BUY" ? 1 : -1
-    const pnl = parsed.result === "BREAKEVEN" ? 0
-      : (parsed.exitPrice - parsed.entryPrice) * parsed.lotSize * direction
+    const pnl = calculatePnl({
+      pair: parsed.pair,
+      entryPrice: parsed.entryPrice,
+      exitPrice: parsed.exitPrice,
+      lotSize: parsed.lotSize,
+      direction: parsed.direction,
+      result: parsed.result,
+      spread: parsed.spread,
+      commission: parsed.commission,
+      swap: parsed.swap,
+    })
 
     const trade = await prisma.trade.create({
       data: {
@@ -100,17 +123,22 @@ export async function POST(request: NextRequest) {
         result: parsed.result,
         entryPrice: parsed.entryPrice,
         exitPrice: parsed.exitPrice,
+        stopLoss: parsed.stopLoss ?? null,
+        takeProfit: parsed.takeProfit ?? null,
         lotSize: parsed.lotSize,
         pnl,
+        spread: parsed.spread ?? 0,
+        commission: parsed.commission ?? 0,
+        swap: parsed.swap ?? 0,
         mood: parsed.mood,
         confidence: parsed.confidence,
         note: parsed.note,
+        tags: parsed.tags ?? [],
         tradedAt: parsed.tradedAt ? new Date(parsed.tradedAt) : new Date(),
         sessionId: undefined,
       },
     })
 
-    // Rattacher à une session active si elle existe
     const activeSession = await prisma.journalSession.findFirst({
       where: { userId: session.user.id, isActive: true },
     })
@@ -121,14 +149,12 @@ export async function POST(request: NextRequest) {
       })
     }
 
-    // Mettre à jour les streaks
     if (parsed.result === "WIN") {
       await updateStreak(session.user.id, "WIN_STREAK")
     } else if (parsed.result === "LOSS") {
       await updateStreak(session.user.id, "LOSS_STREAK")
     }
 
-    // Psychologie : détecter patterns après chaque trade (fire and forget)
     checkPsychology(session.user.id).catch(() => {})
 
     return NextResponse.json({ trade }, { status: 201 })

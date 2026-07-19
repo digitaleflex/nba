@@ -6,7 +6,7 @@ import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendTelegramMessage } from "./telegram"
 import { sendWhatsAppSignal } from "./whatsapp"
 
-type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING" | "MESSAGE"
+type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING" | "MESSAGE" | "JOURNAL_PSYCHOLOGY"
 type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH" | "TELEGRAM"
 
 const TYPE_TO_PREF_KEY: Record<NotificationType, string> = {
@@ -18,6 +18,7 @@ const TYPE_TO_PREF_KEY: Record<NotificationType, string> = {
   SYSTEM: "system",
   ONBOARDING: "system",
   MESSAGE: "message",
+  JOURNAL_PSYCHOLOGY: "journal",
 }
 
 async function getUserPrefs(userId: string): Promise<Record<string, boolean>> {

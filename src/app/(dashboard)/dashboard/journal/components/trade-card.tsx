@@ -1,6 +1,7 @@
 "use client"
 
-import { Trash2 } from "lucide-react"
+import { useState } from "react"
+import { Trash2, Pencil, Tag } from "lucide-react"
 import { cn } from "@nba/design-system"
 import { toast } from "sonner"
 
@@ -11,12 +12,16 @@ interface Trade {
   result: string
   entryPrice: string
   exitPrice: string
+  stopLoss: string | null
+  takeProfit: string | null
   lotSize: string
-  pnl: string | null
+  pnl: string
+  spread: string | null
   rrRatio: string | null
   mood: string | null
   confidence: number | null
   note: string | null
+  tags: string[]
   tradedAt: string
   signal: { id: string; content: string; createdAt: string } | null
 }
@@ -44,7 +49,9 @@ function formatDate(iso: string) {
 
 export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => void }) {
   const colors = RESULT_COLORS[trade.result] ?? RESULT_COLORS.BREAKEVEN
-  const pnl = trade.pnl ? Number(trade.pnl) : 0
+  const pnl = Number(trade.pnl) || 0
+  const hasSL = trade.stopLoss && Number(trade.stopLoss) > 0
+  const hasTP = trade.takeProfit && Number(trade.takeProfit) > 0
 
   async function handleDelete() {
     if (!confirm("Supprimer ce trade ?")) return
@@ -63,8 +70,7 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
       colors.border,
     )}>
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 space-y-1.5">
-          {/* Ligne 1 : résultat + paire + PnL */}
+        <div className="min-w-0 space-y-1.5 flex-1">
           <div className="flex items-center gap-2">
             <span className={cn("size-3 rounded-full shrink-0", colors.dot)} />
             <span className="text-sm font-semibold">
@@ -78,16 +84,17 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
             </span>
           </div>
 
-          {/* Ligne 2 : prix + lot + R:R */}
           <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
-            <span>Entrée {trade.entryPrice}</span>
-            <span>Sortie {trade.exitPrice}</span>
+            <span>E {trade.entryPrice}</span>
+            <span>S {trade.exitPrice}</span>
+            {hasSL && <span className="text-rose-400/70">SL {trade.stopLoss}</span>}
+            {hasTP && <span className="text-emerald-400/70">TP {trade.takeProfit}</span>}
             <span>Lot {trade.lotSize}</span>
             {trade.rrRatio && <span>R:R {trade.rrRatio}</span>}
+            {Number(trade.spread) > 0 && <span>Spread {trade.spread}€</span>}
           </div>
 
-          {/* Ligne 3 : signal + mood + date */}
-          <div className="flex items-center gap-3 text-xs flex-wrap">
+          <div className="flex items-center gap-2 text-xs flex-wrap">
             {trade.signal && (
               <span className="text-primary/70 truncate max-w-[200px]" title={trade.signal.content}>
                 📡 {trade.signal.content.slice(0, 60)}
@@ -96,23 +103,35 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
             {trade.mood && (
               <span className="flex items-center gap-1">
                 {MOOD_EMOJI[trade.mood] ?? trade.mood}
-                {trade.confidence && (
+                {trade.confidence ? (
                   <span className="text-[10px]">{'★'.repeat(trade.confidence)}{'☆'.repeat(5 - trade.confidence)}</span>
-                )}
+                ) : null}
+              </span>
+            )}
+            {trade.tags && trade.tags.length > 0 && (
+              <span className="flex items-center gap-1">
+                {trade.tags.slice(0, 3).map(t => (
+                  <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary/70">
+                    <Tag className="size-2.5" />
+                    {t}
+                  </span>
+                ))}
+                {trade.tags.length > 3 && <span className="text-[10px] text-muted-foreground/60">+{trade.tags.length - 3}</span>}
               </span>
             )}
             <span className="text-muted-foreground/60 ml-auto shrink-0">{formatDate(trade.tradedAt)}</span>
           </div>
 
-          {/* Note */}
           {trade.note && (
             <p className="text-xs text-muted-foreground italic line-clamp-2">{trade.note}</p>
           )}
         </div>
 
-        <button onClick={handleDelete} className="shrink-0 size-8 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
-          <Trash2 className="size-3.5" />
-        </button>
+        <div className="flex flex-col gap-1">
+          <button onClick={handleDelete} className="size-8 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
+            <Trash2 className="size-3.5" />
+          </button>
+        </div>
       </div>
     </div>
   )

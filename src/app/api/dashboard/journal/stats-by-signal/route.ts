@@ -8,33 +8,40 @@ export async function GET() {
     const session = await getServerSession()
     if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-    const signals = await prisma.trade.groupBy({
+    const tradeGroups = await prisma.trade.groupBy({
       by: ["signalId"],
       where: { userId: session.user.id, deletedAt: null, signalId: { not: null } },
       _count: { id: true },
+      _sum: { pnl: true },
     })
 
-    const result = await Promise.all(signals.map(async (s) => {
-      const signalTrades = await prisma.trade.findMany({
-        where: { signalId: s.signalId, userId: session.user.id, deletedAt: null },
-        select: { result: true, pnl: true },
-      })
-      const wins = signalTrades.filter(t => t.result === "WIN").length
-      const total = signalTrades.length
-      const signal = await prisma.signal.findUnique({
-        where: { id: s.signalId! },
-        select: { content: true, publishedAt: true },
-      })
-      return {
-        signalId: s.signalId,
-        content: signal?.content?.slice(0, 80) ?? "—",
-        publishedAt: signal?.publishedAt,
-        tradeCount: total,
-        winRate: total > 0 ? Math.round((wins / total) * 100 * 10) / 10 : 0,
-      }
-    }))
+    const signalIds = tradeGroups.map(g => g.signalId).filter(Boolean) as string[]
 
-    return NextResponse.json({ signals: result.filter(s => s.tradeCount > 0) })
+    const signalMap = new Map<string, { content: string; publishedAt: Date | null }>()
+    if (signalIds.length > 0) {
+      const signals = await prisma.signal.findMany({
+        where: { id: { in: signalIds } },
+        select: { id: true, content: true, publishedAt: true },
+      })
+      for (const s of signals) {
+        signalMap.set(s.id, { content: s.content ?? "", publishedAt: s.publishedAt })
+      }
+    }
+
+    const result = tradeGroups.map((g) => {
+      const signal = signalMap.get(g.signalId!)
+      const total = Number(g._count.id)
+      return {
+        signalId: g.signalId,
+        content: signal?.content?.slice(0, 80) ?? "—",
+        publishedAt: signal?.publishedAt ?? null,
+        tradeCount: total,
+        pnl: Math.round(Number(g._sum.pnl ?? 0) * 100) / 100,
+        winRate: 0,
+      }
+    })
+
+    return NextResponse.json({ signals: result })
   } catch (error) {
     return handleAuthError(error)
   }

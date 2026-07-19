@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { calculatePnl } from "@nba/lib/services/pnl"
 
 const tradeUpdateSchema = z.object({
   pair: z.string().min(1).max(20).optional(),
@@ -10,10 +11,16 @@ const tradeUpdateSchema = z.object({
   result: z.enum(["WIN", "LOSS", "BREAKEVEN"]).optional(),
   entryPrice: z.number().positive().optional(),
   exitPrice: z.number().positive().optional(),
+  stopLoss: z.number().positive().optional(),
+  takeProfit: z.number().positive().optional(),
   lotSize: z.number().positive().max(100).optional(),
+  spread: z.number().min(0).optional(),
+  commission: z.number().min(0).optional(),
+  swap: z.number().min(0).optional(),
   mood: z.enum(["CONFIDENT","NEUTRAL","ANXIOUS","FEARFUL","GREEDY","REVENGE"]).optional(),
   confidence: z.number().int().min(1).max(5).optional(),
   note: z.string().max(500).optional(),
+  tags: z.array(z.string().max(30)).max(10).optional(),
   tradedAt: z.string().datetime().optional(),
 })
 
@@ -31,21 +38,39 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const body = await request.json()
     const parsed = tradeUpdateSchema.parse(body)
 
+    const pair = parsed.pair ?? trade.pair
     const entry = parsed.entryPrice ?? Number(trade.entryPrice)
     const exit = parsed.exitPrice ?? Number(trade.exitPrice)
     const lot = parsed.lotSize ?? Number(trade.lotSize)
-    const dir = (parsed.direction ?? trade.direction) === "BUY" ? 1 : -1
-    const res = parsed.result ?? trade.result
-    const pnl = res === "BREAKEVEN" ? 0 : (exit - entry) * lot * dir
+    const direction = parsed.direction ?? trade.direction
+    const result = parsed.result ?? trade.result
+
+    const pnl = calculatePnl({
+      pair,
+      entryPrice: entry,
+      exitPrice: exit,
+      lotSize: lot,
+      direction,
+      result,
+      spread: parsed.spread,
+      commission: parsed.commission,
+      swap: parsed.swap,
+    })
 
     const updated = await prisma.trade.update({
       where: { id },
       data: {
         ...parsed,
+        pair: pair.toUpperCase(),
         entryPrice: entry,
         exitPrice: exit,
         lotSize: lot,
+        direction,
+        result,
         pnl,
+        spread: parsed.spread ?? undefined,
+        commission: parsed.commission ?? undefined,
+        swap: parsed.swap ?? undefined,
         tradedAt: parsed.tradedAt ? new Date(parsed.tradedAt) : undefined,
       },
     })
