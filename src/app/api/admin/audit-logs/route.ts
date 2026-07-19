@@ -55,6 +55,7 @@ export async function GET(request: NextRequest) {
           resourceId: true,
           details: true,
           ipAddress: true,
+          userAgent: true,
           createdAt: true,
           severity: true,
           user: { select: { name: true, email: true, image: true } },

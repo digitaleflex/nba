@@ -7,6 +7,7 @@ export interface AuditEvent {
   resourceLabel: string | null
   details: Record<string, unknown> | null
   ipAddress: string | null
+  userAgent: string | null
   createdAt: string
   severity: string
   user: { name: string; email: string; image?: string | null } | null

@@ -1,5 +1,4 @@
 import { normalizeAction } from "./actions"
-import { getResourceLabel } from "./labels"
 
 interface RenderContext {
   action: string
@@ -12,174 +11,141 @@ interface RenderContext {
 export function renderDescription(ctx: RenderContext): string {
   const { resourceLabel, details, user } = ctx
   const key = normalizeAction(ctx.action)
-  const resource = resourceLabel ?? getResourceLabel(ctx.resourceType)
-  const actor = user?.name ?? user?.email ?? "Système"
   const d = details ?? {}
 
-  if (key.startsWith("signal.")) return renderSignal(key, resource, d)
-  if (key.startsWith("kyc_document.")) return renderKyc(key, resource, d)
-  if (key.startsWith("broker_verification.")) return renderBroker(key, resource, d)
-  if (key.startsWith("access_request.")) return renderAccess(key, resource, d)
-  if (key.startsWith("user.")) return renderUser(key, resource, d, actor)
+  if (key.startsWith("signal.")) return renderSignal(key, resourceLabel, d)
+  if (key.startsWith("kyc_document.")) return renderKyc(key, d)
+  if (key.startsWith("broker_verification.")) return renderBroker(key, d)
+  if (key.startsWith("access_request.")) return renderAccess(key, d)
+  if (key.startsWith("user.")) return renderUser(key, d)
   if (key.startsWith("session.")) return renderSession(key, d)
-  if (key.startsWith("subscription.")) return renderSubscription(key, resource, d)
+  if (key.startsWith("subscription.")) return renderSubscription(key, d)
   if (key.startsWith("system.")) return renderSystem(key, d)
   if (key.startsWith("webhook.")) return renderWebhook(key, d)
   if (key.startsWith("email_event.")) return renderEmailEvent(key, d)
-  if (key.startsWith("resend_domain.")) return renderResendDomain(key, resource, d)
-  if (key.startsWith("impersonation.")) return renderImpersonation(key, actor)
+  if (key.startsWith("resend_domain.")) return renderResendDomain(key, d)
+  if (key.startsWith("impersonation.")) return renderImpersonation(key, user)
   if (key.startsWith("notification.")) return renderNotification(key, d)
 
-  return fallback(key, resource, d)
+  return `Action sur ${(resourceLabel ?? ctx.resourceType).toLowerCase()}`
 }
 
-function fallback(_key: string, resource: string, _details: Record<string, unknown>): string {
-  return `Action sur ${resource.toLowerCase()}`
-}
-
-function renderSignal(key: string, resource: string, d: Record<string, unknown>): string {
+function renderSignal(key: string, name: string | null, d: Record<string, unknown>): string {
+  const prefix = name ? `${name}` : ""
   switch (key) {
     case "signal.created":
-      return `${resource} créé`
+      return prefix || "Créé"
     case "signal.published":
-      return `${resource} publié${d.queueFailed ? " (échec partiel de la distribution)" : ""}`
+      return prefix ? `${prefix} publié` : "Publié"
     case "signal.updated": {
-      const from = d.fromStatus ? ` (passé de ${d.fromStatus} à ${d.toStatus ?? "modifié"})` : ""
-      return `${resource} mis à jour${from}`
+      if (d.fromStatus && d.toStatus) return `${prefix} : ${d.fromStatus} → ${d.toStatus}`
+      return prefix ? `${prefix} modifié` : "Modifié"
     }
     case "signal.deleted":
-      return `${resource} supprimé`
+      return prefix ? `${prefix} supprimé` : "Supprimé"
     case "signal.duplicated":
-      return `${resource} dupliqué`
+      return prefix ? `${prefix} dupliqué` : "Dupliqué"
     case "signal.scheduled":
-      return `${resource} programmé`
+      return prefix ? `${prefix} programmé` : "Programmé"
     case "signal.distribution":
-      return `${resource} distribué à ${d.recipientCount ?? "?"} destinataire${(d.recipientCount as number) > 1 ? "s" : ""}`
+      return `${d.recipientCount ?? "?"} destinataire${(d.recipientCount as number) > 1 ? "s" : ""}`
     default:
-      return `Action sur ${resource.toLowerCase()}`
+      return prefix || "Action"
   }
 }
 
-function renderKyc(_key: string, resource: string, d: Record<string, unknown>): string {
-  if (d.notes) return `${resource} ${_key.includes("approved") ? "approuvé" : "refusé"} — motif : ${d.notes}`
-  return `${resource} ${_key.includes("approved") ? "approuvé" : "refusé"}`
+function renderKyc(_key: string, d: Record<string, unknown>): string {
+  return (d.notes as string) ?? ""
 }
 
-function renderBroker(_key: string, resource: string, d: Record<string, unknown>): string {
-  if (d.notes) return `Vérification courtier ${_key.includes("approved") ? "approuvée" : "refusée"} — motif : ${d.notes}`
-  return `Vérification courtier ${_key.includes("approved") ? "approuvée" : "refusée"}`
+function renderBroker(_key: string, d: Record<string, unknown>): string {
+  return (d.notes as string) ?? ""
 }
 
-function renderAccess(key: string, resource: string, d: Record<string, unknown>): string {
-  const plan = d.planName ? ` pour « ${d.planName} »` : d.planId ? ` (plan ${d.planId})` : ""
-  switch (key) {
-    case "access_request.approved":
-      return `${resource} approuvée${plan}${d.notes ? ` — motif : ${d.notes}` : ""}`
-    case "access_request.rejected":
-      return `${resource} refusée${d.notes ? ` — motif : ${d.notes}` : ""}`
-    case "access_request.revoked":
-      return `${resource} révoquée${d.notes ? ` — motif : ${d.notes}` : ""}`
-    case "access_request.suspended":
-      return `${resource} suspendue${d.notes ? ` — motif : ${d.notes}` : ""}`
-    default:
-      return `${resource} modifiée${plan}`
-  }
+function renderAccess(key: string, d: Record<string, unknown>): string {
+  const plan = d.planName ? `Plan « ${d.planName} »` : ""
+  const notes = d.notes ? ` — ${d.notes}` : ""
+  if (key.includes("approved")) return `Approuvée${plan ? ` (${plan})` : ""}${notes}`
+  if (key.includes("rejected")) return `Refusée${notes}`
+  if (key.includes("revoked")) return `Révoquée${notes}`
+  if (key.includes("suspended")) return `Suspendue${notes}`
+  return `${plan}${notes}`
 }
 
-function renderUser(key: string, resource: string, d: Record<string, unknown>, actor: string): string {
-  const target = d.userEmail ?? d.userName ?? resource.toLowerCase()
+function renderUser(key: string, d: Record<string, unknown>): string {
+  const target = String(d.userEmail ?? d.userName ?? "")
   switch (key) {
     case "user.suspended":
-      return `${target} suspendu`
+      return target ? `${target} suspendu` : "Suspendu"
     case "user.reactivated":
-      return `${target} réactivé`
+      return target ? `${target} réactivé` : "Réactivé"
     case "user.deleted":
-      return d.hardDelete ? `${target} supprimé définitivement` : `${target} supprimé (compte désactivé)`
+      return target ? `${target} supprimé` : (d.hardDelete ? "Supprimé définitivement" : "Supprimé (compte désactivé)")
     case "user.updated": {
-      const changes = d.changes
-      if (Array.isArray(changes) && changes.length > 0) {
-        return `${target} modifié : ${changes.join(", ")}`
+      if (Array.isArray(d.changes) && d.changes.length > 0) {
+        return `${target} : ${d.changes.join(", ")}`
       }
-      return `${target} modifié`
+      return target ? `${target} modifié` : "Modifié"
     }
     case "user.role_changed":
-      return `Rôle de ${target} modifié`
+      return `Rôle : ${target}`
     case "user.sessions_revoked":
-      return `${d.count ?? ""} session${(d.count as number) > 1 ? "s" : ""} de ${target} révoquée${(d.count as number) > 1 ? "s" : ""}`
+      return `${d.count ?? ""} session${(d.count as number) > 1 ? "s" : ""} révoquée${(d.count as number) > 1 ? "s" : ""}`
     case "user.banned":
-      return `${target} banni${d.reason ? ` — motif : ${d.reason}` : ""}${d.bannedBy ? ` (par ${d.bannedBy})` : ""}`
+      return [d.reason, d.bannedBy ? `par ${d.bannedBy}` : ""].filter(Boolean).join(" — ")
     case "user.unbanned":
-      return `${target} réhabilité`
+      return "Réhabilité"
     case "user.email_bounced":
-      return `Email rejeté pour ${target}${d.reason ? ` : ${d.reason}` : ""}`
+      return (d.reason as string) ?? "Rejeté"
     case "user.email_complained":
-      return `Plainte spam pour ${target}`
+      return "Plainte spam"
     case "user.email_suppressed":
-      return `Email supprimé pour ${target}${d.reason ? ` : ${d.reason}` : ""}`
-    case "user.email_changed": {
-      if (d.from && d.to) return `Statut email de ${target} : ${d.from} → ${d.to}`
-      return `Statut email de ${target} modifié`
-    }
+      return (d.reason as string) ?? "Supprimé"
+    case "user.email_changed":
+      return d.from && d.to ? `${d.from} → ${d.to}` : "Statut email modifié"
     case "user.exported":
-      return `Données de ${target} exportées`
+      return "Données exportées"
     default:
-      return `${target} modifié`
+      return target || "Modifié"
   }
 }
 
 function renderSession(_key: string, d: Record<string, unknown>): string {
-  const email = d.email ?? "utilisateur inconnu"
+  const email = d.email ?? ""
   const reason = d.reason ? ` — ${d.reason}` : ""
-  return `Échec de connexion pour ${email}${reason}`
+  return email ? `${email}${reason}` : reason || "Échec de connexion"
 }
 
-function renderSubscription(_key: string, resource: string, d: Record<string, unknown>): string {
-  return `Abonnement modifié vers le plan ${d.planId ?? "inconnu"}`
+function renderSubscription(_key: string, d: Record<string, unknown>): string {
+  return `Plan ${d.planId ?? "inconnu"}`
 }
 
 function renderSystem(_key: string, d: Record<string, unknown>): string {
-  const targets = d.targets
-  const prefixes = d.prefixes
-  if (Array.isArray(targets) && targets.length > 0) {
-    return `Relance des files d'attente : ${targets.join(", ")}`
-  }
-  if (Array.isArray(prefixes) && prefixes.length > 0) {
-    return `Cache vidé : ${prefixes.join(", ")}`
-  }
-  if (d.count && d.threshold) {
-    return `Alerte : ${d.count} emails en attente (seuil ${d.threshold})`
-  }
-  return `Action système effectuée`
+  if (Array.isArray(d.targets) && d.targets.length > 0) return `Relance : ${d.targets.join(", ")}`
+  if (Array.isArray(d.prefixes) && d.prefixes.length > 0) return `Cache vidé : ${d.prefixes.join(", ")}`
+  if (d.count && d.threshold) return `${d.count} emails en attente (seuil ${d.threshold})`
+  return ""
 }
 
 function renderWebhook(_key: string, d: Record<string, unknown>): string {
-  const type = d.type ?? "événement"
-  if (_key.includes("replay_failed")) {
-    return `Rejeu de ${type} échoué${d.error ? ` : ${d.error}` : ""}`
-  }
-  if (_key.includes("abandoned")) {
-    return `${type} abandonné${d.reason ? ` : ${d.reason}` : ""}`
-  }
+  const type = d.type ?? "Événement"
+  if (_key.includes("replay_failed")) return d.error ? `Échec : ${d.error}` : "Rejeu échoué"
+  if (_key.includes("abandoned")) return d.reason ? `Abandonné : ${d.reason}` : "Abandonné"
   return `${type} rejoué`
 }
 
 function renderEmailEvent(_key: string, d: Record<string, unknown>): string {
-  return `Événement email rejoué${d.originalType ? ` (${d.originalType})` : ""}`
+  return d.originalType ? `Original : ${d.originalType}` : "Rejoué"
 }
 
-function renderResendDomain(_key: string, resource: string, d: Record<string, unknown>): string {
-  const domain = d.domain ?? ""
-  if (_key.includes("created")) return `Domaine ${domain} créé`
-  if (_key.includes("updated")) return `Domaine ${domain} modifié`
-  if (_key.includes("deleted")) return `Domaine ${domain} supprimé`
-  return `${resource} modifié`
+function renderResendDomain(_key: string, d: Record<string, unknown>): string {
+  return (d.domain as string) ?? ""
 }
 
-function renderImpersonation(_key: string, actor: string): string {
-  if (_key.includes("started")) return `Impersonation démarrée par ${actor}`
-  return `Impersonation arrêtée par ${actor}`
+function renderImpersonation(_key: string, user: { name: string; email: string } | null): string {
+  return user?.name ?? user?.email ?? "Système"
 }
 
 function renderNotification(_key: string, _d: Record<string, unknown>): string {
-  return `Notification envoyée`
+  return ""
 }

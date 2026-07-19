@@ -8,7 +8,7 @@ import {
   Users, LayoutGrid, ChevronDown, ChevronUp, ExternalLink,
 } from "lucide-react"
 import type { AuditEvent, AuditFilters, AuditView } from "@nba/lib/audit/types"
-import { getActionColor, getActionIcon, getActionLabel, getResourceIcon, getResourceLabel } from "@nba/lib/audit/labels"
+import { getActionIcon, getActionLabel, getResourceIcon, getResourceLabel } from "@nba/lib/audit/labels"
 import { renderDescription } from "@nba/lib/audit/renderers"
 import { useSocket } from "@nba/lib/hooks/use-socket"
 
@@ -61,14 +61,6 @@ function Avatar({ name, email, image }: { name?: string | null; email?: string |
       {initials}
     </span>
   )
-}
-
-const COLOR_MAP = {
-  emerald: "border-l-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/10 text-emerald-700 dark:text-emerald-400",
-  rose: "border-l-rose-500 bg-rose-50/50 dark:bg-rose-950/10 text-rose-700 dark:text-rose-400",
-  blue: "border-l-blue-500 bg-blue-50/50 dark:bg-blue-950/10 text-blue-700 dark:text-blue-400",
-  amber: "border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/10 text-amber-700 dark:text-amber-400",
-  muted: "border-l-muted-foreground/20 bg-muted/30 text-muted-foreground",
 }
 
 function cleanDetails(details: Record<string, unknown> | null): { pairs: { label: string; value: string }[]; metrics: { label: string; value: string }[] } {
@@ -265,7 +257,9 @@ export default function AuditCenterPage() {
 
   function renderDetails(log: AuditEvent) {
     const { pairs, metrics } = cleanDetails(log.details)
-    if (pairs.length === 0 && metrics.length === 0 && !log.resourceId) return null
+    const shouldRender = pairs.length > 0 || metrics.length > 0 || log.resourceId || log.userAgent
+
+    if (!shouldRender) return null
 
     return (
       <div className="mt-3 pt-3 border-t border-border/30 space-y-3">
@@ -292,10 +286,11 @@ export default function AuditCenterPage() {
           </div>
         )}
 
-        {/* Date complète explicite */}
-        <div className="text-[11px] text-muted-foreground/50">
-          {formatDate(log.createdAt)}
-          {log.ipAddress && ` · ${log.ipAddress}`}
+        {/* Date complète + IP + User-Agent */}
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground/50">
+          <span>{formatDate(log.createdAt)}</span>
+          {log.ipAddress && <span>· {log.ipAddress}</span>}
+          {log.userAgent && <span className="truncate max-w-[200px]" title={log.userAgent}>· {log.userAgent}</span>}
         </div>
 
         {/* Lien vers la ressource */}
@@ -323,92 +318,85 @@ export default function AuditCenterPage() {
   }
 
   function AuditCard({ log }: { log: AuditEvent }) {
-    const color = getActionColor(log.action)
-    const colorClasses = COLOR_MAP[color]
     const isExpanded = expandedId === log.id
     const ActionIcon = getActionIcon(log.action)
     const ResourceIcon = getResourceIcon(log.resourceType)
     const sev = SEVERITY_CONFIG[log.severity as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG.info
 
+    const desc = renderDescription({
+      action: log.action,
+      resourceType: log.resourceType,
+      resourceLabel: log.resourceLabel,
+      details: log.details,
+      user: log.user,
+    })
+
     return (
-      <div className={`border-l-2 rounded-lg border border-border/50 ${colorClasses.split(" ").slice(0, 2).join(" ")}`}>
-        <div className="p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                {/* Badge action avec icône */}
-                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold ${colorClasses.split(" ").slice(2).join(" ")}`}>
-                  <ActionIcon className="size-3" />
-                  {getActionLabel(log.action)}
-                </span>
-
-                {/* Badge sévérité */}
-                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${sev.textColor} ${sev.bgColor}`}>
-                  <span className={`size-1.5 rounded-full ${sev.color}`} />
-                  {sev.label}
-                </span>
-
-                {/* Ressource avec icône — cliquable */}
-                {getResourceUrl(log.resourceType, log.resourceId) ? (
-                  <a href={getResourceUrl(log.resourceType, log.resourceId)!}
-                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-primary transition-colors"
-                  >
-                    <ResourceIcon className="size-3" />
-                    {getResourceLabel(log.resourceType)}
-                  </a>
-                ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
-                    <ResourceIcon className="size-3" />
-                    {getResourceLabel(log.resourceType)}
-                  </span>
-                )}
-              </div>
-
-              {/* Description */}
-              <p className="mt-1.5 text-sm text-foreground/90 leading-relaxed">
-                {renderDescription({
-                  action: log.action,
-                  resourceType: log.resourceType,
-                  resourceLabel: log.resourceLabel,
-                  details: log.details,
-                  user: log.user,
-                })}
-              </p>
-            </div>
-          </div>
-
-          {/* Footer métadonnées */}
-          <div className="mt-2.5 flex items-center gap-3 text-[11px] text-muted-foreground/60 flex-wrap">
-            <span className="inline-flex items-center gap-1">
+      <div className={`rounded-lg border border-border/50 ${sev.bgColor}`}>
+        <div className="p-3.5">
+          {/* Top row: user + time */}
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`size-2 rounded-full shrink-0 ${sev.color}`} />
               {userUrl(log.userId) ? (
-                <a href={userUrl(log.userId)!} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                <a href={userUrl(log.userId)!} className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors truncate">
                   <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
-                  {log.user?.name ?? log.user?.email ?? "Système"}
+                  <span className="truncate">{log.user?.name ?? log.user?.email ?? "Système"}</span>
                 </a>
               ) : (
-                <>
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground truncate">
                   <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
-                  {log.user?.name ?? log.user?.email ?? "Système"}
-                </>
+                  <span className="truncate">{log.user?.name ?? log.user?.email ?? "Système"}</span>
+                </span>
               )}
-            </span>
-            <span className="inline-flex items-center gap-1" title={formatDate(log.createdAt)}>
-              <Clock className="size-3" />
+            </div>
+            <span className="shrink-0 text-[11px] text-muted-foreground/50" title={formatDate(log.createdAt)}>
               {timeAgo(log.createdAt)}
             </span>
+          </div>
+
+          {/* Badge row */}
+          <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold ${sev.textColor} ${sev.bgColor}`}>
+              <ActionIcon className="size-3" />
+              {getActionLabel(log.action)}
+            </span>
+            {getResourceUrl(log.resourceType, log.resourceId) ? (
+              <a href={getResourceUrl(log.resourceType, log.resourceId)!}
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] text-muted-foreground/70 hover:text-primary transition-colors bg-muted/30"
+              >
+                <ResourceIcon className="size-3" />
+                {getResourceLabel(log.resourceType)}
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] text-muted-foreground/70 bg-muted/30">
+                <ResourceIcon className="size-3" />
+                {getResourceLabel(log.resourceType)}
+              </span>
+            )}
+          </div>
+
+          {/* Description (contexte uniquement — plus redondante) */}
+          {desc && (
+            <p className="text-sm text-foreground/80 leading-relaxed mb-2">
+              {desc}
+            </p>
+          )}
+
+          {/* Footer: IP + expand */}
+          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/50">
             {log.ipAddress && (
               <span className="inline-flex items-center gap-1 font-mono">
                 <Globe className="size-3" />
                 {log.ipAddress}
               </span>
             )}
-
             <button
               onClick={() => setExpandedId(isExpanded ? null : log.id)}
-              className="ml-auto inline-flex items-center gap-1 text-muted-foreground/50 hover:text-foreground transition-colors"
+              className="ml-auto inline-flex items-center gap-1 hover:text-foreground transition-colors"
             >
               {isExpanded ? (
-                <>Masquer les détails <ChevronUp className="size-3" /></>
+                <>Masquer <ChevronUp className="size-3" /></>
               ) : (
                 <>Détails <ChevronDown className="size-3" /></>
               )}
