@@ -4,7 +4,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 import { Card, CardContent, Badge } from "@nba/design-system"
 import { Calendar, User, ChevronLeft } from "lucide-react"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { MarkdownMessage } from "@nba/lib/markdown"
 import Link from "next/link"
 import { SignalActions } from "./components/signal-actions"
 
@@ -124,10 +124,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           </div>
 
           {/* Body Content */}
-          <div 
-            className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words"
-            dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
-          />
+          <div className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words">
+            <MarkdownMessage content={signal.content} />
+          </div>
 
           {/* Interactive Actions for Favorite, Archive, Share, Print */}
           <SignalActions 

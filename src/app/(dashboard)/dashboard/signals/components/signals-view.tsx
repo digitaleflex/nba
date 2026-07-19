@@ -16,7 +16,7 @@ import {
   Star,
   Archive,
 } from "lucide-react"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { MarkdownMessage } from "@nba/lib/markdown"
 import { useSocket } from "@nba/lib/hooks/use-socket"
 import { MobileFilterSheet } from "./mobile-filter-sheet"
 
@@ -131,10 +131,9 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
             </div>
           </div>
 
-          <div
-            className="text-sm text-foreground whitespace-pre-wrap leading-relaxed break-words line-clamp-6"
-            dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
-          />
+          <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed break-words line-clamp-6">
+            <MarkdownMessage content={signal.content} />
+          </div>
 
           {Array.isArray(signal.imageUrls) && signal.imageUrls.length > 0 && (
             <div className="flex gap-2 pt-1">

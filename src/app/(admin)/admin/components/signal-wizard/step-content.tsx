@@ -3,7 +3,7 @@
 import { useRef, useEffect, useState } from "react"
 import { Bold, Italic, List, Image as ImageIcon, X, Plus } from "lucide-react"
 import { Button, Card, CardContent, cn } from "@nba/design-system"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { MarkdownMessage } from "@nba/lib/markdown"
 
 interface StepContentProps {
   content: string
@@ -144,10 +144,9 @@ export function StepContent({
             </span>
             <span>Aujourd'hui</span>
           </div>
-          <div
-            className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words min-h-[40px]"
-            dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(content.trim() || "Votre message formaté s'affichera ici...") }}
-          />
+          <div className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words min-h-[40px]">
+            <MarkdownMessage content={content.trim() || "Votre message formaté s'affichera ici..."} />
+          </div>
           {imageUrls.length > 0 && (
             <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
               {imageUrls.map((url, idx) => (
