@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
 
 const reflectionCreateRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
@@ -80,6 +81,10 @@ export async function POST(request: NextRequest) {
         losses: needsRecalc ? dayTrades.filter(t => t.result === "LOSS").length : undefined,
         totalPnl: needsRecalc ? dayTrades.reduce((s, t) => s + Number(t.pnl), 0) : undefined,
       },
+    })
+
+    updateDisciplineStreak(session.user.id, date).catch((err) => {
+      console.error(`[journal] updateDisciplineStreak failed (userId=${session.user.id}):`, err)
     })
 
     return NextResponse.json({ reflection })

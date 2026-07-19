@@ -6,6 +6,7 @@ import { handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { checkPsychology } from "@nba/lib/services/journal-psychology"
 import { calculatePnl } from "@nba/lib/services/pnl"
+import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
 
 const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
@@ -18,6 +19,8 @@ const tradeCreateSchema = z.object({
   exitPrice: z.number().positive(),
   stopLoss: z.number().positive().optional(),
   takeProfit: z.number().positive().optional(),
+  strategy: z.enum(["SCALPING", "DAY_TRADING", "SWING", "POSITION"]).optional(),
+  setupType: z.enum(["BREAKOUT", "PULLBACK", "REVERSAL", "RANGE", "TREND", "OTHER"]).optional(),
   lotSize: z.number().positive().max(100).default(0.01),
   spread: z.number().min(0).optional(),
   commission: z.number().min(0).optional(),
@@ -137,6 +140,8 @@ export async function POST(request: NextRequest) {
           exitPrice: parsed.exitPrice,
           stopLoss: parsed.stopLoss ?? null,
           takeProfit: parsed.takeProfit ?? null,
+          strategy: parsed.strategy ?? null,
+          setupType: parsed.setupType ?? null,
           lotSize: parsed.lotSize,
           pnl,
           spread: parsed.spread ?? 0,
@@ -174,6 +179,10 @@ export async function POST(request: NextRequest) {
 
     checkPsychology(session.user.id).catch((err) => {
       console.error(`[journal] checkPsychology failed (userId=${session.user.id}):`, err)
+    })
+
+    updateDisciplineStreak(session.user.id, created.tradedAt).catch((err) => {
+      console.error(`[journal] updateDisciplineStreak failed (userId=${session.user.id}):`, err)
     })
 
     return NextResponse.json({ trade: created }, { status: 201 })

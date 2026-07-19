@@ -18,6 +18,7 @@ export async function GET() {
         image: true,
         country: true,
         language: true,
+        timezone: true,
         onboardingStatus: true,
         role: { select: { name: true } },
       },
@@ -38,7 +39,7 @@ export async function PUT(req: NextRequest) {
     const session = await requireActiveUser()
 
     const body = await req.json()
-    const { name, phone, whatsapp, country, language } = body
+    const { name, phone, whatsapp, country, language, timezone } = body
 
     const user = await prisma.user.update({
       where: { id: session.user.id },
@@ -48,6 +49,7 @@ export async function PUT(req: NextRequest) {
         ...(whatsapp !== undefined && { whatsapp }),
         ...(country !== undefined && { country }),
         ...(language !== undefined && { language }),
+        ...(timezone !== undefined && { timezone }),
       },
       select: {
         id: true,
@@ -59,6 +61,7 @@ export async function PUT(req: NextRequest) {
         image: true,
         country: true,
         language: true,
+        timezone: true,
         onboardingStatus: true,
         role: { select: { name: true } },
       },
