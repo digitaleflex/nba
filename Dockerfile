@@ -1,8 +1,6 @@
 # Base image using Alpine for security and minimal footprint
 FROM node:26-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN npm install -g pnpm@9
 WORKDIR /app
 
 # Step 1: Install all dependencies (including devDependencies for build)
