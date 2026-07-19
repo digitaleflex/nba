@@ -2,113 +2,44 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { authClient } from "@nba/lib/auth-client"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
-import { ADMIN_CONTEXTS } from "@nba/app/(admin)/admin/admin-context"
+import { useLogout } from "@nba/hooks/use-logout"
+import {
+  getMenuNavItems,
+  getSidebarSections,
+  isNavItemActive,
+  type NavSpace,
+  type UserRole,
+} from "@nba/config/navigation"
 import {
   LayoutDashboard,
-  TrendingUp,
-  Shield,
-  CreditCard,
   LogOut,
   Menu,
+  Shield,
   X,
-  Users,
-  ListTodo,
-  Radio,
-  FileCheck,
-  Link2,
-  Bell,
-  Activity,
-  BarChart2,
-  Settings,
-  Gauge,
-  Mail,
-  LineChart,
-  UserCheck,
-  MessageCircle,
-  Inbox,
 } from "lucide-react"
 
 interface MobileMenuProps {
-  isAdmin?: boolean
+  space: NavSpace
   user: {
     id: string
     name: string
     email: string
     image?: string | null
-    role?: string
+    role?: UserRole
   }
 }
 
-export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
+export function MobileMenu({ space, user }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const activeTab = searchParams.get("tab") || "dashboard"
+  const { logout } = useLogout()
 
-  async function handleLogout() {
-    if (!confirm("Voulez-vous vraiment vous déconnecter ?")) return
-    await authClient.signOut()
-    router.push("/login")
-    router.refresh()
-  }
-
-  const userLinks = [
-    { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: pathname === "/dashboard" },
-    { href: "/dashboard/signals", label: "Signaux", icon: TrendingUp, active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals") },
-    { href: "/dashboard/verification", label: "Vérification", icon: Shield, active: pathname === "/dashboard/verification" },
-    { href: "/dashboard/subscription", label: "Abonnement", icon: CreditCard, active: pathname === "/dashboard/subscription" },
-    { href: "/dashboard/notifications", label: "Notifications", icon: Bell, active: pathname.startsWith("/dashboard/notifications") },
-  ]
-
-  const adminLinks = ADMIN_CONTEXTS.flatMap((context) => {
-    const isActiveTab = (tab: string) => pathname === "/admin" && activeTab === tab
-    const standaloneByContext: Record<string, { href: string; label: string; icon: any; active: boolean }[]> = {
-      surveiller: [
-        { href: "/admin?tab=dashboard", label: "Control Room", icon: Gauge, active: pathname === "/admin" && activeTab === "dashboard" },
-        { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname.startsWith("/admin/tracker") },
-      ],
-      communiquer: [
-        { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
-      ],
-      auditer: [
-        { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
-      ],
-    }
-    const iconMap: Record<string, any> = {
-      dashboard: LayoutDashboard,
-      stats: BarChart2,
-      analytics: LineChart,
-      requests: ListTodo,
-      membres: UserCheck,
-      users: Users,
-      kyc: FileCheck,
-      broker: Link2,
-      signals: Radio,
-      emails: Mail,
-      notifications: Bell,
-      audit: Activity,
-      moderation: Shield,
-      security: Shield,
-      settings: Settings,
-    }
-    const tabLinks = context.tabs.map((t) => ({
-      href: `/admin?tab=${t.value}`,
-      label: t.label,
-      icon: iconMap[t.value] || context.icon,
-      group: context.label,
-      active: isActiveTab(t.value),
-    }))
-    const standalone = (standaloneByContext[context.id] || []).map((s) => ({ ...s, group: context.label }))
-    return [...tabLinks, ...standalone]
-  })
-
-  const links = isAdmin ? adminLinks : userLinks
-  const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
+  const links = getMenuNavItems(space, user.role)
+  const showAdminSwitch = space === "dashboard" && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
 
   return (
     <>
@@ -142,25 +73,28 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
           </DialogHeader>
 
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-            {isAdmin ? (
+            {space === "admin" ? (
               (() => {
-                const groups = ADMIN_CONTEXTS.map((c) => c.label) as string[]
-                return groups.flatMap((group, gi) => {
-                  const groupLinks = (links as typeof adminLinks).filter((l) => l.group === group)
-                  if (groupLinks.length === 0) return []
+                const sections = getSidebarSections("admin", user.role)
+                return sections.flatMap((section, si) => {
+                  const sectionLinks = section.items
+                  if (sectionLinks.length === 0) return []
                   return [
-                    gi > 0 ? <div key={`sep-${group}`} className="h-3" /> : null,
-                    <p key={`h-${group}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">{group}</p>,
-                    ...groupLinks.map((link) => {
+                    si > 0 ? <div key={`sep-${section.id}`} className="h-3" /> : null,
+                    <p key={`h-${section.id}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      {section.label}
+                    </p>,
+                    ...sectionLinks.map((link) => {
                       const Icon = link.icon
+                      const isActive = isNavItemActive(link, pathname, searchParams)
                       return (
                         <Link
-                          key={link.href}
+                          key={link.id}
                           href={link.href}
                           onClick={() => setOpen(false)}
                           className={cn(
                             "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
-                            (link as any).active
+                            isActive
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted"
                           )}
@@ -176,14 +110,15 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
             ) : (
               links.map((link) => {
                 const Icon = link.icon
+                const isActive = isNavItemActive(link, pathname, searchParams)
                 return (
                   <Link
-                    key={link.href}
+                    key={link.id}
                     href={link.href}
                     onClick={() => setOpen(false)}
                     className={cn(
                       "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
-                      link.active
+                      isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
@@ -206,7 +141,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
               </Link>
             )}
 
-            {isAdmin && (
+            {space === "admin" && (
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
@@ -231,7 +166,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
             </div>
             <Button
               variant="ghost"
-              onClick={handleLogout}
+              onClick={logout}
               className="w-full justify-start gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl min-h-[44px]"
             >
               <LogOut className="size-4" />

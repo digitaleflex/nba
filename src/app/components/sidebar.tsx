@@ -2,53 +2,43 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { authClient } from "@nba/lib/auth-client"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Button, Badge, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
-import { ADMIN_CONTEXTS } from "@nba/app/(admin)/admin/admin-context"
+import { useLogout } from "@nba/hooks/use-logout"
+import { usePendingKyc } from "@nba/hooks/use-pending-kyc"
+import {
+  getSidebarSections,
+  isNavItemActive,
+  type NavSpace,
+  type UserRole,
+} from "@nba/config/navigation"
 import {
   LayoutDashboard,
-  Users,
-  ListTodo,
-  Radio,
-  FileCheck,
-  Link2,
-  Bell,
-  Activity,
-  Gauge,
-  Shield,
-  BarChart2,
-  Settings,
   LogOut,
+  Shield,
   User as UserIcon,
   ChevronLeft,
   ChevronRight,
-  TrendingUp,
-  CreditCard,
-  MessageCircle,
-  Volume2,
-  Inbox,
-  Mail,
-  LineChart as LineChartIcon,
-  BookOpen,
 } from "lucide-react"
+
 interface SidebarProps {
-  isAdmin?: boolean
+  space: NavSpace
   user: {
     id: string
     name: string
     email: string
     image?: string | null
-    role?: string
+    role?: UserRole
   }
 }
 
-export function Sidebar({ isAdmin = false, user }: SidebarProps) {
+export function Sidebar({ space, user }: SidebarProps) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const activeTab = searchParams.get("tab") || "dashboard"
+  const { logout } = useLogout({ confirm: false })
+  const { unreadTotal } = useMessagingUnread()
+  const pendingKyc = usePendingKyc(space === "admin")
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)
@@ -67,142 +57,14 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
     localStorage.setItem("nba-sidebar-collapsed", String(nextVal))
   }
 
-  async function handleLogout() {
-    await authClient.signOut()
-    router.push("/login")
-    router.refresh()
-  }
-
-  // Liens pour l'espace utilisateur — volontairement bref : le produit tourne
-  // autour des signaux. "Mes Signaux" est l'entree principale, le reste est
-  // secondaire (taches ponctuelles ou parametrage).
-  const userLinks = [
-    {
-      href: "/dashboard/signals",
-      label: "Mes Signaux",
-      icon: TrendingUp,
-      active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
-    },
-    {
-      href: "/dashboard/journal",
-      label: "Journal",
-      icon: BookOpen,
-      active: pathname.startsWith("/dashboard/journal"),
-    },
-    {
-      href: "/dashboard/verification",
-      label: "Vérification",
-      icon: Shield,
-      active: pathname === "/dashboard/verification",
-    },
-    {
-      href: "/dashboard/subscription",
-      label: "Mon abonnement",
-      icon: CreditCard,
-      active: pathname === "/dashboard/subscription",
-    },
-    {
-      href: "/dashboard/notifications",
-      label: "Notifications",
-      icon: Bell,
-      active: pathname.startsWith("/dashboard/notifications"),
-    },
-    {
-      href: "/dashboard/support",
-      label: "Support",
-      icon: MessageCircle,
-      active: pathname === "/dashboard/support",
-    },
-  ]
-
-  // Liens d'administration groupés par section
-  interface AdminGroup {
-    label: string
-    items: {
-      href: string
-      label: string
-      icon: React.ComponentType<{ className?: string }>
-      active: boolean
-    }[]
-    badge?: number
-  }
-
-  const isActiveTab = (tab: string) => pathname === "/admin" && activeTab === tab
-
-  // Pending KYC count -> badge sur le contexte "Décider"
-  const [pendingKyc, setPendingKyc] = useState(0)
-  useEffect(() => {
-    if (!isAdmin) return
-    const controller = new AbortController()
-    fetch("/api/admin/kyc?status=PENDING", { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d?.total != null) setPendingKyc(d.total)
-        else if (Array.isArray(d?.docs)) setPendingKyc(d.docs.length)
-      })
-      .catch(() => {})
-    return () => controller.abort()
-  }, [isAdmin])
-
-  // Routes autonomes (hors tabs) rattachées à leur contexte pour ne rien casser
-  const standaloneByContext: Record<string, AdminGroup["items"]> = {
-    surveiller: [
-      { href: "/admin?tab=dashboard", label: "Centre de contrôle", icon: Gauge, active: pathname === "/admin" && activeTab === "dashboard" },
-      { href: "/admin/tracker", label: "Tracker", icon: Activity, active: pathname === "/admin/tracker" },
-    ],
-    decider: [
-      { href: "/admin/members", label: "Annuaire membres", icon: Users, active: pathname === "/admin/members" },
-    ],
-    communiquer: [
-      { href: "/admin/messages", label: "Messages", icon: MessageCircle, active: pathname === "/admin/messages" },
-    ],
-    auditer: [
-      { href: "/admin/audit", label: "Journal d'audit (complet)", icon: FileCheck, active: pathname === "/admin/audit" },
-      { href: "/admin/webhooks/dlq", label: "DLQ Webhooks", icon: Inbox, active: pathname.startsWith("/admin/webhooks/dlq") },
-    ],
-  }
-
-  // Groupes dérivés des 4 contextes mentaux (Surveiller / Décider / Communiquer / Auditer)
-  const adminGroups: AdminGroup[] = ADMIN_CONTEXTS.map((context) => {
-    const isDecider = context.id === "decider"
-    const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-      dashboard: LayoutDashboard,
-      stats: BarChart2,
-      analytics: LineChartIcon,
-      requests: ListTodo,
-      membres: Users,
-      users: Users,
-      kyc: FileCheck,
-      broker: Link2,
-      signals: Radio,
-      emails: Mail,
-      notifications: Bell,
-      audit: Activity,
-      moderation: Shield,
-      security: Shield,
-      settings: Settings,
-    }
-    const items = context.tabs.map((tab) => ({
-      href: `/admin?tab=${tab.value}`,
-      label: tab.label,
-      icon: iconMap[tab.value] || context.icon,
-      active: isActiveTab(tab.value),
-    }))
-    const standalone = standaloneByContext[context.id] || []
-    return {
-      label: context.label,
-      items: [...items, ...standalone],
-      badge: isDecider && pendingKyc > 0 ? pendingKyc : undefined,
-    }
-  })
-
-  const links = isAdmin ? adminGroups.flatMap((g) => g.items) : userLinks
-  const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
-  const { unreadTotal } = useMessagingUnread()
+  const sections = getSidebarSections(space, user.role)
   const isMessagesLink = (href: string) =>
     href === "/dashboard/messages" || href === "/admin/messages"
+
   const messagesBadge =
     unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
+
+  const showAdminSwitch = space === "dashboard" && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
 
   return (
     <aside
@@ -212,7 +74,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
         isCollapsed ? "w-20 px-3" : "w-64 px-5"
       )}
     >
-      {/* Toggle Button */}
       <button
         onClick={toggleCollapse}
         className="absolute -right-3 top-7 z-50 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground shadow-sm cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200"
@@ -222,7 +83,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
       </button>
 
       <div className="flex flex-col min-h-0 flex-1 space-y-7 overflow-y-auto">
-        {/* Logo / Header */}
         <div className={cn("flex items-center gap-2 px-2 shrink-0", isCollapsed ? "justify-center" : "justify-between")}>
           <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg tracking-tight shrink-0">
             {isCollapsed ? (
@@ -231,87 +91,52 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
               <span className="text-foreground tracking-tight"><span className="text-primary font-black">Never</span>BrokeAgain</span>
             )}
           </Link>
-          {!isCollapsed && isAdmin && (
+          {!isCollapsed && space === "admin" && (
             <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">
               Admin
             </span>
           )}
         </div>
 
-        {/* Menu Navigation */}
-        <nav className={isCollapsed ? "space-y-1.5" : "space-y-5"}>
-          {isAdmin && !isCollapsed
-            ? adminGroups.map((group) => (
-                <div key={group.label} className="space-y-1">
-                  <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
-                    {group.label}
-                    {group.badge ? (
-                      <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
-                        {group.badge > 9 ? "9+" : group.badge}
-                      </span>
-                    ) : null}
-                  </p>
-                  {group.items.map((link) => {
-                    const Icon = link.icon
-                    const showBadge = isMessagesLink(link.href) && !!messagesBadge
-                    return (
-                      <Link
-                        key={link.href}
-                        href={link.href}
-                        className={cn(
-                          "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group",
-                          "gap-3.5",
-                          link.active
-                            ? "bg-primary text-primary-foreground font-semibold shadow-xs"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                        )}
-                      >
-                        {link.active && (
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
-                        )}
-                        <Icon
-                          className={cn(
-                            "size-4.5 shrink-0 transition-transform duration-200 group-hover:scale-105",
-                            link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
-                          )}
-                        />
-                        <span className="truncate flex items-center gap-2">
-                          {link.label}
-                          {showBadge && (
-                            <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
-                              {messagesBadge}
-                            </Badge>
-                          )}
-                        </span>
-                      </Link>
-                    )
-                  })}
-                </div>
-              ))
-            : links.map((link, idx) => {
+        <nav className={isCollapsed ? "space-y-1.5" : "space-y-5"}
+        >
+          {sections.map((section, sectionIdx) => (
+            <div key={section.id} className={cn("space-y-1", sectionIdx > 0 && !isCollapsed && "pt-2")}>
+              {!isCollapsed && section.label && (
+                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
+                  {section.label}
+                  {section.id === "decider" && pendingKyc > 0 ? (
+                    <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                      {pendingKyc > 9 ? "9+" : pendingKyc}
+                    </span>
+                  ) : null}
+                </p>
+              )}
+              {section.items.map((link) => {
                 const Icon = link.icon
+                const isActive = isNavItemActive(link, pathname, searchParams)
                 const showBadge = isMessagesLink(link.href) && !!messagesBadge
                 return (
                   <Link
-                    key={idx}
+                    key={link.id}
                     href={link.href}
                     className={cn(
-                      "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group relative",
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative",
                       isCollapsed ? "justify-center" : "gap-3.5",
-                      link.active
+                      isActive
                         ? "bg-primary text-primary-foreground font-semibold shadow-xs"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                     title={isCollapsed ? link.label : undefined}
                   >
-                    {link.active && !isCollapsed && (
+                    {isActive && !isCollapsed && (
                       <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
                     )}
                     <span className="relative inline-flex shrink-0">
                       <Icon
                         className={cn(
                           "size-5 transition-transform duration-200 group-hover:scale-105",
-                          link.active ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                          isActive ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
                         )}
                       />
                       {showBadge && isCollapsed && (
@@ -331,30 +156,30 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
                   </Link>
                 )
               })}
+            </div>
+          ))}
 
-          {/* Switch to Admin for privileged users */}
           {showAdminSwitch && (
             <Link
               href="/admin"
               className={cn(
                 "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
-              "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
-              isCollapsed ? "justify-center" : "gap-3.5"
-            )}
-            title={isCollapsed ? "Accéder à l'Admin" : undefined}
-          >
-            <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
-            {!isCollapsed && <span>Accéder à l'Admin</span>}
-          </Link>
-        )}
+                "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+                isCollapsed ? "justify-center" : "gap-3.5"
+              )}
+              title={isCollapsed ? "Accéder à l'Admin" : undefined}
+            >
+              <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
+              {!isCollapsed && <span>Accéder à l'Admin</span>}
+            </Link>
+          )}
 
-        {/* Return to Dashboard for admins */}
-        {isAdmin && (
-          <Link
-            href="/dashboard"
-            className={cn(
-              "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
-              "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
+          {space === "admin" && (
+            <Link
+              href="/dashboard"
+              className={cn(
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+                "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
                 isCollapsed ? "justify-center" : "gap-3.5"
               )}
               title={isCollapsed ? "Retour au Dashboard" : undefined}
@@ -366,7 +191,6 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
         </nav>
       </div>
 
-      {/* User Section / Bottom */}
       <div className="border-t border-border pt-4 shrink-0">
         <div
           className={cn(
@@ -394,7 +218,7 @@ export function Sidebar({ isAdmin = false, user }: SidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={handleLogout}
+            onClick={logout}
             className={cn(
               "rounded-xl text-muted-foreground hover:text-destructive hover:bg-destructive/10 shrink-0 transition-colors duration-200",
               isCollapsed ? "size-9" : "size-8"

@@ -30,7 +30,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <CommandPaletteProvider>
       <div className="flex min-h-dvh flex-col md:flex-row">
         {/* Desktop Sidebar */}
-        <Sidebar isAdmin={false} user={user} />
+        <Sidebar space="dashboard" user={user} />
 
         {/* Main Content Area */}
         <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
@@ -59,7 +59,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
           {/* Mobile Header */}
           <header className="md:hidden border-b bg-card/80 backdrop-blur-xl sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <MobileMenu isAdmin={false} user={user} />
+              <MobileMenu space="dashboard" user={user} />
               <div className="flex items-center gap-2 font-bold text-sm">
                 <span className="text-primary font-extrabold">Never</span>BrokeAgain
               </div>
@@ -86,7 +86,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         </div>
 
         {/* Mobile Bottom Navigation Bar */}
-        <MobileBottomNav isAdmin={false} user={user} />
+        <MobileBottomNav space="dashboard" user={user} />
       </div>
       </CommandPaletteProvider>
     </MessagingUnreadProvider>
