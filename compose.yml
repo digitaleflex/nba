@@ -48,9 +48,17 @@ services:
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.path=/api/public/health"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=5s"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
-      # WebSocket (Socket.IO) : route /socket.io/ vers le worker sur le port 3001
-      - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && PathPrefix(`/socket.io/`)"
+      # Routeur principal de l'app (port 3000)
+      - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
+      - "traefik.http.routers.nba-app.priority=1"
+      - "traefik.http.routers.nba-app.service=nba-app"
+      - "traefik.http.routers.nba-app.entrypoints=websecure"
+      - "traefik.http.routers.nba-app.tls=true"
+      - "traefik.http.routers.nba-app.tls.certresolver=letsencrypt"
+      # WebSocket (Socket.IO) : route /socket.io vers le worker sur le port 3001
+      - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && (PathPrefix(`/socket.io/`) || Path(`/socket.io`))"
       - "traefik.http.routers.nba-ws.priority=200"
+      - "traefik.http.routers.nba-ws.service=nba-ws"
       - "traefik.http.routers.nba-ws.entrypoints=websecure"
       - "traefik.http.routers.nba-ws.tls=true"
       - "traefik.http.routers.nba-ws.tls.certresolver=letsencrypt"
