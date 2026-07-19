@@ -637,4 +637,50 @@ Si le `AppLayout` est trop risqué, on peut se limiter aux Phases 1, 2 et 4 en g
 
 Le problème de la Bottom Navigation qui change n'est pas dû à une multiplication de composants, mais à **l'absence de source de vérité** et à l'**utilisation de deux layouts distincts** qui montent le même composant avec des props différentes. La solution passe par une **configuration centralisée de navigation** et un **layout partagé** (ou un composant shell commun).
 
-Aucun code n'a été modifié durant cet audit.
+## Refactoring réalisé
+
+Date : 19/07/2026  
+Commit : `8b8385a`
+
+### Actions effectuées
+
+1. **Suppression des composants orphelins**
+   - `src/app/(admin)/components/admin-sidebar.tsx`
+   - `src/app/(dashboard)/components/dashboard-header.tsx`
+
+2. **Création de la source de vérité**
+   - `src/config/navigation.ts` : configuration centralisée des liens de navigation
+   - `src/hooks/use-logout.ts` : hook de déconnexion unifié
+   - `src/hooks/use-pending-access-requests.ts` : badge demandes d'accès
+   - `src/hooks/use-pending-kyc.ts` : badge KYC en attente
+
+3. **Refonte des composants de navigation**
+   - `src/app/components/mobile-bottom-nav.tsx` : consomme `getMobileNavItems(space, role)`
+   - `src/app/components/sidebar.tsx` : consomme `getSidebarSections(space, role)`
+   - `src/app/components/mobile-menu.tsx` : consomme `getMenuNavItems(space, role)` et `getSidebarSections(space, role)`
+
+4. **Mise à jour des layouts**
+   - `src/app/(dashboard)/layout.tsx` : `space="dashboard"` au lieu de `isAdmin={false}`
+   - `src/app/(admin)/layout.tsx` : `space="admin"` au lieu de `isAdmin={true}`
+
+5. **Tests**
+   - `src/config/navigation.test.ts` : 8 tests couvrant la config
+   - 139 tests passent au total
+
+### Architecture résultante
+
+```
+RootLayout
+├── (dashboard)/layout.tsx  → space="dashboard"
+│   └── Sidebar / MobileBottomNav / MobileMenu  → src/config/navigation.ts
+└── (admin)/layout.tsx      → space="admin"
+    └── Sidebar / MobileBottomNav / MobileMenu  → src/config/navigation.ts
+```
+
+La navigation est maintenant définie en un seul endroit. Les composants sont passés de 4 tableaux de liens hardcodés à une consommation de config unique.
+
+### Reste à faire (hors scope du refactoring immédiat)
+
+- Créer un `AppLayout` partagé pour mutualiser `Sidebar`, `MobileBottomNav`, `MobileMenu` et les providers (Phase 3 du plan original).
+- Unifier `AdminHeader` et `CommandPalette`.
+- Réduire le nombre d'items en bottom nav mobile (6-7 items restent nombreux).
