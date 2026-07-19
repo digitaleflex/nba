@@ -46,6 +46,12 @@ jobs:
             set -e
             cd /home/audest/nba
 
+            echo "=== Nettoyage conteneurs 'run' orphelins (evite 2 builds servis en meme temps) ==="
+            # Les 'docker compose run --rm' interrompus (timeout) peuvent laisser des
+            # conteneurs 'nba-app-run-*' vivants qui servent un ancien build => Traefik
+            # load-balance entre 2 builds => ChunkLoadError / MIME text/plain.
+            docker ps -a --filter "name=nba-app-run-" --filter "name=nba-worker-run-" -q | xargs -r docker rm -f 2>&1 | tail -5 || true
+
             echo "=== Pull nouvelles images ==="
             docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
 
