@@ -36,7 +36,7 @@ const io = new SocketIOServer(httpServer, {
     credentials: true,
   },
   path: "/socket.io/",
-  transports: ["websocket", "polling"],
+  transports: ["polling"],
   // Heartbeat serré : keep-alive < 60s pour survivre aux proxies/CDN
   // (Cloudflare coupe les connexions inactives > 100s).
   pingTimeout: 20000,

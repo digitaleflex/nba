@@ -63,9 +63,9 @@ function acquireSocket(options: UseSocketOptions): SocketSingleton {
   }
 
   const socket = io(getWsUrl(options), {
-    path: options.path ?? "/socket.io/",
-    withCredentials: true,
-    transports: ["websocket", "polling"],
+  path: options.path ?? "/socket.io/",
+  withCredentials: true,
+  transports: ["polling"],
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
