@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getCached } from "@nba/lib/cache"
 
 // UUIDs stables pour le fallback — ne jamais changer ces valeurs (FK compatibility)
 const FALLBACK_PLANS = [
@@ -11,23 +12,32 @@ const FALLBACK_PLANS = [
 ]
 
 export async function GET() {
-  try {
-    const { prisma } = await import("@nba/lib/db")
-    const plans = await prisma.subscriptionPlan.findMany({
-      where: { isActive: true, deletedAt: null },
-      orderBy: { sortOrder: "asc" },
-      include: {
-        _count: {
-          select: {
-            accessRequests: {
-              where: { status: "APPROVED" },
+    const plans = await getCached(
+      "plans",
+      async () => {
+      try {
+        const { prisma } = await import("@nba/lib/db")
+        return await prisma.subscriptionPlan.findMany({
+          where: { isActive: true, deletedAt: null },
+          orderBy: { sortOrder: "asc" },
+          include: {
+            _count: {
+              select: {
+                accessRequests: {
+                  where: {
+                    status: "APPROVED",
+                    user: { isActive: true, deletedAt: null },
+                  },
+                },
+              },
             },
           },
-        },
-      },
-    })
-    return NextResponse.json(plans)
-  } catch {
-    return NextResponse.json(FALLBACK_PLANS)
-  }
+        })
+      } catch {
+        return FALLBACK_PLANS
+      }
+    },
+    300,
+  )
+  return NextResponse.json(plans)
 }

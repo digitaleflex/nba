@@ -24,11 +24,16 @@ model User {
   roleId            String            @map("role_id") @db.Uuid
   country           String?
   language          String            @default("fr")
+  timezone          String            @default("Europe/Paris") @map("timezone")
   onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
   isActive          Boolean           @default(true) @map("is_active")
+  suspendedAt       DateTime?         @map("suspended_at")
+  signalsAccessOverride Boolean       @default(false) @map("signals_access_override")
   metadata          Json?             @db.JsonB
   deletedAt         DateTime?         @map("deleted_at")
   notificationSound String           @default("default") @map("notification_sound")
+  emailStatus       EmailStatus       @default(OK) @map("email_status")
+  emailStatusAt     DateTime?         @map("email_status_at")
 
   sessions            Session[]
   accounts            Account[]
@@ -50,11 +55,108 @@ model User {
   deviceVerifications DeviceVerification[]
   signalFavorites     SignalFavorite[]
   signalArchives      SignalArchive[]
+  trades              Trade[]
+  dailyReflections    DailyReflection[]
+  journalSessions     JournalSession[]
+  streaks             Streak[]
+  conversations       ConversationParticipant[]
+  messages            Message[]           @relation("SentMessages")
+  reactions           MessageReaction[]
+  reports             MessageReport[]
 
   @@index([roleId])
   @@index([isActive])
   @@index([deletedAt])
   @@map("users")
+}
+
+// ── Messaging (Admin <-> Member, type Messenger) ──
+
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  type      String   @default("DIRECT")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([updatedAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  conversationId String       @map("conversation_id") @db.Uuid
+  userId        String       @map("user_id") @db.Uuid
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([conversationId, userId])
+  @@index([userId])
+  @@index([conversationId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  senderId       String    @map("sender_id") @db.Uuid
+  type           String    @default("TEXT") @map("type")
+  content        String
+  attachmentUrl  String?   @map("attachment_url")
+  attachmentMime String?   @map("attachment_mime")
+  attachmentName String?   @map("attachment_name")
+  attachmentSize Int?      @map("attachment_size")
+  readAt         DateTime? @map("read_at")
+  editedAt       DateTime? @map("edited_at")
+  deletedAt      DateTime? @map("deleted_at")
+  quotedMessageId String?  @map("quoted_message_id") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  quotedMessage Message?     @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
+  quotedBy      Message[]    @relation("MessageQuote")
+  reactions     MessageReaction[]
+  reports       MessageReport[]
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([deletedAt])
+  @@map("messages")
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @map("message_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  emoji     String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@map("message_reactions")
+}
+
+model MessageReport {
+  id         String   @id @default(uuid()) @db.Uuid
+  messageId  String   @map("message_id") @db.Uuid
+  reporterId String   @map("reporter_id") @db.Uuid
+  reason     String
+  handledAt  DateTime? @map("handled_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+  @@index([handledAt])
+  @@map("message_reports")
 }
 
 model Session {
@@ -162,6 +264,7 @@ model SubscriptionPlan {
 
   accessRequests AccessRequest[]
   audience       SignalAudience[]
+  sessions       JournalSession[]
 
   @@map("subscription_plans")
 }
@@ -195,6 +298,11 @@ model Device {
   fingerprint  String   @map("fingerprint")
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
+  deviceType   String?  @map("device_type") // desktop | mobile | tablet
+  brand        String?  @map("brand")       // Apple | Samsung | Google | Xiaomi | ...
+  model        String?  @map("model")       // iPhone | iPad | Galaxy S23 | ...
+  os           String?  @map("os")          // iOS | Android | Windows | macOS | Linux
+  browser      String?  @map("browser")     // Safari | Chrome | Firefox | Edge | ...
   lastSeenAt   DateTime @default(now()) @map("last_seen_at")
   trusted      Boolean  @default(true) @map("trusted")
   createdAt    DateTime @default(now()) @map("created_at")
@@ -205,6 +313,8 @@ model Device {
   @@unique([userId, fingerprint])
   @@index([userId])
   @@index([fingerprint])
+  @@index([deviceType])
+  @@index([brand])
   @@map("devices")
 }
 
@@ -214,6 +324,11 @@ model DeviceVerification {
   deviceFingerprint String    @map("device_fingerprint")
   ipAddress         String?   @map("ip_address")
   userAgent         String?   @map("user_agent")
+  deviceType        String?   @map("device_type")
+  brand             String?   @map("brand")
+  model             String?   @map("model")
+  os                String?   @map("os")
+  browser           String?   @map("browser")
   verificationCode  String    @map("verification_code")
   expiresAt         DateTime  @map("expires_at")
   verifiedAt        DateTime? @map("verified_at")
@@ -271,34 +386,37 @@ model BrokerVerification {
 }
 
 model Signal {
-  id             String           @id @default(uuid()) @db.Uuid
-  content        String
-  imageUrl       String?          @map("image_url") // Pour compatibilité ascendante (premier graphique)
-  imageUrls      Json             @default("[]") @db.JsonB // Jusqu'à 5 images
-  status         SignalStatus     @default(DRAFT)
-  createdBy      String           @map("created_by") @db.Uuid
-  publishedAt    DateTime?        @map("published_at")
-  scheduledAt    DateTime?        @map("scheduled_at") // Date programmée de publication
-  jobId          String?          @map("job_id")       // Job ID BullMQ pour la programmation
-  currentVersion Int              @default(1) @map("current_version")
-  createdAt      DateTime         @default(now()) @map("created_at")
-  updatedAt      DateTime         @updatedAt @map("updated_at")
-  deletedAt      DateTime?        @map("deleted_at")
+  id                  String       @id @default(uuid()) @db.Uuid
+  content             String
+  imageUrl            String?      @map("image_url")
+  imageUrls           Json         @default("[]") @db.JsonB
+  suggestedStopLoss   Decimal?     @map("suggested_stop_loss") @db.Decimal(12, 5)
+  suggestedTakeProfit Decimal?     @map("suggested_take_profit") @db.Decimal(12, 5)
+  status              SignalStatus @default(DRAFT)
+  createdBy           String       @map("created_by") @db.Uuid
+  publishedAt         DateTime?    @map("published_at")
+  scheduledAt         DateTime?    @map("scheduled_at")
+  jobId               String?      @map("job_id")
+  currentVersion      Int          @default(1) @map("current_version")
+  createdAt           DateTime     @default(now()) @map("created_at")
+  updatedAt           DateTime     @updatedAt @map("updated_at")
+  deletedAt           DateTime?    @map("deleted_at")
 
-  creator  User            @relation(fields: [createdBy], references: [id])
-  audience SignalAudience[]
-  versions SignalVersion[]
-  reads    SignalRead[]
+  creator   User           @relation(fields: [createdBy], references: [id])
+  audience  SignalAudience[]
+  versions  SignalVersion[]
+  reads     SignalRead[]
   favorites SignalFavorite[]
   archives  SignalArchive[]
+  trades    Trade[]
 
   @@index([status])
   @@index([createdBy])
   @@index([publishedAt])
   @@index([scheduledAt])
   @@index([deletedAt])
-  @@index([status, deletedAt]) // Index composite très fréquent pour le filtrage par statut et soft delete
-  @@index([status, createdAt]) // Admin list: filter by status + sort by date
+  @@index([status, deletedAt])
+  @@index([status, createdAt])
   @@map("signals")
 }
 
@@ -345,6 +463,7 @@ model NotificationDelivery {
   externalId     String?            @map("external_id")
   errorMessage   String?            @map("error_message")
   sentAt         DateTime?          @map("sent_at")
+  lastEventAt    DateTime?          @map("last_event_at") // timestamp Resend du dernier event applique
   createdAt      DateTime           @default(now()) @map("created_at")
   updatedAt      DateTime           @updatedAt @map("updated_at")
 
@@ -352,7 +471,116 @@ model NotificationDelivery {
 
   @@index([notificationId])
   @@index([status])
+  @@index([externalId])
   @@map("notification_deliveries")
+}
+
+// ════════════════════════════════════════
+//  Email reputation monitoring (bounce/complaint trends)
+// ════════════════════════════════════════
+
+model EmailReputationHistory {
+  id            String   @id @default(uuid()) @db.Uuid
+  date          DateTime @db.Date
+  window        String   // "24h" | "7d" | "30d"
+  sent          Int
+  delivered     Int
+  opened        Int
+  clicked       Int
+  bounced       Int
+  complained    Int
+  failed        Int
+  bounceRate    Float    // bounced / sent * 100
+  complaintRate Float    @map("complaint_rate")
+  openRate      Float    @map("open_rate")
+  clickRate     Float    @map("click_rate")
+  alertLevel    String   @default("ok") @map("alert_level") // "ok" | "warn" | "danger"
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  @@unique([date, window])
+  @@index([window, date])
+  @@map("email_reputation_history")
+}
+
+// ════════════════════════════════════════
+//  Email stats aggregation (GDPR retention)
+// ════════════════════════════════════════
+
+model EmailStatsMonthly {
+  id          String   @id @default(uuid()) @db.Uuid
+  year        Int
+  month       Int      // 1-12
+  totalEvents Int      @default(0) @map("total_events")
+  delivered   Int      @default(0)
+  opened      Int      @default(0)
+  clicked     Int      @default(0)
+  bounced     Int      @default(0)
+  complained  Int      @default(0)
+  failed      Int      @default(0)
+  deliveryDelayed Int  @default(0) @map("delivery_delayed")
+  suppressed  Int      @default(0)
+  openRate    Float    @default(0) @map("open_rate")
+  clickRate   Float    @default(0) @map("click_rate")
+  bounceRate  Float    @default(0) @map("bounce_rate")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([year, month])
+  @@map("email_stats_monthly")
+}
+
+// ════════════════════════════════════════
+//  Webhook Dead Letter Queue (resilience)
+// ════════════════════════════════════════
+
+model WebhookDlq {
+  id           String   @id @default(uuid()) @db.Uuid
+  source       String   @default("resend") // future-proof: autres providers
+  eventType    String   @map("event_type")
+  svixId       String?  @map("svix_id")
+  externalId   String?  @map("external_id")
+  payload      Json     @db.JsonB
+  rawBody      String?  @map("raw_body") // payload brut (pour replay)
+  attempts     Int      @default(0)
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  lastError    String?  @map("last_error")
+  status       DlqStatus @default(PENDING)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+  replayedAt   DateTime? @map("replayed_at")
+  abandonedAt  DateTime? @map("abandoned_at")
+
+  @@index([status])
+  @@index([source, eventType])
+  @@index([createdAt])
+  @@index([svixId])
+  @@map("webhook_dlq")
+}
+
+enum DlqStatus {
+  PENDING
+  REPLAYED
+  ABANDONED
+}
+
+// ════════════════════════════════════════
+//  Resend webhook events (real-time email tracking)
+// ════════════════════════════════════════
+
+model EmailEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  deliveryId String?  @map("delivery_id") @db.Uuid
+  externalId String   @map("external_id") // Resend message id (matches NotificationDelivery.externalId)
+  svixId     String   @map("svix_id") // Svix event id (deduplication)
+  type       String // email.sent | email.delivered | email.opened | email.clicked | email.bounced | email.complained | email.failed | email.delivery_delayed | email.suppressed
+  createdAt  DateTime @default(now()) @map("created_at")
+  raw        Json?    @db.JsonB
+  clickLink  String?  @map("click_link") // URL cliquée (event email.clicked uniquement)
+
+  @@unique([svixId])
+  @@index([externalId])
+  @@index([deliveryId])
+  @@index([type])
+  @@map("email_events")
 }
 
 model PushSubscription {
@@ -381,6 +609,10 @@ model AuditLog {
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
   createdAt    DateTime @default(now()) @map("created_at")
+  searchText   String?  @map("search_text")
+  hash         String?  @unique
+  previousHash String?  @map("previous_hash")
+  severity     String   @default("info") @map("severity")
 
   user User? @relation(fields: [userId], references: [id])
 
@@ -454,6 +686,8 @@ enum NotificationChannel {
   IN_APP
   EMAIL
   TELEGRAM
+  PUSH
+  WHATSAPP
 }
 
 enum DeliveryStatus {
@@ -461,6 +695,14 @@ enum DeliveryStatus {
   SENT
   FAILED
   BOUNCED
+}
+
+enum EmailStatus {
+  OK
+  BOUNCED
+  COMPLAINED
+  SUPPRESSED
+  INVALID
 }
 
 model SignalVersion {
@@ -533,4 +775,148 @@ model SignalArchive {
   @@index([signalId])
   @@index([userId])
   @@map("signal_archives")
+}
+
+// ════════════════════════════════════════
+//  Trading Journal (PlanCanna-like)
+// ════════════════════════════════════════
+
+enum Direction {
+  BUY
+  SELL
+}
+
+enum TradeResult {
+  WIN
+  LOSS
+  BREAKEVEN
+}
+
+enum Mood {
+  CONFIDENT
+  NEUTRAL
+  ANXIOUS
+  FEARFUL
+  GREEDY
+  REVENGE
+}
+
+enum StreakType {
+  WIN_STREAK
+  LOSS_STREAK
+  DISCIPLINE_STREAK
+}
+
+enum TradeStrategy {
+  SCALPING
+  DAY_TRADING
+  SWING
+  POSITION
+}
+
+enum TradeSetup {
+  BREAKOUT
+  PULLBACK
+  REVERSAL
+  RANGE
+  TREND
+  OTHER
+}
+
+model Trade {
+  id          String      @id @default(uuid()) @db.Uuid
+  userId      String      @map("user_id") @db.Uuid
+  signalId    String?     @map("signal_id") @db.Uuid
+  sessionId   String?     @map("session_id") @db.Uuid
+
+  pair        String
+  direction   Direction
+  result      TradeResult
+  entryPrice  Decimal     @map("entry_price") @db.Decimal(12, 5)
+  exitPrice   Decimal     @map("exit_price") @db.Decimal(12, 5)
+  stopLoss    Decimal?    @map("stop_loss") @db.Decimal(12, 5)
+  takeProfit  Decimal?    @map("take_profit") @db.Decimal(12, 5)
+  lotSize     Decimal     @map("lot_size") @db.Decimal(10, 2) @default(0.01)
+  pnl         Decimal     @db.Decimal(12, 2) @default(0)
+  spread      Decimal?    @db.Decimal(12, 2) @default(0)
+  commission  Decimal?    @db.Decimal(12, 2) @default(0)
+  swap        Decimal?    @db.Decimal(12, 2) @default(0)
+
+  mood        Mood?
+  confidence  Int?
+  note        String?
+  tags        String[]    @default([])
+
+  strategy    TradeStrategy?
+  setupType   TradeSetup?
+
+  tradedAt    DateTime    @map("traded_at") @default(now())
+  createdAt   DateTime    @map("created_at") @default(now())
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+  deletedAt   DateTime?   @map("deleted_at")
+
+  user    User            @relation(fields: [userId], references: [id])
+  signal  Signal?         @relation(fields: [signalId], references: [id])
+  session JournalSession? @relation(fields: [sessionId], references: [id])
+
+  @@index([userId, deletedAt, tradedAt])
+  @@index([signalId])
+  @@index([sessionId])
+  @@map("trades")
+}
+
+model JournalSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  planId    String?   @map("plan_id") @db.Uuid
+
+  startedAt DateTime  @map("started_at") @default(now())
+  endedAt   DateTime? @map("ended_at")
+  isActive  Boolean   @default(true) @map("is_active")
+
+  createdAt DateTime  @map("created_at") @default(now())
+
+  user   User              @relation(fields: [userId], references: [id])
+  plan   SubscriptionPlan? @relation(fields: [planId], references: [id])
+  trades Trade[]
+
+  @@index([userId, isActive])
+  @@map("journal_sessions")
+}
+
+model DailyReflection {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  date       DateTime  @db.Date
+
+  rating     Int       // 1-10
+  mood       Mood?
+  tradeCount Int       @map("trade_count") @default(0)
+  wins       Int       @default(0)
+  losses     Int       @default(0)
+  totalPnl   Decimal?  @map("total_pnl") @db.Decimal(12, 2)
+  note       String?
+
+  createdAt  DateTime  @map("created_at") @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, date])
+  @@map("daily_reflections")
+}
+
+model Streak {
+  id         String     @id @default(uuid()) @db.Uuid
+  userId     String     @map("user_id") @db.Uuid
+  type       StreakType
+  count      Int        @default(0)
+  bestCount  Int        @map("best_count") @default(0)
+  lastDisciplineDay DateTime? @map("last_discipline_day")
+  startedAt  DateTime   @map("started_at") @default(now())
+  updatedAt  DateTime   @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@unique([userId, type])
+  @@map("streaks")
 }

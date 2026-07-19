@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
-import { getServerSession } from "@nba/lib/get-session"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const pushSubscribeRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
 interface SubscribeBody {
   endpoint: string
@@ -11,10 +13,10 @@ interface SubscribeBody {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
+
+    const rateLimitRes = await pushSubscribeRateLimit(req, `push-subscribe:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body: SubscribeBody = await req.json()
     if (!body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
@@ -71,10 +73,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const body = await req.json()
     if (!body.endpoint) {

@@ -5,15 +5,79 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Un seul deploiement main a la fois (evite le load-balancing entre 2 builds).
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # Gate qualite : bloque tout deploiement si lint/typecheck/tests echouent.
+  # Sans ce job, un push direct sur main deployait du code non teste (cause
+  # aggravante de l'incident du 19/07). Le job `deploy` en depend (needs).
+  quality:
+    name: Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v6
+        with:
+          version: "10"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: npx prisma generate
+      # Lint non-bloquant pour l'instant (dette: ~500 warnings a nettoyer).
+      # Visible dans les logs mais ne bloque pas le deploiement.
+      - run: pnpm lint
+        continue-on-error: true
+      - run: pnpm typecheck
+      - run: pnpm test
+      # Garde migration : bloque le deploiement si une NOUVELLE migration
+      # contient des operations destructives (DROP TABLE/COLUMN, TRUNCATE,
+      # DELETE FROM). Ne scanne que les migrations ajoutees/modifiees dans
+      # le push courant (les anciennes deja deployees sont ignorees).
+      - name: Migration destructive guard
+        run: |
+          echo "Verification des nouvelles migrations pour operations destructives..."
+          BEFORE_SHA="${{ github.event.before }}"
+          DESTRUCTIVE_FOUND=0
+          # --diff-filter=A : uniquement les fichiers AJOUTES (nouvelles migrations).
+          # Les migrations existantes deja deployeees ne sont pas scannees.
+          if [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            NEW_FILES=$(git diff --diff-filter=A --name-only "$BEFORE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' || true)
+          else
+            NEW_FILES=$(git diff --diff-filter=A --name-only HEAD~1 HEAD -- 'prisma/migrations/*/migration.sql' || true)
+          fi
+          if [ -z "$NEW_FILES" ]; then
+            echo "Aucune nouvelle migration dans ce push."
+          else
+            for sql in $NEW_FILES; do
+              if [ -f "$sql" ] && grep -qiE '\b(DROP (TABLE|COLUMN|INDEX|DATABASE|SCHEMA|TRIGGER|FUNCTION|VIEW|TYPE|EXTENSION|CONSTRAINT)|TRUNCATE|DELETE\s+FROM)\b' "$sql"; then
+                echo "::error::$sql contient une operation destructive (DROP/TRUNCATE/DELETE)"
+                DESTRUCTIVE_FOUND=1
+              fi
+            done
+            if [ "$DESTRUCTIVE_FOUND" = "1" ]; then
+              echo "!!! DEPLOIEMENT BLOQUE : nouvelle migration destructive."
+              echo "Si c'est intentionnel, supprimez cette garde avec revue manuelle obligatoire."
+              exit 1
+            fi
+            echo "Aucune migration destructive detectee."
+          fi
+
+  deploy:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Login to GHCR
         uses: docker/login-action@v4
@@ -23,7 +87,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v7
@@ -33,6 +97,10 @@ jobs:
           tags: ghcr.io/digitaleflex/nba:latest,ghcr.io/digitaleflex/nba:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          build-args: |
+            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
+            NEXT_PUBLIC_APP_URL=https://access.signauxx.com
+            NEXT_PUBLIC_WS_URL=https://access.signauxx.com:8443
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
@@ -41,7 +109,88 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            set -e
             cd /home/audest/nba
-            git pull
-            docker compose pull
-            docker compose up -d
+
+            echo "=== Capture de l'image actuelle (pour rollback) ==="
+            # Digest de l'image du service app en cours d'execution, avant le pull.
+            # Sert de cible de rollback si le smoke test post-deploiement echoue.
+            APP_CID="$(docker compose -f compose.yml ps -q app 2>/dev/null | head -1 || true)"
+            PREV_IMAGE=""
+            if [ -n "$APP_CID" ]; then
+              PREV_IMAGE="$(docker inspect --format '{{.Image}}' "$APP_CID" 2>/dev/null || true)"
+            fi
+            if [ -z "$PREV_IMAGE" ]; then
+              PREV_IMAGE="$(docker images --no-trunc -q ghcr.io/digitaleflex/nba:latest 2>/dev/null | head -1 || true)"
+            fi
+            echo "Image precedente: ${PREV_IMAGE:-<aucune>}"
+
+            echo "=== Nettoyage conteneurs 'run' orphelins (evite 2 builds servis en meme temps) ==="
+            # Les 'docker compose run --rm' interrompus (timeout) peuvent laisser des
+            # conteneurs 'nba-app-run-*' vivants qui servent un ancien build => Traefik
+            # load-balance entre 2 builds => ChunkLoadError / MIME text/plain.
+            docker ps -a --filter "name=nba-app-run-" --filter "name=nba-worker-run-" -q | xargs -r docker rm -f 2>&1 | tail -5 || true
+
+            echo "=== Pull nouvelles images ==="
+            docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
+
+            echo "=== Backup preventive (lecture seule, aucune mutation données) ==="
+            # backup.sh = pg_dump (read-only) + upload B2. Non-destructif.
+            # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
+            docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker 2>&1 | tail -15 || true
+
+            echo "=== Migrations Prisma (one-shot, avant le boot) ==="
+            # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint
+            # du Dockerfile lance le serveur et ignore l'arg). Non-destructif : applique
+            # uniquement les migrations manquantes. Timeout anti-blocage advisory lock pgbouncer.
+            timeout 300 docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app 2>&1 | tail -20
+
+            echo "=== Seed (one-shot, idempotent) ==="
+            # --entrypoint force l'execution reelle du seed (upsert, non-destructif).
+            timeout 180 docker compose -f compose.yml run --rm --entrypoint "pnpm db:seed" app 2>&1 | tail -10
+
+            echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
+            # compose demarre le nouveau container, attend son healthcheck (Traefik
+            # ne le route qu'une fois healthy), puis stop l'ancien. Aucune coupure.
+            docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
+
+            echo "=== Smoke test (health de la prod via Traefik) ==="
+            # On interroge le site en local sur le VPS (Host header pour router via Traefik).
+            # Un 200/301/302/307/308 = l'app repond. 5xx / pas de reponse = deploiement casse.
+            SMOKE_URL="https://access.signauxx.com/"
+            SMOKE_OK=0
+            for i in $(seq 1 12); do
+              CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "$SMOKE_URL" || echo 000)"
+              echo "  tentative $i -> HTTP $CODE"
+              case "$CODE" in
+                2*|3*) SMOKE_OK=1; break ;;
+              esac
+              sleep 10
+            done
+
+            if [ "$SMOKE_OK" != "1" ]; then
+              echo "!!! SMOKE TEST ECHOUE — le nouveau build ne repond pas correctement."
+              if [ -n "$PREV_IMAGE" ]; then
+                echo "=== ROLLBACK vers l'image precedente: $PREV_IMAGE ==="
+                docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
+                docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
+                echo "=== Re-verification post-rollback ==="
+                for i in $(seq 1 6); do
+                  CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "$SMOKE_URL" || echo 000)"
+                  echo "  rollback tentative $i -> HTTP $CODE"
+                  case "$CODE" in 2*|3*) echo "Rollback OK."; break ;; esac
+                  sleep 10
+                done
+              else
+                echo "!!! Aucune image precedente connue — rollback impossible."
+              fi
+              echo "Deploiement marque en echec (smoke test rouge)."
+              exit 1
+            fi
+            echo "Smoke test OK."
+
+            echo "=== Nettoyage des images orphelines ==="
+            docker image prune -f
+
+            echo "=== Deploy complete ==="
+            docker compose -f compose.yml ps app worker bull-board

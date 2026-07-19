@@ -2,9 +2,11 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { authClient } from "@nba/lib/auth-client"
 import { Button, Input, Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Mail, ArrowLeft, CheckCircle } from "lucide-react"
+import { isValidEmail } from "../register/components/form-utils"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -15,6 +17,10 @@ export default function ForgotPasswordPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
+    if (!isValidEmail(email)) {
+      setError("Veuillez saisir une adresse email valide.")
+      return
+    }
     setLoading(true)
 
     const { error: err } = await authClient.requestPasswordReset({
@@ -23,12 +29,15 @@ export default function ForgotPasswordPage() {
     })
 
     if (err) {
-      setError(err.message ?? err.statusText)
+      const message = err.message ?? err.statusText
+      setError(message)
+      toast.error(message)
       setLoading(false)
       return
     }
 
     setSent(true)
+    toast.success("Lien de réinitialisation envoyé.")
     setLoading(false)
   }
 

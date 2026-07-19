@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, Shield } from "lucide-react"
+import { AutoRetryCountdown } from "@nba/components/auto-retry-countdown"
 
 export default function AdminError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error) }, [error])
@@ -16,24 +17,27 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Erreur administrative</h1>
           <p className="text-sm text-muted-foreground">
-            Une erreur est survenue sur l&rsquo;interface d&rsquo;administration.
+            Une erreur est survenue sur l&rsquo;interface d&rsquo;administration. Pas d&rsquo;inquiétude, rien n&rsquo;a été perdu. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
         </div>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
-          >
-            <RefreshCw className="size-4" />
-            Réessayer
-          </button>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <Shield className="size-4" />
-            Administration
-          </Link>
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={reset}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="size-4" />
+              Réessayer
+            </button>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Shield className="size-4" />
+              Administration
+            </Link>
+          </div>
+          <AutoRetryCountdown seconds={10} onRetry={reset} label="Nouvelle tentative" />
         </div>
       </div>
     </div>

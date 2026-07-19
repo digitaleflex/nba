@@ -1,14 +1,22 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
+import { logAuditEvent } from "@nba/lib/services/audit"
+import { softDeleteUser } from "@nba/lib/services/user-deletion"
+import { invalidatePrefix } from "@nba/lib/cache"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
+const deleteAccountRateLimit = rateLimitMiddleware({ window: 3600, max: 2 })
 
 export async function DELETE(request: Request) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
+    const requestClone = request.clone()
+    const session = await requireActiveUser()
+
+    const rateLimitRes = await deleteAccountRateLimit(requestClone, `delete-account:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
     const { password } = body
@@ -17,47 +25,72 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Mot de passe requis pour supprimer le compte" }, { status: 400 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { name: true, email: true },
-    }) as { name: string; email: string } | null
+    const [user, account] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: { name: true, email: true },
+      }),
+      prisma.account.findFirst({
+        where: { userId: session.user.id, providerId: "credential" },
+        select: { password: true },
+      }),
+    ])
 
     if (!user) {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
     }
 
-    // Verify password using Better Auth's signIn
-    const { auth } = await import("@nba/lib/auth")
+    if (!account?.password) {
+      return NextResponse.json({ error: "Aucun mot de passe configuré" }, { status: 400 })
+    }
 
-    await auth.api.signInEmail({
-      body: {
-        email: user.email,
-        password: password,
-      },
-    })
+    // Verify password using Better Auth's scrypt hasher (avoids signInEmail which creates a session)
+    const { verifyPassword } = await import("@better-auth/utils/password")
+    const valid = await verifyPassword(account.password, password)
+    if (!valid) {
+      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+    }
 
-    // Envoyer un email de confirmation avant suppression
-    await sendAccountDeletionEmail(user).catch((err) =>
+    // Soft delete: anonymise l'email + désactive le compte + supprime les sessions
+    await softDeleteUser(prisma, session.user.id)
+
+    // Audit log + cache invalidation (non-blocking)
+    Promise.all([
+      logAuditEvent({
+        userId: session.user.id,
+        action: "DELETE",
+        resourceType: "user",
+        resourceId: session.user.id,
+        details: { selfService: true, userEmail: user.email, softDelete: true },
+      }),
+      invalidatePrefix("members:"),
+      invalidatePrefix("ops"),
+    ]).catch(() => {})
+
+    // Send confirmation email (non-blocking)
+    sendAccountDeletionEmail(user).catch((err) =>
       console.error("[delete-account] email failed:", err)
     )
 
-    // Soft delete - set deletedAt
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { deletedAt: new Date() },
-    })
-
-    // Invalidate all sessions
-    await prisma.session.deleteMany({
-      where: { userId: session.user.id },
-    })
-
-    return NextResponse.json({ success: true })
-  } catch (error: any) {
-    const message = error.message || "Erreur lors de la suppression du compte"
-    if (message.includes("invalid") || message.includes("password") || message.includes("Invalid")) {
-      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+    // Clear session cookies
+    const response = NextResponse.json({ success: true })
+    const isSecure = process.env.NODE_ENV === "production"
+    for (const cookieName of SESSION_COOKIE_NAMES) {
+      response.cookies.set(cookieName, "", {
+        maxAge: 0,
+        path: "/",
+        httpOnly: true,
+        secure: cookieName.startsWith("__Secure-") ? true : isSecure,
+        sameSite: "lax",
+      })
     }
+
+    return response
+  } catch (error: any) {
+    if (error instanceof Error && error.name === "AuthError") {
+      return handleAuthError(error)
+    }
+    const message = error.message || "Erreur lors de la suppression du compte"
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

@@ -1,10 +1,11 @@
 import { redirect } from "next/navigation"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { Sidebar } from "@nba/app/components/sidebar"
-import { MobileBottomNav } from "@nba/app/components/mobile-bottom-nav"
+import { AppShell } from "@nba/app/components/app-shell"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
+import { MobilePageTitle } from "@nba/app/components/mobile-page-title"
 import { AdminHeader } from "./admin/components/admin-header"
+import { AdminInbox } from "./admin/components/admin-inbox"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -24,37 +25,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     role: userDb.role.name,
   }
 
-  return (
-    <div className="flex min-h-dvh flex-col md:flex-row noise">
-      {/* Desktop Sidebar */}
-      <Sidebar isAdmin={true} user={user} />
-
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
-        {/* Desktop Header */}
-        <AdminHeader user={user} />
-
-        {/* Mobile Header */}
-        <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <MobileMenu isAdmin={true} user={user} />
-            <div className="flex items-center gap-2 font-bold text-sm">
-              <span className="text-primary font-extrabold">Never</span>BrokeAgain
-              <span className="rounded bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary uppercase">
-                Admin
-              </span>
-            </div>
-          </div>
-          <span className="text-xs text-muted-foreground font-medium">{user.name}</span>
-        </header>
-
-        <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
-          {children}
-        </main>
+  const mobileHeader = (
+    <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
+      <div className="flex items-center gap-3 min-w-0">
+        <MobileMenu space="admin" user={user} />
+        <MobilePageTitle />
       </div>
+      <div className="flex items-center gap-1 ml-2">
+        <AdminInbox />
+        <span className="text-xs text-muted-foreground font-medium truncate">{user.name}</span>
+      </div>
+    </header>
+  )
 
-      {/* Mobile Bottom Navigation Bar */}
-      <MobileBottomNav isAdmin={true} user={user} />
-    </div>
+  return (
+    <AppShell space="admin" user={user} desktopHeader={<AdminHeader user={user} />} mobileHeader={mobileHeader}>
+      {children}
+    </AppShell>
   )
 }

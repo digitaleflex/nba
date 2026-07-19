@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
-import { handleAuthError } from "@nba/lib/auth-utils"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const formData = await req.formData()
     const file = formData.get("avatar") as File | null
@@ -59,10 +55,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE() {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
-    }
+    const session = await requireActiveUser()
 
     const user = await prisma.user.findUnique({
       where: { id: session.user.id },

@@ -2,78 +2,44 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname, useRouter, useSearchParams } from "next/navigation"
-import { authClient } from "@nba/lib/auth-client"
+import { usePathname, useSearchParams } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
+import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { useLogout } from "@nba/hooks/use-logout"
+import {
+  getMenuNavItems,
+  getSidebarSections,
+  isNavItemActive,
+  type NavSpace,
+  type UserRole,
+} from "@nba/config/navigation"
 import {
   LayoutDashboard,
-  TrendingUp,
-  Shield,
-  CreditCard,
   LogOut,
   Menu,
+  Shield,
   X,
-  Users,
-  ListTodo,
-  Radio,
-  FileCheck,
-  Link2,
-  Bell,
-  Activity,
-  BarChart2,
-  Settings,
 } from "lucide-react"
 
 interface MobileMenuProps {
-  isAdmin?: boolean
+  space: NavSpace
   user: {
     id: string
     name: string
     email: string
     image?: string | null
-    role?: string
+    role?: UserRole
   }
 }
 
-export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
+export function MobileMenu({ space, user }: MobileMenuProps) {
   const [open, setOpen] = useState(false)
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const router = useRouter()
-  const activeTab = searchParams.get("tab") || "dashboard"
+  const { logout } = useLogout()
 
-  async function handleLogout() {
-    if (!confirm("Voulez-vous vraiment vous déconnecter ?")) return
-    await authClient.signOut()
-    router.push("/login")
-    router.refresh()
-  }
-
-  const userLinks = [
-    { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: pathname === "/dashboard" },
-    { href: "/dashboard/signals", label: "Signaux", icon: TrendingUp, active: pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals") },
-    { href: "/dashboard/verification", label: "Vérification", icon: Shield, active: pathname === "/dashboard/verification" },
-    { href: "/dashboard/subscription", label: "Abonnement", icon: CreditCard, active: pathname === "/dashboard/subscription" },
-    { href: "/dashboard/notifications", label: "Notifications", icon: Bell, active: pathname.startsWith("/dashboard/notifications") },
-  ]
-
-  const adminLinks = [
-    { href: "/admin?tab=dashboard", label: "Tableau de bord", icon: LayoutDashboard, active: pathname === "/admin" && activeTab === "dashboard" },
-    { href: "/admin?tab=users", label: "Utilisateurs", icon: Users, active: pathname === "/admin" && activeTab === "users" },
-    { href: "/admin?tab=membres", label: "Membres", icon: Users, active: pathname === "/admin" && activeTab === "membres" },
-    { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, active: pathname === "/admin" && activeTab === "requests" },
-    { href: "/admin?tab=signals", label: "Signaux", icon: Radio, active: pathname === "/admin" && activeTab === "signals" },
-    { href: "/admin?tab=kyc", label: "Dossiers KYC", icon: FileCheck, active: pathname === "/admin" && activeTab === "kyc" },
-    { href: "/admin?tab=broker", label: "Vérification Broker", icon: Link2, active: pathname === "/admin" && activeTab === "broker" },
-    { href: "/admin?tab=notifications", label: "Notifications", icon: Bell, active: pathname === "/admin" && activeTab === "notifications" },
-    { href: "/admin?tab=audit", label: "Journal d'audit", icon: Activity, active: pathname === "/admin" && activeTab === "audit" },
-    { href: "/admin?tab=security", label: "Centre de sécurité", icon: Shield, active: pathname === "/admin" && activeTab === "security" },
-    { href: "/admin?tab=stats", label: "Statistiques", icon: BarChart2, active: pathname === "/admin" && activeTab === "stats" },
-    { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, active: pathname === "/admin" && activeTab === "settings" },
-  ]
-
-  const links = isAdmin ? adminLinks : userLinks
-  const showAdminSwitch = !isAdmin && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
+  const links = getMenuNavItems(space, user.role)
+  const showAdminSwitch = space === "dashboard" && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
 
   return (
     <>
@@ -107,25 +73,62 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
           </DialogHeader>
 
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-            {links.map((link) => {
-              const Icon = link.icon
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
-                    link.active
-                      ? "bg-primary text-primary-foreground"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                  )}
-                >
-                  <Icon className="size-5 shrink-0" />
-                  <span>{link.label}</span>
-                </Link>
-              )
-            })}
+            {space === "admin" ? (
+              (() => {
+                const sections = getSidebarSections("admin", user.role)
+                return sections.flatMap((section, si) => {
+                  const sectionLinks = section.items
+                  if (sectionLinks.length === 0) return []
+                  return [
+                    si > 0 ? <div key={`sep-${section.id}`} className="h-3" /> : null,
+                    <p key={`h-${section.id}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      {section.label}
+                    </p>,
+                    ...sectionLinks.map((link) => {
+                      const Icon = link.icon
+                      const isActive = isNavItemActive(link, pathname, searchParams)
+                      return (
+                        <Link
+                          key={link.id}
+                          href={link.href}
+                          onClick={() => setOpen(false)}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
+                            isActive
+                              ? "bg-primary text-primary-foreground"
+                              : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                          )}
+                        >
+                          <Icon className="size-5 shrink-0" />
+                          <span>{link.label}</span>
+                        </Link>
+                      )
+                    }),
+                  ]
+                })
+              })()
+            ) : (
+              links.map((link) => {
+                const Icon = link.icon
+                const isActive = isNavItemActive(link, pathname, searchParams)
+                return (
+                  <Link
+                    key={link.id}
+                    href={link.href}
+                    onClick={() => setOpen(false)}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                  >
+                    <Icon className="size-5 shrink-0" />
+                    <span>{link.label}</span>
+                  </Link>
+                )
+              })
+            )}
 
             {showAdminSwitch && (
               <Link
@@ -138,7 +141,7 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
               </Link>
             )}
 
-            {isAdmin && (
+            {space === "admin" && (
               <Link
                 href="/dashboard"
                 onClick={() => setOpen(false)}
@@ -159,10 +162,11 @@ export function MobileMenu({ isAdmin = false, user }: MobileMenuProps) {
                 <p className="text-xs font-bold truncate text-foreground">{user.name}</p>
                 <p className="text-[10px] truncate text-muted-foreground">{user.email}</p>
               </div>
+              <PushNotificationToggle compact />
             </div>
             <Button
               variant="ghost"
-              onClick={handleLogout}
+              onClick={logout}
               className="w-full justify-start gap-3 px-3 py-3 text-sm font-medium text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-xl min-h-[44px]"
             >
               <LogOut className="size-4" />

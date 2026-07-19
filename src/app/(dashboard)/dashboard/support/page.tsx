@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Card, CardContent, Button, Input } from "@nba/design-system"
-import { MessageCircle, Send, Check, Loader2, ExternalLink } from "lucide-react"
+import { Send, Check, Loader2 } from "lucide-react"
 
 export default function SupportPage() {
   const [subject, setSubject] = useState("")
@@ -26,7 +26,7 @@ export default function SupportPage() {
       setSubject("")
       setMessage("")
     } catch {
-      setError("Erreur lors de l'envoi. Réessaye ou contacte-nous sur Telegram.")
+      setError("Erreur lors de l'envoi. Réessaye.")
     } finally {
       setSending(false)
     }
@@ -37,7 +37,7 @@ export default function SupportPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Support</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Besoin d&apos;aide ? Envoie-nous un message ou contacte-nous sur Telegram.
+          Besoin d&apos;aide ? Envoie-nous un message.
         </p>
       </div>
 
@@ -97,30 +97,6 @@ export default function SupportPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-border">
-        <CardContent className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <MessageCircle className="size-5 text-primary" />
-            </div>
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">Contact direct Telegram</p>
-              <p className="text-sm text-muted-foreground">
-                Pour une réponse plus rapide, rejoins notre groupe Telegram.
-              </p>
-              <a
-                href="https://t.me/nba_support"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline mt-2"
-              >
-                <ExternalLink className="size-3.5" />
-                @nba_support
-              </a>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }

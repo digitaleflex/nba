@@ -22,6 +22,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
+import { NOTIFICATION_SOUNDS } from "@nba/lib/notification-sounds"
 
 interface Notification {
   id: string
@@ -47,26 +48,6 @@ function getThumbnail(n: Notification): string | null {
   return null
 }
 
-const SOUNDS = [
-  { id: "default", label: "Classique", desc: "Double ding clair" },
-  { id: "chime", label: "Douce", desc: "Carillon 3 notes" },
-  { id: "pop", label: "Pop", desc: "Bulle courte" },
-  { id: "signal", label: "Signal", desc: "Balayage ascendant" },
-  { id: "urgent", label: "Urgente", desc: "3 bips descendants" },
-  { id: "light-hearted", label: "Léger", desc: "Mélodie joyeuse" },
-  { id: "joyous", label: "Joyeuse", desc: "Chime mélodique" },
-  { id: "opening", label: "Éclat", desc: "Ton cristallin" },
-  { id: "pristine", label: "Pureté", desc: "Son immaculé" },
-  { id: "slick", label: "Glissé", desc: "Court et discret" },
-  { id: "sly", label: "Discret", desc: "Subtil et doux" },
-  { id: "come-here", label: "Appel", desc: "Ton d'attention" },
-  { id: "playful", label: "Ludique", desc: "Amusant et frais" },
-  { id: "happy-to-help", label: "Succès", desc: "Confirmation positive" },
-  { id: "coins", label: "Pièces", desc: "Son de caisse" },
-  { id: "to-the-point", label: "Précis", desc: "Déterminé" },
-  { id: "not-good", label: "Erreur", desc: "Ton négatif" },
-] as const
-
 const VOLUME_KEY = "nba-notification-volume"
 
 function formatTimeAgo(dateStr: string): string {
@@ -81,7 +62,7 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
-  const { play: playSound, changeVolume: changeVolumeNofit } = useNotificationSound()
+  const { play: playSound, changeVolume: changeVolumeNofit, changeSound } = useNotificationSound()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -95,6 +76,10 @@ export default function NotificationsPage() {
   const [volume, setVolume] = useState(0.5)
   const [soundLoaded, setSoundLoaded] = useState(false)
   const [soundSaved, setSoundSaved] = useState(false)
+  const [soundError, setSoundError] = useState(false)
+  const [prefs, setPrefs] = useState<Record<string, boolean>>({})
+  const [prefsLoaded, setPrefsLoaded] = useState(false)
+  const [prefsSaving, setPrefsSaving] = useState(false)
 
   const [permStatus, setPermStatus] = useState<NotificationPermission | "unsupported" | "unknown">("unknown")
   const [requestingPerm, setRequestingPerm] = useState(false)
@@ -102,12 +87,14 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     fetch("/api/dashboard/notification-preferences")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Erreur"); return r.json() })
       .then((data) => {
         setSelectedSound(data.sound)
+        setPrefs(data.prefs || {})
         setSoundLoaded(true)
+        setPrefsLoaded(true)
       })
-      .catch(() => setSoundLoaded(true))
+      .catch(() => { setSoundLoaded(true); setPrefsLoaded(true) })
 
     const savedVolume = localStorage.getItem(VOLUME_KEY)
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -127,15 +114,44 @@ export default function NotificationsPage() {
   }
 
   async function saveSound() {
+    setSoundError(false)
     try {
-      await fetch("/api/dashboard/notification-preferences", {
+      const res = await fetch("/api/dashboard/notification-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ sound: selectedSound }),
       })
+      if (!res.ok) {
+        setSoundError(true)
+        return
+      }
       setSoundSaved(true)
+      // Applique le son en direct (sinon le hook reste sur l'ancienne valeur jusqu'au reload)
+      changeSound(selectedSound)
       setTimeout(() => setSoundSaved(false), 2000)
-    } catch {}
+    } catch {
+      setSoundError(true)
+    }
+  }
+
+  function togglePref(key: string) {
+    setPrefs((prev) => ({ ...prev, [key]: !(prev[key] !== false) }))
+  }
+
+  async function savePrefs() {
+    setPrefsSaving(true)
+    try {
+      const res = await fetch("/api/dashboard/notification-preferences", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prefs }),
+      })
+      if (!res.ok) throw new Error("failed")
+    } catch {
+      // silent
+    } finally {
+      setPrefsSaving(false)
+    }
   }
 
   async function requestPerm() {
@@ -163,9 +179,6 @@ export default function NotificationsPage() {
             tag: "test-notification",
           })
           setTimeout(() => n.close(), 6000)
-        } else if (typeof window !== "undefined") {
-          // Fallback : alerte navigateur simple
-          alert("Test : votre navigateur ne supporte pas les notifications système.\n\nSon joué : " + selectedSound)
         }
       } catch {
         // silencieux
@@ -175,20 +188,25 @@ export default function NotificationsPage() {
     }, 100)
   }
 
+  function testSoundOnly() {
+    playSound(selectedSound)
+  }
+
   const fetchNotifications = useCallback(async (loadMore = false) => {
     try {
       const nextPage = loadMore ? pageRef.current + 1 : 1
       const res = await fetch(`/api/dashboard/notifications?page=${nextPage}&limit=10`)
       if (!res.ok) throw new Error("Erreur")
       const data = await res.json()
+      const notifications = Array.isArray(data.notifications) ? data.notifications : []
       if (loadMore) {
-        setNotifications((prev) => [...prev, ...data.notifications])
+        setNotifications((prev) => [...prev, ...notifications])
       } else {
-        setNotifications(data.notifications)
+        setNotifications(notifications)
       }
       pageRef.current = nextPage
-      setHasMore(nextPage < data.pagination.totalPages)
-      setUnreadCount(data.unreadCount)
+      setHasMore(nextPage < (data.pagination?.totalPages ?? 0))
+      setUnreadCount(data.unreadCount ?? 0)
     } catch {
       setError("Erreur de chargement")
     } finally {
@@ -197,17 +215,27 @@ export default function NotificationsPage() {
     }
   }, [])
 
+  const refreshNotifications = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/dashboard/notifications?page=${pageRef.current}&limit=10`)
+      if (!res.ok) return
+      const data = await res.json()
+      setNotifications(Array.isArray(data.notifications) ? data.notifications : [])
+      setHasMore(pageRef.current < (data.pagination?.totalPages ?? 0))
+      setUnreadCount(data.unreadCount ?? 0)
+    } catch { /* silent refresh */ }
+  }, [])
+
   async function loadMore() {
     setLoadingMore(true)
     await fetchNotifications(true)
   }
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchNotifications()
-    const interval = setInterval(fetchNotifications, 30000)
+    const interval = setInterval(refreshNotifications, 30000)
     return () => clearInterval(interval)
-  }, [fetchNotifications])
+  }, [fetchNotifications, refreshNotifications])
 
   async function markAsRead(id: string) {
     try {
@@ -220,8 +248,15 @@ export default function NotificationsPage() {
   }
 
   async function markAllAsRead() {
-    const unread = notifications.filter((n) => !n.readAt)
-    await Promise.all(unread.map((n) => markAsRead(n.id)))
+    try {
+      const res = await fetch("/api/dashboard/notifications/read-all", { method: "PUT" })
+      if (!res.ok) return
+      const { count } = await res.json()
+      setNotifications((prev) =>
+        prev.map((n) => (n.readAt ? n : { ...n, readAt: new Date().toISOString() }))
+      )
+      setUnreadCount((prev) => Math.max(0, prev - (count ?? prev)))
+    } catch {}
   }
 
   async function deleteNotification(id: string) {
@@ -357,7 +392,7 @@ export default function NotificationsPage() {
                       {testRunning ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <TestTube2 className="size-3.5 mr-1.5" />}
                       Tester une notification
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={testNotification} disabled={testRunning}>
+                    <Button size="sm" variant="ghost" onClick={testSoundOnly}>
                       <Volume2 className="size-3.5 mr-1.5" />
                       Tester le son
                     </Button>
@@ -394,6 +429,12 @@ export default function NotificationsPage() {
               </Button>
             </div>
 
+            {soundError && (
+              <p className="text-xs text-destructive mt-2">
+                Échec de l'enregistrement. Réessayez.
+              </p>
+            )}
+
             {/* Volume slider */}
             <div className="mb-5 flex items-center gap-3">
               <button
@@ -419,7 +460,7 @@ export default function NotificationsPage() {
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {SOUNDS.map((s) => (
+              {NOTIFICATION_SOUNDS.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => {
@@ -438,6 +479,63 @@ export default function NotificationsPage() {
                     <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
                   </div>
                 </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Préférences par type ── */}
+      {prefsLoaded && (
+        <Card className="border-border">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <BellRing className="size-4 text-muted-foreground" />
+                <h2 className="text-sm font-semibold">Types de notifications</h2>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={savePrefs}
+                disabled={prefsSaving}
+              >
+                <Save className="size-3.5 mr-1.5" />
+                {prefsSaving ? "..." : "Enregistrer"}
+              </Button>
+            </div>
+            <div className="space-y-0.5">
+              {[
+                { key: "signal", label: "Signaux", desc: "Nouveaux signaux de trading publiés" },
+                { key: "kyc", label: "KYC", desc: "Validation de vos documents d'identité" },
+                { key: "broker", label: "Broker", desc: "Validation de votre compte broker" },
+                { key: "access", label: "Abonnement", desc: "Changements de votre abonnement" },
+                { key: "security", label: "Sécurité", desc: "Connexions, changements de mot de passe" },
+                { key: "system", label: "Annonces", desc: "Messages de l'équipe NeverBrokeAgain" },
+                { key: "message", label: "Messages", desc: "Nouveaux messages de la communauté" },
+              ].map(({ key, label, desc }) => (
+                <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
+                  <div className="min-w-0 mr-3">
+                    <p className="text-xs font-medium text-foreground">{label}</p>
+                    <p className="text-[10px] text-muted-foreground">{desc}</p>
+                  </div>
+                  <div
+                    role="switch"
+                    aria-checked={prefs[key] !== false}
+                    tabIndex={0}
+                    onClick={() => togglePref(key)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePref(key) } }}
+                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-primary ${
+                      prefs[key] !== false ? "bg-primary" : "bg-muted"
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none inline-block size-4 rounded-full bg-white shadow-lg transform ring-0 transition-transform duration-200 ${
+                        prefs[key] !== false ? "translate-x-[18px]" : "translate-x-0"
+                      }`}
+                    />
+                  </div>
+                </label>
               ))}
             </div>
           </CardContent>

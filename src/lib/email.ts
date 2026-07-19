@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { prisma } from "./db"
 
 function getResend(): Resend {
   const key = process.env.RESEND_API_KEY
@@ -10,16 +11,17 @@ function getResend(): Resend {
 
 const FROM = process.env.RESEND_FROM_EMAIL ?? "noreply@signauxx.com"
 const APP_NAME = "NeverBrokeAgain"
-const APP_DOMAIN = process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"
+const APP_DOMAIN = (process.env.NEXT_PUBLIC_APP_URL || "https://signauxx.com").replace(/\/+$/, "")
 
 // ── Logo ──
 
 const LOGO_IMG = `<img
-  src="${process.env.NEXT_PUBLIC_APP_URL ?? "https://signauxx.com"}/logo.png"
+  src="${APP_DOMAIN}/logo.png"
   alt="NeverBrokeAgain"
   width="120"
   height="120"
-  style="display:block;margin:0 auto;border-radius:12px"
+  class="logo-img"
+  style="display:block;margin:0 auto;border-radius:12px;max-width:100%;height:auto"
 />`
 
 // ── Helpers ──
@@ -36,16 +38,32 @@ function layout(body: string): string {
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <meta name="format-detection" content="telephone=no,date=no,address=no,email=no,url=no"/>
+  <!--[if mso]>
+  <noscript>
+    <xml>
+      <o:OfficeDocumentSettings>
+        <o:PixelsPerInch>96</o:PixelsPerInch>
+      </o:OfficeDocumentSettings>
+    </xml>
+  </noscript>
+  <![endif]-->
   <style>
     @media only screen and (max-width:600px){
-      .container{width:100% !important;padding:24px 16px !important}
-      .btn{width:100% !important;display:block !important;text-align:center !important}
+      body,table,td,p,a,li,blockquote{-webkit-text-size-adjust:100% !important;-ms-text-size-adjust:100% !important}
+      .container{width:100% !important;padding:0 12px !important}
+      .card{padding:24px 20px !important;border-radius:12px !important}
+      .header-pad{padding:24px 12px 16px !important}
+      .footer-text{font-size:11px !important}
+      .logo-img{width:80px !important;height:80px !important}
+      .brand-name{font-size:16px !important}
+      .brand-tagline{font-size:10px !important}
     }
   </style>
 </head>
-<body style="margin:0;padding:0;background-color:#FAFBFC;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#FAFBFC;min-height:100vh">
-    <tr><td align="center" style="padding:40px 16px">
+<body style="margin:0;padding:0;background-color:#F2F4F6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#F2F4F6">
+    <tr><td align="center" class="header-pad" style="padding:32px 16px">
       <table class="container" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%">
         <!-- Header -->
         <tr>
@@ -54,25 +72,25 @@ function layout(body: string): string {
           </td>
         </tr>
         <tr>
-          <td style="padding-bottom:24px;text-align:center">
-            <p style="margin:0;font-size:18px;font-weight:800;color:#1E2024;letter-spacing:-0.5px">
+          <td style="padding-bottom:20px;text-align:center">
+            <p class="brand-name" style="margin:0;font-size:18px;font-weight:800;color:#1A1D23;letter-spacing:-0.3px">
               <span style="color:#283B5D">Never</span>BrokeAgain
             </p>
-            <p style="margin:4px 0 0;font-size:11px;color:#6A758B;letter-spacing:1px;text-transform:uppercase">Signaux traders premium</p>
+            <p class="brand-tagline" style="margin:4px 0 0;font-size:11px;color:#6B7280;letter-spacing:1px;text-transform:uppercase">Signaux traders premium</p>
           </td>
         </tr>
         <!-- Card -->
         <tr>
-          <td style="background-color:#FFFFFF;border-radius:16px;padding:40px 32px;border:1px solid rgba(0,0,0,0.06);box-shadow:0 4px 12px rgba(0,0,0,0.03)">
+          <td class="card" style="background-color:#FFFFFF;border-radius:16px;padding:40px 32px;border:1px solid #E5E7EB">
             ${body}
           </td>
         </tr>
         <!-- Footer -->
         <tr>
-          <td style="padding-top:24px;text-align:center">
-            <p style="margin:0;font-size:12px;color:#6A758B;line-height:1.6">
+          <td style="padding-top:20px;text-align:center">
+            <p class="footer-text" style="margin:0;font-size:12px;color:#6B7280;line-height:1.6">
               ${APP_NAME} &mdash; Signaux traders premium<br/>
-              <a href="${APP_DOMAIN}/contact" style="color:#283B5D;text-decoration:none;font-weight:500">Nous contacter</a>
+              <a href="${APP_DOMAIN}/dashboard/support" style="color:#283B5D;text-decoration:none;font-weight:500;font-size:12px">Nous contacter</a>
             </p>
           </td>
         </tr>
@@ -92,10 +110,10 @@ interface ButtonOptions {
 }
 
 function ctaButton({ url, text }: ButtonOptions): string {
-  return `<table cellpadding="0" cellspacing="0" style="margin:24px 0">
+  return `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0" width="100%">
     <tr>
-      <td align="center" style="background-color:#283B5D;border-radius:8px;padding:0">
-        <a href="${url}" class="btn" style="display:inline-block;padding:12px 32px;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:8px;letter-spacing:-0.2px">${text}</a>
+      <td align="center" bgcolor="#283B5D" style="background-color:#283B5D;border-radius:12px;padding:0" width="100%">
+        <a href="${url}" target="_blank" style="display:block;padding:16px 32px;min-height:22px;font-size:16px;font-weight:600;color:#FFFFFF;text-decoration:none;border-radius:12px;letter-spacing:-0.2px;text-align:center;background-color:#283B5D;line-height:1.4;word-break:break-word">${text}</a>
       </td>
     </tr>
   </table>`
@@ -701,7 +719,7 @@ export function accessRevokedEmail(user: TemplateUser, planName: string, reason:
         Contactez notre équipe support pour plus d'informations.
       </p>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/support`, text: "Contacter le support" })}
     `),
   }
 }
@@ -730,7 +748,7 @@ export function accountSuspendedEmail(user: TemplateUser, reason: string): { sub
         Si vous pensez qu'il s'agit d'une erreur, contactez notre équipe support.
       </p>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/contact`, text: "Contacter le support" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/support`, text: "Contacter le support" })}
     `),
   }
 }
@@ -806,7 +824,7 @@ export function newAccessRequestAdminEmail(
         </tr>
       </table>
 
-      ${ctaButton({ url: `${APP_DOMAIN}/admin/access-requests`, text: "Voir la demande" })}
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=requests`, text: "Voir la demande" })}
     `),
   }
 }
@@ -888,26 +906,130 @@ export function supportTicketEmail(
 }
 
 // ══════════════════════════════════════
+//  JOURNAL : RAPPORT HEBDOMADAIRE
+// ══════════════════════════════════════
+
+export function weeklyJournalReport(
+  user: TemplateUser,
+  stats: {
+    totalTrades: number
+    wins: number
+    losses: number
+    winRate: number
+    totalPnl: number
+    bestPair: string
+    worstPair: string
+    streak: number
+  },
+): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  const advice = stats.winRate >= 60
+    ? "Excellente semaine ! Continue sur cette lancée mais ne deviens pas trop confiant. Garde ta discipline."
+    : stats.winRate >= 45
+    ? "Semaine correcte. Essaie de réduire tes pertes en attendant les confirmations de signal avant d'entrer."
+    : "Semaine difficile. Rappelle-toi : le trading est un marathon, pas un sprint. Limite-toi à 1 ou 2 paires cette semaine."
+
+  return {
+    subject: `📊 Ton résumé de la semaine — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:22px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom} 👋
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Voici ton résumé de trading de la semaine.
+      </p>
+
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:12px;padding:20px;margin:16px 0">
+        <table cellpadding="0" cellspacing="0" style="width:100%">
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Trades</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.totalTrades}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Gagnés / Perdus</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.wins}W / ${stats.losses}L</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Win rate</td>
+            <td style="padding:6px 0;font-size:14px;font-weight:600;text-align:right;color:${stats.winRate >= 50 ? '#10AF6E' : '#DC3545'}">${stats.winRate}%</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">PnL</td>
+            <td style="padding:6px 0;font-size:14px;font-weight:600;text-align:right;color:${stats.totalPnl >= 0 ? '#10AF6E' : '#DC3545'}">${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(0)}€</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Meilleure paire</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.bestPair || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Pire paire</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">${stats.worstPair || "—"}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 0;font-size:13px;color:#6A758B">Win streak</td>
+            <td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600;text-align:right">🔥 ${stats.streak}</td>
+          </tr>
+        </table>
+      </div>
+
+      <div style="background-color:#F0F9FF;border:1px solid #BAE6FD;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:13px;color:#0369A1;line-height:1.5"><strong>💡 Conseil :</strong> ${advice}</p>
+      </div>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/journal`, text: "Voir mon journal complet" })}
+
+      <p style="margin:16px 0 0 0;font-size:12px;color:#6A758B">
+        Ce rapport est généré automatiquement chaque lundi. Tu peux consulter tes stats en temps réel dans ton journal de trading.
+      </p>
+    `),
+  }
+}
+
+// ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
 
 export async function sendEmail(
   to: string,
   template: { subject: string; html: string },
-): Promise<void> {
+): Promise<string | null> {
+  // Sprint 1 (#59) : blocage si le destinataire a un emailStatus != OK
+  // (BOUNCED, COMPLAINED, SUPPRESSED, INVALID). Les emails non-lies a un user
+  // (ex: alerte admin) passent normalement.
+  try {
+    const blocked = await prisma.user.findFirst({
+      where: { email: to.toLowerCase() },
+      select: { id: true, emailStatus: true },
+    })
+    if (blocked && blocked.emailStatus !== "OK") {
+      console.warn(
+        `[EMAIL] Skip ${to} — emailStatus=${blocked.emailStatus} (Sprint 1 #59)`,
+      )
+      return null
+    }
+  } catch {
+    // Si la DB est down, on ne bloque pas (fail-open)
+  }
+
   try {
     const resend = getResend()
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM,
       to,
       subject: template.subject,
       html: template.html,
     })
+
+    if (error) {
+      throw new Error(typeof error === "string" ? error : error.message)
+    }
+
+    return data?.id ?? null
   } catch (err) {
     if (err instanceof Error && err.message.includes("RESEND_API_KEY")) {
       if (process.env.NODE_ENV === "development") {
         console.warn(`[EMAIL] Dev mode — simulated send to ${to}:`, template.subject)
-        return
+        return `dev-${Date.now()}`
       }
     }
     console.error(`[EMAIL] Failed to send to ${to}:`, err)

@@ -182,7 +182,7 @@ export default function KycPage() {
                 )}
                 <input
                   type="file"
-                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={(e) => setFrontFile(e.target.files?.[0] ?? null)}
                   className="hidden"
                 />
@@ -217,7 +217,7 @@ export default function KycPage() {
                   )}
                   <input
                     type="file"
-                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={(e) => setBackFile(e.target.files?.[0] ?? null)}
                     className="hidden"
                   />

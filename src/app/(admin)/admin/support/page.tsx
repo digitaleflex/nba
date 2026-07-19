@@ -22,13 +22,28 @@ function formatDate(dateStr: string) {
 export default function AdminSupportPage() {
   const [messages, setMessages] = useState<SupportMessage[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
     fetch("/api/admin/support")
-      .then((r) => r.json())
-      .then((data) => setMessages(data.messages))
-      .catch(() => {})
-      .finally(() => setLoading(false))
+      .then((r) => {
+        if (!r.ok) throw new Error("Erreur de chargement")
+        return r.json()
+      })
+      .then((data) => {
+        if (cancelled) return
+        setMessages(Array.isArray(data?.messages) ? data.messages : [])
+      })
+      .catch(() => {
+        if (!cancelled) setError("Impossible de charger les messages de support.")
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   return (
@@ -55,6 +70,18 @@ export default function AdminSupportPage() {
         <div className="flex items-center justify-center py-20">
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
+      ) : error ? (
+        <Card className="border-border">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <MessageCircle className="size-10 text-destructive" />
+            <div className="space-y-1">
+              <p className="font-semibold text-foreground">{error}</p>
+              <p className="text-sm text-muted-foreground">
+                Réessayez plus tard ou contactez l&apos;équipe technique.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       ) : messages.length === 0 ? (
         <Card className="border-border">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
@@ -79,7 +106,7 @@ export default function AdminSupportPage() {
                     </p>
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                       <Mail className="size-3" />
-                      {msg.title.replace("Support de ", "")}
+                      {(msg.title || "").replace("Support de ", "") || "—"}
                     </p>
                   </div>
                   <Badge variant="outline" className="text-[10px] shrink-0">

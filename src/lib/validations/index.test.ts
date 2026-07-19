@@ -7,13 +7,13 @@ describe("profileSchema", () => {
     expect(result.success).toBe(true)
   })
 
-  it("rejects missing country", () => {
+  it("accepts missing country (optional)", () => {
     const result = profileSchema.safeParse({ language: "fr" })
-    expect(result.success).toBe(false)
+    expect(result.success).toBe(true)
   })
 
-  it("rejects empty country", () => {
-    const result = profileSchema.safeParse({ country: "", language: "fr" })
+  it("rejects country over max length", () => {
+    const result = profileSchema.safeParse({ country: "x".repeat(101), language: "fr" })
     expect(result.success).toBe(false)
   })
 })
@@ -66,6 +66,6 @@ describe("validateOrThrow", () => {
   })
 
   it("throws ValidationError on failure", () => {
-    expect(() => validateOrThrow(profileSchema, { country: "" })).toThrow(ValidationError)
+    expect(() => validateOrThrow(profileSchema, { country: "x".repeat(101) })).toThrow(ValidationError)
   })
 })

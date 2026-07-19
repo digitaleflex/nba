@@ -1,31 +1,37 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { Readable } from "stream"
 import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
+import { validateUpload, safeExtension } from "./validate"
 
 export class S3StorageProvider implements StorageProvider {
   private client: S3Client
   private bucket: string
 
   constructor() {
-    const endpoint = process.env.MINIO_ENDPOINT || "http://nba-minio:9000"
-    const accessKeyId = process.env.MINIO_ROOT_USER || "nba_admin"
-    const secretAccessKey = process.env.MINIO_ROOT_PASSWORD || "Z3k_mQ7x-P2wT-9yRb-8vFd-5sHg_4aJp"
-    
+    const endpoint = process.env.MINIO_ENDPOINT
+    const accessKeyId = process.env.MINIO_ROOT_USER
+    const secretAccessKey = process.env.MINIO_ROOT_PASSWORD
+    const bucket = process.env.MINIO_BUCKET_NAME
+
+    if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
+      throw new Error(
+        "MinIO configuration incomplete. Set MINIO_ENDPOINT, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD, and MINIO_BUCKET_NAME."
+      )
+    }
+
     this.client = new S3Client({
       endpoint,
-      credentials: {
-        accessKeyId,
-        secretAccessKey,
-      },
-      forcePathStyle: true, // Requis pour MinIO
+      credentials: { accessKeyId, secretAccessKey },
+      forcePathStyle: true,
       region: "us-east-1",
     })
-    this.bucket = process.env.MINIO_BUCKET_NAME || "nba-assets"
+    this.bucket = bucket
   }
 
   async upload(file: File, subDir: string): Promise<UploadResult> {
-    const ext = file.name.split(".").pop()
-    const fileName = `${crypto.randomUUID()}.${ext || "bin"}`
+    await validateUpload(file)
+
+    const fileName = `${crypto.randomUUID()}${safeExtension(file)}`
     const key = `${subDir}/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
@@ -52,7 +58,7 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   getUrl(path: string): string {
-    const endpoint = process.env.MINIO_ENDPOINT || "http://nba-minio:9000"
+    const endpoint = process.env.MINIO_ENDPOINT!
     return `${endpoint}/${this.bucket}/${path}`
   }
 

@@ -2,38 +2,57 @@ import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getOnboardingStateForUsers } from "@nba/lib/services/onboarding"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
+import { type AccessStatus } from "@nba/generated/prisma/enums"
+import { getCached } from "@nba/lib/cache"
 
-export async function GET() {
+const VALID_STATUSES = ["PENDING", "APPROVED", "REJECTED", "SUSPENDED", "REVOKED"] as const
+
+export async function GET(req: Request) {
   try {
     await requirePermission("users.read")
 
-    const requests = await prisma.accessRequest.findMany({
-      where: { status: "PENDING" },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            phone: true,
-            whatsapp: true,
-            country: true,
-            onboardingStatus: true,
-            createdAt: true,
+    const url = new URL(req.url)
+    const statusParam = url.searchParams.get("status")
+
+    const enriched = await getCached(
+      `access:${statusParam ?? "ALL"}`,
+      async () => {
+        const where =
+          statusParam && statusParam !== "ALL" && (VALID_STATUSES as readonly string[]).includes(statusParam)
+            ? { status: statusParam as AccessStatus }
+            : {}
+
+        const requests = await prisma.accessRequest.findMany({
+          where,
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                whatsapp: true,
+                country: true,
+                onboardingStatus: true,
+                createdAt: true,
+              },
+            },
+            plan: true,
+            reviewer: { select: { id: true, name: true } },
           },
-        },
-        plan: true,
+          orderBy: { createdAt: "desc" },
+        })
+
+        const userIds = requests.map((r) => r.userId)
+        const onboardingMap = await getOnboardingStateForUsers(userIds)
+
+        return requests.map((req) => ({
+          ...req,
+          onboarding: onboardingMap[req.userId] ?? null,
+        }))
       },
-      orderBy: { createdAt: "asc" },
-    })
-
-    const userIds = requests.map((r) => r.userId)
-    const onboardingMap = await getOnboardingStateForUsers(userIds)
-
-    const enriched = requests.map((req) => ({
-      ...req,
-      onboarding: onboardingMap[req.userId] ?? null,
-    }))
+      15,
+    )
 
     return NextResponse.json(enriched)
   } catch (error) {

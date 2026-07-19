@@ -26,10 +26,15 @@ export default function OnboardingWizardPage() {
     fetch("/api/onboarding/state")
       .then((r) => r.json())
       .then((data) => {
+        if (!data || typeof data !== "object") {
+          setError("Réponse inattendue du serveur")
+          setLoading(false)
+          return
+        }
         if (data.status === "ACTIVE" || data.status === "COMPLETED") {
           router.push("/dashboard")
         } else {
-          setState(data)
+          setState(data as OnboardingState)
           setLoading(false)
         }
       })
@@ -42,6 +47,15 @@ export default function OnboardingWizardPage() {
   useEffect(() => {
     fetchState()
   }, [])
+
+  const emailVerified = state?.checklist?.emailVerified ?? false
+
+  useEffect(() => {
+    if (emailVerified) {
+      const t = setTimeout(() => router.push("/dashboard"), 1200)
+      return () => clearTimeout(t)
+    }
+  }, [emailVerified, router])
 
   if (loading || !state) {
     return (
@@ -68,8 +82,6 @@ export default function OnboardingWizardPage() {
       </div>
     )
   }
-
-  const emailVerified = state.checklist.emailVerified
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">

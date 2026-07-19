@@ -1,23 +1,39 @@
+name: nba
+
 services:
   app:
     image: ghcr.io/digitaleflex/nba
+    # Force le pull de la derniere image a chaque `up -d` pour eviter
+    # d'utiliser une image locale obsolete (incident 2026-07-13).
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile
       target: runner
       args:
         NEXT_PUBLIC_APP_URL: "https://access.signauxx.com"
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: "${NEXT_PUBLIC_VAPID_PUBLIC_KEY}"
     networks:
       - nba
       - proxy
     env_file: .env
     environment:
       QUEUE_ENABLED: "true"
-      WS_ENABLED: "${WS_ENABLED:-false}"
+      WS_ENABLED: "${WS_ENABLED:-true}"
       WS_PORT: "${WS_PORT:-3001}"
+      RESEND_FROM_EMAIL: '"Signaux NeverBrokeAgain" <signaux@signauxx.com>'
     depends_on:
       nba-redis:
         condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+      - CHOWN
+      - SETUID
+      - SETGID
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
@@ -26,26 +42,46 @@ services:
         reservations:
           cpus: "1.0"
           memory: 1024M
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/public/health', (r) => { r.on('data', () => {}); r.on('end', () => { process.exit(r.statusCode < 400 ? 0 : 1) }) }).on('error', () => process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    stop_grace_period: 30s
     volumes:
       - nba-storage:/app/storage
     labels:
       - "traefik.enable=true"
+      - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.path=/api/public/health"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
+      # Routeur principal de l'app (port 3000)
       - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
-      - "traefik.http.routers.nba-app.priority=100"
+      - "traefik.http.routers.nba-app.priority=1"
+      - "traefik.http.routers.nba-app.service=nba-app"
       - "traefik.http.routers.nba-app.entrypoints=websecure"
       - "traefik.http.routers.nba-app.tls=true"
       - "traefik.http.routers.nba-app.tls.certresolver=letsencrypt"
-      - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
+      # WebSocket (Socket.IO) : route /socket.io vers le worker sur le port 3001
+      - "traefik.http.routers.nba-ws.rule=Host(`access.signauxx.com`) && (PathPrefix(`/socket.io/`) || Path(`/socket.io`))"
+      - "traefik.http.routers.nba-ws.priority=200"
+      - "traefik.http.routers.nba-ws.service=nba-ws"
+      - "traefik.http.routers.nba-ws.entrypoints=websecure"
+      - "traefik.http.routers.nba-ws.tls=true"
+      - "traefik.http.routers.nba-ws.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nba-ws.loadbalancer.server.port=3001"
 
   nba-redis:
     image: valkey/valkey:8-alpine
     networks:
       - nba
     command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0", "--dir", "/data", "--save", "60", "1", "--appendonly", "yes"]
-    # Bind sur 0.0.0.0 (sécurisé par --requirepass)
-    # Tailscale ACLs bloquent l'accès public non-autorisé par défaut
-    ports:
-      - "6379:6379"
+    # Redis accessible uniquement sur le réseau Docker interne.
+    # Pour l'accès externe (VPS2), utiliser Tailscale/WireGuard, pas d'exposition directe.
+    expose:
+      - "6379"
     volumes:
       - nba-redis-data:/data
     restart: unless-stopped
@@ -70,6 +106,73 @@ services:
     restart: unless-stopped
     networks:
       - nba
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    networks:
+      - nba
+    env_file: .env
+    environment:
+      QUEUE_ENABLED: "true"
+      RESEND_FROM_EMAIL: '"Signaux NeverBrokeAgain" <signaux@signauxx.com>'
+    depends_on:
+      nba-redis:
+        condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 512M
+    restart: unless-stopped
+
+  bull-board:
+    build:
+      context: .
+      dockerfile: Dockerfile.worker
+    command: ["node", "/app/workers/bull-board.js"]
+    networks:
+      - nba
+      - proxy
+    env_file: .env
+    environment:
+      BULL_BOARD_PORT: "3002"
+    depends_on:
+      nba-redis:
+        condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 128M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3002/health', (r) => { r.resume(); r.on('end', () => process.exit(r.statusCode < 500 ? 0 : 1)) }).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nba-bull.rule=Host(`access.signauxx.com`) && PathPrefix(`/admin/queues`)"
+      - "traefik.http.routers.nba-bull.priority=150"
+      - "traefik.http.routers.nba-bull.entrypoints=websecure"
+      - "traefik.http.routers.nba-bull.tls=true"
+      - "traefik.http.routers.nba-bull.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nba-bull.loadbalancer.server.port=3002"
 
   nba-imgproxy:
     image: darthsim/imgproxy:latest

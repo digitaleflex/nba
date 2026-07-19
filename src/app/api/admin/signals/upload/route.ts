@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getStorage } from "@nba/lib/storage"
 import { requirePermission, handleAuthError, AuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { serverError } from "@nba/lib/api-error"
 
 const signalUploadLimit = rateLimitMiddleware({ window: 3600, max: 20 })
 
@@ -42,8 +43,6 @@ export async function POST(req: NextRequest) {
       return handleAuthError(error)
     }
     // Erreur de stockage (magic bytes, mkdir, etc.)
-    const message = error instanceof Error ? error.message : "Erreur lors du chargement de l'image"
-    console.error("[signal-upload]", message)
-    return NextResponse.json({ error: message }, { status: 500 })
+    return serverError(error, "POST /api/admin/signals/upload")
   }
 }

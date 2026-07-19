@@ -31,6 +31,52 @@ export function parseSimpleMarkdown(text: string): string {
 
   html = html.replace(/\n/g, "<br/>")
 
-  return html
+  return sanitizeHtml(html)
+}
+
+const ALLOWED_TAGS = /^(strong|em|br|div|p|span|a|img|ul|ol|li|blockquote|h[1-6])$/
+const ALLOWED_ATTRS = /^class|style|href|target|src|alt|width|height|loading$/
+const SAFE_PROTOCOLS = /^https?:|^mailto:|^\/|^#/
+
+export function sanitizeHtml(html: string): string {
+  return html.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (tag) => {
+    const isClose = tag.startsWith("</")
+    const inner = tag.slice(isClose ? 2 : 1, -1)
+    const space = inner.indexOf(" ")
+    const tagName = (space > 0 ? inner.slice(0, space) : inner).toLowerCase()
+
+    if (!ALLOWED_TAGS.test(tagName)) return ""
+
+    if (isClose) return `</${tagName}>`
+
+    let cleaned = `<${tagName}`
+    const attrs = inner.slice(space + 1).match(/([a-zA-Z-]+)\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/g)
+    if (attrs && tagName === "a") {
+      for (const attr of attrs) {
+        const eq = attr.indexOf("=")
+        const name = attr.slice(0, eq).trim()
+        const val = attr.slice(eq + 1).replace(/^["']|["']$/g, "")
+        if (name === "href" || name === "target") {
+          if (name === "href" && !SAFE_PROTOCOLS.test(val)) continue
+          cleaned += ` ${name}="${val.replace(/"/g, "&quot;")}"`
+        }
+      }
+      if (!attrs.find((a: string) => a.startsWith("target"))) cleaned += ` target="_blank" rel="noopener"`
+    }
+    if (attrs && tagName === "img") {
+      for (const attr of attrs) {
+        const eq = attr.indexOf("=")
+        const name = attr.slice(0, eq).trim()
+        const val = attr.slice(eq + 1).replace(/^["']|["']$/g, "")
+        if (name === "src" && !SAFE_PROTOCOLS.test(val)) continue
+        if (name === "alt" || name === "src" || name === "width" || name === "height" || name === "loading") {
+          cleaned += ` ${name}="${val.replace(/"/g, "&quot;")}"`
+        }
+      }
+    }
+
+    cleaned += ">"
+    return cleaned
+  })
 }
 

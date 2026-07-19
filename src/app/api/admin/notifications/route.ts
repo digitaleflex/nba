@@ -1,12 +1,22 @@
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { notify } from "@nba/lib/services/notifications"
 import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
+import { getCached, invalidatePrefix } from "@nba/lib/cache"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { serverError } from "@nba/lib/api-error"
 
-export async function POST(request: Request) {
+const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
+
+import { csrfCheck } from "@nba/lib/csrf"
+
+export async function POST(request: NextRequest) {
+  const csrf = csrfCheck(request)
+  if (csrf) return csrf
   try {
     const session = await getServerSession()
     if (!session) {
@@ -18,7 +28,7 @@ export async function POST(request: Request) {
       select: { role: { select: { name: true } } },
     })
 
-    if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
@@ -27,6 +37,13 @@ export async function POST(request: Request) {
 
     if (!title || !content) {
       return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 })
+    }
+
+    const rateLimitId = userId ? `notif:${userId}` : "notif:broadcast"
+    const requestClone = new Request(request.url, { headers: request.headers })
+    const rateLimitRes = await broadcastRateLimit(requestClone, rateLimitId)
+    if (rateLimitRes) {
+      return rateLimitRes
     }
 
     if (userId) {
@@ -51,6 +68,8 @@ export async function POST(request: Request) {
         },
       })
 
+      await invalidatePrefix("ops")
+      await invalidatePrefix("notif:")
       return NextResponse.json({ success: true, count: 1 })
     }
 
@@ -119,9 +138,10 @@ export async function POST(request: Request) {
       })
     )
 
+    await invalidatePrefix("ops")
     return NextResponse.json({ success: true, count: users.length })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "POST /api/admin/notifications")
   }
 }
 
@@ -137,23 +157,28 @@ export async function GET() {
       select: { role: { select: { name: true } } },
     })
 
-    if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
-    const notifications = await prisma.notification.findMany({
-      where: { type: "SYSTEM" },
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: {
-        user: {
-          select: { name: true, email: true },
-        },
-      },
-    })
+    const notifications = await getCached(
+      "notif:history",
+      async () =>
+        prisma.notification.findMany({
+          where: { type: "SYSTEM" },
+          orderBy: { createdAt: "desc" },
+          take: 50,
+          include: {
+            user: {
+              select: { name: true, email: true },
+            },
+          },
+        }),
+      30,
+    )
 
     return NextResponse.json({ notifications })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error: unknown) {
+    return serverError(error, "GET /api/admin/notifications")
   }
 }

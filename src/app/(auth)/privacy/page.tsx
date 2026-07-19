@@ -60,7 +60,9 @@ export default function PrivacyPage() {
             <p className="text-muted-foreground">
               Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de rectification,
               d&apos;effacement, de portabilité et d&apos;opposition concernant vos données
-              personnelles. Pour exercer ces droits, contactez-nous à l&apos;adresse
+              personnelles. Vous pouvez exercer ces droits directement depuis la page{" "}
+              <span className="font-mono text-foreground">Mes données</span> (export et
+              suppression de compte) ou en nous contactant à l&apos;adresse
               <span className="font-mono text-foreground"> privacy@signauxx.com</span>.
             </p>
           </section>

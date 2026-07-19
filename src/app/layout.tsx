@@ -1,6 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
-import { ThemeProvider, ToastProvider } from "@nba/design-system";
+import { ThemeProvider, ToastProvider, TopLoader, TooltipProvider } from "@nba/design-system";
+import { ImpersonationBanner } from "./components/impersonation-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -28,28 +30,12 @@ export const metadata: Metadata = {
     template: "%s | NeverBrokeAgain",
   },
   description: "Plateforme de signaux de trading premium",
-  themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#030711" },
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-  ],
-  manifest: "/manifest.webmanifest",
-  icons: {
-    icon: [{ url: "/icon.png", sizes: "32x32", type: "image/png" }],
-    apple: "/logo.png",
-    other: [
-      { rel: "apple-touch-icon-precomposed", url: "/icons/icon-192x192.png" },
-    ],
-  },
   appleWebApp: {
     capable: true,
     title: "NeverBrokeAgain",
     statusBarStyle: "black-translucent",
   },
-  other: {
-    "mobile-web-app-capable": "yes",
-    "msapplication-TileImage": "/icons/icon-192x192.png",
-    "msapplication-TileColor": "#030711",
-  },
+  manifest: "/manifest.webmanifest",
   openGraph: {
     title: "NeverBrokeAgain",
     description: "Plateforme de signaux de trading premium",
@@ -57,6 +43,18 @@ export const metadata: Metadata = {
     type: "website",
     locale: "fr_FR",
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#030711" },
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
@@ -70,9 +68,50 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col noise">
+      <body className="min-h-full flex flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            (function() {
+              var KEY = "__nba_chunk_reload_at";
+              var COOLDOWN = 10000;
+              function safeReload() {
+                try {
+                  var last = parseInt(sessionStorage.getItem(KEY) || "0", 10);
+                  var now = Date.now();
+                  if (now - last < COOLDOWN) {
+                    console.error("[chunk] Rechargement déjà tenté récemment — arrêt pour éviter une boucle. Videz le cache (Ctrl+Maj+R).");
+                    return;
+                  }
+                  sessionStorage.setItem(KEY, String(now));
+                } catch (_) {}
+                window.location.reload();
+              }
+              window.addEventListener("error", function(e) {
+                if (e.target && e.target.tagName === "SCRIPT" && e.target.src && e.target.src.indexOf("/_next/static/chunks/") !== -1) {
+                  console.warn("[chunk] Échec de chargement, rechargement automatique...");
+                  e.preventDefault();
+                  safeReload();
+                }
+              }, true);
+              window.addEventListener("unhandledrejection", function(e) {
+                if (e.reason && e.reason.message && e.reason.message.indexOf("dynamically imported module") !== -1) {
+                  console.warn("[chunk] Échec d'import dynamique, rechargement automatique...");
+                  safeReload();
+                }
+              });
+            })();
+          `,
+          }}
+        />
         <ThemeProvider>
-          {children}
+          <Suspense fallback={null}>
+            <TopLoader />
+          </Suspense>
+          <ImpersonationBanner />
+          <TooltipProvider delay={150}>
+            {children}
+          </TooltipProvider>
           <ToastProvider />
         </ThemeProvider>
       </body>

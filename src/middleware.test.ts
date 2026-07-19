@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import middleware from "./proxy";
+import middleware from "./middleware";
 import { NextResponse } from "next/server";
 
 // Mock NextResponse
@@ -246,10 +246,10 @@ describe("proxy middleware", () => {
       expect(response.status).toBe(307);
       expect(response.headers.get("location")).toContain("/login");
       // Should clear session cookies
-      expect(response.cookies.delete).toHaveBeenCalledWith(
+      expect((response as any).cookies.delete).toHaveBeenCalledWith(
         "__Secure-better-auth.session_token",
       );
-      expect(response.cookies.delete).toHaveBeenCalledWith(
+      expect((response as any).cookies.delete).toHaveBeenCalledWith(
         "better-auth.session_token",
       );
     });

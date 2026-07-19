@@ -1,8 +1,6 @@
 # Base image using Alpine for security and minimal footprint
 FROM node:22-alpine AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable && corepack prepare pnpm@9 --activate
+RUN npm install -g pnpm@10
 WORKDIR /app
 
 # Step 1: Install all dependencies (including devDependencies for build)
@@ -22,29 +20,17 @@ RUN pnpm prisma generate
 # Step 3: Build the Next.js application
 FROM prepared AS builder
 ARG NEXT_PUBLIC_APP_URL
+ARG NEXT_PUBLIC_VAPID_PUBLIC_KEY
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
+ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
-# Compile Next.js app to standalone output
+# Compile Next.js app to standalone output.
+# `next build` échoue déjà si le middleware ne compile pas ; aucune garde
+# maison n'est nécessaire (les chemins internes de Next changent entre versions,
+# ex. middleware -> proxy en Next 16, ce qui cassait le déploiement à tort).
 RUN pnpm build
-
-# Verify the redirect-loop fix is actually compiled in the middleware.
-# Checks BOTH .next/ (builder) and .next/standalone/ (what the runner uses)
-# because Turbopack can silently keep stale middleware in different locations.
-RUN if ! grep -rq "redirectToLoginAndClearSession" .next/ ; then \
-      echo "❌ BUILD ERROR: redirectToLoginAndClearSession not found in .next/" && \
-      echo "   The middleware redirect-loop fix is NOT in the build output." && \
-      echo "   This is a Turbopack cache issue. Fix: docker builder prune -af && docker compose build --no-cache" && \
-      exit 1; \
-    fi
-RUN if ! grep -rq "redirectToLoginAndClearSession" .next/standalone/ 2>/dev/null; then \
-      echo "❌ BUILD ERROR: redirectToLoginAndClearSession not found in .next/standalone/" && \
-      echo "   The standalone output (used by the runner) is missing the fix." && \
-      exit 1; \
-    else \
-      echo "✅ Middleware fix verified in builder + standalone output"; \
-    fi
 
 # Step 4: Production runner for Next.js Web App
 FROM base AS runner

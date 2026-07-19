@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { serverError } from "@nba/lib/api-error"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 
@@ -14,7 +15,7 @@ export async function GET() {
       select: { role: { select: { name: true } } },
     })
 
-    if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
@@ -37,12 +38,12 @@ export async function GET() {
       }),
       prisma.auditLog.count({
         where: {
-          action: { contains: "FAILED" },
+          action: "LOGIN_FAILED",
           createdAt: { gte: todayStart },
         },
       }),
       prisma.auditLog.findFirst({
-        where: { action: { contains: "FAILED" } },
+        where: { action: "LOGIN_FAILED" },
         orderBy: { createdAt: "desc" },
         select: { createdAt: true },
       }),
@@ -61,7 +62,7 @@ export async function GET() {
         ? new Date(lastFailedAudit.createdAt).toLocaleString("fr-FR")
         : null,
     })
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Erreur" }, { status: 500 })
   }
 }

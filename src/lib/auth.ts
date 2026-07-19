@@ -3,6 +3,8 @@ import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
+import { isEmailBanned } from "./services/moderation"
+import { purgeSoftDeletedUser } from "./services/user-deletion"
 
 const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
@@ -38,6 +40,10 @@ export const auth = betterAuth({
     },
   },
   emailVerification: {
+    // Désactive l'envoi auto de l'email de vérification better-auth à l'inscription :
+    // la vérification est gérée par notre propre OTP onboarding (/api/onboarding/send-otp),
+    // évitant un double email (lien better-auth + OTP) redondant et confus pour l'utilisateur.
+    sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user, url)
     },
@@ -57,19 +63,34 @@ export const auth = betterAuth({
       generateId: () => crypto.randomUUID(),
     },
     ipAddress: {
-      ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
+      // En production derrière Cloudflare, truster uniquement cf-connecting-ip
+      // (Cloudflare écrase le header, il ne peut pas être spoofé par le client).
+      // En dev/staging sans CDN, ne truster aucun header proxy.
+      ipAddressHeaders:
+        process.env.NODE_ENV === "production"
+          ? ["cf-connecting-ip"]
+          : [],
     },
   },
   databaseHooks: {
     user: {
       create: {
+        before: async (user) => {
+          const banned = await isEmailBanned(user.email)
+          if (banned) {
+            throw new Error(`Ce compte a été banni : ${banned.reason}. Contactez le support.`)
+          }
+          await purgeSoftDeletedUser(prisma, user.email)
+        },
         after: async (user) => {
           await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
         },
       },
     },
   },
-  plugins: [nextCookies()],
+  plugins: [
+    nextCookies(),
+  ],
 })
 
 export type Session = typeof auth.$Infer.Session

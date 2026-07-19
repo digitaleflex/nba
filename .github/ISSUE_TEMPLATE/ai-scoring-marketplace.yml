@@ -1,0 +1,55 @@
+name: Feature Request
+description: Suggest an idea for this project
+logic: "sequence"
+title: "[FEAT]: AI signal quality scoring + performance marketplace"
+labels: [enhancement, "high priority"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: "AI signal quality scoring + performance marketplace problem statement"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: "Build AI-driven signal quality scoring system that analyzes signal accuracy, creates performance marketplace for top signal creators, and implements karma/ranking system for credibility"
+    validations:
+      required: true
+  - type: textarea
+    id: implementation
+    attributes:
+      label: Implementation Details
+      description: "Create AI scoring algorithm (ML model) that tracks signal performance over time → generate credibility scores → rank signal creators → implement performance-based monetization"
+    validations:
+      required: false
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives
+      description: "Simple manual rating system, subscription-only model, free creator model with advertising"
+    validations:
+      required: false
+  - type: textarea
+    id: impact
+    attributes:
+      label: Expected Impact
+      description: "Increase user trust, monetize top signal creators ($5M+ ARR), improve signal distribution to high-quality performers, create competitive advantage against SignalFlow and TraderScroll"
+    validations:
+      required: false
+  - type: textarea
+    id: test-coverage
+    attributes:
+      label: Testing Strategy
+      description: "Unit tests for AI scoring algorithm, integration tests for marketplace transactions, acceptance tests for user experience"
+    validations:
+      required: false
+  - type: textarea
+    id: blockers
+    attributes:
+      label: Potential Blockers
+      description: "Requires AI/ML expertise, complex signal analysis logic, expensive compute resources for ML"
+    validations:
+      required: false

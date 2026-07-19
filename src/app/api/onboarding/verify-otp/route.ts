@@ -15,6 +15,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     }
 
+    // Vérifier que le compte n'est pas suspendu
+    const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+    if (!me?.isActive) {
+      return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
+    }
+
     const body = await req.json()
     const { code } = body
 
@@ -39,19 +45,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Code incorrect ou expiré" }, { status: 400 })
     }
 
-    // Marquer l'email comme vérifié
-    await prisma.user.update({
-      where: { id },
-      data: {
-        emailVerified: true,
-        onboardingStatus: "ACTIVE"
-      }
-    })
+    // Vérifier si l'utilisateur est suspendu avant de marquer comme actif
+    const user = await prisma.user.findUnique({ where: { id }, select: { onboardingStatus: true, isActive: true } })
 
     // Supprimer le code utilisé
     await prisma.verification.delete({
       where: { id: verification.id }
     })
+
+    // Ne pas écraser un statut SUSPENDED
+    if (user?.isActive && user.onboardingStatus !== "SUSPENDED") {
+      await prisma.user.update({
+        where: { id },
+        data: {
+          emailVerified: true,
+          onboardingStatus: "ACTIVE"
+        }
+      })
+    } else {
+      await prisma.user.update({
+        where: { id },
+        data: { emailVerified: true }
+      })
+    }
 
     return NextResponse.json({ success: true })
   } catch (error: any) {

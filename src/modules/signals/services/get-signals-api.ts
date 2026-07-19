@@ -59,10 +59,9 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      isActive: true,
       role: { select: { name: true } },
-      country: true,
-      phone: true,
-      whatsapp: true,
+      signalsAccessOverride: true,
     },
   })
 
@@ -70,47 +69,22 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     throw new AuthError("Utilisateur non trouvé", 404)
   }
 
+  if (!user.isActive) {
+    throw new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
+  }
+
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
 
   let activePlanIds: string[] = []
-  if (!isAdmin) {
-    const isProfileComplete = 
-      user.country && user.country.trim() !== "" &&
-      user.phone && user.phone.trim() !== "" &&
-      user.whatsapp && user.whatsapp.trim() !== ""
-
-    if (!isProfileComplete) {
-      throw new AuthError("Veuillez compléter votre profil à 100% pour accéder aux signaux", 403)
-    }
-
-    const [kycDoc, brokerVerif, approvedRequests] = await Promise.all([
-      prisma.kycDocument.findFirst({
-        where: { userId: session.user.id },
-        orderBy: { submittedAt: "desc" },
-        select: { status: true },
-      }),
-      prisma.brokerVerification.findFirst({
-        where: { userId: session.user.id },
-        orderBy: { createdAt: "desc" },
-        select: { status: true },
-      }),
-      prisma.accessRequest.findMany({
-        where: { userId: session.user.id, status: "APPROVED" },
-        select: { planId: true },
-      }),
-    ])
-
-    const isKycApproved = kycDoc?.status === "APPROVED"
-    const isBrokerApproved = brokerVerif?.status === "APPROVED"
-
-    if (!isKycApproved || !isBrokerApproved) {
-      throw new AuthError("Votre compte est en attente d'activation. KYC ou vérification Broker non validés.", 403)
-    }
-
-    activePlanIds = approvedRequests.map((r) => r.planId)
+  if (!isAdmin && !user.signalsAccessOverride) {
+    const approved = await prisma.accessRequest.findMany({
+      where: { userId: session.user.id, status: "APPROVED" },
+      select: { planId: true },
+    })
+    activePlanIds = approved.map((r) => r.planId)
   }
 
-  if (!isAdmin && activePlanIds.length === 0) {
+  if (!isAdmin && !user.signalsAccessOverride && activePlanIds.length === 0) {
     return {
       signals: [],
       pagination: { page, limit: actualLimit, total: 0, totalPages: 0 },
@@ -118,10 +92,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     }
   }
 
-  const where: Record<string, unknown> = { deletedAt: null }
-  if (!isAdmin) {
-    where.status = "PUBLISHED"
-  }
+  const where: Record<string, unknown> = { deletedAt: null, status: "PUBLISHED" }
 
   if (search) {
     where.content = { contains: search, mode: "insensitive" }
@@ -149,36 +120,31 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     where.archives = { none: { userId: session.user.id } }
   }
 
-  let audienceFilter: Record<string, unknown> | undefined
-  if (!isAdmin) {
-    audienceFilter = { some: { planId: { in: activePlanIds } } }
+  if (!isAdmin && !user.signalsAccessOverride) {
+    where.audience = { some: { planId: { in: activePlanIds } } }
   }
 
   if (filter === "forex") {
-    audienceFilter = {
+    where.audience = {
       some: {
-        ...(audienceFilter?.some ?? {}),
+        ...((where.audience as any)?.some ?? {}),
         plan: { name: { contains: "Forex", mode: "insensitive" } },
       },
     }
   } else if (filter === "deriv") {
-    audienceFilter = {
+    where.audience = {
       some: {
-        ...(audienceFilter?.some ?? {}),
+        ...((where.audience as any)?.some ?? {}),
         plan: { name: { contains: "Deriv", mode: "insensitive" } },
       },
     }
   } else if (filter === "forex+deriv") {
-    audienceFilter = {
+    where.audience = {
       some: {
-        ...(audienceFilter?.some ?? {}),
+        ...((where.audience as any)?.some ?? {}),
         plan: { name: { in: ["Forex", "Deriv"] } },
       },
     }
-  }
-
-  if (audienceFilter) {
-    where.audience = audienceFilter
   }
 
   const [total, signals] = await Promise.all([
@@ -212,9 +178,8 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   const favoriteSet = new Set(favorites.map((f) => f.signalId))
   const archiveSet = new Set(archives.map((a) => a.signalId))
 
-  const allAccessibleWhere: Record<string, unknown> = { deletedAt: null }
-  if (!isAdmin) {
-    allAccessibleWhere.status = "PUBLISHED"
+  const allAccessibleWhere: Record<string, unknown> = { deletedAt: null, status: "PUBLISHED" }
+  if (!isAdmin && !user.signalsAccessOverride) {
     allAccessibleWhere.audience = { some: { planId: { in: activePlanIds } } }
   }
 
@@ -223,7 +188,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     prisma.signalRead.count({
       where: { userId: session.user.id },
     }),
-    activePlanIds.length > 0 && !isAdmin
+    !isAdmin && !user.signalsAccessOverride && activePlanIds.length > 0
       ? prisma.subscriptionPlan.findMany({
           where: { id: { in: activePlanIds } },
           select: { name: true },
@@ -235,7 +200,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     id: sig.id,
     content: sig.content,
     imageUrl: sig.imageUrl,
-    imageUrls: Array.isArray(sig.imageUrls) ? (sig.imageUrls as string[]) : [],
+    imageUrls: sig.imageUrls ?? [],
     publishedAt: sig.publishedAt,
     createdAt: sig.createdAt,
     creatorName: sig.creator.name,
@@ -247,7 +212,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   }))
 
   const lastSignal = signals[0]
-  const group = isAdmin
+  const group = isAdmin || user.signalsAccessOverride
     ? "Tous les signaux"
     : planNames.length > 0
       ? planNames.map((p) => p.name).join(", ")

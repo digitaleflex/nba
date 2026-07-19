@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getStorage } from "@nba/lib/storage"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
+import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 
 export async function GET(
   req: NextRequest,
@@ -11,6 +11,12 @@ export async function GET(
   const session = await getServerSession()
   if (!session) {
     return new NextResponse("Non autorisé", { status: 401 })
+  }
+
+  // Vérifier que le compte n'est pas suspendu
+  const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+  if (!me?.isActive) {
+    return new NextResponse("Votre compte a été suspendu", { status: 403 })
   }
 
   const { path: pathSegments } = await params
@@ -51,8 +57,8 @@ export async function GET(
     return new NextResponse("Utilisateur non trouvé", { status: 404 })
   }
 
-  const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
-  const hasPermission = (perm: string) => user.role.permissions.some((rp: any) => rp.permission.name === perm)
+  const isAdmin = user.role?.name === "ADMIN" || user.role?.name === "SUPER_ADMIN"
+  const hasPermission = (perm: string) => user.role?.permissions?.some((rp: any) => rp.permission.name === perm) ?? false
 
   let actualFilePath = filePath
 
@@ -131,7 +137,7 @@ export async function GET(
       })
 
       if (matchingSignal) {
-        const hasAccess = await SignalPolicy.canView(session.user.id, matchingSignal.id)
+        const hasAccess = await canViewSignal(session.user.id, matchingSignal.id)
         if (!hasAccess) {
           return new NextResponse("Accès refusé", { status: 403 })
         }
@@ -144,6 +150,21 @@ export async function GET(
     }
   } else if (category === "avatars") {
     if (!isAdmin && decodedSegments[1] !== session.user.id) {
+      return new NextResponse("Accès refusé", { status: 403 })
+    }
+  } else if (category === "messages") {
+    // Accès réservé aux participants de la conversation propriétaire du message
+    const msg = await prisma.message.findFirst({
+      where: { attachmentUrl: filePath },
+      select: { conversationId: true },
+    })
+    if (!msg) {
+      return new NextResponse("Fichier non trouvé", { status: 404 })
+    }
+    const isParticipant = await prisma.conversationParticipant.findFirst({
+      where: { conversationId: msg.conversationId, userId: session.user.id },
+    })
+    if (!isParticipant) {
       return new NextResponse("Accès refusé", { status: 403 })
     }
   } else {

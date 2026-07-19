@@ -26,9 +26,19 @@ interface PushPayload {
   tag?: string;
 }
 
+const errorCounters = new Map<string, number>()
+
+function shouldDeleteSub(statusCode: number): boolean {
+  return [400, 403, 404, 410, 413].includes(statusCode)
+}
+
 export async function sendPushToUser(userId: string, payload: PushPayload): Promise<{ sent: number; failed: number }> {
   configure();
   if (!configured) return { sent: 0, failed: 0 };
+
+  // Ne pas envoyer de push à un utilisateur suspendu
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
+  if (!user?.isActive) return { sent: 0, failed: 0 };
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
@@ -41,6 +51,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   const jsonPayload = JSON.stringify(payload);
   let sent = 0;
   let failed = 0;
+  const errors: Record<number, number> = {};
 
   await Promise.all(
     subscriptions.map(async (sub) => {
@@ -55,13 +66,30 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         sent++;
       } catch (err: any) {
         failed++;
-        // Si l'abonnement est expiré (404 ou 410), le supprimer
-        if (err.statusCode === 404 || err.statusCode === 410) {
+        const code = err.statusCode || 0
+        errors[code] = (errors[code] || 0) + 1
+
+        if (shouldDeleteSub(code)) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+        } else if (code >= 500 || code === 0) {
+          const key = `${sub.endpoint.slice(0, 40)}:${code}`
+          errorCounters.set(key, (errorCounters.get(key) || 0) + 1)
+          if ((errorCounters.get(key) || 0) >= 3) {
+            await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+          }
         }
       }
     })
   );
+
+  const errorSummary = Object.entries(errors)
+    .filter(([_, count]) => count > 0)
+    .map(([code, count]) => `${code}=${count}`)
+    .join(", ")
+
+  if (failed > 0) {
+    console.warn(`[push] userId=${userId.slice(0, 8)} sent=${sent} failed=${failed} errors={${errorSummary}}`)
+  }
 
   return { sent, failed };
 }

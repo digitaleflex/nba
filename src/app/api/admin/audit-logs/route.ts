@@ -1,30 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { unstable_cache } from "next/cache"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
-
-const getAuditFilters = unstable_cache(
-  async () => {
-    const [distinctActions, distinctResourceTypes] = await Promise.all([
-      prisma.auditLog.findMany({
-        select: { action: true },
-        distinct: ["action"],
-        orderBy: { action: "asc" },
-      }),
-      prisma.auditLog.findMany({
-        select: { resourceType: true },
-        distinct: ["resourceType"],
-        orderBy: { resourceType: "asc" },
-      }),
-    ])
-    return {
-      actions: distinctActions.map((a) => a.action),
-      resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
-    }
-  },
-  ["audit-log-filters"],
-  { revalidate: 300 }
-)
 
 export async function GET(request: NextRequest) {
   try {
@@ -34,51 +10,87 @@ export async function GET(request: NextRequest) {
     const query = searchParams.get("q") ?? ""
     const action = searchParams.get("action") ?? ""
     const resourceType = searchParams.get("resourceType") ?? ""
+    const resourceId = searchParams.get("resourceId") ?? ""
+    const severity = searchParams.get("severity") ?? ""
+    const startDate = searchParams.get("startDate") ?? ""
+    const endDate = searchParams.get("endDate") ?? ""
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "30")))
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (query) {
+      // Recherche full-text + UUID + IP
+      const isUuid = /^[0-9a-f-]{36}$/i.test(query) || /^[0-9a-f-]{8}/i.test(query)
       where.OR = [
-        { action: { contains: query, mode: "insensitive" } },
-        { resourceType: { contains: query, mode: "insensitive" } },
+        { searchText: { contains: query, mode: "insensitive" } },
         { user: { name: { contains: query, mode: "insensitive" } } },
         { user: { email: { contains: query, mode: "insensitive" } } },
+        ...(isUuid ? [{ resourceId: query } as any] : []),
+        ...(query.includes(".") ? [] : [{ ipAddress: { contains: query, mode: "insensitive" } } as any]),
       ]
     }
 
     if (action) where.action = action
     if (resourceType) where.resourceType = resourceType
+    if (resourceId) where.resourceId = resourceId
+    if (severity) where.severity = severity
 
-    const [logs, total, filters] = await Promise.all([
+    if (startDate || endDate) {
+      const createdAt: Record<string, Date> = {}
+      if (startDate) createdAt.gte = new Date(startDate)
+      if (endDate) createdAt.lte = new Date(endDate)
+      where.createdAt = createdAt
+    }
+
+    const [rawLogs, total, distinctActions, distinctResourceTypes] = await Promise.all([
       prisma.auditLog.findMany({
         where,
         select: {
           id: true,
+          userId: true,
           action: true,
           resourceType: true,
           resourceId: true,
           details: true,
           ipAddress: true,
+          userAgent: true,
           createdAt: true,
-          user: { select: { name: true, email: true } },
+          severity: true,
+          user: { select: { name: true, email: true, image: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,
         take: limit,
       }),
       prisma.auditLog.count({ where }),
-      getAuditFilters(),
+      prisma.auditLog.findMany({ select: { action: true }, distinct: ["action"], orderBy: { action: "asc" } }),
+      prisma.auditLog.findMany({ select: { resourceType: true }, distinct: ["resourceType"], orderBy: { resourceType: "asc" } }),
     ])
+
+    const logs = rawLogs.map((log) => {
+      const d = log.details as Record<string, unknown> | null
+      const resourceLabel = (d?.resourceLabel as string) ?? null
+      const filteredDetails = { ...(d ?? {}) }
+      delete filteredDetails.resourceLabel
+      return {
+        ...log,
+        resourceLabel,
+        details: Object.keys(filteredDetails).length > 0 ? filteredDetails : null,
+        user: log.user ?? null,
+      }
+    })
 
     return NextResponse.json({
       logs,
       total,
       page,
       limit,
-      filters,
+      filters: {
+        actions: distinctActions.map((a) => a.action),
+        resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
+      },
     })
   } catch (error) {
     return handleAuthError(error)

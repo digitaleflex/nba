@@ -1,10 +1,10 @@
 import { notFound, redirect } from "next/navigation"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
-import { SignalPolicy } from "@nba/modules/signals/policies/signal-policy"
+import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 import { Card, CardContent, Badge } from "@nba/design-system"
 import { Calendar, User, ChevronLeft } from "lucide-react"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { MarkdownMessage } from "@nba/lib/markdown"
 import Link from "next/link"
 import { SignalActions } from "./components/signal-actions"
 
@@ -51,7 +51,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     })
   ])
 
-  const isUserAdmin = userDb?.role.name === "ADMIN" || userDb?.role.name === "SUPER_ADMIN"
+  const isUserAdmin = userDb?.role?.name === "ADMIN" || userDb?.role?.name === "SUPER_ADMIN"
   const userPlanIds = new Set(approvedRequests.map((r) => r.planId))
 
   if (!signal || signal.deletedAt) {
@@ -59,7 +59,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
   }
 
   // Check access policy
-  const canView = await SignalPolicy.canView(session.user.id, signal.id)
+  const canView = await canViewSignal(session.user.id, signal.id)
   if (!canView) {
     redirect("/dashboard/signals")
   }
@@ -124,10 +124,9 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           </div>
 
           {/* Body Content */}
-          <div 
-            className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words"
-            dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
-          />
+          <div className="text-base font-medium text-foreground whitespace-pre-wrap leading-relaxed space-y-3 break-words">
+            <MarkdownMessage content={signal.content} />
+          </div>
 
           {/* Interactive Actions for Favorite, Archive, Share, Print */}
           <SignalActions 
@@ -136,6 +135,14 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             initialFavorited={!!favorite} 
             initialArchived={!!archive} 
           />
+
+          {/* Journal : lien rapide vers le formulaire de trade */}
+          <Link
+            href={`/dashboard/journal?tab=trades&signalId=${signal.id}`}
+            className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 text-sm font-medium text-primary transition-colors min-h-[44px]"
+          >
+            📓 J'ai tradé ce signal
+          </Link>
 
           {/* Graphics Gallery */}
           {Array.isArray(signal.imageUrls) && (signal.imageUrls as string[]).length > 0 ? (

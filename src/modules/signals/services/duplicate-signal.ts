@@ -1,6 +1,6 @@
 import { prisma } from "@nba/lib/db"
 import { AuthError } from "@nba/lib/auth-utils"
-import { SignalPolicy } from "../policies/signal-policy"
+import { canCreateSignal } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function duplicateSignal(id: string, userId: string) {
@@ -14,7 +14,7 @@ export async function duplicateSignal(id: string, userId: string) {
   }
 
   // Check create permissions for the user
-  const allowed = await SignalPolicy.canCreate(userId)
+  const allowed = await canCreateSignal(userId)
   if (!allowed) {
     throw new AuthError("Accès refusé", 403)
   }

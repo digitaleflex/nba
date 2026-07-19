@@ -18,6 +18,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
   }
 
+  // Vérifier que le compte n'est pas suspendu
+  const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
+  if (!me?.isActive) {
+    return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
+  }
+
   const userId = session.user.id
   const form = await req.formData()
 
@@ -32,6 +38,19 @@ export async function POST(req: NextRequest) {
 
   if (!front) {
     return NextResponse.json({ error: "Fichier requis" }, { status: 400 })
+  }
+
+  if (!front.type.startsWith("image/")) {
+    return NextResponse.json(
+      { error: "Le fichier doit être une image" },
+      { status: 400 },
+    )
+  }
+  if (back && !back.type.startsWith("image/")) {
+    return NextResponse.json(
+      { error: "Le fichier verso doit être une image" },
+      { status: 400 },
+    )
   }
 
   const storage = getStorage()

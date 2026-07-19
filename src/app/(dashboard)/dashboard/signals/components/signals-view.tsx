@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
-import { Card, CardContent, Badge, Input, Button } from "@nba/design-system"
+import { Card, CardContent, Badge, Input, Button, cn } from "@nba/design-system"
+import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import {
   Radio,
   Search,
@@ -15,7 +16,8 @@ import {
   Star,
   Archive,
 } from "lucide-react"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { MarkdownMessage } from "@nba/lib/markdown"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 import { MobileFilterSheet } from "./mobile-filter-sheet"
 
 interface SignalData {
@@ -100,10 +102,13 @@ function getDateGroup(dateStr: string): string {
   return target.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })
 }
 
-function SignalCard({ signal }: { signal: SignalData }) {
+function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?: boolean }) {
   return (
     <Link href={`/dashboard/signals/${signal.id}`} className="block">
-      <Card className="relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer">
+      <Card className={cn(
+        "relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer",
+        justArrived && "ring-2 ring-primary/60 animate-[pulse_1.2s_ease-in-out_1]"
+      )}>
         {!signal.read && (
           <div className="absolute right-3 top-3 z-10">
             <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5 animate-pulse">
@@ -126,10 +131,9 @@ function SignalCard({ signal }: { signal: SignalData }) {
             </div>
           </div>
 
-          <div
-            className="text-sm text-foreground whitespace-pre-wrap leading-relaxed break-words line-clamp-6"
-            dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(signal.content) }}
-          />
+          <div className="text-sm text-foreground whitespace-pre-wrap leading-relaxed break-words line-clamp-6">
+            <MarkdownMessage content={signal.content} />
+          </div>
 
           {Array.isArray(signal.imageUrls) && signal.imageUrls.length > 0 && (
             <div className="flex gap-2 pt-1">
@@ -172,15 +176,6 @@ function SignalCard({ signal }: { signal: SignalData }) {
   )
 }
 
-function useDebounce<T>(value: T, delay: number): T {
-  const [debounced, setDebounced] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setDebounced(value), delay)
-    return () => clearTimeout(timer)
-  }, [value, delay])
-  return debounced
-}
-
 export function SignalsView() {
   const [signals, setSignals] = useState<SignalData[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
@@ -192,8 +187,14 @@ export function SignalsView() {
   const [error, setError] = useState<string | null>(null)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
-  const debouncedSearch = useDebounce(searchQuery, 300)
+  const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const lastFetchRef = useRef(0)
+  const [liveArrivals, setLiveArrivals] = useState<Set<string>>(new Set())
+  const liveArrivalsRef = useRef<Set<string>>(new Set())
+
+  // Temps réel : un signal publié déclenche un refresh instantané et synchronisé
+  // pour tous les abonnés connectés (canal 'signal' du serveur WebSocket).
+  const { subscribe, socket, status } = useSocket()
 
   const availableFilters = useMemo(() => {
     if (!summary || !summary.group || summary.group === "Tous les signaux") {
@@ -229,17 +230,26 @@ export function SignalsView() {
           window.location.href = "/login"
           return
         }
-        throw new Error("Erreur lors du chargement")
+        // Message user-friendly renvoyé par l'API (pas de détails techniques).
+        let msg = "Erreur lors du chargement des signaux"
+        try {
+          const body = (await res.json()) as { error?: string }
+          if (body?.error) msg = body.error
+        } catch {
+          // corps non-JSON : on garde le message générique
+        }
+        throw new Error(msg)
       }
 
       const data: ApiResponse = await res.json()
+      const sigs = Array.isArray(data.signals) ? data.signals : []
       if (append) {
-        setSignals((prev) => [...prev, ...data.signals])
+        setSignals((prev) => [...prev, ...sigs])
       } else {
-        setSignals(data.signals)
+        setSignals(sigs)
       }
-      setPagination(data.pagination)
-      setSummary(data.summary)
+      setPagination(data.pagination ?? { page: 1, totalPages: 1, totalCount: 0 })
+      setSummary(data.summary ?? {})
       lastFetchRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
@@ -252,6 +262,49 @@ export function SignalsView() {
   useEffect(() => {
     fetchSignals(1, false)
   }, [fetchSignals])
+
+  useEffect(() => {
+    const off = subscribe<{ signalId?: string }>("signal", (payload) => {
+      // Marque le signal comme arrivé en temps réel pour animer sa carte
+      // (uniquement si on connaît son id, sinon on se contente du refresh).
+      if (payload?.signalId) {
+        liveArrivalsRef.current.add(payload.signalId)
+        setLiveArrivals(new Set(liveArrivalsRef.current))
+        // Nettoie le flag d'animation après la transition visuelle
+        setTimeout(() => {
+          liveArrivalsRef.current.delete(payload.signalId as string)
+          setLiveArrivals(new Set(liveArrivalsRef.current))
+        }, 1600)
+      }
+      // Refresh la vue courante ; le nouveau signal apparaîtra s'il correspond
+      // au filtre actif (un signal fraîchement publié est "non lu").
+      fetchSignals(1, false)
+    })
+    return off
+  }, [subscribe, fetchSignals])
+
+  // Replay au (re)connect : comblé la fenêtre de perte d'event (worker WS
+  // indisponible au moment d'un PUBLISH Redis). On demande les signaux
+  // publiés depuis le plus récent déjà affiché.
+  useEffect(() => {
+    const sock = socket.current
+    if (!sock) return
+    const onConnect = () => {
+      const latest = signals
+        .map((s) => new Date(s.publishedAt || s.createdAt).getTime())
+        .filter((t) => !isNaN(t))
+      sock.emit("signal:resync", {
+        since: latest.length
+          ? new Date(Math.max(...latest)).toISOString()
+          : new Date(Date.now() - 60_000).toISOString(),
+      })
+    }
+    if (sock.connected) onConnect()
+    sock.on("connect", onConnect)
+    return () => {
+      sock.off("connect", onConnect)
+    }
+  }, [socket, signals])
 
   useEffect(() => {
     const onVisible = () => {
@@ -297,8 +350,8 @@ export function SignalsView() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
-            <p className="font-semibold text-destructive">Erreur de chargement</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p className="font-semibold text-destructive">{error}</p>
+            <p className="text-sm text-muted-foreground">Si le problème persiste, contactez le support.</p>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
               Réessayer
             </Button>
@@ -312,7 +365,16 @@ export function SignalsView() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Signaux</h1>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+            Signaux
+            <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+              <span className={cn(
+                "inline-block h-2 w-2 rounded-full",
+                status === "connected" ? "bg-emerald-400 animate-pulse" : "bg-neutral-500"
+              )} />
+              {status === "connected" ? "En direct" : "Connexion…"}
+            </span>
+          </h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -435,7 +497,7 @@ export function SignalsView() {
               </div>
               <div className="grid gap-3">
                 {sigs.map((sig) => (
-                  <SignalCard key={sig.id} signal={sig} />
+                  <SignalCard key={sig.id} signal={sig} justArrived={liveArrivals.has(sig.id)} />
                 ))}
               </div>
             </div>

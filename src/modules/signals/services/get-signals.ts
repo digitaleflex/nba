@@ -6,6 +6,7 @@ interface SignalPagination {
   page?: number
   limit?: number
   status?: string
+  search?: string
 }
 
 export async function getSignals(options: SignalPagination = {}) {
@@ -26,11 +27,12 @@ export async function getSignals(options: SignalPagination = {}) {
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
 
   if (isAdmin) {
-    const { page = 1, limit = 50, status } = options
+    const { page = 1, limit = 50, status, search } = options
     const skip = (page - 1) * limit
 
     const where: any = { deletedAt: null }
     if (status) where.status = status
+    if (search) where.content = { contains: search, mode: "insensitive" }
 
     const [signals, total] = await Promise.all([
       prisma.signal.findMany({
@@ -140,13 +142,13 @@ export async function deleteSignal(id: string) {
   })
 }
 
-import { SignalPolicy } from "../policies/signal-policy"
+import { canViewSignal, canUpdateSignal } from "../policies/signal-policy"
 
 export async function getSignalById(id: string) {
   const session = await getServerSession()
   if (!session) throw new AuthError("Non autorisé", 401)
 
-  const hasAccess = await SignalPolicy.canView(session.user.id, id)
+  const hasAccess = await canViewSignal(session.user.id, id)
   if (!hasAccess) {
     throw new AuthError("Accès refusé", 403)
   }
@@ -165,7 +167,7 @@ export async function getSignalVersions(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
   if (!signal) throw new Error("Signal introuvable")
 
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
   return prisma.signalVersion.findMany({
@@ -181,7 +183,7 @@ export async function getSignalStats(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
   if (!signal) throw new Error("Signal introuvable")
 
-  const allowed = await SignalPolicy.canUpdate(userId, signal)
+  const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) throw new AuthError("Accès refusé", 403)
 
   const [uniqueMembers, aggregate, firstReadRow, reads] = await Promise.all([
@@ -213,6 +215,160 @@ export async function getSignalStats(id: string, userId: string) {
       readAt: r.readAt,
       views: r.viewCount,
     })),
+  }
+}
+
+export type DeliveryChannel = "EMAIL" | "PUSH" | "TELEGRAM" | "WHATSAPP"
+
+export interface ChannelDeliveryStat {
+  channel: DeliveryChannel
+  sent: number
+  failed: number
+  pending: number
+  bounced: number
+}
+
+export interface FailedDelivery {
+  channel: DeliveryChannel
+  userEmail: string | null
+  userName: string | null
+  errorMessage: string | null
+  sentAt: string | null
+}
+
+export interface SignalDeliveryReport {
+  signalId: string
+  recipientCount: number
+  totalDeliveries: number
+  sent: number
+  failed: number
+  pending: number
+  bounced: number
+  byChannel: ChannelDeliveryStat[]
+  failures: FailedDelivery[]
+}
+
+const DELIVERY_CHANNELS: DeliveryChannel[] = [
+  "EMAIL",
+  "PUSH",
+  "TELEGRAM",
+  "WHATSAPP",
+]
+
+export async function getSignalDelivery(
+  id: string,
+  userId: string,
+  includeFailures = true
+): Promise<SignalDeliveryReport> {
+  const signal = await prisma.signal.findUnique({ where: { id } })
+  if (!signal) throw new Error("Signal introuvable")
+
+  const allowed = await canUpdateSignal(userId, signal)
+  if (!allowed) throw new AuthError("Accès refusé", 403)
+
+  const notificationIds = (
+    await prisma.notification.findMany({
+      where: { data: { path: ["signalId"], equals: id } },
+      select: { id: true },
+    })
+  ).map((n) => n.id)
+
+  const recipientCount = notificationIds.length
+
+  if (recipientCount === 0) {
+    return {
+      signalId: id,
+      recipientCount: 0,
+      totalDeliveries: 0,
+      sent: 0,
+      failed: 0,
+      pending: 0,
+      bounced: 0,
+      byChannel: DELIVERY_CHANNELS.map((channel) => ({
+        channel,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+        bounced: 0,
+      })),
+      failures: [],
+    }
+  }
+
+  const grouped = await prisma.notificationDelivery.groupBy({
+    by: ["channel", "status"],
+    where: { notificationId: { in: notificationIds } },
+    _count: { _all: true },
+  })
+
+  const byChannel: Record<DeliveryChannel, ChannelDeliveryStat> = {
+    EMAIL: { channel: "EMAIL", sent: 0, failed: 0, pending: 0, bounced: 0 },
+    PUSH: { channel: "PUSH", sent: 0, failed: 0, pending: 0, bounced: 0 },
+    TELEGRAM: { channel: "TELEGRAM", sent: 0, failed: 0, pending: 0, bounced: 0 },
+    WHATSAPP: { channel: "WHATSAPP", sent: 0, failed: 0, pending: 0, bounced: 0 },
+  }
+
+  let sent = 0
+  let failed = 0
+  let pending = 0
+  let bounced = 0
+
+  for (const row of grouped) {
+    const count = row._count._all
+    const stat = byChannel[row.channel as DeliveryChannel]
+    if (!stat) continue
+    switch (row.status) {
+      case "SENT":
+        stat.sent += count
+        sent += count
+        break
+      case "FAILED":
+        stat.failed += count
+        failed += count
+        break
+      case "PENDING":
+        stat.pending += count
+        pending += count
+        break
+      case "BOUNCED":
+        stat.bounced += count
+        bounced += count
+        break
+    }
+  }
+
+  let failures: FailedDelivery[] = []
+  if (includeFailures) {
+    const failedRows = await prisma.notificationDelivery.findMany({
+      where: {
+        notificationId: { in: notificationIds },
+        status: { in: ["FAILED", "BOUNCED"] },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 50,
+      include: {
+        notification: { include: { user: { select: { name: true, email: true } } } },
+      },
+    })
+    failures = failedRows.map((d) => ({
+      channel: d.channel as DeliveryChannel,
+      userEmail: d.notification.user.email,
+      userName: d.notification.user.name,
+      errorMessage: d.errorMessage,
+      sentAt: d.sentAt ? d.sentAt.toISOString() : null,
+    }))
+  }
+
+  return {
+    signalId: id,
+    recipientCount,
+    totalDeliveries: sent + failed + pending + bounced,
+    sent,
+    failed,
+    pending,
+    bounced,
+    byChannel: DELIVERY_CHANNELS.map((c) => byChannel[c]),
+    failures,
   }
 }
 

@@ -28,9 +28,9 @@ export default function VerificationPage() {
     setLoading(true)
     setError(null)
     fetch("/api/onboarding/state")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Erreur"); return r.json() })
       .then((data) => {
-        setState(data)
+        setState(data ?? {})
         setLoading(false)
       })
       .catch(() => {

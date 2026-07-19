@@ -1,15 +1,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-const { mockNotifCreate, mockDeliveryCreate } = vi.hoisted(() => {
+const { mockNotifCreate, mockDeliveryCreate, mockDeliveryUpdate, mockSendPush } = vi.hoisted(() => {
   const mockDeliveryCreate = vi.fn()
+  const mockDeliveryUpdate = vi.fn()
   const mockNotifCreate = vi.fn()
-  return { mockNotifCreate, mockDeliveryCreate }
+  const mockSendPush = vi.fn().mockResolvedValue({ sent: 1, failed: 0 })
+  return { mockNotifCreate, mockDeliveryCreate, mockDeliveryUpdate, mockSendPush }
 })
 
 vi.mock("@nba/lib/db", () => ({
   prisma: {
     notification: { create: mockNotifCreate },
-    notificationDelivery: { create: mockDeliveryCreate },
+    notificationDelivery: { create: mockDeliveryCreate, update: mockDeliveryUpdate },
     $transaction: vi.fn(async (cb: (tx: any) => any) => cb({
       notificationDelivery: { create: mockDeliveryCreate },
     })),
@@ -17,6 +19,7 @@ vi.mock("@nba/lib/db", () => ({
 }))
 
 import { notify, sendEmailSync, sendVerificationEmail, sendWelcomeEmail, sendResetPasswordEmail, sendOtpEmail } from "./notifications"
+import { sendPushToUser } from "./push"
 
 vi.mock("@nba/lib/email", () => ({
   sendEmail: vi.fn(),
@@ -32,6 +35,10 @@ vi.mock("@nba/lib/queue", () => ({
   }),
 }))
 
+vi.mock("./push", () => ({
+  sendPushToUser: mockSendPush,
+}))
+
 import { sendEmail } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 
@@ -40,6 +47,7 @@ describe("notify", () => {
     vi.clearAllMocks()
     mockNotifCreate.mockResolvedValue({ id: "notif-1" } as any)
     mockDeliveryCreate.mockResolvedValue({ id: "delivery-1" } as any)
+    mockDeliveryUpdate.mockResolvedValue({ id: "delivery-1" } as any)
   })
 
   it("creates an in-app notification", async () => {
@@ -69,7 +77,11 @@ describe("notify", () => {
       body: "Test",
     })
 
-    expect(mockDeliveryCreate).not.toHaveBeenCalled()
+    // Aucune livraison EMAIL créée (mais une livraison PUSH oui)
+    const emailCreates = (mockDeliveryCreate.mock.calls as any[]).filter(
+      (c) => c[0]?.data?.channel === "EMAIL",
+    )
+    expect(emailCreates.length).toBe(0)
     expect(getQueue).not.toHaveBeenCalled()
   })
 
@@ -107,6 +119,44 @@ describe("notify", () => {
         attempts: 3,
         backoff: { type: "exponential", delay: 5000 },
       },
+    )
+  })
+
+  it("tracks a PUSH delivery (PENDING) and marks it SENT after successful push", async () => {
+    await notify({
+      userId: "user-1",
+      type: "SYSTEM",
+      title: "Test",
+      body: "Body",
+    })
+
+    // 1 livraison PUSH créée en PENDING
+    const pushCreate = (mockDeliveryCreate.mock.calls as any[]).find(
+      (c) => c[0]?.data?.channel === "PUSH",
+    )
+    expect(pushCreate).toBeDefined()
+    expect(pushCreate[0].data.status).toBe("PENDING")
+
+    // laisse le fire-and-forget se résoudre
+    await new Promise((r) => setTimeout(r, 10))
+
+    expect(mockSendPush).toHaveBeenCalled()
+    expect(mockDeliveryUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: "SENT" } }),
+    )
+  })
+
+  it("marks PUSH delivery FAILED when push returns failed>0", async () => {
+    mockSendPush.mockResolvedValueOnce({ sent: 0, failed: 1 } as any)
+    await notify({
+      userId: "user-1",
+      type: "SYSTEM",
+      title: "Test",
+      body: "Body",
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    expect(mockDeliveryUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: "FAILED" } }),
     )
   })
 

@@ -59,14 +59,14 @@ export function SessionList() {
 
   useEffect(() => {
     fetch("/api/sessions")
-      .then((r) => r.json())
-      .then(setSessions)
+      .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
+      .then((data) => setSessions(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false))
   }, [])
 
   async function revokeSession(id: string) {
     if (!confirm("Révoquer cette session ? L'utilisateur sera déconnecté.")) return
-    await fetch(`/api/sessions/${id}`, { method: "DELETE" })
+    await fetch(`/api/sessions/${id}`, { method: "DELETE" }).catch(() => {})
     setSessions((prev) => prev.filter((s) => s.id !== id))
   }
 

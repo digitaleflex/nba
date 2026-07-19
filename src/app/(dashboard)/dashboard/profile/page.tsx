@@ -7,6 +7,7 @@ import {
   Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages, Camera
 } from "lucide-react"
 import countries from "@nba/lib/countries.json"
+import { toast } from "sonner"
 import { Avatar, AvatarImage, AvatarFallback } from "@nba/design-system"
 
 interface UserProfile {
@@ -69,11 +70,12 @@ export default function ProfilePage() {
 
   useEffect(() => {
     fetch("/api/dashboard/profile")
-      .then((r) => r.json())
+      .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
       .then((data) => {
+        if (!data.user) return
         setProfile(data.user)
         setForm({
-          name: data.user.name,
+          name: data.user.name ?? "",
           phone: data.user.phone || "",
           whatsapp: data.user.whatsapp || "",
           country: data.user.country || "",
@@ -211,7 +213,9 @@ export default function ProfilePage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Erreur")
-      window.location.href = "/login"
+      toast.success("Votre compte a bien été supprimé.")
+      // Redirection vers une page explicative plutôt qu'un /login brut.
+      window.location.href = "/blocked?status=deleted"
     } catch (err: any) {
       setDeleteError(err.message)
     } finally {
@@ -295,7 +299,7 @@ export default function ProfilePage() {
               <p className="font-semibold text-lg">{profile?.name}</p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
               <Badge variant="outline" className="text-[10px] mt-1">
-                {profile?.role.name}
+                {profile?.role?.name}
               </Badge>
             </div>
           </div>

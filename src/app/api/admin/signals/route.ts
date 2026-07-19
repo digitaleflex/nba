@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createSignal } from "@nba/modules/signals/services/create-signal"
 import { getSignals } from "@nba/modules/signals/services/get-signals"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
+import { getCached } from "@nba/lib/cache"
+import { csrfCheck } from "@nba/lib/csrf"
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +12,13 @@ export async function GET(req: NextRequest) {
     const page = Number(searchParams.get("page") ?? 1)
     const limit = Number(searchParams.get("limit") ?? 50)
     const status = searchParams.get("status") ?? undefined
-    const result = await getSignals({ page, limit, status })
+    const search = searchParams.get("search") ?? undefined
+    const cacheKey = `signals:${status ?? "all"}:${search ?? ""}:${page}:${limit}`
+    const result = await getCached(
+      cacheKey,
+      () => getSignals({ page, limit, status, search }),
+      15,
+    )
     return NextResponse.json(result)
   } catch (error) {
     return handleAuthError(error)
@@ -18,6 +26,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  const csrf = csrfCheck(req)
+  if (csrf) return csrf
   try {
     await requirePermission("signals.create")
     const body = await req.json()

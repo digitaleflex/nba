@@ -1,225 +1,194 @@
 "use client"
 
 import { useEffect, useRef, useState, useCallback } from "react"
-import { 
-  Bold, Italic, List, Image as ImageIcon, Trash2, Send, Loader2, 
-  Save, Calendar, Check, X, Plus, FileText, Info, Laptop, Phone, Sparkles
+import {
+  Send, Loader2, Save, X, Check, Phone, Laptop, ChevronLeft, ChevronRight,
 } from "lucide-react"
-import { Button, Card, CardContent, Checkbox, Badge, Input, cn } from "@nba/design-system"
-import { parseSimpleMarkdown } from "@nba/lib/utils"
+import { Button, Card, CardContent, cn, useMediaQuery } from "@nba/design-system"
 import { toast } from "sonner"
+import { StepContent } from "./signal-wizard/step-content"
+import { StepAudience } from "./signal-wizard/step-audience"
+import { StepSchedule } from "./signal-wizard/step-schedule"
 
 interface Plan {
   id: string
   name: string
-  _count?: {
-    users?: number
-    accessRequests?: number
-  }
+  _count?: { users?: number; accessRequests?: number }
 }
 
+const STEPS = ["Quoi", "À qui", "Quand"] as const
+
 export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void }) {
-  // Form fields states
+  // Form fields
   const [content, setContent] = useState("")
   const [imageUrls, setImageUrls] = useState<string[]>([])
-  
-  // Diffusion groups
   const [plans, setPlans] = useState<Plan[]>([])
   const [selectedPlans, setSelectedPlans] = useState<string[]>([])
+  const [search, setSearch] = useState("")
 
-  // Global states
+  // Schedule
+  const [scheduled, setScheduled] = useState(false)
+  const [scheduledAt, setScheduledAt] = useState("")
+
+  // UI state
+  const [step, setStep] = useState(0)
   const [uploadingCount, setUploadingCount] = useState(0)
   const isUploading = uploadingCount > 0
   const [isSubmitting, setIsSubmitting] = useState<"DRAFT" | "PUBLISHED" | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
-
-  // Confirmation modal states
-  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [showConfirm, setShowConfirm] = useState(false)
   const [targetStatus, setTargetStatus] = useState<"DRAFT" | "PUBLISHED">("PUBLISHED")
-  const [isEstimating, setIsEstimating] = useState(false)
-  const [estimationResult, setEstimationResult] = useState<{ total: number; breakdown: Record<string, number> } | null>(null)
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // Live estimate
+  const [isEstimating, setIsEstimating] = useState(false)
+  const [estimation, setEstimation] = useState<{
+    total: number; overrideCount: number; breakdown: { planId: string; name: string; count: number }[]
+  } | null>(null)
+  const estimateRef = useRef<AbortController | null>(null)
+
+  // Draft persistence
+  const [draftId, setDraftId] = useState<string | null>(null)
+  const isDesktop = useMediaQuery("(min-width: 768px)")
+
+  // ---- Plenty of shared upload/estimate logic ----
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // Fetch plans
   useEffect(() => {
-    fetch("/api/public/plans")
+    fetch("/api/public/plans").then((r) => r.json()).then(setPlans).catch((e) => console.error("plans", e))
+    // Restore an in-progress draft (most recent DRAFT)
+    fetch("/api/admin/signals?status=DRAFT&limit=1")
       .then((r) => r.json())
       .then((data) => {
-        setPlans(data)
-        // Auto-select all plans by default
-        if (data.length > 0) {
-          setSelectedPlans(data.map((p: Plan) => p.id))
+        const list = data?.signals ?? data ?? []
+        const d = Array.isArray(list) ? list[0] : null
+        if (d && (d.content || (d.imageUrls?.length ?? 0) > 0 || (d.audience?.length ?? 0) > 0)) {
+          setDraftId(d.id)
+          setContent(d.content ?? "")
+          setImageUrls(d.imageUrls ?? [])
+          setSelectedPlans((d.audience ?? []).map((a: { planId: string }) => a.planId))
+          if (d.scheduledAt) { setScheduled(true); setScheduledAt(new Date(d.scheduledAt).toISOString().slice(0, 16)) }
         }
       })
-      .catch((err) => console.error("Failed to load plans:", err))
+      .catch(() => {})
   }, [])
 
-  // Auto-resize textarea
+  // Live estimate (debounced)
   useEffect(() => {
-    const textarea = textareaRef.current
-    if (textarea) {
-      textarea.style.height = "auto"
-      textarea.style.height = `${textarea.scrollHeight}px`
-    }
-  }, [content])
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (selectedPlans.length === 0) { setEstimation(null); return }
+    setIsEstimating(true)
+    const handle = setTimeout(async () => {
+      const controller = new AbortController()
+      estimateRef.current?.abort()
+      estimateRef.current = controller
+      try {
+        const res = await fetch(`/api/admin/signals/estimate?planIds=${selectedPlans.join(",")}`, { signal: controller.signal })
+        if (res.ok) {
+          const data = await res.json()
+          if (!controller.signal.aborted) setEstimation(data)
+        }
+      } catch (e) {
+        if ((e as { name?: string })?.name !== "AbortError") console.error("estimate", e)
+      } finally {
+        if (!controller.signal.aborted) setIsEstimating(false)
+      }
+    }, 350)
+    return () => clearTimeout(handle)
+  }, [selectedPlans])
 
-  // Handle single image upload — uses counter to track concurrent uploads (fix race condition)
+  // Autosave draft (debounced 1s)
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current)
+    autosaveTimer.current = setTimeout(async () => {
+      // Only autosave when there is something meaningful
+      if (!content.trim() && imageUrls.length === 0 && selectedPlans.length === 0) return
+      try {
+        const res = await fetch("/api/admin/signals/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: draftId ?? undefined,
+            content,
+            imageUrls,
+            planIds: selectedPlans,
+            scheduledAt: scheduled && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          }),
+        })
+        if (res.ok) {
+          const { id } = await res.json()
+          if (id) setDraftId(id)
+        }
+      } catch (e) { /* silent autosave failure */ }
+    }, 1000)
+    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current) }
+  }, [content, imageUrls, selectedPlans, scheduled, scheduledAt, draftId])
+
   const uploadSingleImage = useCallback(async (file: File): Promise<string | null> => {
     setUploadingCount((c) => c + 1)
     const formData = new FormData()
     formData.append("file", file)
-
     try {
-      const res = await fetch("/api/admin/signals/upload", {
-        method: "POST",
-        body: formData,
-      })
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || "Upload échoué")
-      }
+      const res = await fetch("/api/admin/signals/upload", { method: "POST", body: formData })
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || "Upload échoué") }
       const data = await res.json()
       return data.path as string
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erreur lors du téléchargement de l'image"
-      toast.error(msg)
+      toast.error(err instanceof Error ? err.message : "Erreur d'upload")
       return null
     } finally {
       setUploadingCount((c) => c - 1)
     }
   }, [])
 
-  // Handle image upload — single or batch
-  async function handleImageUpload(file: File) {
-    if (imageUrls.length >= 5) {
-      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
-      return
-    }
-    const path = await uploadSingleImage(file)
-    if (path) setImageUrls((prev) => [...prev, path])
+  function onUpload(file: File) {
+    if (imageUrls.length >= 5) { toast.warning("Maximum 5 images."); return }
+    void uploadSingleImage(file).then((p) => p && setImageUrls((prev) => [...prev, p]))
+  }
+  function onFileInput(files: FileList | null) {
+    const arr = Array.from(files || []).slice(0, 5 - imageUrls.length)
+    arr.forEach(onUpload)
+  }
+  function togglePlan(id: string) {
+    setSelectedPlans((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]))
   }
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const files = Array.from(e.target.files || [])
-    const remainingSlots = 5 - imageUrls.length
-    if (remainingSlots <= 0) {
-      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
-      return
+  function openConfirmation(status: "DRAFT" | "PUBLISHED") {
+    if (!content.trim()) { toast.warning("Veuillez rédiger le contenu du signal."); return }
+    if (selectedPlans.length === 0) { toast.warning("Veuillez sélectionner au moins un groupe."); return }
+    if (scheduled && (!scheduledAt || new Date(scheduledAt).getTime() <= Date.now())) {
+      toast.warning("Choisissez une date de planification future."); return
     }
-    const toUpload = files.slice(0, remainingSlots)
-    // Upload all in parallel — counter handles loading state correctly
-    void Promise.all(toUpload.map(async (file) => {
-      const path = await uploadSingleImage(file)
-      if (path) setImageUrls((prev) => [...prev, path])
-    }))
-  }
-
-  function handleDragOver(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  function handleDragLeave() {
-    setIsDragging(false)
-  }
-
-  async function handleDrop(e: React.DragEvent) {
-    e.preventDefault()
-    setIsDragging(false)
-    const files = Array.from(e.dataTransfer.files)
-    const images = files.filter((f: File) => f.type.startsWith("image/"))
-    if (images.length === 0) return
-
-    const remainingSlots = 5 - imageUrls.length
-    if (remainingSlots <= 0) {
-      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
-      return
-    }
-
-    const toUpload = images.slice(0, remainingSlots)
-    // Upload all dropped images in parallel
-    await Promise.all(toUpload.map(async (img) => {
-      const path = await uploadSingleImage(img)
-      if (path) setImageUrls((prev) => [...prev, path])
-    }))
-  }
-
-  async function handlePaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
-    const items = Array.from(e.clipboardData.items)
-    const imageItems = items.filter((item: DataTransferItem) => item.type.startsWith("image/"))
-    if (imageItems.length === 0) return
-
-    const remainingSlots = 5 - imageUrls.length
-    if (remainingSlots <= 0) {
-      e.preventDefault()
-      toast.warning("Vous pouvez télécharger jusqu'à 5 images maximum.")
-      return
-    }
-
-    e.preventDefault()
-    const toUpload = imageItems.slice(0, remainingSlots)
-    for (const item of toUpload) {
-      const file = item.getAsFile()
-      if (file) {
-        await handleImageUpload(file)
-      }
-    }
-  }
-
-  function insertFormat(prefix: string, suffix = "") {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    const start = textarea.selectionStart
-    const end = textarea.selectionEnd
-    const text = textarea.value
-    const selected = text.substring(start, end)
-    const formatted = prefix + selected + suffix
-    setContent(text.substring(0, start) + formatted + text.substring(end))
-    
-    setTimeout(() => {
-      textarea.focus()
-      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length)
-    }, 0)
-  }
-
-  // Open confirmation modal
-  async function openConfirmation(status: "DRAFT" | "PUBLISHED") {
-    if (!content.trim()) {
-      toast.warning("Veuillez rédiger ou coller le contenu de votre signal.")
-      return
-    }
-    if (selectedPlans.length === 0) {
-      toast.warning("Veuillez sélectionner au moins un groupe de diffusion.")
-      return
-    }
-
     setTargetStatus(status)
-    setShowConfirmModal(true)
-    setIsEstimating(true)
-    setEstimationResult(null)
-
-    try {
-      const planQuery = selectedPlans.map(id => `planIds=${id}`).join("&")
-      const res = await fetch(`/api/admin/signals/estimate?${planQuery}`)
-      if (res.ok) {
-        const data = await res.json()
-        setEstimationResult(data)
-      }
-    } catch (err) {
-      console.error("Failed to estimate recipients:", err)
-    } finally {
-      setIsEstimating(false)
-    }
+    setShowConfirm(true)
   }
 
-  // Submit Signal directly
-  async function handleConfirmSubmit() {
-    setShowConfirmModal(false)
+  async function submit() {
+    setShowConfirm(false)
     setIsSubmitting(targetStatus)
-
     try {
+      let result: { queueFailed?: boolean } = {}
+      if (targetStatus === "DRAFT") {
+        // Reuse the draft endpoint (and existing draftId) instead of
+        // creating a second DRAFT row via the strict create endpoint.
+        const res = await fetch("/api/admin/signals/draft", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: draftId ?? undefined,
+            content: content.trim(),
+            imageUrls,
+            planIds: selectedPlans,
+            scheduledAt: scheduled && scheduledAt ? new Date(scheduledAt).toISOString() : null,
+          }),
+        })
+        if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || "Échec") }
+        const data: { id?: string } = await res.json()
+        if (data.id) setDraftId(data.id)
+        toast.success("Brouillon enregistré.")
+        if (onSignalCreated) onSignalCreated()
+        return
+      }
+
       const res = await fetch("/api/admin/signals", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -228,315 +197,218 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
           imageUrls,
           planIds: selectedPlans,
           status: targetStatus,
-          scheduledAt: null, // publication immédiate
+          scheduledAt: scheduled && scheduledAt ? new Date(scheduledAt).toISOString() : null,
         }),
       })
-
-      if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "Submission failed")
-      }
-
-      const result = await res.json()
-
-      // Success Reset
-      setContent("")
-      setImageUrls([])
-      if (targetStatus === "DRAFT") {
-        toast.success("Brouillon enregistré avec succès.")
-      } else if (result.queueFailed) {
-        toast.warning("Signal publié mais les notifications push ont échoué (Redis/BullMQ indisponible). Les membres ne seront pas notifiés automatiquement.", { duration: 8000 })
-      } else {
-        toast.success("Signal publié avec succès.")
-      }
+      if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e.error || "Échec") }
+      result = await res.json()
+      // Draft consumed
+      if (draftId) { try { await fetch(`/api/admin/signals/${draftId}`, { method: "DELETE" }) } catch {} }
+      setDraftId(null)
+      setContent(""); setImageUrls([]); setSelectedPlans([]); setScheduled(false); setScheduledAt("")
+      if (result.queueFailed) toast.warning("Signal publié mais notifications push échouées (Redis/BullMQ).", { duration: 8000 })
+      else toast.success("Signal publié avec succès.")
       if (onSignalCreated) onSignalCreated()
-    } catch (err: any) {
-      console.error(err)
-      toast.error(`Erreur : ${err.message || err}`)
+    } catch (err) {
+      toast.error(`Erreur : ${err instanceof Error ? err.message : String(err)}`)
     } finally {
       setIsSubmitting(null)
     }
   }
 
-  // Toggle selected plan
-  function togglePlan(planId: string) {
-    if (selectedPlans.includes(planId)) {
-      setSelectedPlans((prev) => prev.filter((id) => id !== planId))
-    } else {
-      setSelectedPlans((prev) => [...prev, planId])
-    }
+  const canNext = step === 0 ? content.trim().length > 0 : step === 1 ? selectedPlans.length > 0 : true
+  const isLast = step === STEPS.length - 1
+
+  // Desktop: centered 600px card wizard. Mobile: full-screen per-step with horizontal slide.
+  const stepBody = (
+    <>
+      {step === 0 && (
+        <StepContent
+          content={content}
+          setContent={setContent}
+          imageUrls={imageUrls}
+          setImageUrls={setImageUrls}
+          isUploading={isUploading}
+          onUpload={onUpload}
+          onFileInput={onFileInput}
+        />
+      )}
+      {step === 1 && (
+        <StepAudience
+          plans={plans}
+          selectedPlans={selectedPlans}
+          togglePlan={togglePlan}
+          search={search}
+          setSearch={setSearch}
+          estimation={estimation}
+          isEstimating={isEstimating}
+        />
+      )}
+      {step === 2 && (
+        <StepSchedule scheduled={scheduled} setScheduled={setScheduled} scheduledAt={scheduledAt} setScheduledAt={setScheduledAt} />
+      )}
+    </>
+  )
+
+  const footer = (
+    <div className="flex items-center justify-between gap-2 pt-2 border-t border-border/60">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="text-xs"
+        disabled={step === 0}
+        onClick={() => setStep((s) => Math.max(0, s - 1))}
+      >
+        <ChevronLeft className="size-4" /> Précédent
+      </Button>
+
+      <div className="flex items-center gap-1.5">
+        {STEPS.map((_, i) => (
+          <span key={i} className={cn("size-1.5 rounded-full transition-colors", i === step ? "bg-primary" : "bg-border")} />
+        ))}
+      </div>
+
+      {isLast ? (
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="text-[10px] h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("DRAFT")}>
+            <Save className="size-3.5" /> Brouillon
+          </Button>
+          <Button size="sm" className="text-[10px] h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("PUBLISHED")}>
+            <Send className="size-3.5" /> Publier
+          </Button>
+        </div>
+      ) : (
+        <Button
+          size="sm"
+          className="text-xs"
+          disabled={!canNext}
+          onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
+        >
+          Suivant <ChevronRight className="size-4" />
+        </Button>
+      )}
+    </div>
+  )
+
+  // ---------- Mobile: full screen with horizontal slide ----------
+  if (!isDesktop) {
+    return (
+      <div className="lg:hidden">
+        <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Nouveau signal</h1>
+            <p className="text-[11px] text-muted-foreground">Étape {step + 1}/{STEPS.length} — {STEPS[step]}</p>
+          </div>
+          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Phone className="size-3" /> Mobile</span>
+        </div>
+
+        <div className="overflow-hidden">
+          <div
+            className="flex transition-transform duration-300 ease-out"
+            style={{ transform: `translateX(-${step * 100}%)` }}
+          >
+            {STEPS.map((_, i) => (
+              <div key={i} className="w-full shrink-0 px-0.5">
+                {step === i && stepBody}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {footer}
+
+        {showConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
+              <div className="flex items-center justify-between border-b pb-2">
+                <h3 className="font-semibold text-base">Confirmation</h3>
+                <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {targetStatus === "DRAFT" ? "Enregistrer ce brouillon ?" : `Diffuser à ${estimation?.total ?? selectedPlans.length} membre(s) ?`}
+              </p>
+              <div className="flex justify-end gap-2 border-t pt-3">
+                <Button variant="outline" size="sm" onClick={() => setShowConfirm(false)}>Annuler</Button>
+                <Button size="sm" disabled={isSubmitting !== null} onClick={submit}>
+                  {isSubmitting ? <><Loader2 className="size-3.5 animate-spin" /> Envoi...</> : <><Check className="size-3.5" /> Confirmer</>}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )
   }
 
+  // ---------- Desktop: centered 600px wizard ----------
   return (
-    <div className="space-y-6">
-      {/* Title bar */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b pb-4">
+    <div className="hidden lg:block max-w-[600px] mx-auto space-y-5">
+      <div className="flex items-center justify-between border-b border-border pb-4">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Créer un nouveau signal</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Collez votre analyse ou alerte et diffusez-la instantanément à vos abonnés.
-          </p>
+          <p className="text-xs text-muted-foreground mt-0.5">Flow guidé en 3 étapes.</p>
         </div>
+        <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Laptop className="size-3" /> Desktop</span>
       </div>
 
-      {/* Main Two-Column Layout */}
-      <div className="grid gap-6 lg:grid-cols-5">
-        
-        {/* COLUMN LEFT - WRITING AREA (3 columns wide) */}
-        <div className="lg:col-span-3 space-y-4">
-          
-          <Card className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm">
-            <CardContent className="p-4 space-y-4">
-              
-              {/* Unique copy-paste message area */}
-              <div className="space-y-1">
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
-                
-                {/* Textarea editor with mini toolbar */}
-                <div className="border rounded-xl bg-background overflow-hidden">
-                  <div className="flex items-center gap-1.5 p-2 bg-muted/40 border-b">
-                    <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras"><Bold className="size-3.5" /></Button>
-                    <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("*", "*")} title="Italique"><Italic className="size-3.5" /></Button>
-                    <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("- ")} title="Liste"><List className="size-3.5" /></Button>
-                    <span className="w-px h-4 bg-border" />
-                    <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => fileInputRef.current?.click()} title="Joindre des images"><ImageIcon className="size-3.5" /></Button>
-                  </div>
-                  
-                  <textarea
-                    ref={textareaRef}
-                    value={content}
-                    onChange={(e) => setContent(e.target.value)}
-                    onPaste={handlePaste}
-                    placeholder="Collez ou rédigez votre signal ici... (ex: BUY EUR/USD, Entry, TP, SL, analyses...)"
-                    className="w-full min-h-[180px] max-h-[400px] p-3 text-xs leading-relaxed outline-none border-0 resize-none bg-transparent"
-                  />
-                  
-                  <div className="px-3 py-1 bg-muted/20 text-[9px] text-right text-muted-foreground border-t">
-                    {content.length} caractères
-                  </div>
-                </div>
-              </div>
-
-              {/* Drag & Drop Upload Zone & Horizontal Gallery */}
-              <div className="space-y-2">
-                <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Images et captures d'écran</label>
-                
-                <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={handleFileChange} />
-                
-                {/* Horizontal previews gallery */}
-                <div className="flex flex-wrap gap-2.5 items-center">
-                  {imageUrls.map((url, idx) => (
-                    <div key={idx} className="relative group size-16 rounded-xl overflow-hidden border bg-muted shrink-0">
-                      <img src={`/api/files/${url}`} alt="" className="h-full w-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setImageUrls((prev) => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-1 right-1 size-4 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
-                      >
-                        <X className="size-2.5" />
-                      </button>
-                    </div>
-                  ))}
-                  
-                  {imageUrls.length < 5 && (
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      className={cn(
-                        "size-16 rounded-xl border border-dashed flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary cursor-pointer shrink-0",
-                        isDragging && "border-primary bg-primary/5"
-                      )}
-                    >
-                      <Plus className="size-5 mb-0.5" />
-                      <span className="text-[8px] font-bold">Ajouter</span>
-                    </div>
-                  )}
-                  
-                  {imageUrls.length === 0 && (
-                    <span className="text-[10px] text-muted-foreground ml-1">
-                      Glissez vos captures d'écran directement ici (max: 5 images, PNG, JPG, WEBP).
-                    </span>
-                  )}
-                </div>
-              </div>
-
-            </CardContent>
-          </Card>
-
-        </div>
-
-        {/* COLUMN RIGHT - DIFFUSION GROUPS & INBOX PREVIEW (2 columns wide) */}
-        <div className="lg:col-span-2 space-y-4">
-          
-          {/* APERCU INBOX MEMBRE */}
-          <div className="space-y-1.5">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-              <Sparkles className="size-3.5 text-primary" />
-              Aperçu Inbox Membre
-            </h3>
-            <Card className="relative overflow-hidden border border-primary/20 bg-primary/5/10 shadow-md">
-              <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-              <CardContent className="p-4 space-y-3">
-                <div className="flex items-center justify-between border-b pb-2 border-border/50 text-[9px] text-muted-foreground">
-                  <span className="flex items-center gap-1 font-bold">
-                    <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
-                    NBA VIP
-                  </span>
-                  <span>Aujourd'hui, 14:30</span>
-                </div>
-                
-                {/* Message body preview */}
-                <div 
-                  className="text-xs text-foreground leading-relaxed whitespace-pre-wrap break-words min-h-[40px]"
-                  dangerouslySetInnerHTML={{ __html: parseSimpleMarkdown(content.trim() || "Votre message formaté s'affichera ici...") }}
-                />
-
-                {/* Images grid preview */}
-                {imageUrls.length > 0 && (
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
-                    {imageUrls.map((url, idx) => (
-                      <div key={idx} className="relative aspect-video rounded-lg overflow-hidden border bg-muted">
-                        <img src={`/api/files/${url}`} alt="" className="h-full w-full object-cover" />
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* GROUPS OF DIFFUSION CARD LIST */}
-          <Card className="border-border/50 bg-card/60 backdrop-blur-md shadow-sm">
-            <CardContent className="p-4 space-y-4">
-              <h3 className="font-bold text-sm border-b pb-2">Groupes de diffusion</h3>
-
-              <div className="grid gap-2">
-                {plans.length === 0 ? (
-                  <div className="text-center py-4 text-xs text-muted-foreground">Aucun groupe trouvé.</div>
-                ) : (
-                  plans.map((plan) => {
-                    const isSelected = selectedPlans.includes(plan.id)
-                    return (
-                      <div
-                        key={plan.id}
-                        onClick={() => togglePlan(plan.id)}
-                        className={cn(
-                          "cursor-pointer text-xs p-3 rounded-xl border transition-all duration-200 flex items-center justify-between select-none",
-                          isSelected
-                            ? "border-primary/30 bg-primary/5 text-foreground font-semibold shadow-xs"
-                            : "border-border hover:bg-muted/30 text-muted-foreground"
-                        )}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <Checkbox
-                            checked={isSelected}
-                            onCheckedChange={() => {}} // handled by div onClick
-                          />
-                          <span>{plan.name}</span>
-                        </div>
-                        <Badge variant="outline" className="text-[9px] font-normal border-border/80 bg-background/50">
-                          {(() => {
-                            const count = plan._count?.accessRequests ?? plan._count?.users
-                            return count !== undefined
-                              ? `${count} membre${count > 1 ? "s" : ""}`
-                              : "— membres"
-                          })()}
-                        </Badge>
-                      </div>
-                    )
-                  })
-                )}
-              </div>
-
-              {/* Main Submit Actions */}
-              <div className="flex flex-col gap-2 pt-2 border-t">
-                <Button 
-                  variant="default" 
-                  size="sm" 
-                  className="w-full h-10 text-xs rounded-xl font-bold bg-primary hover:bg-primary/95 text-primary-foreground flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
-                  disabled={!content.trim() || isSubmitting !== null}
-                  onClick={() => openConfirmation("PUBLISHED")}
-                >
-                  <Send className="size-4" />
-                  Publier le signal immédiatement
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="w-full h-10 text-xs rounded-xl cursor-pointer"
-                  disabled={!content.trim() || isSubmitting !== null}
-                  onClick={() => openConfirmation("DRAFT")}
-                >
-                  <Save className="size-4 mr-1.5" />
-                  Enregistrer en brouillon
-                </Button>
-              </div>
-
-            </CardContent>
-          </Card>
-
-        </div>
-
+      <div className="flex items-center gap-2">
+        {STEPS.map((label, i) => (
+          <button
+            key={label}
+            onClick={() => setStep(i)}
+            className={cn(
+              "flex-1 flex items-center gap-2 px-3 py-2 rounded-xl border text-xs transition-colors",
+              i === step ? "border-primary/30 bg-primary/5 text-foreground font-semibold" : "border-border text-muted-foreground hover:bg-muted/30"
+            )}
+          >
+            <span className={cn("size-5 rounded-full flex items-center justify-center text-[10px]", i === step ? "bg-primary text-primary-foreground" : "bg-muted")}>{i + 1}</span>
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* Confirmation Modal overlay */}
-      {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-200">
+      <Card className="border-border/50 bg-card/60 backdrop-blur-md">
+        <CardContent className="p-5 space-y-5 min-h-[320px]">
+          {stepBody}
+        </CardContent>
+      </Card>
+
+      {footer}
+
+      {showConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 className="font-semibold text-base">Confirmation de publication</h3>
-              <button onClick={() => setShowConfirmModal(false)} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
+              <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
             </div>
-
-            {isEstimating ? (
-              <div className="flex flex-col items-center justify-center py-6 gap-3">
-                <Loader2 className="size-8 animate-spin text-primary" />
-                <p className="text-xs text-muted-foreground">Estimation des destinataires...</p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground leading-normal">
-                  Ce signal sera envoyé aux membres des groupes sélectionnés :
-                </p>
-
-                {estimationResult && (
-                  <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 border text-xs">
-                    {Object.entries(estimationResult.breakdown).map(([planName, count]) => (
-                      <div key={planName} className="flex justify-between text-muted-foreground">
-                        <span>Signals {planName}</span>
-                        <span className="font-medium text-foreground">{count} membres</span>
-                      </div>
-                    ))}
-                    <div className="flex justify-between font-bold border-t pt-1.5 mt-1.5 text-primary">
-                      <span>Total (uniques)</span>
-                      <span>✓ {estimationResult.total} membres</span>
+            <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">Ce signal sera envoyé aux membres des groupes sélectionnés.</p>
+              {estimation && (
+                <div className="space-y-1.5 rounded-xl bg-muted/40 p-3 border text-xs">
+                  {estimation.breakdown.map((b) => (
+                    <div key={b.planId} className="flex justify-between text-muted-foreground">
+                      <span className="truncate pr-2">{b.name}</span>
+                      <span className="font-medium text-foreground">{b.count}</span>
                     </div>
+                  ))}
+                  {estimation.overrideCount > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Accès global (override)</span>
+                      <span className="font-medium text-foreground">{estimation.overrideCount}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold border-t pt-1.5 mt-1.5 text-primary">
+                    <span>Total (uniques)</span>
+                    <span>✓ {estimation.total}</span>
                   </div>
-                )}
-                
-                <p className="text-[10px] text-amber-600 bg-amber-500/10 border border-amber-500/20 p-2 rounded-lg flex items-start gap-1.5">
-                  <Info className="size-3.5 shrink-0 mt-0.5" />
-                  <span>Cette action diffusera immédiatement le signal à tous les abonnés de ces canaux.</span>
-                </p>
-              </div>
-            )}
-
+                </div>
+              )}
+            </div>
             <div className="flex justify-end gap-2 border-t pt-3">
-              <Button variant="outline" size="sm" onClick={() => setShowConfirmModal(false)}>Annuler</Button>
-              <Button onClick={handleConfirmSubmit} size="sm" disabled={isSubmitting !== null} className="gap-1.5">
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="size-3.5 animate-spin" />
-                    Envoi...
-                  </>
-                ) : (
-                  <>
-                    <Send className="size-3.5" />
-                    Confirmer l'envoi
-                  </>
-                )}
+              <Button variant="outline" size="sm" onClick={() => setShowConfirm(false)}>Annuler</Button>
+              <Button size="sm" disabled={isSubmitting !== null} onClick={submit}>
+                {isSubmitting ? <><Loader2 className="size-3.5 animate-spin" /> Envoi...</> : <><Check className="size-3.5" /> Confirmer</>}
               </Button>
             </div>
           </div>
