@@ -1,5 +1,6 @@
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY
+const WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED !== "false"
 
 interface WhatsAppSendResult {
   ok: boolean
@@ -10,6 +11,9 @@ export async function sendWhatsAppMessage(
   phoneNumber: string,
   text: string,
 ): Promise<WhatsAppSendResult> {
+  if (!WHATSAPP_ENABLED) {
+    return { ok: false, error: "WhatsApp notifications are disabled" }
+  }
   if (!WHATSAPP_API_URL || !WHATSAPP_API_KEY) {
     return { ok: false, error: "WHATSAPP_API_URL or WHATSAPP_API_KEY not configured" }
   }
