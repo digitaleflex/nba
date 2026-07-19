@@ -1,5 +1,6 @@
 export interface AuditEvent {
   id: string
+  userId: string | null
   action: string
   resourceType: string
   resourceId: string | null

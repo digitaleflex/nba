@@ -37,13 +37,13 @@ function timeAgo(dateStr: string): string {
   const secs = Math.floor(diff / 1000)
   if (secs < 60) return `Il y a ${secs}s`
   const mins = Math.floor(secs / 60)
-  if (mins < 60) return `Il y a ${mins} min`
+  if (mins < 60) return mins === 1 ? "Il y a 1 min" : `Il y a ${mins} min`
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `Il y a ${hours}h`
+  if (hours < 24) return hours === 1 ? "Il y a 1h" : `Il y a ${hours}h`
   const days = Math.floor(hours / 24)
-  if (days < 30) return `Il y a ${days}j`
+  if (days < 30) return days === 1 ? "Il y a 1j" : `Il y a ${days}j`
   const months = Math.floor(days / 30)
-  return `Il y a ${months} mois`
+  return months === 1 ? "Il y a 1 mois" : `Il y a ${months} mois`
 }
 
 function formatDate(dateStr: string): string {
@@ -256,6 +256,13 @@ export default function AuditCenterPage() {
     return `${base}/${resourceId}`
   }
 
+  function userUrl(userId: string | null): string | null {
+    if (!userId) return null
+    return `/admin/members/${userId}`
+  }
+
+  const errorCount = useMemo(() => logs.filter((l) => l.severity === "error").length, [logs])
+
   function renderDetails(log: AuditEvent) {
     const { pairs, metrics } = cleanDetails(log.details)
     if (pairs.length === 0 && metrics.length === 0 && !log.resourceId) return null
@@ -341,13 +348,20 @@ export default function AuditCenterPage() {
                   {sev.label}
                 </span>
 
-                {/* Ressource avec icône */}
-                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
-                  <ResourceIcon className="size-3" />
-                  {getResourceLabel(log.resourceType)}
-                </span>
-
-                <span className="text-[11px] text-muted-foreground/50 hidden sm:inline">{formatDate(log.createdAt)}</span>
+                {/* Ressource avec icône — cliquable */}
+                {getResourceUrl(log.resourceType, log.resourceId) ? (
+                  <a href={getResourceUrl(log.resourceType, log.resourceId)!}
+                    className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70 hover:text-primary transition-colors"
+                  >
+                    <ResourceIcon className="size-3" />
+                    {getResourceLabel(log.resourceType)}
+                  </a>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground/70">
+                    <ResourceIcon className="size-3" />
+                    {getResourceLabel(log.resourceType)}
+                  </span>
+                )}
               </div>
 
               {/* Description */}
@@ -366,8 +380,17 @@ export default function AuditCenterPage() {
           {/* Footer métadonnées */}
           <div className="mt-2.5 flex items-center gap-3 text-[11px] text-muted-foreground/60 flex-wrap">
             <span className="inline-flex items-center gap-1">
-              <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
-              {log.user?.name ?? log.user?.email ?? "Système"}
+              {userUrl(log.userId) ? (
+                <a href={userUrl(log.userId)!} className="inline-flex items-center gap-1 hover:text-foreground transition-colors">
+                  <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
+                  {log.user?.name ?? log.user?.email ?? "Système"}
+                </a>
+              ) : (
+                <>
+                  <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
+                  {log.user?.name ?? log.user?.email ?? "Système"}
+                </>
+              )}
             </span>
             <span className="inline-flex items-center gap-1" title={formatDate(log.createdAt)}>
               <Clock className="size-3" />
@@ -408,7 +431,15 @@ export default function AuditCenterPage() {
           </div>
           <div>
             <h1 className="text-xl font-bold">Centre d&apos;audit</h1>
-            <p className="text-sm text-muted-foreground">{total} événement{total > 1 ? "s" : ""}</p>
+            <p className="text-sm text-muted-foreground flex items-center gap-2">
+              <span>{total} événement{total > 1 ? "s" : ""}</span>
+              {errorCount > 0 && (
+                <span className="inline-flex items-center gap-1 text-rose-600 dark:text-rose-400 font-medium">
+                  <span className="size-1.5 rounded-full bg-rose-500" />
+                  {errorCount} erreur{errorCount > 1 ? "s" : ""}
+                </span>
+              )}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
@@ -552,8 +583,69 @@ export default function AuditCenterPage() {
           </button>
         </div>
 
-        {/* Filtres avancés : période + sévérité */}
+        {/* Filtres avancés : période + sévérité + presets */}
         <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-xs text-muted-foreground shrink-0">Rapide :</span>
+            <button onClick={() => updateParams({ severity: severityFilter === "error" ? null : "error", page: "1" })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-1 ${
+                severityFilter === "error"
+                  ? "bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border-rose-200/50 dark:border-rose-900/30"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <span className="size-1.5 rounded-full bg-rose-500" />
+              Erreurs
+            </button>
+            <button onClick={() => updateParams({ severity: severityFilter === "warning" ? null : "warning", page: "1" })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-1 ${
+                severityFilter === "warning"
+                  ? "bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200/50 dark:border-amber-900/30"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              <span className="size-1.5 rounded-full bg-amber-500" />
+              Avertissements
+            </button>
+            <button onClick={() => updateParams({ action: actionFilter === "session.login" ? null : "session.login", page: "1" })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                actionFilter === "session.login"
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >
+              🔑 Connexions
+            </button>
+            <span className="text-xs text-muted-foreground/40">|</span>
+            <span className="text-xs text-muted-foreground shrink-0">Période :</span>
+            <button onClick={() => updateParams({ startDate: new Date().toISOString().slice(0, 10), endDate: null, page: "1" })}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                startDate === new Date().toISOString().slice(0, 10) && !endDate
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >Aujourd'hui</button>
+            <button onClick={() => {
+              const d = new Date(); d.setDate(d.getDate() - 7)
+              updateParams({ startDate: d.toISOString().slice(0, 10), endDate: null, page: "1" })
+            }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                startDate && !endDate && Math.abs((new Date().getTime() - new Date(startDate).getTime()) / 86400000 - 7) < 2
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >7 jours</button>
+            <button onClick={() => {
+              const d = new Date(); d.setDate(d.getDate() - 30)
+              updateParams({ startDate: d.toISOString().slice(0, 10), endDate: null, page: "1" })
+            }}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+                startDate && !endDate && Math.abs((new Date().getTime() - new Date(startDate).getTime()) / 86400000 - 30) < 5
+                  ? "bg-primary/10 text-primary border-primary/20"
+                  : "border-border/50 text-muted-foreground hover:bg-muted/50"
+              }`}
+            >30 jours</button>
+          </div>
           <div className="flex items-center gap-2">
             <label className="text-xs text-muted-foreground shrink-0">Du</label>
             <input
@@ -649,18 +741,30 @@ export default function AuditCenterPage() {
         </div>
       ) : view === "user" && groupedByUser ? (
         <div className="space-y-6">
-          {groupedByUser.map(({ key, user, logs: groupLogs }) => (
-            <div key={key}>
-              <div className="flex items-center gap-2 mb-3">
-                <Avatar name={user?.name} email={user?.email} image={user?.image} />
-                <span className="text-sm font-medium">{user?.name ?? user?.email ?? "Système"}</span>
-                <span className="text-xs text-muted-foreground/50">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
+          {groupedByUser.map(({ key, user, logs: groupLogs }) => {
+            const uid = groupLogs.find((l) => l.userId)?.userId ?? null
+            return (
+              <div key={key}>
+                <div className="flex items-center gap-2 mb-3">
+                  {uid ? (
+                    <a href={userUrl(uid)!} className="inline-flex items-center gap-2 hover:text-foreground transition-colors">
+                      <Avatar name={user?.name} email={user?.email} image={user?.image} />
+                      <span className="text-sm font-medium">{user?.name ?? user?.email ?? "Système"}</span>
+                    </a>
+                  ) : (
+                    <>
+                      <Avatar name={user?.name} email={user?.email} image={user?.image} />
+                      <span className="text-sm font-medium">{user?.name ?? user?.email ?? "Système"}</span>
+                    </>
+                  )}
+                  <span className="text-xs text-muted-foreground/50">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
+                </div>
+                <div className="space-y-2">
+                  {groupLogs.map((log) => <AuditCard key={log.id} log={log} />)}
+                </div>
               </div>
-              <div className="space-y-2">
-                {groupLogs.map((log) => <AuditCard key={log.id} log={log} />)}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       ) : view === "resource" && groupedByResource ? (
         <div className="space-y-6">

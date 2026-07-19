@@ -49,6 +49,7 @@ export async function GET(request: NextRequest) {
         where,
         select: {
           id: true,
+          userId: true,
           action: true,
           resourceType: true,
           resourceId: true,
