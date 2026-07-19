@@ -16,17 +16,15 @@ const nextConfig: NextConfig = {
     // En dev local (stockage fichier), les images passent par l'API interne
     unoptimized: process.env.STORAGE_PROVIDER !== "s3",
   },
-  // CSP et headers de sécurité → gérés au niveau du reverse proxy (Traefik/Cloudflare).
-  // Seul Alt-Svc reste ici car c'est un fix applicatif pour le bug HTTP/3 Cloudflare + RSC.
   async headers() {
     return [
+      // HTML jamais en cache → le navigateur récupère toujours les bonnes refs CSS/JS.
+      // Ne s'applique PAS à /_next/static (Next.js gère ses chunks en immutable).
       {
-        source: "/(.*)",
+        source: "/((?!_next/static|_next/image).*)",
         headers: [
-          {
-            key: "Alt-Svc",
-            value: 'h2c=":443"; ma=1',
-          },
+          { key: "Cache-Control", value: "no-store, must-revalidate" },
+          { key: "Alt-Svc", value: 'h2c=":443"; ma=1' },
         ],
       },
     ];
