@@ -11,12 +11,10 @@ import {
   Bell,
   ListTodo,
   Users,
-  UserCheck,
   FileCheck,
   Link2,
   Shield,
   Ban,
-  FileText,
   ShieldCheck,
   Settings,
   MessageSquare,
@@ -24,52 +22,6 @@ import {
   Database,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
-
-const GROUPS = [
-  {
-    label: "Supervision",
-    items: [
-      { href: "/admin", label: "Console", icon: LayoutDashboard, match: "/admin" },
-      { href: "/admin/control-room", label: "Control Room", icon: Gauge, match: "/admin/control-room" },
-      { href: "/admin/tracker", label: "Tracker", icon: Activity, match: "/admin/tracker" },
-      { href: "/admin/cache", label: "Cache & Services", icon: Database, match: "/admin/cache" },
-      { href: "/admin/queues", label: "Files BullMQ", icon: Activity, match: "/admin/queues" },
-    ],
-  },
-  {
-    label: "Communication",
-    items: [
-      { href: "/admin?tab=signals", label: "Signaux", icon: Radio, match: "?tab=signals" },
-      { href: "/admin?tab=emails", label: "E-mails", icon: Mail, match: "?tab=emails" },
-      { href: "/admin?tab=notifications", label: "Notifications", icon: Bell, match: "?tab=notifications" },
-    ],
-  },
-  {
-    label: "Membres",
-    items: [
-      { href: "/admin?tab=requests", label: "Demandes d'accès", icon: ListTodo, match: "?tab=requests" },
-      { href: "/admin?tab=membres", label: "Membres", icon: Users, match: "?tab=membres" },
-      { href: "/admin?tab=kyc", label: "KYC", icon: FileCheck, match: "?tab=kyc" },
-      { href: "/admin?tab=broker", label: "Broker", icon: Link2, match: "?tab=broker" },
-    ],
-  },
-  {
-    label: "Système",
-    items: [
-      { href: "/admin?tab=moderation", label: "Modération", icon: Ban, match: "?tab=moderation" },
-      { href: "/admin?tab=audit", label: "Audit", icon: FileText, match: "?tab=audit" },
-      { href: "/admin?tab=security", label: "Sécurité", icon: ShieldCheck, match: "?tab=security" },
-      { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, match: "?tab=settings" },
-    ],
-  },
-  {
-    label: "Social",
-    items: [
-      { href: "/admin/messages", label: "Messages", icon: MessageSquare, match: "/admin/messages" },
-      { href: "/admin/support", label: "Support", icon: CircleHelp, match: "/admin/support" },
-    ],
-  },
-]
 
 export function AdminSidebar() {
   const pathname = usePathname()
@@ -85,7 +37,6 @@ export function AdminSidebar() {
     { href: "/admin?tab=kyc", label: "KYC", icon: FileCheck, match: "kyc" },
     { href: "/admin?tab=broker", label: "Broker", icon: Link2, match: "broker" },
     { href: "/admin?tab=moderation", label: "Modération", icon: Ban, match: "moderation" },
-    { href: "/admin?tab=audit", label: "Audit", icon: FileText, match: "audit" },
     { href: "/admin?tab=security", label: "Sécurité", icon: ShieldCheck, match: "security" },
     { href: "/admin?tab=settings", label: "Paramètres", icon: Settings, match: "settings" },
   ]
@@ -176,7 +127,7 @@ export function AdminSidebar() {
             Système
           </p>
           <div className="space-y-0.5">
-            {tabLinks.filter(l => ["moderation","audit","security","settings"].includes(l.match)).map((item) => (
+            {tabLinks.filter(l => ["moderation","security","settings"].includes(l.match)).map((item) => (
               <Link key={item.href} href={item.href} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
                 isTabActive(item) ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
               )}>
@@ -184,6 +135,12 @@ export function AdminSidebar() {
                 <span className="truncate">{item.label}</span>
               </Link>
             ))}
+            <Link href="/admin/audit" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
+              isPathActive("/admin/audit") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+            )}>
+              <Shield className="size-4 shrink-0" />
+              Centre d'audit
+            </Link>
           </div>
         </div>
 

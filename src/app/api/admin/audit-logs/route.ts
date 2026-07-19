@@ -1,31 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { unstable_cache } from "next/cache"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
-import { getCached } from "@nba/lib/cache"
-
-const getAuditFilters = unstable_cache(
-  async () => {
-    const [distinctActions, distinctResourceTypes] = await Promise.all([
-      prisma.auditLog.findMany({
-        select: { action: true },
-        distinct: ["action"],
-        orderBy: { action: "asc" },
-      }),
-      prisma.auditLog.findMany({
-        select: { resourceType: true },
-        distinct: ["resourceType"],
-        orderBy: { resourceType: "asc" },
-      }),
-    ])
-    return {
-      actions: distinctActions.map((a) => a.action),
-      resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
-    }
-  },
-  ["audit-log-filters"],
-  { revalidate: 300 }
-)
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,12 +11,11 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get("action") ?? ""
     const resourceType = searchParams.get("resourceType") ?? ""
     const resourceId = searchParams.get("resourceId") ?? ""
-    const view = searchParams.get("view") ?? "timeline"
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "30")))
     const skip = (page - 1) * limit
 
-    const where: any = {}
+    const where: Record<string, unknown> = {}
 
     if (query) {
       where.OR = [
@@ -56,42 +30,38 @@ export async function GET(request: NextRequest) {
     if (resourceType) where.resourceType = resourceType
     if (resourceId) where.resourceId = resourceId
 
-    const result = await getCached(
-      `audit:${query}:${action}:${resourceType}:${page}:${limit}`,
-      async () => {
-        const [logs, total, filters] = await Promise.all([
-          prisma.auditLog.findMany({
-            where,
-            select: {
-              id: true,
-              action: true,
-              resourceType: true,
-              resourceId: true,
-              details: true,
-              ipAddress: true,
-              createdAt: true,
-              user: { select: { name: true, email: true } },
-            },
-            orderBy: { createdAt: "desc" },
-            skip,
-            take: limit,
-          }),
-          prisma.auditLog.count({ where }),
-          getAuditFilters(),
-        ])
+    const [logs, total, actions, resourceTypes] = await Promise.all([
+      prisma.auditLog.findMany({
+        where,
+        select: {
+          id: true,
+          action: true,
+          resourceType: true,
+          resourceId: true,
+          details: true,
+          ipAddress: true,
+          createdAt: true,
+          user: { select: { name: true, email: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.auditLog.count({ where }),
+      prisma.auditLog.findMany({ select: { action: true }, distinct: ["action"], orderBy: { action: "asc" } }),
+      prisma.auditLog.findMany({ select: { resourceType: true }, distinct: ["resourceType"], orderBy: { resourceType: "asc" } }),
+    ])
 
-        return {
-          logs,
-          total,
-          page,
-          limit,
-          filters,
-        }
+    return NextResponse.json({
+      logs,
+      total,
+      page,
+      limit,
+      filters: {
+        actions: actions.map((a) => a.action),
+        resourceTypes: resourceTypes.map((r) => r.resourceType),
       },
-      300,
-    )
-
-    return NextResponse.json(result)
+    })
   } catch (error) {
     return handleAuthError(error)
   }
