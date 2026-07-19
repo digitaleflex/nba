@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { notificationPrefsSchema, validateOrThrow } from "@nba/lib/validations"
 import { NOTIFICATION_SOUND_IDS } from "@nba/lib/notification-sounds"
 
 const SOUNDS = NOTIFICATION_SOUND_IDS
@@ -42,7 +43,8 @@ export async function PUT(req: NextRequest) {
     const session = await requireActiveUser()
 
     const body = await req.json()
-    const { sound, prefs, quietHours } = body
+    const input = validateOrThrow(notificationPrefsSchema, body)
+    const { sound, prefs, quietHours } = input
 
     const data: Record<string, any> = {}
 

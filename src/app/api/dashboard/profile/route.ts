@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { profileSchema, validateOrThrow } from "@nba/lib/validations"
 
 export async function GET() {
   try {
@@ -39,17 +40,17 @@ export async function PUT(req: NextRequest) {
     const session = await requireActiveUser()
 
     const body = await req.json()
-    const { name, phone, whatsapp, country, language, timezone } = body
+    const input = validateOrThrow(profileSchema, body)
 
     const user = await prisma.user.update({
       where: { id: session.user.id },
       data: {
-        ...(name !== undefined && { name }),
-        ...(phone !== undefined && { phone }),
-        ...(whatsapp !== undefined && { whatsapp }),
-        ...(country !== undefined && { country }),
-        ...(language !== undefined && { language }),
-        ...(timezone !== undefined && { timezone }),
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.phone !== undefined && { phone: input.phone }),
+        ...(input.whatsapp !== undefined && { whatsapp: input.whatsapp }),
+        ...(input.country !== undefined && { country: input.country }),
+        ...(input.language !== undefined && { language: input.language }),
+        ...(input.timezone !== undefined && { timezone: input.timezone }),
       },
       select: {
         id: true,
