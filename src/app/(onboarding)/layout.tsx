@@ -7,7 +7,7 @@ export default async function OnboardingLayout({ children }: { children: React.R
   if (!session) redirect("/login")
 
   return (
-    <div className="flex min-h-dvh flex-col noise">
+    <div className="flex min-h-dvh flex-col">
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-8">
         <ErrorBoundary>
           {children}

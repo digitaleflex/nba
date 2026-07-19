@@ -32,7 +32,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <MessagingUnreadProvider>
       <CommandPaletteProvider>
-        <div className="flex min-h-dvh flex-col md:flex-row noise">
+        <div className="flex min-h-dvh flex-col md:flex-row">
           {/* Desktop Sidebar */}
           <Sidebar isAdmin={true} user={user} />
 
