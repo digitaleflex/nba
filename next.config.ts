@@ -27,6 +27,13 @@ const nextConfig: NextConfig = {
           { key: "Alt-Svc", value: 'h2c=":443"; ma=1' },
         ],
       },
+      // Cache long terme immutable pour le JS/CSS statique
+      {
+        source: "/_next/static/:path*",
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
+        ],
+      },
     ];
   },
 };

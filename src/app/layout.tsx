@@ -69,6 +69,25 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+            window.addEventListener("error", function(e) {
+              if (e.target && e.target.tagName === "SCRIPT" && e.target.src && e.target.src.includes("/_next/static/chunks/")) {
+                console.warn("[chunk] Échec de chargement, rechargement automatique...");
+                e.preventDefault();
+                window.location.reload();
+              }
+            }, true);
+            window.addEventListener("unhandledrejection", function(e) {
+              if (e.reason && e.reason.message && e.reason.message.includes("dynamically imported module")) {
+                console.warn("[chunk] Échec d'import dynamique, rechargement automatique...");
+                window.location.reload();
+              }
+            });
+          `,
+          }}
+        />
         <ThemeProvider>
           <Suspense fallback={null}>
             <TopLoader />
