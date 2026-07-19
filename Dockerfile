@@ -28,17 +28,11 @@ ENV NODE_ENV=production
 ENV NEXT_PUBLIC_APP_URL=$NEXT_PUBLIC_APP_URL
 ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
-# Compile Next.js app to standalone output
+# Compile Next.js app to standalone output.
+# `next build` échoue déjà si le middleware ne compile pas ; aucune garde
+# maison n'est nécessaire (les chemins internes de Next changent entre versions,
+# ex. middleware -> proxy en Next 16, ce qui cassait le déploiement à tort).
 RUN pnpm build
-
-# Verify the middleware/proxy is properly included in the build output.
-# (function names get minified in standalone, so check for the file itself)
-RUN if ! ls .next/server/src/proxy.js 2>/dev/null && ! ls .next/server/middleware.js 2>/dev/null; then \
-      echo "❌ BUILD ERROR: middleware/proxy not found in build output" && \
-      exit 1; \
-    else \
-      echo "✅ Middleware compiled successfully"; \
-    fi
 
 # Step 4: Production runner for Next.js Web App
 FROM base AS runner
