@@ -607,6 +607,8 @@ model AuditLog {
   userAgent    String?  @map("user_agent")
   createdAt    DateTime @default(now()) @map("created_at")
   searchText   String?  @map("search_text")
+  hash         String?  @unique
+  previousHash String?  @map("previous_hash")
 
   user User? @relation(fields: [userId], references: [id])
 

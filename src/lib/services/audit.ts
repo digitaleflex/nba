@@ -1,7 +1,7 @@
 import { prisma } from "@nba/lib/db"
 import { headers } from "next/headers"
 import { publishAuditEvent } from "@nba/lib/redis-pubsub"
-import { getActionLabel, getResourceLabel } from "@nba/lib/audit/labels"
+import { computeHash } from "@nba/lib/audit/integrity"
 
 function buildSearchText(action: string, resourceType: string, details?: Record<string, unknown>): string {
   const parts = [action, resourceType]
@@ -40,17 +40,43 @@ export async function logAuditEvent(params: {
     details.resourceLabel = params.resourceLabel
   }
 
-  const log = await prisma.auditLog.create({
-    data: {
-      userId: params.userId,
-      action: params.action,
-      resourceType: params.resourceType,
-      resourceId: params.resourceId,
-      details: details as any,
-      searchText: buildSearchText(params.action, params.resourceType, details),
-      ipAddress,
-      userAgent,
-    },
+  const log = await prisma.$transaction(async (tx) => {
+    const last = await tx.auditLog.findFirst({
+      where: { hash: { not: null } },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      select: { hash: true },
+    })
+
+    const entry = await tx.auditLog.create({
+      data: {
+        userId: params.userId,
+        action: params.action,
+        resourceType: params.resourceType,
+        resourceId: params.resourceId,
+        details: details as any,
+        searchText: buildSearchText(params.action, params.resourceType, details),
+        ipAddress,
+        userAgent,
+        previousHash: last?.hash ?? null,
+      },
+    })
+
+    const hash = computeHash({
+      previousHash: entry.previousHash,
+      id: entry.id,
+      userId: entry.userId,
+      action: entry.action,
+      resourceType: entry.resourceType,
+      resourceId: entry.resourceId,
+      details: details as Record<string, unknown> | null,
+      ipAddress: entry.ipAddress,
+      createdAt: entry.createdAt,
+    })
+
+    return tx.auditLog.update({
+      where: { id: entry.id },
+      data: { hash },
+    })
   })
 
   // Publie l'événement en temps réel via Redis → WebSocket

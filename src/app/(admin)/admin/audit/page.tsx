@@ -70,6 +70,8 @@ export default function AuditCenterPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [newEventCount, setNewEventCount] = useState(0)
   const pendingEvents = useRef<AuditEvent[]>([])
+  const [integrity, setIntegrity] = useState<{ verified: boolean; totalEntries: number; hashedEntries: number; unhashedEntries: number } | null>(null)
+  const [integrityLoading, setIntegrityLoading] = useState(false)
 
   const query = searchParams.get("q") ?? ""
   const actionFilter = searchParams.get("action") ?? ""
@@ -134,6 +136,20 @@ export default function AuditCenterPage() {
     setLogs((prev) => [...events, ...prev])
     setTotal((t) => t + events.length)
   }
+
+  const fetchIntegrity = useCallback(async () => {
+    setIntegrityLoading(true)
+    try {
+      const res = await fetch("/api/admin/audit-logs/integrity")
+      if (res.ok) setIntegrity(await res.json())
+    } catch {
+      // silent
+    } finally {
+      setIntegrityLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { fetchIntegrity() }, [fetchIntegrity])
 
   const groupedByUser = useMemo(() => {
     if (view !== "user") return null
@@ -345,6 +361,23 @@ export default function AuditCenterPage() {
             <Download className="size-3.5" />
             Export CSV
           </button>
+          {integrity && (
+            <button
+              onClick={fetchIntegrity}
+              disabled={integrityLoading}
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border transition-colors ${
+                integrity.verified
+                  ? "border-emerald-200/50 dark:border-emerald-900/30 text-emerald-600 dark:text-emerald-400 bg-emerald-50/50 dark:bg-emerald-950/10"
+                  : "border-amber-200/50 dark:border-amber-900/30 text-amber-600 dark:text-amber-400 bg-amber-50/50 dark:bg-amber-950/10"
+              }`}
+              title={integrity.verified ? "Chaîne d'intégrité vérifiée" : "Problème d'intégrité détecté"}
+            >
+              <span className={`size-1.5 rounded-full ${integrity.verified ? "bg-emerald-500" : "bg-amber-500"}`} />
+              <span className="hidden sm:inline">
+                {integrity.verified ? "Intégrité OK" : `${integrity.unhashedEntries ?? 0} anomalie(s)`}
+              </span>
+            </button>
+          )}
         </div>
       </div>
 
