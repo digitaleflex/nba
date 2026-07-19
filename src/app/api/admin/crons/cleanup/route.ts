@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     results.auditLogs = auditDeleted.count
 
     const kycDocuments = await prisma.kycDocument.findMany({
-      where: { createdAt: { lt: kycCutoff }, status: { in: ["REJECTED", "EXPIRED"] } },
+      where: { createdAt: { lt: kycCutoff }, status: "REJECTED" },
       select: { id: true },
     })
     if (kycDocuments.length > 0) {

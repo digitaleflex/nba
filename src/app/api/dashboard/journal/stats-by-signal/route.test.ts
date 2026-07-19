@@ -33,7 +33,6 @@ const USER_ID = "user-1"
 
 function authSession() { (getServerSession as any).mockResolvedValue({ user: { id: USER_ID } }) }
 function noSession() { (getServerSession as any).mockResolvedValue(null) }
-function mockReq() { return { url: "https://x/api/dashboard/journal/stats-by-signal" } as any }
 
 describe("GET /api/dashboard/journal/stats-by-signal", () => {
   beforeEach(() => {
@@ -45,7 +44,7 @@ describe("GET /api/dashboard/journal/stats-by-signal", () => {
 
   it("retourne 401 si non authentifié", async () => {
     noSession()
-    const res = await GET(mockReq())
+    const res = await GET()
     expect(res.status).toBe(401)
   })
 
@@ -57,7 +56,7 @@ describe("GET /api/dashboard/journal/stats-by-signal", () => {
       { id: "sig-1", content: "Acheter EURUSD", publishedAt: new Date("2026-07-19") },
     ])
 
-    const res = await GET(mockReq())
+    const res = await GET()
     const json = await res.json()
 
     expect(json.signals).toHaveLength(1)
