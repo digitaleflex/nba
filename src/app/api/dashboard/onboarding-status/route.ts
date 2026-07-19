@@ -34,7 +34,7 @@ export async function GET() {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
     }
 
-    const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
+    const isAdmin = user.role?.name === "ADMIN" || user.role?.name === "SUPER_ADMIN"
 
     // 1. Calculer la complétion du profil
     const profileFields = [user.country, user.phone, user.whatsapp]

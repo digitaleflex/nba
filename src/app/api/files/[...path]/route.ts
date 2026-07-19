@@ -57,8 +57,8 @@ export async function GET(
     return new NextResponse("Utilisateur non trouvé", { status: 404 })
   }
 
-  const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
-  const hasPermission = (perm: string) => user.role.permissions.some((rp: any) => rp.permission.name === perm)
+  const isAdmin = user.role?.name === "ADMIN" || user.role?.name === "SUPER_ADMIN"
+  const hasPermission = (perm: string) => user.role?.permissions?.some((rp: any) => rp.permission.name === perm) ?? false
 
   let actualFilePath = filePath
 

@@ -1,31 +1,33 @@
 import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(req: Request) {
-  const session = await getServerSession()
-  if (!session) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-  }
+  try {
+    const session = await getServerSession()
+    if (!session) {
+      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    }
 
-  // Vérifier le rôle
-  const userDb = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: { select: { name: true } } },
-  })
+    // Vérifier le rôle
+    const userDb = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: { select: { name: true } } },
+    })
 
-  if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-    return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-  }
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+    }
 
-  const { searchParams } = new URL(req.url)
-  const query = searchParams.get("q") || ""
+    const { searchParams } = new URL(req.url)
+    const query = searchParams.get("q") || ""
 
-  if (query.length < 2) {
-    return NextResponse.json({ users: [], signals: [], kyc: [], audit: [] })
-  }
+    if (query.length < 2) {
+      return NextResponse.json({ users: [], signals: [], kyc: [], audit: [] })
+    }
 
-  const [users, signals, kyc, audit] = await Promise.all([
+    const [users, signals, kyc, audit] = await Promise.all([
     // Recherche Utilisateurs
     prisma.user.findMany({
       where: {
@@ -89,7 +91,10 @@ export async function GET(req: Request) {
         createdAt: true,
       },
     }),
-  ])
+    ])
 
-  return NextResponse.json({ users, signals, kyc, audit })
+    return NextResponse.json({ users, signals, kyc, audit })
+  } catch (error) {
+    return handleAuthError(error)
+  }
 }

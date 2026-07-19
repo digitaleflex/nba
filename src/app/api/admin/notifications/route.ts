@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       select: { role: { select: { name: true } } },
     })
 
-    if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
@@ -157,7 +157,7 @@ export async function GET() {
       select: { role: { select: { name: true } } },
     })
 
-    if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
     }
 
