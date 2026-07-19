@@ -298,6 +298,15 @@ if (REDIS_URL) {
     }
   })
 
+  // Canal temps réel pour le centre d'audit
+  sub.subscribe("nba:audit:admin", (err) => {
+    if (err) {
+      console.error("[ws] Redis audit:admin subscribe failed:", err)
+    } else {
+      console.log("[ws] Subscribed to nba:audit:admin")
+    }
+  })
+
   sub.on("message", (channel, message) => {
     try {
       if (channel === "nba:signal:admin") {
@@ -310,6 +319,19 @@ if (REDIS_URL) {
             console.log(`[ws] 📈 Forwarded signal to ${adminRoom.size} admin socket(s)`)
           } catch (err) {
             console.error("[ws] Failed to parse/forward admin signal:", err)
+          }
+        }
+        return
+      }
+      if (channel === "nba:audit:admin") {
+        const adminRoom = io.sockets.adapter.rooms.get("admins")
+        if (adminRoom && adminRoom.size > 0) {
+          try {
+            const payload = JSON.parse(message)
+            io.to("admins").emit("audit", payload)
+            console.log(`[ws] ⚡ Forwarded audit event to ${adminRoom.size} admin socket(s)`)
+          } catch (err) {
+            console.error("[ws] Failed to parse/forward audit event:", err)
           }
         }
         return

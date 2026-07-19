@@ -1,5 +1,6 @@
 import { prisma } from "@nba/lib/db"
 import { headers } from "next/headers"
+import { publishAuditEvent } from "@nba/lib/redis-pubsub"
 import { getActionLabel, getResourceLabel } from "@nba/lib/audit/labels"
 
 function buildSearchText(action: string, resourceType: string, details?: Record<string, unknown>): string {
@@ -39,7 +40,7 @@ export async function logAuditEvent(params: {
     details.resourceLabel = params.resourceLabel
   }
 
-  await prisma.auditLog.create({
+  const log = await prisma.auditLog.create({
     data: {
       userId: params.userId,
       action: params.action,
@@ -50,5 +51,17 @@ export async function logAuditEvent(params: {
       ipAddress,
       userAgent,
     },
+  })
+
+  // Publie l'événement en temps réel via Redis → WebSocket
+  publishAuditEvent({
+    id: log.id,
+    action: log.action,
+    resourceType: log.resourceType,
+    resourceId: log.resourceId,
+    details: details as Record<string, unknown> | null,
+    userId: log.userId,
+    createdAt: log.createdAt,
+    ipAddress: log.ipAddress,
   })
 }

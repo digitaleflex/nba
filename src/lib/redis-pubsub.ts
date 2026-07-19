@@ -73,4 +73,33 @@ export async function publishSignalEvent(channel: string, payload: unknown): Pro
   await publish(channel, payload)
 }
 
+const AUDIT_PREFIX = "nba:audit:"
+
+export function auditChannel(): string {
+  return `${AUDIT_PREFIX}admin`
+}
+
+export async function publishAuditEvent(payload: {
+  id: string
+  action: string
+  resourceType: string
+  resourceId: string | null
+  details: Record<string, unknown> | null
+  userId: string | null
+  createdAt: Date
+  ipAddress: string | null
+}): Promise<void> {
+  await publish(auditChannel(), {
+    id: payload.id,
+    action: payload.action,
+    resourceType: payload.resourceType,
+    resourceId: payload.resourceId,
+    resourceLabel: (payload.details as any)?.resourceLabel ?? null,
+    details: payload.details,
+    userId: payload.userId,
+    createdAt: payload.createdAt.toISOString(),
+    ipAddress: payload.ipAddress,
+  })
+}
+
 export { pubsubEnabled, redisUrl, getConnection }

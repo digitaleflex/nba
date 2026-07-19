@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
   Search,
@@ -26,6 +26,7 @@ import {
 import type { AuditEvent, AuditFilters, AuditView } from "@nba/lib/audit/types"
 import { getActionColor, getActionLabel, getResourceLabel } from "@nba/lib/audit/labels"
 import { renderDescription } from "@nba/lib/audit/renderers"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 
 const ITEMS_PER_PAGE = 30
 
@@ -67,6 +68,8 @@ export default function AuditCenterPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [newEventCount, setNewEventCount] = useState(0)
+  const pendingEvents = useRef<AuditEvent[]>([])
 
   const query = searchParams.get("q") ?? ""
   const actionFilter = searchParams.get("action") ?? ""
@@ -111,6 +114,26 @@ export default function AuditCenterPage() {
   }, [query, actionFilter, resourceTypeFilter, resourceId, page])
 
   useEffect(() => { fetchLogs() }, [fetchLogs])
+
+  const isLiveView = !query && !actionFilter && !resourceTypeFilter && !resourceId && view === "timeline"
+  const { subscribe } = useSocket({})
+
+  useEffect(() => {
+    if (!isLiveView || !subscribe) return
+    const off = subscribe<AuditEvent>("audit", (event) => {
+      pendingEvents.current.push(event)
+      setNewEventCount((n) => n + 1)
+    })
+    return off
+  }, [isLiveView, subscribe])
+
+  function acceptLiveEvents() {
+    const events = pendingEvents.current
+    pendingEvents.current = []
+    setNewEventCount(0)
+    setLogs((prev) => [...events, ...prev])
+    setTotal((t) => t + events.length)
+  }
 
   const groupedByUser = useMemo(() => {
     if (view !== "user") return null
@@ -273,6 +296,15 @@ export default function AuditCenterPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {newEventCount > 0 && (
+            <button
+              onClick={acceptLiveEvents}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-900/30 hover:bg-emerald-500/20 transition-colors animate-pulse"
+            >
+              <span className="size-1.5 rounded-full bg-emerald-500" />
+              {newEventCount} nouveau{newEventCount > 1 ? "x" : ""} événement{newEventCount > 1 ? "s" : ""}
+            </button>
+          )}
           <button
             onClick={fetchLogs}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
