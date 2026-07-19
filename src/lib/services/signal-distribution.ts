@@ -10,6 +10,15 @@ import { join } from "path"
 const STORAGE_BASE_PATH = process.cwd() + "/storage"
 const imageCache = new Map<string, Promise<string | null>>()
 
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function runWithThrottle<T>(items: T[], fn: (item: T) => Promise<void>, delayMs: number) {
+  for (let i = 0; i < items.length; i++) {
+    await fn(items[i])
+    if (delayMs > 0 && i < items.length - 1) await sleep(delayMs)
+  }
+}
+
 async function sendTelegramToMember(notificationId: string, userId: string, title: string, body: string) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -167,6 +176,9 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
   const BATCH_SIZE = 50
   for (let i = 0; i < members.length; i += BATCH_SIZE) {
     const batch = members.slice(i, i + BATCH_SIZE)
+    const telegramTasks: Array<{ notificationId: string; userId: string }> = []
+    const whatsappTasks: Array<{ notificationId: string; userId: string }> = []
+
     await Promise.all(
       batch.map(async (member) => {
         let notification: { id: string; createdAt: Date } | null = null
@@ -243,14 +255,26 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           console.error(`[signal-distribution] Failed to create PUSH delivery for user ${member.id}:`, err)
         })
 
-        sendTelegramToMember(notification.id, member.id, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes.").catch((err) => {
-          console.error(`[signal-distribution] Telegram failed for user ${member.id}:`, err)
-        })
-        sendWhatsAppToMember(notification.id, member.id, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes.").catch((err) => {
-          console.error(`[signal-distribution] WhatsApp failed for user ${member.id}:`, err)
-        })
+        telegramTasks.push({ notificationId: notification.id, userId: member.id })
+        whatsappTasks.push({ notificationId: notification.id, userId: member.id })
       }),
     )
+
+    // Throttle les canaux externes pour éviter les blocages providers
+    // Telegram: 30 msg/s max -> 34ms entre chaque
+    // WhatsApp: 50 msg/min max -> 1200ms entre chaque
+    await Promise.all([
+      runWithThrottle(
+        telegramTasks,
+        (t) => sendTelegramToMember(t.notificationId, t.userId, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes."),
+        34,
+      ),
+      runWithThrottle(
+        whatsappTasks,
+        (t) => sendWhatsAppToMember(t.notificationId, t.userId, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes."),
+        1200,
+      ),
+    ])
   }
 
   try {

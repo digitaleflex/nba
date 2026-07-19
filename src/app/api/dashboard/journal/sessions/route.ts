@@ -3,6 +3,9 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const sessionCreateRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
 const sessionCreateSchema = z.object({
   planId: z.string().uuid().optional(),
@@ -39,6 +42,9 @@ export async function POST(request: NextRequest) {
   try {
     const sess = await getServerSession()
     if (!sess) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
+    const rateLimitRes = await sessionCreateRateLimit(request, `journal:session:${sess.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
     const parsed = sessionCreateSchema.parse(body)

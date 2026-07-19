@@ -82,5 +82,13 @@ describe("GET /api/dashboard/journal/stats", () => {
     expect(json.totalTrades).toBe(3)
     expect(json.totalPnl).toBe(40)
     expect(json.byPair).toHaveLength(2)
+    expect(json.riskMetrics).toMatchObject({
+      profitFactor: 5,
+      avgWinner: 25,
+      avgLoser: 10,
+      riskRewardRatio: 0.4,
+      expectancy: expect.closeTo(1.33, 1),
+      maxDrawdown: 10,
+    })
   })
 })

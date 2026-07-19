@@ -27,6 +27,10 @@ vi.mock("@nba/lib/auth-utils", () => ({
   handleAuthError: vi.fn((e: any) => ({ status: 500, json: async () => ({ error: String(e) }) })),
 }))
 
+vi.mock("@nba/lib/rate-limit", () => ({
+  rateLimitMiddleware: vi.fn(() => vi.fn(async () => null)),
+}))
+
 import { GET, POST } from "./route"
 import { getServerSession } from "@nba/lib/get-session"
 

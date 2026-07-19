@@ -3,8 +3,11 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { checkPsychology } from "@nba/lib/services/journal-psychology"
 import { calculatePnl } from "@nba/lib/services/pnl"
+
+const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
 const tradeCreateSchema = z.object({
   signalId: z.string().uuid().nullable().optional(),
@@ -98,6 +101,9 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession()
     if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+
+    const rateLimitRes = await tradeCreateRateLimit(request, `journal:trade:${session.user.id}`)
+    if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
     const parsed = tradeCreateSchema.parse(body)
