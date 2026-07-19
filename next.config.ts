@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
     // En dev local (stockage fichier), les images passent par l'API interne
     unoptimized: process.env.STORAGE_PROVIDER !== "s3",
   },
+  // Désactiver les source maps en production (Sentry les gère séparément
+  // via le plugin withSentryConfig qui upload puis supprime les .map)
+  productionBrowserSourceMaps: false,
   async headers() {
     return [
       // HTML jamais en cache → le navigateur récupère toujours les bonnes refs CSS/JS.

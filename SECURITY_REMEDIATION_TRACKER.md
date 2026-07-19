@@ -28,15 +28,15 @@
 **Milestone :** [#27](https://github.com/digitaleflex/nba/milestone/27) · **Deadline :** 2026-07-28 · **Effort :** ~1 semaine
 
 | # | Issue | Action | Statut | Date |
-|---|---|---|---|---|
-| S1 | [#99](https://github.com/digitaleflex/nba/issues/99) | `session.deleteMany()` après changePassword | ⬜ | - |
-| S2 | [#100](https://github.com/digitaleflex/nba/issues/100) | Uniformiser check-login + rate-limit | ⬜ | - |
-| S3 | [#101](https://github.com/digitaleflex/nba/issues/101) | Header trust conditionnel (CF-Ray) | ⬜ | - |
-| S4 | [#102](https://github.com/digitaleflex/nba/issues/102) | `USER nextjs` + `cap_drop:[ALL]` Docker | ⬜ | - |
-| S5 | [#103](https://github.com/digitaleflex/nba/issues/103) | Exclure `.env` backup + chiffrer dump | ⬜ | - |
-| S6 | [#104](https://github.com/digitaleflex/nba/issues/104) | `beforeSend` PII scrubbing Sentry | ⬜ | - |
-| S7 | [#105](https://github.com/digitaleflex/nba/issues/105) | `rateLimitMiddleware` sur sign-in | ⬜ | - |
-| S8 | [#106](https://github.com/digitaleflex/nba/issues/106) | `productionSourceMaps: false` | ⬜ | - |
+|---|---|---|---|---|---|
+| S1 | [#99](https://github.com/digitaleflex/nba/issues/99) | `session.deleteMany()` après changePassword | ✅ | 2026-07-19 |
+| S2 | [#100](https://github.com/digitaleflex/nba/issues/100) | Uniformiser check-login + rate-limit | ✅ | 2026-07-19 |
+| S3 | [#101](https://github.com/digitaleflex/nba/issues/101) | Header trust conditionnel (CF-Ray) | ✅ | 2026-07-19 |
+| S4 | [#102](https://github.com/digitaleflex/nba/issues/102) | `USER nextjs` + `cap_drop:[ALL]` Docker | ✅ | 2026-07-19 |
+| S5 | [#103](https://github.com/digitaleflex/nba/issues/103) | Exclure `.env` backup + chiffrer dump | ✅ | 2026-07-19 |
+| S6 | [#104](https://github.com/digitaleflex/nba/issues/104) | `beforeSend` PII scrubbing Sentry | ✅ | 2026-07-19 |
+| S7 | [#105](https://github.com/digitaleflex/nba/issues/105) | `rateLimitMiddleware` sur sign-in | ✅ | 2026-07-19 |
+| S8 | [#106](https://github.com/digitaleflex/nba/issues/106) | `productionSourceMaps: false` | ✅ | 2026-07-19 |
 
 **Checkpoint :** 91/100 = GO production
 
@@ -74,12 +74,12 @@
 ## PROGRESSION GLOBALE
 
 ```
-Score : 76/100 (+20)
+Score : 91/100 (+15)
 Phase 1 : 8/8  ██████████████████████  100% ✅
-Phase 2 : 0/8  ░░░░░░░░░░░░░░░░░░░░░  0%
+Phase 2 : 8/8  ██████████████████████  100% ✅
 Phase 3 : 0/7  ░░░░░░░░░░░░░░░░░░░░░  0%
 ────
-Total   : 8/23 █████████░░░░░░░░░░░░  35%
+Total   : 16/23 ██████████████░░░░░░░  70%
 ```
 
 ---
@@ -90,6 +90,7 @@ Total   : 8/23 █████████░░░░░░░░░░░░  
 |---|---|---|---|
 | 2026-07-19 | Audit | - | Création du plan suite au MASTER_SECURITY_AUDIT |
 | 2026-07-19 | opencode | Q1-Q8 | Phase 1 terminée — 8/8 Quick Wins — score 56 → 76 |
+| 2026-07-19 | opencode | S1-S8 | Phase 2 terminée — 8/8 Court terme — score 76 → 91 |
 
 ---
 
