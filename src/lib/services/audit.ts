@@ -6,6 +6,7 @@ export async function logAuditEvent(params: {
   action: string
   resourceType: string
   resourceId?: string
+  resourceLabel?: string
   details?: Record<string, unknown>
 }) {
   let ipAddress: string | undefined
@@ -19,13 +20,18 @@ export async function logAuditEvent(params: {
     // headers() throws if called outside a request context
   }
 
+  const details = { ...(params.details ?? {}) } as Record<string, unknown>
+  if (params.resourceLabel) {
+    details.resourceLabel = params.resourceLabel
+  }
+
   await prisma.auditLog.create({
     data: {
       userId: params.userId,
       action: params.action,
       resourceType: params.resourceType,
       resourceId: params.resourceId,
-      details: (params.details as any) ?? undefined,
+      details: details as any,
       ipAddress,
       userAgent,
     },

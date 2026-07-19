@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     if (resourceType) where.resourceType = resourceType
     if (resourceId) where.resourceId = resourceId
 
-    const [logs, total, actions, resourceTypes] = await Promise.all([
+    const [rawLogs, total, distinctActions, distinctResourceTypes] = await Promise.all([
       prisma.auditLog.findMany({
         where,
         select: {
@@ -52,14 +52,27 @@ export async function GET(request: NextRequest) {
       prisma.auditLog.findMany({ select: { resourceType: true }, distinct: ["resourceType"], orderBy: { resourceType: "asc" } }),
     ])
 
+    const logs = rawLogs.map((log) => {
+      const d = log.details as Record<string, unknown> | null
+      const resourceLabel = (d?.resourceLabel as string) ?? null
+      const filteredDetails = { ...(d ?? {}) }
+      delete filteredDetails.resourceLabel
+      return {
+        ...log,
+        resourceLabel,
+        details: Object.keys(filteredDetails).length > 0 ? filteredDetails : null,
+        user: log.user ?? null,
+      }
+    })
+
     return NextResponse.json({
       logs,
       total,
       page,
       limit,
       filters: {
-        actions: actions.map((a) => a.action),
-        resourceTypes: resourceTypes.map((r) => r.resourceType),
+        actions: distinctActions.map((a) => a.action),
+        resourceTypes: distinctResourceTypes.map((r) => r.resourceType),
       },
     })
   } catch (error) {
