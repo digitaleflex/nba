@@ -35,6 +35,37 @@ jobs:
         continue-on-error: true
       - run: pnpm typecheck
       - run: pnpm test
+      # Garde migration : bloque le deploiement si une NOUVELLE migration
+      # contient des operations destructives (DROP TABLE/COLUMN, TRUNCATE,
+      # DELETE FROM). Ne scanne que les migrations ajoutees/modifiees dans
+      # le push courant (les anciennes deja deployees sont ignorees).
+      - name: Migration destructive guard
+        run: |
+          echo "Verification des nouvelles migrations pour operations destructives..."
+          BEFORE_SHA="${{ github.event.before }}"
+          DESTRUCTIVE_FOUND=0
+          if [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
+            NEW_FILES=$(git diff --name-only "$BEFORE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' || true)
+          else
+            # Premier push ou force-push : on verifie les migrations des 2 derniers commits
+            NEW_FILES=$(git log --name-only --pretty=format: -2 -- 'prisma/migrations/*/migration.sql' | sort -u)
+          fi
+          if [ -z "$NEW_FILES" ]; then
+            echo "Aucune nouvelle migration dans ce push."
+          else
+            for sql in $NEW_FILES; do
+              if [ -f "$sql" ] && grep -qiE '\b(DROP (TABLE|COLUMN|INDEX|DATABASE|SCHEMA|TRIGGER|FUNCTION|VIEW|TYPE|EXTENSION|CONSTRAINT)|TRUNCATE|DELETE\s+FROM)\b' "$sql"; then
+                echo "::error::$sql contient une operation destructive (DROP/TRUNCATE/DELETE)"
+                DESTRUCTIVE_FOUND=1
+              fi
+            done
+            if [ "$DESTRUCTIVE_FOUND" = "1" ]; then
+              echo "!!! DEPLOIEMENT BLOQUE : nouvelle migration destructive."
+              echo "Si c'est intentionnel, supprimez cette garde avec revue manuelle obligatoire."
+              exit 1
+            fi
+            echo "Aucune migration destructive detectee."
+          fi
 
   deploy:
     needs: quality
