@@ -38,6 +38,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "stats", label: "Statistiques" },
       { value: "analytics", label: "Analytics" },
       { value: "devices", label: "Appareils" },
+      { value: "crons", label: "Cron Jobs" },
     ],
   },
   {

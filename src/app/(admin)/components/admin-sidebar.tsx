@@ -20,6 +20,7 @@ import {
   MessageSquare,
   CircleHelp,
   Database,
+  Timer,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 
@@ -83,6 +84,11 @@ export function AdminSidebar() {
                isPathActive("/admin/queues") ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
              )}>
                <Activity className="size-4 shrink-0" /> Files BullMQ
+             </Link>
+             <Link href="/admin?tab=crons" className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors min-h-[36px]",
+               isPathActive("/admin") && tab === "crons" ? "bg-primary/10 text-primary" : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+             )}>
+               <Timer className="size-4 shrink-0" /> Cron Jobs
              </Link>
            </div>
          </div>
