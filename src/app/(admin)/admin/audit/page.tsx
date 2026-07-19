@@ -82,6 +82,23 @@ function cleanDetails(details: Record<string, unknown> | null): { pairs: { label
   if (d.userAgent) pairs.push({ label: "Navigateur", value: String(d.userAgent) })
   if (d.domain) pairs.push({ label: "Domaine", value: String(d.domain) })
 
+  // Snapshot avant/après (MT7)
+  if (d.before && d.after && typeof d.before === "object" && typeof d.after === "object") {
+    const before = d.before as Record<string, unknown>
+    const after = d.after as Record<string, unknown>
+    const allKeys = [...new Set([...Object.keys(before), ...Object.keys(after)])].filter(
+      (k) => k !== "updatedAt" && k !== "id"
+    )
+    for (const key of allKeys) {
+      if (String(before[key] ?? "") !== String(after[key] ?? "")) {
+        pairs.push({
+          label: key,
+          value: `${String(before[key] ?? "—")} → ${String(after[key] ?? "—")}`,
+        })
+      }
+    }
+  }
+
 
   if (d.recipientCount) metrics.push({ label: "Destinataires", value: String(d.recipientCount) })
   if (d.bounceCount) metrics.push({ label: "Rebonds", value: String(d.bounceCount) })
@@ -829,14 +846,29 @@ export default function AuditCenterPage() {
           ))}
         </div>
       ) : (
-        <div className="space-y-2">
-          {(groupedLogs ?? logs).map((log, i) => (
-            <div key={log.id} ref={(el) => { cardRefs.current[i] = el }}
-              className={`rounded-lg transition-shadow ${focusIndex === i ? "ring-2 ring-primary/30" : ""}`}
-            >
-              <AuditCard log={log} count={(log as any)._count} />
-            </div>
-          ))}
+        <div className="relative">
+          {/* Ligne verticale de timeline */}
+          <div className="absolute left-[11px] top-2 bottom-2 w-px bg-border/50" />
+
+          <div className="space-y-1">
+            {(groupedLogs ?? logs).map((log, i) => {
+              const sev = SEVERITY_CONFIG[log.severity as keyof typeof SEVERITY_CONFIG] ?? SEVERITY_CONFIG.info
+              return (
+                <div key={log.id} ref={(el) => { cardRefs.current[i] = el }}
+                  className={`flex gap-3 ${focusIndex === i ? "" : ""}`}
+                >
+                  {/* Point sur la timeline */}
+                  <div className="flex flex-col items-center shrink-0 pt-4">
+                    <span className={`size-[10px] rounded-full ring-2 ring-background ${sev.color}`} />
+                  </div>
+                  {/* Carte */}
+                  <div className={`flex-1 min-w-0 rounded-lg transition-shadow ${focusIndex === i ? "ring-2 ring-primary/30" : ""}`}>
+                    <AuditCard log={log} count={(log as any)._count} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
