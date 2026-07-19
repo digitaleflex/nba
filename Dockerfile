@@ -1,6 +1,6 @@
 # Base image using Alpine for security and minimal footprint
-FROM node:26-alpine AS base
-RUN npm install -g pnpm@9
+FROM node:22-alpine AS base
+RUN npm install -g pnpm@10
 WORKDIR /app
 
 # Step 1: Install all dependencies (including devDependencies for build)
