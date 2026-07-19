@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest"
+import { Home } from "lucide-react"
 import {
   NAVIGATION,
   filterNavItems,
@@ -20,8 +21,8 @@ describe("navigation config", () => {
 
   it("filtre les items par rôle", () => {
     const items = [
-      { id: "a", href: "/a", label: "A", icon: () => null },
-      { id: "b", href: "/b", label: "B", icon: () => null, requiredRoles: ["ADMIN"] },
+      { id: "a", href: "/a", label: "A", icon: Home },
+      { id: "b", href: "/b", label: "B", icon: Home, requiredRoles: ["ADMIN"] },
     ]
     expect(filterNavItems(items, "USER").length).toBe(1)
     expect(filterNavItems(items, "ADMIN").length).toBe(2)
@@ -51,7 +52,7 @@ describe("navigation config", () => {
   })
 
   it("détecte l'active state par pathname", () => {
-    const item = { id: "signals", href: "/dashboard/signals", label: "Signaux", icon: () => null }
+    const item = { id: "signals", href: "/dashboard/signals", label: "Signaux", icon: Home }
     expect(isNavItemActive(item, "/dashboard/signals", new URLSearchParams())).toBe(true)
     expect(isNavItemActive(item, "/dashboard/journal", new URLSearchParams())).toBe(false)
   })
@@ -61,7 +62,7 @@ describe("navigation config", () => {
       id: "dashboard",
       href: "/admin?tab=dashboard",
       label: "Tableau de bord",
-      icon: () => null,
+      icon: Home,
       isActive: (pathname: string, searchParams: URLSearchParams) =>
         pathname === "/admin" && searchParams.get("tab") === "dashboard",
     }

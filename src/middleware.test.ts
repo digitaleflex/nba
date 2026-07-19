@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import middleware from "./proxy";
+import middleware from "./middleware";
 import { NextResponse } from "next/server";
 
 // Mock NextResponse

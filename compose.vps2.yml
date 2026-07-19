@@ -18,7 +18,9 @@ services:
     environment:
       QUEUE_ENABLED: "true"
       # Connexion à Redis de VPS1 via le réseau privé Tailscale
-      REDIS_URL: "redis://:p1aacNszU44FGDmrg4GL8fueudKOc0uG@100.122.171.84:6379"
+      # ATTENTION: ne jamais commiter d'URL contenant un mot de passe.
+      # Fournir REDIS_URL via .env (non versionné) ou un secret Docker.
+      REDIS_URL: "${REDIS_URL}"
     deploy:
       resources:
         limits:

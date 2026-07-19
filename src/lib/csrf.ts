@@ -15,8 +15,13 @@ export function csrfCheck(req: NextRequest): Response | null {
   const origin = req.headers.get("origin")
   const referer = req.headers.get("referer")
 
-  // Skip if no origin (e.g., native apps, curl, server-to-server)
-  if (!origin && !referer) return null
+  // Rejeter les requêtes qui modifient l'état sans origine/referer vérifiable.
+  // Les navigateurs envoient toujours Origin (ou Referer) sur les requêtes cross-site
+  // et same-site ; son absence pour un POST/PUT/DELETE indique un contexte non navigable
+  // (curl, serveur-à-serveur non autorisé) et doit être bloqué par défaut.
+  if (!origin && !referer) {
+    return NextResponse.json({ error: "Forbidden — missing origin/referer" }, { status: 403 })
+  }
 
   const originOk = origin ? ALLOWED_ORIGINS.some((o) => origin.startsWith(o)) : false
   const refererOk = referer ? ALLOWED_ORIGINS.some((o) => referer.startsWith(o)) : false

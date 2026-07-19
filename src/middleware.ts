@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { csrfCheck } from "./lib/csrf";
 
 const PUBLIC_PREFIXES = ["/_next", "/api/auth", "/api/public", "/api/onboarding", "/favicon"];
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/cgu", "/privacy", "/cookies", "/risk-disclaimer"];
@@ -21,6 +22,12 @@ export default function middleware(request: NextRequest) {
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
     return NextResponse.next();
+  }
+
+  // Protection CSRF globale sur les routes API mutables (GET/HEAD/OPTIONS gérés dans csrfCheck).
+  if (pathname.startsWith("/api/")) {
+    const blocked = csrfCheck(request);
+    if (blocked) return blocked;
   }
 
   const isAuthenticated = hasSession(request);
