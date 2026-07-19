@@ -88,6 +88,7 @@ export async function publishAuditEvent(payload: {
   userId: string | null
   createdAt: Date
   ipAddress: string | null
+  severity?: string
 }): Promise<void> {
   await publish(auditChannel(), {
     id: payload.id,
@@ -99,6 +100,7 @@ export async function publishAuditEvent(payload: {
     userId: payload.userId,
     createdAt: payload.createdAt.toISOString(),
     ipAddress: payload.ipAddress,
+    severity: payload.severity ?? "info",
   })
 }
 

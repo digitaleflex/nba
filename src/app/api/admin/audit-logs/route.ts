@@ -11,6 +11,9 @@ export async function GET(request: NextRequest) {
     const action = searchParams.get("action") ?? ""
     const resourceType = searchParams.get("resourceType") ?? ""
     const resourceId = searchParams.get("resourceId") ?? ""
+    const severity = searchParams.get("severity") ?? ""
+    const startDate = searchParams.get("startDate") ?? ""
+    const endDate = searchParams.get("endDate") ?? ""
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") ?? "30")))
     const skip = (page - 1) * limit
@@ -18,16 +21,28 @@ export async function GET(request: NextRequest) {
     const where: Record<string, unknown> = {}
 
     if (query) {
+      // Recherche full-text + UUID + IP
+      const isUuid = /^[0-9a-f-]{36}$/i.test(query) || /^[0-9a-f-]{8}/i.test(query)
       where.OR = [
         { searchText: { contains: query, mode: "insensitive" } },
         { user: { name: { contains: query, mode: "insensitive" } } },
         { user: { email: { contains: query, mode: "insensitive" } } },
+        ...(isUuid ? [{ resourceId: query } as any] : []),
+        ...(query.includes(".") ? [] : [{ ipAddress: { contains: query, mode: "insensitive" } } as any]),
       ]
     }
 
     if (action) where.action = action
     if (resourceType) where.resourceType = resourceType
     if (resourceId) where.resourceId = resourceId
+    if (severity) where.severity = severity
+
+    if (startDate || endDate) {
+      const createdAt: Record<string, Date> = {}
+      if (startDate) createdAt.gte = new Date(startDate)
+      if (endDate) createdAt.lte = new Date(endDate)
+      where.createdAt = createdAt
+    }
 
     const [rawLogs, total, distinctActions, distinctResourceTypes] = await Promise.all([
       prisma.auditLog.findMany({
@@ -40,7 +55,8 @@ export async function GET(request: NextRequest) {
           details: true,
           ipAddress: true,
           createdAt: true,
-          user: { select: { name: true, email: true } },
+          severity: true,
+          user: { select: { name: true, email: true, image: true } },
         },
         orderBy: { createdAt: "desc" },
         skip,

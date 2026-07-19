@@ -7,7 +7,8 @@ export interface AuditEvent {
   details: Record<string, unknown> | null
   ipAddress: string | null
   createdAt: string
-  user: { name: string; email: string } | null
+  severity: string
+  user: { name: string; email: string; image?: string | null } | null
 }
 
 export type AuditView = "timeline" | "user" | "resource"

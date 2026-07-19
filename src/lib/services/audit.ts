@@ -16,6 +16,17 @@ function buildSearchText(action: string, resourceType: string, details?: Record<
   return parts.join(" ").toLowerCase()
 }
 
+function inferSeverity(action: string): string {
+  const key = action.toLowerCase()
+  if (key.includes("deleted") || key.includes("banned") || key.includes("suspended") || key.includes("failed") || key.includes("abandoned") || key.includes("rejected") || key.includes("complained") || key.includes("bounced")) {
+    return "error"
+  }
+  if (key.includes("updated") || key.includes("changed") || key.includes("revoked") || key.includes("retried") || key.includes("replayed") || key.includes("purged") || key.includes("override")) {
+    return "warning"
+  }
+  return "info"
+}
+
 export async function logAuditEvent(params: {
   userId?: string
   action: string
@@ -23,6 +34,7 @@ export async function logAuditEvent(params: {
   resourceId?: string
   resourceLabel?: string
   details?: Record<string, unknown>
+  severity?: string
 }) {
   let ipAddress: string | undefined
   let userAgent: string | undefined
@@ -39,6 +51,8 @@ export async function logAuditEvent(params: {
   if (params.resourceLabel) {
     details.resourceLabel = params.resourceLabel
   }
+
+  const severity = params.severity ?? inferSeverity(params.action)
 
   const log = await prisma.$transaction(async (tx) => {
     const last = await tx.auditLog.findFirst({
@@ -58,6 +72,7 @@ export async function logAuditEvent(params: {
         ipAddress,
         userAgent,
         previousHash: last?.hash ?? null,
+        severity,
       },
     })
 
@@ -79,7 +94,6 @@ export async function logAuditEvent(params: {
     })
   })
 
-  // Publie l'événement en temps réel via Redis → WebSocket
   publishAuditEvent({
     id: log.id,
     action: log.action,
@@ -89,5 +103,6 @@ export async function logAuditEvent(params: {
     userId: log.userId,
     createdAt: log.createdAt,
     ipAddress: log.ipAddress,
+    severity,
   })
 }
