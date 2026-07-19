@@ -33,6 +33,8 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const [exitPrice, setExitPrice] = useState("")
   const [stopLoss, setStopLoss] = useState("")
   const [takeProfit, setTakeProfit] = useState("")
+  const [strategy, setStrategy] = useState<string>("")
+  const [setupType, setSetupType] = useState<string>("")
   const [lotSize, setLotSize] = useState("0.01")
   const [spread, setSpread] = useState("")
   const [mood, setMood] = useState<string | null>(null)
@@ -95,6 +97,8 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           exitPrice: exit,
           stopLoss: parseFloat(stopLoss) || undefined,
           takeProfit: parseFloat(takeProfit) || undefined,
+          strategy: strategy || undefined,
+          setupType: setupType || undefined,
           lotSize: lot,
           spread: spreadVal || undefined,
           mood: mood || undefined,
@@ -227,6 +231,39 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
               </div>
             </div>
           )}
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Stratégie</label>
+              <select
+                value={strategy}
+                onChange={(e) => setStrategy(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">—</option>
+                <option value="SCALPING">Scalping</option>
+                <option value="DAY_TRADING">Day trading</option>
+                <option value="SWING">Swing</option>
+                <option value="POSITION">Position</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground mb-1 block">Setup</label>
+              <select
+                value={setupType}
+                onChange={(e) => setSetupType(e.target.value)}
+                className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="">—</option>
+                <option value="BREAKOUT">Breakout</option>
+                <option value="PULLBACK">Pullback</option>
+                <option value="REVERSAL">Reversal</option>
+                <option value="RANGE">Range</option>
+                <option value="TREND">Trend</option>
+                <option value="OTHER">Autre</option>
+              </select>
+            </div>
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -46,6 +46,15 @@ export async function PUT(request: Request) {
       headers: request.headers,
     })
 
+    // Révoquer toutes les autres sessions (sécurité: un attaquant avec un cookie
+    // volé ne doit pas conserver l'accès après un changement de mot de passe).
+    await prisma.session.deleteMany({
+      where: {
+        userId: session.user.id,
+        id: { not: session.session.id },
+      },
+    })
+
     // Envoyer notification in-app + email de confirmation
     const template = passwordChangedEmail(user)
     await notify({

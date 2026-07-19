@@ -3,6 +3,54 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { handleAuthError } from "@nba/lib/auth-utils"
 
+function computeByDay(trades: Array<{ result: string; pnl: unknown; tradedAt: Date; confidence: number | null }>) {
+  const map = new Map<string, { count: number; wins: number; pnl: number; confidenceSum: number; confidenceCount: number }>()
+  for (const t of trades) {
+    const date = new Date(t.tradedAt).toISOString().slice(0, 10)
+    const entry = map.get(date) ?? { count: 0, wins: 0, pnl: 0, confidenceSum: 0, confidenceCount: 0 }
+    entry.count++
+    if (t.result === "WIN") entry.wins++
+    entry.pnl += Number(t.pnl ?? 0)
+    if (t.confidence != null) {
+      entry.confidenceSum += t.confidence
+      entry.confidenceCount++
+    }
+    map.set(date, entry)
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+    .slice(0, 90)
+    .map(([date, v]) => ({
+      date,
+      count: v.count,
+      wins: v.wins,
+      pnl: Math.round(v.pnl * 100) / 100,
+      winRate: v.count > 0 ? Math.round((v.wins / v.count) * 100 * 10) / 10 : 0,
+      avgConfidence: v.confidenceCount > 0 ? Math.round((v.confidenceSum / v.confidenceCount) * 10) / 10 : 0,
+    }))
+}
+
+function buildEvolution(byDay: Array<{ date: string; pnl: number; winRate: number; avgConfidence: number }>) {
+  // Ordre chronologique pour les courbes
+  const chronological = [...byDay].reverse()
+  const labels = chronological.map((d) => d.date)
+
+  let cumulativePnl = 0
+  const pnlCum = chronological.map((d) => {
+    cumulativePnl += d.pnl
+    return Math.round(cumulativePnl * 100) / 100
+  })
+
+  return {
+    labels,
+    series: [
+      { key: "pnlCum", label: "PnL cumulé", color: "#10b981", unit: "€", values: pnlCum },
+      { key: "winRate", label: "Win rate %", color: "#6366f1", unit: "%", values: chronological.map((d) => d.winRate) },
+      { key: "confidence", label: "Confiance moy.", color: "#f59e0b", unit: "/5", values: chronological.map((d) => d.avgConfidence) },
+    ],
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession()
@@ -17,39 +65,26 @@ export async function GET(request: NextRequest) {
 
     const where = { userId: session.user.id, deletedAt: null, ...dateFilter }
 
-    const [trades, byPair, byMood, byDay, streaks] = await Promise.all([
-      prisma.trade.findMany({
-        where,
-        select: { result: true, pnl: true, pair: true, entryPrice: true, exitPrice: true, lotSize: true, tradedAt: true, mood: true },
-        orderBy: { tradedAt: "desc" },
-      }),
-      prisma.trade.groupBy({
-        by: ["pair"],
-        where,
-        _count: { id: true },
-        _sum: { pnl: true },
-        orderBy: { _count: { id: "desc" } },
-      }),
-      prisma.trade.groupBy({
-        by: ["mood"],
-        where: { ...where, mood: { not: null } },
-        _count: { id: true },
-      }),
-      prisma.$queryRawUnsafe<Array<{ date: Date, count: bigint, wins: bigint, pnl: number }>>(
-        `SELECT
-          DATE(traded_at) as date,
-          COUNT(*)::int as count,
-          COUNT(CASE WHEN result = 'WIN' THEN 1 END)::int as wins,
-          COALESCE(SUM(pnl), 0) as pnl
-        FROM trades
-        WHERE user_id = $1 AND deleted_at IS NULL
-        GROUP BY DATE(traded_at)
-        ORDER BY date DESC
-        LIMIT 90`,
-        session.user.id,
-      ),
-      prisma.streak.findMany({ where: { userId: session.user.id } }),
-    ])
+  const [trades, byPair, byMood, streaks] = await Promise.all([
+    prisma.trade.findMany({
+      where,
+        select: { result: true, pnl: true, pair: true, entryPrice: true, exitPrice: true, lotSize: true, tradedAt: true, mood: true, confidence: true },
+      orderBy: { tradedAt: "desc" },
+    }),
+    prisma.trade.groupBy({
+      by: ["pair"],
+      where,
+      _count: { id: true },
+      _sum: { pnl: true },
+      orderBy: { _count: { id: "desc" } },
+    }),
+    prisma.trade.groupBy({
+      by: ["mood"],
+      where: { ...where, mood: { not: null } },
+      _count: { id: true },
+    }),
+    prisma.streak.findMany({ where: { userId: session.user.id } }),
+  ])
 
     const wins = trades.filter(t => t.result === "WIN").length
     const losses = trades.filter(t => t.result === "LOSS").length
@@ -111,12 +146,9 @@ export async function GET(request: NextRequest) {
         winRate: trades.filter(t => t.mood === m.mood).length > 0
           ? Math.round((trades.filter(t => t.mood === m.mood && t.result === "WIN").length / trades.filter(t => t.mood === m.mood).length) * 100 * 10) / 10 : 0,
       })),
-      byDay: byDay.map(d => ({
-        date: d.date,
-        count: Number(d.count),
-        wins: Number(d.wins),
-        pnl: Math.round(Number(d.pnl) * 100) / 100,
-      })),
+      byDay: computeByDay(trades),
+
+      evolution: buildEvolution(computeByDay(trades)),
       streaks: {
         currentWinStreak: winStreak?.count ?? 0,
         bestWinStreak: winStreak?.bestCount ?? 0,

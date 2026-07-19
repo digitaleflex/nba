@@ -30,12 +30,22 @@ trap cleanup EXIT
 
 mkdir -p "$BACKUP_DIR"
 
-# 1. Dump PostgreSQL
+# 1. Dump PostgreSQL (chiffré si GPG + BACKUP_GPG_KEY configuré)
 echo "Dumping database..."
-if ! pg_dump "$DATABASE_URL" --no-owner --no-acl -Fc > "$BACKUP_DIR/db.dump" 2>> "$ERROR_LOG"; then
-  send_alert "❌ Backup échoué — dump DB" "La sauvegarde PostgreSQL a échoué sur $HOSTNAME à $DATE.
-Consultez les logs du conteneur worker pour plus de détails."
-  exit 1
+if [ -n "${BACKUP_GPG_KEY:-}" ]; then
+  if ! pg_dump "$DATABASE_URL" --no-owner --no-acl -Fc 2>> "$ERROR_LOG" | gpg --encrypt --recipient "$BACKUP_GPG_KEY" --trust-model always > "$BACKUP_DIR/db.dump.gpg" 2>> "$ERROR_LOG"; then
+    send_alert "❌ Backup échoué — dump DB" "La sauvegarde PostgreSQL a échoué sur $HOSTNAME à $DATE."
+    exit 1
+  fi
+  DUMP_FILE="$BACKUP_DIR/db.dump.gpg"
+  DUMP_NAME="db-$DATE.dump.gpg"
+else
+  if ! pg_dump "$DATABASE_URL" --no-owner --no-acl -Fc > "$BACKUP_DIR/db.dump" 2>> "$ERROR_LOG"; then
+    send_alert "❌ Backup échoué — dump DB" "La sauvegarde PostgreSQL a échoué sur $HOSTNAME à $DATE."
+    exit 1
+  fi
+  DUMP_FILE="$BACKUP_DIR/db.dump"
+  DUMP_NAME="db-$DATE.dump"
 fi
 
 # 2. Archive des fichiers uploadés
@@ -44,14 +54,9 @@ if [ -d /app/storage ]; then
   tar czf "$BACKUP_DIR/storage.tar.gz" -C /app storage 2>> "$ERROR_LOG"
 fi
 
-# 3. .env
-if [ -f /app/.env ]; then
-  cp /app/.env "$BACKUP_DIR/env.txt"
-fi
-
-# 4. Upload vers B2
+# 3. Upload vers B2 (dump chiffré avec GPG si clé disponible)
 echo "Uploading to B2..."
-if ! b2 file upload "$B2_BUCKET" "$BACKUP_DIR/db.dump" "db-$DATE.dump" 2>> "$ERROR_LOG"; then
+if ! b2 file upload "$B2_BUCKET" "$DUMP_FILE" "$DUMP_NAME" 2>> "$ERROR_LOG"; then
   send_alert "❌ Backup échoué — upload DB" "L'upload du dump PostgreSQL vers B2 a échoué sur $HOSTNAME à $DATE."
   exit 1
 fi

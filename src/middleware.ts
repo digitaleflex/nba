@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { csrfCheck } from "./lib/csrf";
 
-const PUBLIC_PREFIXES = ["/_next", "/api/auth", "/api/public", "/api/onboarding", "/favicon"];
+const PUBLIC_PREFIXES = ["/_next", "/api/auth", "/api/public", "/api/onboarding", "/api/webhooks", "/api/telegram", "/favicon"];
 const PUBLIC_PATHS = ["/login", "/register", "/forgot-password", "/reset-password", "/cgu", "/privacy", "/cookies", "/risk-disclaimer"];
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password"];
 const PROTECTED_PREFIXES = ["/onboarding", "/dashboard", "/admin"];

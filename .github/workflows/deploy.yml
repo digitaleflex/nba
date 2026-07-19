@@ -5,9 +5,41 @@ on:
     branches: [main]
   workflow_dispatch:
 
+# Un seul deploiement main a la fois (evite le load-balancing entre 2 builds).
+concurrency:
+  group: deploy-main
+  cancel-in-progress: false
+
 jobs:
-  deploy:
+  # Gate qualite : bloque tout deploiement si lint/typecheck/tests echouent.
+  # Sans ce job, un push direct sur main deployait du code non teste (cause
+  # aggravante de l'incident du 19/07). Le job `deploy` en depend (needs).
+  quality:
+    name: Quality Gate
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10"
+      - uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: npx prisma generate
+      # Lint non-bloquant pour l'instant (dette: ~500 warnings a nettoyer).
+      # Visible dans les logs mais ne bloque pas le deploiement.
+      - run: pnpm lint
+        continue-on-error: true
+      - run: pnpm typecheck
+      - run: pnpm test
+
+  deploy:
+    needs: quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write

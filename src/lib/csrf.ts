@@ -23,7 +23,7 @@ export function csrfCheck(req: NextRequest): Response | null {
     return NextResponse.json({ error: "Forbidden — missing origin/referer" }, { status: 403 })
   }
 
-  const originOk = origin ? ALLOWED_ORIGINS.some((o) => origin.startsWith(o)) : false
+  const originOk = origin ? ALLOWED_ORIGINS.some((o) => new URL(origin).origin === o) : false
   const refererOk = referer ? ALLOWED_ORIGINS.some((o) => referer.startsWith(o)) : false
 
   if (!originOk && !refererOk) {

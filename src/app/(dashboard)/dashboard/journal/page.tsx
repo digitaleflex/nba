@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+
+export const dynamic = "force-dynamic"
 import { BookOpen, TrendingUp, PenLine, Play, Square, Loader2, Clock } from "lucide-react"
 import { cn, Button } from "@nba/design-system"
 import { toast } from "sonner"
@@ -10,6 +12,7 @@ import { TradeList } from "./components/trade-list"
 import { StatsDashboard } from "./components/stats-dashboard"
 import { ReflectionsTab } from "./components/reflections-tab"
 import { TradeForm } from "./components/trade-form"
+import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
 
 const TABS = [
   { id: "trades", label: "Trades", icon: BookOpen },
@@ -123,6 +126,7 @@ function SessionBanner() {
 export default function JournalPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  useDetectTimezone()
   const initialTab = (searchParams.get("tab") || "trades") as TabId
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
@@ -177,7 +181,7 @@ export default function JournalPage() {
       {activeTab === "trades" && (
         <TradeList key={`trades-${refreshKey}`} onNewTrade={openNewTrade} />
       )}
-      {activeTab === "stats" && <StatsDashboard />}
+      {activeTab === "stats" && <StatsDashboard refreshKey={refreshKey} />}
       {activeTab === "reflections" && <ReflectionsTab />}
 
       {formOpen && (

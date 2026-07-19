@@ -4,6 +4,12 @@ import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { Chart } from "@nba/design-system"
 import type { ChartDatum } from "@nba/design-system"
+import { EvolutionChart, type EvolutionSeries } from "./evolution-chart"
+
+interface EvolutionData {
+  labels: string[]
+  series: EvolutionSeries[]
+}
 
 interface Stats {
   winRate: number
@@ -18,6 +24,15 @@ interface Stats {
   byMood: Array<{ mood: string; count: number; winRate: number }>
   byDay: Array<{ date: string; count: number; wins: number; pnl: number }>
   streaks: { currentWinStreak: number; bestWinStreak: number; currentLossStreak: number; bestLossStreak: number }
+  riskMetrics: {
+    maxDrawdown: number
+    expectancy: number
+    profitFactor: number
+    avgWinner: number
+    avgLoser: number
+    riskRewardRatio: number
+  }
+  evolution?: EvolutionData
 }
 
 const MOOD_EMOJI: Record<string, string> = {
@@ -30,7 +45,7 @@ const PERIODS = [
   { value: "7d", label: "7j" },
 ]
 
-export function StatsDashboard() {
+export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
   const [period, setPeriod] = useState("all")
@@ -41,13 +56,24 @@ export function StatsDashboard() {
       .then(r => r.json())
       .then(d => setStats(d))
       .finally(() => setLoading(false))
-  }, [period])
+  }, [period, refreshKey])
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-6 animate-spin text-primary" /></div>
   if (!stats) return <p className="text-sm text-muted-foreground text-center py-16">Aucune donnée.</p>
 
   return (
     <div className="space-y-6">
+      {/* Évolution du trader (multi-paramètres) */}
+      {stats.evolution && stats.evolution.labels.length > 0 && (
+        <div className="rounded-lg border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold">📈 Évolution du trader</h3>
+            <span className="text-[10px] text-muted-foreground">mis à jour en temps réel</span>
+          </div>
+          <EvolutionChart labels={stats.evolution.labels} series={stats.evolution.series} height={220} />
+        </div>
+      )}
+
       {/* Filtres période */}
       <div className="flex gap-1">
         {PERIODS.map(p => (
@@ -69,6 +95,19 @@ export function StatsDashboard() {
         <KPI label="Trades" value={String(stats.totalTrades)} sub={`${stats.wins}W ${stats.losses}L`} />
         <KPI label="PnL" value={`${stats.totalPnl >= 0 ? "+" : ""}${stats.totalPnl.toFixed(0)}€`} color={stats.totalPnl >= 0 ? "emerald" : "rose"} />
         <KPI label="Streak" value={`🔥 ${stats.streaks.currentWinStreak}`} sub={`Record: ${stats.streaks.bestWinStreak}`} />
+      </div>
+
+      {/* Métriques de risque */}
+      <div className="rounded-lg border bg-card p-4">
+        <h3 className="text-sm font-semibold mb-3">📐 Métriques de risque</h3>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <RiskMetric label="Drawdown max" value={`${stats.riskMetrics.maxDrawdown.toFixed(0)}€`} tone={stats.riskMetrics.maxDrawdown > 0 ? "rose" : "neutral"} />
+          <RiskMetric label="Expectancy" value={`${stats.riskMetrics.expectancy.toFixed(2)}R`} tone={stats.riskMetrics.expectancy >= 0 ? "emerald" : "rose"} />
+          <RiskMetric label="Profit factor" value={stats.riskMetrics.profitFactor === Infinity ? "∞" : stats.riskMetrics.profitFactor.toFixed(2)} tone={stats.riskMetrics.profitFactor >= 1 ? "emerald" : "rose"} />
+          <RiskMetric label="Gain moyen" value={`${stats.riskMetrics.avgWinner.toFixed(0)}€`} tone="emerald" />
+          <RiskMetric label="Perte moyenne" value={`${stats.riskMetrics.avgLoser.toFixed(0)}€`} tone="rose" />
+          <RiskMetric label="R:R moyen" value={`1:${stats.riskMetrics.riskRewardRatio.toFixed(2)}`} tone="neutral" />
+        </div>
       </div>
 
       {/* Graphique PnL cumulé */}
@@ -184,6 +223,16 @@ function KPI({ label, value, sub, color }: { label: string; value: string; sub?:
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`text-2xl font-bold tracking-tight ${colorClass}`}>{value}</p>
       {sub && <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  )
+}
+
+function RiskMetric({ label, value, tone }: { label: string; value: string; tone: "emerald" | "rose" | "neutral" }) {
+  const toneClass = tone === "emerald" ? "text-emerald-400" : tone === "rose" ? "text-rose-400" : "text-foreground"
+  return (
+    <div className="rounded-lg border bg-background/50 p-3">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-lg font-bold font-mono ${toneClass}`}>{value}</p>
     </div>
   )
 }

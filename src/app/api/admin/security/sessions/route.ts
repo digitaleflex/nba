@@ -6,13 +6,20 @@ export async function GET() {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const sessions = await prisma.session.findMany({
-      orderBy: { createdAt: "desc" },
-      take: 50,
-      include: {
+      select: {
+        id: true,
+        userId: true,
+        expiresAt: true,
+        createdAt: true,
+        updatedAt: true,
+        ipAddress: true,
+        userAgent: true,
         user: {
           select: { name: true, email: true },
         },
       },
+      orderBy: { createdAt: "desc" },
+      take: 50,
     })
     return NextResponse.json(sessions)
   } catch (error) {

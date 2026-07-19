@@ -14,12 +14,29 @@ interface UserStats {
   streak: number
 }
 
-async function getWeeklyStats(userId: string, weekStart: Date): Promise<UserStats | null> {
+// Début/fin de la semaine (lundi 00:00) dans le fuseau de l'utilisateur
+function getWeekBounds(timezone: string): { weekStart: Date; weekEnd: Date } {
+  const now = new Date()
+  const nowInTz = new Date(now.toLocaleString("en-US", { timeZone: timezone }))
+  const dayOfWeek = nowInTz.getDay()
+  const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1
+
+  const monday = new Date(nowInTz)
+  monday.setDate(nowInTz.getDate() - daysSinceMonday - 7)
+  monday.setHours(0, 0, 0, 0)
+
+  const sunday = new Date(monday)
+  sunday.setDate(monday.getDate() + 7)
+
+  return { weekStart: monday, weekEnd: sunday }
+}
+
+async function getWeeklyStats(userId: string, weekStart: Date, weekEnd: Date): Promise<UserStats | null> {
   const trades = await prisma.trade.findMany({
     where: {
       userId,
       deletedAt: null,
-      tradedAt: { gte: weekStart },
+      tradedAt: { gte: weekStart, lt: weekEnd },
     },
     select: { result: true, pnl: true, pair: true },
     orderBy: { tradedAt: "desc" },
@@ -84,7 +101,7 @@ async function main() {
 
   console.log(`[journal-weekly-report] Période: ${weekStart.toISOString().slice(0, 10)} → ${weekEnd.toISOString().slice(0, 10)}`)
 
-  // Membres actifs avec au moins un trade dans la période
+  // Membres actifs avec au moins un trade dans la période (fenêtre large en UTC pour couvrir tous les fuseaux)
   const userIds = await prisma.trade.findMany({
     where: {
       deletedAt: null,
@@ -105,7 +122,7 @@ async function main() {
   // Charger les users en une requête
   const users = await prisma.user.findMany({
     where: { id: { in: userIds.map(u => u.userId) } },
-    select: { id: true, name: true, email: true, emailStatus: true },
+    select: { id: true, name: true, email: true, emailStatus: true, timezone: true },
   })
 
   let sent = 0
@@ -119,7 +136,8 @@ async function main() {
       continue
     }
 
-    const stats = await getWeeklyStats(user.id, weekStart)
+    const { weekStart: userWeekStart, weekEnd: userWeekEnd } = getWeekBounds(user.timezone ?? "Europe/Paris")
+    const stats = await getWeeklyStats(user.id, userWeekStart, userWeekEnd)
     if (!stats) {
       skipped++
       continue

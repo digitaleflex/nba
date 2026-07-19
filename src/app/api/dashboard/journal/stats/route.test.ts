@@ -52,9 +52,9 @@ describe("GET /api/dashboard/journal/stats", () => {
 
   it("calcule les stats de base", async () => {
     prismaMock.trade.findMany.mockResolvedValue([
-      { id: "t1", pair: "EURUSD", result: "WIN", pnl: 20 },
-      { id: "t2", pair: "EURUSD", result: "LOSS", pnl: -10 },
-      { id: "t3", pair: "GBPUSD", result: "WIN", pnl: 30 },
+      { id: "t1", pair: "EURUSD", result: "WIN", pnl: 20, tradedAt: new Date("2026-07-19"), mood: "CONFIDENT", confidence: 8 },
+      { id: "t2", pair: "EURUSD", result: "LOSS", pnl: -10, tradedAt: new Date("2026-07-19"), mood: "CONFIDENT", confidence: 5 },
+      { id: "t3", pair: "GBPUSD", result: "WIN", pnl: 30, tradedAt: new Date("2026-07-19"), mood: "CONFIDENT", confidence: 9 },
     ])
     prismaMock.trade.groupBy.mockResolvedValue([
       { pair: "EURUSD", _count: { id: 2 }, _sum: { pnl: 10 } },

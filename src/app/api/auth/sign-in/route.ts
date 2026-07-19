@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@nba/lib/auth"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const signInRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
 export async function POST(req: NextRequest) {
   let email = ""
@@ -8,6 +11,9 @@ export async function POST(req: NextRequest) {
   let userAgent: string | undefined
 
   try {
+    const rateLimitRes = await signInRateLimit(req, "sign-in")
+    if (rateLimitRes) return rateLimitRes
+
     const body = await req.json().catch(() => ({}))
     email = typeof body.email === "string" ? body.email : ""
 

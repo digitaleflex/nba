@@ -24,6 +24,7 @@ model User {
   roleId            String            @map("role_id") @db.Uuid
   country           String?
   language          String            @default("fr")
+  timezone          String            @default("Europe/Paris") @map("timezone")
   onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
   isActive          Boolean           @default(true) @map("is_active")
   suspendedAt       DateTime?         @map("suspended_at")
@@ -806,6 +807,22 @@ enum StreakType {
   DISCIPLINE_STREAK
 }
 
+enum TradeStrategy {
+  SCALPING
+  DAY_TRADING
+  SWING
+  POSITION
+}
+
+enum TradeSetup {
+  BREAKOUT
+  PULLBACK
+  REVERSAL
+  RANGE
+  TREND
+  OTHER
+}
+
 model Trade {
   id          String      @id @default(uuid()) @db.Uuid
   userId      String      @map("user_id") @db.Uuid
@@ -829,6 +846,9 @@ model Trade {
   confidence  Int?
   note        String?
   tags        String[]    @default([])
+
+  strategy    TradeStrategy?
+  setupType   TradeSetup?
 
   tradedAt    DateTime    @map("traded_at") @default(now())
   createdAt   DateTime    @map("created_at") @default(now())
@@ -891,6 +911,7 @@ model Streak {
   type       StreakType
   count      Int        @default(0)
   bestCount  Int        @map("best_count") @default(0)
+  lastDisciplineDay DateTime? @map("last_discipline_day")
   startedAt  DateTime   @map("started_at") @default(now())
   updatedAt  DateTime   @updatedAt @map("updated_at")
 

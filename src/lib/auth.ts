@@ -63,7 +63,13 @@ export const auth = betterAuth({
       generateId: () => crypto.randomUUID(),
     },
     ipAddress: {
-      ipAddressHeaders: ["x-forwarded-for", "x-real-ip", "cf-connecting-ip"],
+      // En production derrière Cloudflare, truster uniquement cf-connecting-ip
+      // (Cloudflare écrase le header, il ne peut pas être spoofé par le client).
+      // En dev/staging sans CDN, ne truster aucun header proxy.
+      ipAddressHeaders:
+        process.env.NODE_ENV === "production"
+          ? ["cf-connecting-ip"]
+          : [],
     },
   },
   databaseHooks: {

@@ -25,6 +25,12 @@ services:
     depends_on:
       nba-redis:
         condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
@@ -69,10 +75,10 @@ services:
     networks:
       - nba
     command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0", "--dir", "/data", "--save", "60", "1", "--appendonly", "yes"]
-    # Bind sur 0.0.0.0 (sécurisé par --requirepass)
-    # Tailscale ACLs bloquent l'accès public non-autorisé par défaut
-    ports:
-      - "6379:6379"
+    # Redis accessible uniquement sur le réseau Docker interne.
+    # Pour l'accès externe (VPS2), utiliser Tailscale/WireGuard, pas d'exposition directe.
+    expose:
+      - "6379"
     volumes:
       - nba-redis-data:/data
     restart: unless-stopped
@@ -111,6 +117,12 @@ services:
     depends_on:
       nba-redis:
         condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
@@ -132,6 +144,12 @@ services:
     depends_on:
       nba-redis:
         condition: service_started
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE
+    security_opt:
+      - no-new-privileges:true
     deploy:
       resources:
         limits:
