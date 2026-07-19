@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { selectPlanSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
-import { AuthError } from "@nba/lib/auth-utils"
+import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
 import { newAccessRequestAdminEmail } from "@nba/lib/email"
 import { sendEmail } from "@nba/lib/email"
 import IORedis from "ioredis"
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    throw error
+    return handleAuthError(error)
   } finally {
     if (redis) {
       try { redis.disconnect() } catch {} 

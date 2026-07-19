@@ -3,7 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { profileSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
-import { AuthError } from "@nba/lib/auth-utils"
+import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function PUT(req: NextRequest) {
   try {
@@ -40,6 +40,6 @@ export async function PUT(req: NextRequest) {
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
-    throw error
+    return handleAuthError(error)
   }
 }

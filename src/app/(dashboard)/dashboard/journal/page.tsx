@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+
+export const dynamic = "force-dynamic"
 import { BookOpen, TrendingUp, PenLine, Play, Square, Loader2, Clock } from "lucide-react"
 import { cn, Button } from "@nba/design-system"
 import { toast } from "sonner"
