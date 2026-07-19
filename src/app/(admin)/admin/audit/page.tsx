@@ -110,6 +110,8 @@ export default function AuditCenterPage() {
   const [integrity, setIntegrity] = useState<{ verified: boolean; totalEntries: number; hashedEntries: number; unhashedEntries: number } | null>(null)
   const [integrityLoading, setIntegrityLoading] = useState(false)
   const [showPurgeModal, setShowPurgeModal] = useState(false)
+  const [focusIndex, setFocusIndex] = useState(-1)
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([])
 
   const query = searchParams.get("q") ?? ""
   const actionFilter = searchParams.get("action") ?? ""
@@ -220,6 +222,28 @@ export default function AuditCenterPage() {
 
   const totalPages = Math.max(1, Math.ceil(total / ITEMS_PER_PAGE))
 
+  // Groupement des événements identiques consécutifs (MT3)
+  const groupedLogs = useMemo(() => {
+    if (view !== "timeline") return null
+    const result: (AuditEvent & { _count?: number })[] = []
+    for (const log of logs) {
+      const last = result[result.length - 1]
+      if (
+        last &&
+        last.userId === log.userId &&
+        last.action === log.action &&
+        last.resourceType === log.resourceType &&
+        last.resourceId === log.resourceId &&
+        last.severity === log.severity
+      ) {
+        last._count = (last._count ?? 1) + 1
+      } else {
+        result.push({ ...log })
+      }
+    }
+    return result
+  }, [view, logs])
+
   // Récupère le resourceLabel depuis les logs pour un resourceId donné
   const findResourceLabel = useCallback((rid: string): string | null => {
     for (const log of logs) {
@@ -229,6 +253,35 @@ export default function AuditCenterPage() {
   }, [logs])
 
   const resourceLabelFromId = resourceId ? findResourceLabel(resourceId) : null
+
+  // Raccourcis clavier : j/k navigation, Enter détails
+  useEffect(() => {
+    const displayLogs = groupedLogs ?? logs
+    if (!displayLogs.length) return
+    function handleKey(e: KeyboardEvent) {
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault()
+        setFocusIndex((i) => Math.min(i + 1, displayLogs.length - 1))
+      }
+      if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault()
+        setFocusIndex((i) => Math.max(i - 1, 0))
+      }
+      if (e.key === "Enter" && focusIndex >= 0) {
+        const id = displayLogs[focusIndex]?.id
+        if (id) setExpandedId((prev) => (prev === id ? null : id))
+      }
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [logs, groupedLogs, focusIndex])
+
+  // Scroll dans la vue pour suivre le focus
+  useEffect(() => {
+    if (focusIndex < 0) return
+    cardRefs.current[focusIndex]?.scrollIntoView({ block: "nearest", behavior: "smooth" })
+  }, [focusIndex])
 
   const activeChips: { label: string; onRemove: () => void }[] = []
   if (query) activeChips.push({ label: `Recherche : ${query}`, onRemove: () => updateParams({ q: null }) })
@@ -317,7 +370,7 @@ export default function AuditCenterPage() {
     )
   }
 
-  function AuditCard({ log }: { log: AuditEvent }) {
+  function AuditCard({ log, count }: { log: AuditEvent; count?: number }) {
     const isExpanded = expandedId === log.id
     const ActionIcon = getActionIcon(log.action)
     const ResourceIcon = getResourceIcon(log.resourceType)
@@ -338,6 +391,11 @@ export default function AuditCenterPage() {
           <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2 min-w-0">
               <span className={`size-2 rounded-full shrink-0 ${sev.color}`} />
+              {count && count > 1 ? (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                  ×{count}
+                </span>
+              ) : null}
               {userUrl(log.userId) ? (
                 <a href={userUrl(log.userId)!} className="inline-flex items-center gap-1.5 text-sm font-medium text-foreground hover:text-primary transition-colors truncate">
                   <Avatar name={log.user?.name} email={log.user?.email} image={log.user?.image} />
@@ -772,7 +830,13 @@ export default function AuditCenterPage() {
         </div>
       ) : (
         <div className="space-y-2">
-          {logs.map((log) => <AuditCard key={log.id} log={log} />)}
+          {(groupedLogs ?? logs).map((log, i) => (
+            <div key={log.id} ref={(el) => { cardRefs.current[i] = el }}
+              className={`rounded-lg transition-shadow ${focusIndex === i ? "ring-2 ring-primary/30" : ""}`}
+            >
+              <AuditCard log={log} count={(log as any)._count} />
+            </div>
+          ))}
         </div>
       )}
 
