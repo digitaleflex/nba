@@ -361,6 +361,19 @@ export default function AuditCenterPage() {
             <Download className="size-3.5" />
             Export CSV
           </button>
+          <button
+            onClick={() => {
+              const p = new URLSearchParams()
+              if (query) p.set("q", query)
+              if (actionFilter) p.set("action", actionFilter)
+              if (resourceTypeFilter) p.set("resourceType", resourceTypeFilter)
+              window.open(`/api/admin/audit-logs/export?${p}`, "_blank")
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
+          >
+            <FileText className="size-3.5" />
+            Export PDF
+          </button>
           {integrity && (
             <button
               onClick={fetchIntegrity}
