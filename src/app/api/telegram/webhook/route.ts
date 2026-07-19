@@ -4,6 +4,14 @@ import { sendTelegramMessage } from "@nba/lib/services/telegram"
 
 export async function POST(req: NextRequest) {
   try {
+    const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET
+    if (expectedSecret) {
+      const provided = req.headers.get("x-telegram-bot-api-secret-token")
+      if (provided !== expectedSecret) {
+        return NextResponse.json({ ok: false }, { status: 401 })
+      }
+    }
+
     const body = await req.json()
     const { message } = body
 

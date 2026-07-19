@@ -45,11 +45,16 @@ export async function requireRole(allowedRoles: string[]) {
   return session
 }
 
+export function isAdminRole(roleName: string | null | undefined): boolean {
+  return roleName === "ADMIN" || roleName === "SUPER_ADMIN"
+}
+
 export async function requirePermission(permissionName: string) {
   const session = await requireAuth()
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
     select: {
+      isActive: true,
       role: {
         select: {
           permissions: {
@@ -59,7 +64,7 @@ export async function requirePermission(permissionName: string) {
       },
     },
   })
-  if (!user) throw new AuthError("Accès refusé", 403)
+  if (!user || !user.isActive) throw new AuthError("Accès refusé", 403)
 
   const hasPermission = user.role.permissions.some(
     (rp: any) => rp.permission.name === permissionName,

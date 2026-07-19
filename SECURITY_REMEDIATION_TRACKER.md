@@ -10,15 +10,15 @@
 **Milestone :** [#26](https://github.com/digitaleflex/nba/milestone/26) · **Deadline :** 2026-07-21 · **Effort :** ~1 jour
 
 | # | Issue | Action | Statut | Date |
-|---|---|---|---|---|
-| Q1 | [#91](https://github.com/digitaleflex/nba/issues/91) | `select` sans `token` sur sessions admin | ⬜ | - |
-| Q2 | [#92](https://github.com/digitaleflex/nba/issues/92) | `new URL(origin).origin === o` dans csrf.ts | ⬜ | - |
-| Q3 | [#93](https://github.com/digitaleflex/nba/issues/93) | `/api/webhooks` + `/api/telegram` dans PUBLIC_PREFIXES | ⬜ | - |
-| Q4 | [#94](https://github.com/digitaleflex/nba/issues/94) | `X-Telegram-Bot-Api-Secret-Token` webhook Telegram | ⬜ | - |
-| Q5 | [#95](https://github.com/digitaleflex/nba/issues/95) | Supprimer `PGPASSWORD` test-suite.sh + rotation | ⬜ | - |
-| Q6 | [#96](https://github.com/digitaleflex/nba/issues/96) | `isActive` dans `requirePermission` | ⬜ | - |
-| Q7 | [#97](https://github.com/digitaleflex/nba/issues/97) | Headers sécurité (HSTS, XFO, XCTO, RP, PP) | ⬜ | - |
-| Q8 | [#98](https://github.com/digitaleflex/nba/issues/98) | `expose` au lieu de `ports` Redis dans compose | ⬜ | - |
+|---|---|---|---|---|---|
+| Q1 | [#91](https://github.com/digitaleflex/nba/issues/91) | `select` sans `token` sur sessions admin | ✅ | 2026-07-19 |
+| Q2 | [#92](https://github.com/digitaleflex/nba/issues/92) | `new URL(origin).origin === o` dans csrf.ts | ✅ | 2026-07-19 |
+| Q3 | [#93](https://github.com/digitaleflex/nba/issues/93) | `/api/webhooks` + `/api/telegram` dans PUBLIC_PREFIXES | ✅ | 2026-07-19 |
+| Q4 | [#94](https://github.com/digitaleflex/nba/issues/94) | `X-Telegram-Bot-Api-Secret-Token` webhook Telegram | ✅ | 2026-07-19 |
+| Q5 | [#95](https://github.com/digitaleflex/nba/issues/95) | Supprimer `PGPASSWORD` test-suite.sh + rotation | ✅ | 2026-07-19 |
+| Q6 | [#96](https://github.com/digitaleflex/nba/issues/96) | `isActive` dans `requirePermission` | ✅ | 2026-07-19 |
+| Q7 | [#97](https://github.com/digitaleflex/nba/issues/97) | Headers sécurité (HSTS, XFO, XCTO, RP, PP) | ✅ | 2026-07-19 |
+| Q8 | [#98](https://github.com/digitaleflex/nba/issues/98) | `expose` au lieu de `ports` Redis dans compose | ✅ | 2026-07-19 |
 
 **Checkpoint :** 76/100 = GO avec réserves
 
@@ -74,12 +74,12 @@
 ## PROGRESSION GLOBALE
 
 ```
-Score : 56/100
-Phase 1 : 0/8  ░░░░░░░░░░░░░░░░░░░░░  0%
+Score : 76/100 (+20)
+Phase 1 : 8/8  ██████████████████████  100% ✅
 Phase 2 : 0/8  ░░░░░░░░░░░░░░░░░░░░░  0%
 Phase 3 : 0/7  ░░░░░░░░░░░░░░░░░░░░░  0%
 ────
-Total   : 0/23 ░░░░░░░░░░░░░░░░░░░░░  0%
+Total   : 8/23 █████████░░░░░░░░░░░░  35%
 ```
 
 ---
@@ -89,6 +89,7 @@ Total   : 0/23 ░░░░░░░░░░░░░░░░░░░░░  
 | Date | Qui | #Issue | Action |
 |---|---|---|---|
 | 2026-07-19 | Audit | - | Création du plan suite au MASTER_SECURITY_AUDIT |
+| 2026-07-19 | opencode | Q1-Q8 | Phase 1 terminée — 8/8 Quick Wins — score 56 → 76 |
 
 ---
 

@@ -187,7 +187,7 @@ if [ -f "$COOKIE_JAR" ] && [ -s "$COOKIE_JAR" ]; then
   fi
 
   # Read OTP from DB
-  OTP=$(PGPASSWORD="npg_1p4AxYIEmkuj" psql -h ep-long-truth-atp4tmdq-pooler.c-9.us-east-1.aws.neon.tech -U neondb_owner -d neondb -tA -c "SELECT value FROM verifications WHERE identifier = 'otp-$TEST_EMAIL' AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1;" 2>/dev/null | tr -d '[:space:]')
+  OTP=$(psql "$DATABASE_URL" -tA -c "SELECT value FROM verifications WHERE identifier = 'otp-$TEST_EMAIL' AND expires_at > NOW() ORDER BY created_at DESC LIMIT 1;" 2>/dev/null | tr -d '[:space:]')
 
   if [ -n "$OTP" ]; then
     echo -e "${GREEN}✅ OTP retrieved from DB${NC}"
@@ -228,7 +228,7 @@ fi
 
 # Cleanup
 if [ -n "$USER_ID" ]; then
-  PGPASSWORD="npg_1p4AxYIEmkuj" psql -h ep-long-truth-atp4tmdq-pooler.c-9.us-east-1.aws.neon.tech -U neondb_owner -d neondb -c "DELETE FROM access_requests WHERE user_id = '$USER_ID'; DELETE FROM verifications WHERE identifier LIKE 'otp%' OR identifier LIKE '$TEST_EMAIL'; DELETE FROM sessions WHERE user_id = '$USER_ID'; DELETE FROM accounts WHERE user_id = '$USER_ID'; DELETE FROM users WHERE id = '$USER_ID';" > /dev/null 2>&1
+  psql "$DATABASE_URL" -c "DELETE FROM access_requests WHERE user_id = '$USER_ID'; DELETE FROM verifications WHERE identifier LIKE 'otp%' OR identifier LIKE '$TEST_EMAIL'; DELETE FROM sessions WHERE user_id = '$USER_ID'; DELETE FROM accounts WHERE user_id = '$USER_ID'; DELETE FROM users WHERE id = '$USER_ID';" > /dev/null 2>&1
   echo -e "${GREEN}✅ Test user cleaned up${NC}"
   PASS=$((PASS + 1))
 fi
