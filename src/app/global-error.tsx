@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
-import { TrendingUp, RefreshCw } from "lucide-react"
+import { TrendingUp, RefreshCw, Home } from "lucide-react"
 import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function GlobalError({
@@ -35,13 +35,22 @@ export default function GlobalError({
               )}
             </div>
             <div className="flex flex-col items-center gap-4">
-              <button
-                onClick={reset}
-                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
-              >
-                <RefreshCw className="size-4" />
-                Réessayer
-              </button>
+              <div className="flex gap-3 justify-center">
+                <button
+                  onClick={reset}
+                  className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+                >
+                  <RefreshCw className="size-4" />
+                  Réessayer
+                </button>
+                <a
+                  href="/"
+                  className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+                >
+                  <Home className="size-4" />
+                  Accueil
+                </a>
+              </div>
               <a
                 href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20${error.digest ?? ""}`}
                 className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
