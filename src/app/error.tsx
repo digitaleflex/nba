@@ -21,6 +21,11 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           <p className="text-sm text-muted-foreground">
             Une erreur inattendue est survenue de notre côté. Pas d&rsquo;inquiétude, vos données sont en sécurité. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
+          {error.digest && (
+            <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+              Code d&rsquo;erreur : {error.digest}
+            </p>
+          )}
         </div>
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-3 justify-center">

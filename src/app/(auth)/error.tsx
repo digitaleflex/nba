@@ -19,6 +19,11 @@ export default function AuthError({ error, reset }: { error: Error & { digest?: 
           <p className="text-sm text-muted-foreground">
             Une erreur est survenue. Veuillez réessayer ou vous reconnecter.
           </p>
+          {error.digest && (
+            <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+              Code d&rsquo;erreur : {error.digest}
+            </p>
+          )}
         </div>
         <div className="flex gap-3 justify-center">
           <button

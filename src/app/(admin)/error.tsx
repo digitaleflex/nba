@@ -19,6 +19,11 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
           <p className="text-sm text-muted-foreground">
             Une erreur est survenue sur l&rsquo;interface d&rsquo;administration. Pas d&rsquo;inquiétude, rien n&rsquo;a été perdu. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
+          {error.digest && (
+            <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+              Code d&rsquo;erreur : {error.digest}
+            </p>
+          )}
         </div>
         <div className="flex flex-col items-center gap-4">
           <div className="flex gap-3 justify-center">
