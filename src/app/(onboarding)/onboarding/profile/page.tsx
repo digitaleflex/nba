@@ -13,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@nba/design-system";
+import { toast } from "sonner";
 import { User, ArrowRight, Phone } from "lucide-react";
 import countries from "@nba/lib/countries.json";
 
@@ -36,14 +37,26 @@ export default function ProfilePage() {
     e.preventDefault();
     setLoading(true);
 
-    await fetch("/api/onboarding/profile", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, phone, whatsapp, country, language }),
-    });
+    try {
+      const res = await fetch("/api/onboarding/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, phone, whatsapp, country, language }),
+      });
 
-    router.push("/onboarding/kyc");
-    router.refresh();
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        toast.error(data.error || "Erreur lors de l'enregistrement du profil");
+        return;
+      }
+
+      router.push("/onboarding/kyc");
+      router.refresh();
+    } catch {
+      toast.error("Erreur de connexion. Veuillez réessayer.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
