@@ -31,7 +31,7 @@ export function AppShell({ space, user, desktopHeader, mobileHeader, children }:
             {desktopHeader}
             {mobileHeader}
 
-            <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
+            <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
               <ErrorBoundary>{children}</ErrorBoundary>
             </main>
           </div>

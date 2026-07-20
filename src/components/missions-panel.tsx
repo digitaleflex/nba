@@ -1,16 +1,18 @@
 "use client"
 
 import { CheckCircle2, Circle, Target, Award } from "lucide-react"
-import { cn, Button } from "@nba/design-system"
+import { cn, Button, useMotionVariant } from "@nba/design-system"
 import { motion, AnimatePresence } from "motion/react"
 import { useState } from "react"
 import { useUserLevel, type Mission } from "@nba/hooks/use-user-level"
 
 function MissionItem({ mission }: { mission: Mission }) {
+  const itemVariant = useMotionVariant("fadeInUp")
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial="hidden"
+      animate="show"
+      variants={itemVariant}
       className={cn(
         "flex items-start gap-3 rounded-xl border p-3 transition-all",
         mission.completed
@@ -61,9 +63,10 @@ export function MissionsPanel() {
       <AnimatePresence>
         {open && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -4 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -4 }}
+            initial="hidden"
+            animate="show"
+            exit="hidden"
+            variants={useMotionVariant("scaleIn")}
             className="absolute top-full right-0 mt-2 w-80 z-50"
           >
             <div className="rounded-2xl border border-border bg-card shadow-xl overflow-hidden">

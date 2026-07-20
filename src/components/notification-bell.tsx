@@ -6,7 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSocket } from "@nba/lib/hooks/use-socket";
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound";
-import { motion } from "motion/react";
+import { motion, useReducedMotion } from "motion/react";
 
 interface Notification {
   id: string;
@@ -50,6 +50,7 @@ export function NotificationBell() {
   >([]);
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState(false);
+  const reduce = useReducedMotion();
   const dropdownRef = useRef<HTMLDivElement>(null);
   const lastTopIdRef = useRef<string | null>(null);
   const wsActiveRef = useRef(false);
@@ -189,9 +190,9 @@ export function NotificationBell() {
         {unreadCount > 0 && (
           <motion.span
             key={unreadCount}
-            initial={{ scale: 1.5 }}
+            initial={{ scale: reduce ? 1 : 1.5 }}
             animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 12 }}
+            transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
             className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground leading-none"
           >
             {unreadCount > 9 ? "9+" : unreadCount}

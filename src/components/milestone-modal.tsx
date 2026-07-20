@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { motion, AnimatePresence } from "motion/react"
+import { motion, AnimatePresence, useReducedMotion } from "motion/react"
 import { Trophy, X } from "lucide-react"
 import { Button } from "@nba/design-system"
 import { AnalyticsEvents } from "@nba/lib/analytics"
@@ -28,6 +28,7 @@ export function checkMilestone(forceCount?: number) {
 
 export function MilestoneModal() {
   const [milestone, setMilestone] = useState<{ count: number; label: string; emoji: string } | null>(null)
+  const reduce = useReducedMotion()
 
   useEffect(() => {
     const current = parseInt(localStorage.getItem("nba:trade-count") || "0", 10)
@@ -45,10 +46,10 @@ export function MilestoneModal() {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
         >
           <motion.div
-            initial={{ scale: 0.8, opacity: 0 }}
+            initial={{ scale: reduce ? 1 : 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.8, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 200, damping: 15 }}
+            transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 200, damping: 15 }}
             className="relative rounded-2xl border border-border bg-card p-8 text-center shadow-2xl max-w-xs w-full mx-4"
           >
             <button
@@ -59,9 +60,9 @@ export function MilestoneModal() {
               <X className="size-4" />
             </button>
             <motion.span
-              initial={{ scale: 0, rotate: -20 }}
+              initial={{ scale: reduce ? 1 : 0, rotate: reduce ? 0 : -20 }}
               animate={{ scale: 1, rotate: 0 }}
-              transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+              transition={reduce ? { duration: 0.001 } : { delay: 0.2, type: "spring", stiffness: 200 }}
               className="text-5xl block mb-4"
             >
               {milestone.emoji}
