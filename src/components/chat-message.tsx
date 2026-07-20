@@ -244,12 +244,12 @@ export function ChatMessage({
         </div>
       )}
 
-      {/* Barre d'actions au survol */}
+      {/* Barre d'actions au survol (desktop) / au tap (mobile) */}
       {!editing && (
         <div
           className={`absolute top-0 ${
             isMine ? "left-0 -translate-x-full pl-1" : "right-0 translate-x-full pr-1"
-          } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5`}
+          } opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5`}
         >
           <div className="relative" ref={emojiRef}>
             <button
