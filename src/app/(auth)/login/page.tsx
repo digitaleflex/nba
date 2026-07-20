@@ -5,6 +5,7 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { Button, Input, Card, CardContent, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
 import { TrendingUp, Eye, EyeOff, HelpCircle } from "lucide-react"
+import { safeAuthErrorMessage } from "@nba/lib/auth-error-messages"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -53,7 +54,7 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        const message = data.message ?? "Identifiants invalides"
+        const message = safeAuthErrorMessage(data.message) ?? "Identifiants invalides"
         setError(message)
         toast.error(message)
         setLoading(false)

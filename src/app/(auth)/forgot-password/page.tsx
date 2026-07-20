@@ -7,6 +7,7 @@ import { authClient } from "@nba/lib/auth-client"
 import { Button, Input, Card, CardContent } from "@nba/design-system"
 import { TrendingUp, Mail, ArrowLeft, CheckCircle } from "lucide-react"
 import { isValidEmail } from "../register/components/form-utils"
+import { safeAuthErrorMessage } from "@nba/lib/auth-error-messages"
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
@@ -29,7 +30,7 @@ export default function ForgotPasswordPage() {
     })
 
     if (err) {
-      const message = err.message ?? err.statusText
+      const message = safeAuthErrorMessage(err.message ?? err.statusText)
       setError(message)
       toast.error(message)
       setLoading(false)
