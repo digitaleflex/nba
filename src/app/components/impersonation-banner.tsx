@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { authClient } from "@nba/lib/auth-client"
 import { LogOut, Eye } from "lucide-react"
 
@@ -9,6 +10,7 @@ import { LogOut, Eye } from "lucide-react"
  * (impersonation better-auth). Permet de reprendre sa session admin.
  */
 export function ImpersonationBanner() {
+  const router = useRouter()
   const { data: session } = authClient.useSession()
   const [targetName, setTargetName] = useState<string | null>(null)
 
@@ -24,7 +26,7 @@ export function ImpersonationBanner() {
 
   const stop = async () => {
     await fetch("/api/admin/stop-impersonation", { method: "POST" })
-    window.location.href = "/admin"
+    router.replace("/admin")
   }
 
   return (

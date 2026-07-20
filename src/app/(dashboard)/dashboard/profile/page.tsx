@@ -1,6 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { useErrorHandler } from "@nba/hooks/use-error-handler"
 import { Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
 import {
   User, Mail, Phone, Globe, Loader2, Check, AlertCircle,
@@ -33,6 +35,8 @@ const LANGUAGES = [
 ]
 
 export default function ProfilePage() {
+  const router = useRouter()
+  const handleError = useErrorHandler("Une erreur est survenue. Veuillez réessayer.")
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -215,9 +219,10 @@ export default function ProfilePage() {
       if (!res.ok) throw new Error(data.error || "Erreur")
       toast.success("Votre compte a bien été supprimé.")
       // Redirection vers une page explicative plutôt qu'un /login brut.
-      window.location.href = "/blocked?status=deleted"
+      router.replace("/blocked?status=deleted")
     } catch (err: any) {
       setDeleteError(err.message)
+      handleError(err, "La suppression du compte a échoué. Vérifiez votre mot de passe.")
     } finally {
       setDeleting(false)
     }
