@@ -68,7 +68,11 @@ async function fillWizard(user: ReturnType<typeof userEvent.setup>) {
   );
   await user.click(screen.getByRole("button", { name: /suivant/i }));
   await user.type(
-    screen.getByPlaceholderText("Min. 8 caractères"),
+    screen.getByPlaceholderText("Min. 10 caractères"),
+    "Str0ng!Pass",
+  );
+  await user.type(
+    screen.getByPlaceholderText("Retapez votre mot de passe"),
     "Str0ng!Pass",
   );
   await user.click(screen.getByRole("button", { name: /suivant/i }));
@@ -196,10 +200,10 @@ describe("Register Wizard", () => {
       "+22901020305",
     );
     await user.click(screen.getByRole("button", { name: /suivant/i }));
-    const input = screen.getByPlaceholderText("Min. 8 caractères");
+    const input = screen.getByPlaceholderText("Min. 10 caractères");
     await user.type(input, "a");
     expect(screen.getByText("Faible")).toBeInTheDocument();
-    expect(screen.getByText("Au moins 8 caractères")).toBeInTheDocument();
+    expect(screen.getByText("Au moins 10 caractères")).toBeInTheDocument();
   });
 
   it("updates strength label from Faible to Très bon as password improves", async () => {
@@ -223,7 +227,7 @@ describe("Register Wizard", () => {
       "+22901020305",
     );
     await user.click(screen.getByRole("button", { name: /suivant/i }));
-    const input = screen.getByPlaceholderText("Min. 8 caractères");
+    const input = screen.getByPlaceholderText("Min. 10 caractères");
     await user.type(input, "Str0ng!Pass");
     expect(screen.getByText("Très bon")).toBeInTheDocument();
   });
@@ -250,7 +254,7 @@ describe("Register Wizard", () => {
     );
     await user.click(screen.getByRole("button", { name: /suivant/i }));
     const input = screen.getByPlaceholderText(
-      "Min. 8 caractères",
+      "Min. 10 caractères",
     ) as HTMLInputElement;
     expect(input.type).toBe("password");
     const toggle = getPasswordToggle(input);
