@@ -68,6 +68,7 @@
   --shadow-md: 0 4px 12px oklch(0 0 0 / 0.06), 0 2px 4px oklch(0 0 0 / 0.04);
   --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.08), 0 4px 8px oklch(0 0 0 / 0.04);
   --shadow-xl: 0 12px 48px oklch(0 0 0 / 0.1), 0 6px 12px oklch(0 0 0 / 0.06);
+  --shadow-2xl: 0 20px 64px oklch(0 0 0 / 0.12), 0 10px 20px oklch(0 0 0 / 0.08);
 }
 
 .dark {
