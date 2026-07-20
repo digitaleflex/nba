@@ -126,7 +126,7 @@ export default function ResetPasswordPage({
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    minLength={8}
+                    minLength={10}
                     autoComplete="new-password"
                     className="pr-9"
                   />

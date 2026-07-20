@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import { Input, Button, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
 import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, AlertCircle, HelpCircle } from "lucide-react"
-import { getPasswordStrength, RULES } from "./password-utils"
+import { getPasswordStrength, RULES, isPasswordValid, MIN_PASSWORD_LENGTH } from "./password-utils"
 
 interface StepSecurityProps {
   password: string
@@ -19,7 +19,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
   const [touched, setTouched] = useState(false)
 
   const strength = useMemo(() => getPasswordStrength(password), [password])
-  const isValid = password.length >= 8
+  const isValid = isPasswordValid(password)
   const passwordsMatch = password === confirmPassword && confirmPassword.length > 0
 
   return (
@@ -33,7 +33,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
               <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground cursor-help" />
             </TooltipTrigger>
             <TooltipContent>
-              Utilisez au moins 8 caractères avec majuscule, chiffre et caractère spécial pour sécuriser votre compte.
+              Utilisez au moins {MIN_PASSWORD_LENGTH} caractères avec majuscule, minuscule, chiffre et caractère spécial pour sécuriser votre compte.
             </TooltipContent>
           </Tooltip>
         </div>
@@ -41,7 +41,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
           <Input
             id="password"
             type={showPassword ? "text" : "password"}
-            placeholder="Min. 8 caractères"
+            placeholder={`Min. ${MIN_PASSWORD_LENGTH} caractères`}
             value={password}
             onChange={(e) => {
               onChangePassword(e.target.value)
@@ -49,7 +49,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
             }}
             required
             autoComplete="new-password"
-            minLength={8}
+            minLength={MIN_PASSWORD_LENGTH}
             className="pr-9"
           />
           <button
@@ -73,7 +73,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
           onChange={(e) => onChangeConfirmPassword(e.target.value)}
           required
           autoComplete="new-password"
-          minLength={8}
+          minLength={MIN_PASSWORD_LENGTH}
           aria-invalid={confirmPassword.length > 0 && !passwordsMatch ? true : undefined}
           className={confirmPassword.length > 0 && !passwordsMatch ? "border-destructive" : ""}
         />

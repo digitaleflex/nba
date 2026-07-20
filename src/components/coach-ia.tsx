@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
-import { onCoachMessage, emitCoachMessage } from "@nba/lib/coach/events"
+import { useState, useCallback } from "react"
 import { AnalyticsEvents } from "@nba/lib/analytics"
+import { useCoachEvents } from "@nba/hooks/use-coach-events"
 import { X, Lightbulb, AlertTriangle, Sparkles, BrainCircuit } from "lucide-react"
 import type { CoachMessage } from "@nba/lib/coach/providers/types"
 
@@ -30,19 +30,11 @@ const severityConfig = {
 }
 
 export function CoachIA() {
-  const [messages, setMessages] = useState<CoachMessage[]>([])
+  const { messages, dismiss } = useCoachEvents({
+    max: 5,
+    onMessage: (msg) => AnalyticsEvents.coachMessageShown(msg.rule ?? "unknown"),
+  })
   const [dismissed, setDismissed] = useState<Set<string>>(new Set())
-
-  useEffect(() => {
-    return onCoachMessage((msg) => {
-      AnalyticsEvents.coachMessageShown(msg.rule ?? "unknown")
-      setMessages((prev) => [msg, ...prev].slice(0, 5))
-    })
-  }, [])
-
-  const dismiss = useCallback((id: string) => {
-    setDismissed((prev) => new Set(prev).add(id))
-  }, [])
 
   const visible = messages.filter((m) => !dismissed.has(m.id))
   if (visible.length === 0) return null

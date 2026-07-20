@@ -469,7 +469,7 @@ export default function ProfilePage() {
                     value={passwordForm.new}
                     onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
                     required
-                    minLength={8}
+                    minLength={10}
                   />
                   <button
                     type="button"
