@@ -1,5 +1,6 @@
 import Link from "next/link"
-import { TrendingUp, Clock } from "lucide-react"
+import { Clock, RefreshCw, Mail } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function MaintenancePage() {
   return (
@@ -13,15 +14,24 @@ export default function MaintenancePage() {
           <h1 className="text-2xl font-bold tracking-tight">Maintenance en cours</h1>
           <p className="text-sm text-muted-foreground">
             Nous effectuons une maintenance programmée pour améliorer votre expérience.
-            Revenez dans quelques instants.
+            Nous serons de retour très prochainement.
           </p>
         </div>
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
-        >
-          Réessayer
-        </Link>
+        <div className="flex flex-col items-center gap-3">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
+          >
+            <RefreshCw className="size-4" />
+            Réessayer
+          </Link>
+          <a
+            href={`mailto:${SUPPORT_EMAIL}?subject=Maintenance`}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+          >
+            Besoin d&apos;aide ? Contactez le support
+          </a>
+        </div>
       </div>
     </div>
   )
