@@ -180,7 +180,7 @@
 - **Problème** : Tous les `catch {}` silencieux dans l'app
 - **Fichiers impactés** : notifications, messages, profile, subscription, devices
 - **Fix** : Créer un hook `useErrorHandler` qui affiche un toast standardisé
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (371e64b) — Hook `useErrorHandler` créé (`src/hooks/use-error-handler.ts`), appliqué sur subscription + profile. Devices/notifications/messages avaient déjà des toasts cohérents (CT-4/5).
 
 ### MT-2 — Cohérence overlay Dialog/BottomSheet
 - **Fichiers** : `dialog.tsx:34` (bg-black/10), `bottom-sheet.tsx:29` (bg-black/40)
@@ -219,13 +219,13 @@
 - **Fichier** : `src/app/components/sidebar.tsx:204-205`
 - **Problème** : Avatar sans `onError` — image cassée = alt text
 - **Fix** : Ajouter `onError` qui affiche les initiales
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (24c118a) — `onError` bascule vers icône User par défaut.
 
 ### MT-9 — Remplacer `window.location.href` par Next.js router
 - **Fichiers** : `profile/page.tsx:218`, `impersonation-banner.tsx:27`
 - **Problème** : Navigation dure qui casse le SPA feel
 - **Fix** : Utiliser `router.push()` ou `router.replace()`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (262beda) — `router.replace()` utilisé pour les deux.
 
 ### MT-10 — Fix password-utils contradictions
 - **Fichier** : `src/app/(auth)/register/components/password-utils.ts`
@@ -280,9 +280,9 @@
 |-------|-------|------|----------|---------|
 | Quick Wins | 9 | 9 | 0 | 0 |
 | Court Terme | 10 | 10 | 0 | 0 |
-| Moyen Terme | 10 | 8 | 0 | 2 |
+| Moyen Terme | 10 | 10 | 0 | 0 |
 | Long Terme | 7 | 0 | 0 | 7 |
-| **TOTAL** | **36** | **27** | **0** | **9** |
+| **TOTAL** | **36** | **29** | **0** | **7** |
 
 ---
 
@@ -310,6 +310,9 @@
 | 2026-07-20 | 14dd428 | fix(trust): MT-2 strengthen Dialog overlay contrast (bg-black/10 -> /50) |
 | 2026-07-20 | 1542a06 | fix(trust): MT-3 add loading prop (spinner) to Button, used on auth pages |
 | 2026-07-20 | 2988213 | fix(security): MT-6 enforce password policy (min 10 + all classes) server & client |
+| 2026-07-20 | 24c118a | fix(trust): MT-8 add avatar fallback on image error (sidebar) |
+| 2026-07-20 | 262beda | fix(trust): MT-9 replace window.location.href with router.replace (profile, impersonation) |
+| 2026-07-20 | 371e64b | fix(trust): MT-1 add centralized useErrorHandler hook, used on subscription & profile |
 
 ---
 
