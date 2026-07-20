@@ -90,6 +90,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                       return (
                         <Link
                           key={link.id}
+                          id={link.id}
                           href={link.href}
                           onClick={() => setOpen(false)}
                           className={cn(
@@ -114,6 +115,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                 return (
                   <Link
                     key={link.id}
+                    id={link.id}
                     href={link.href}
                     onClick={() => setOpen(false)}
                     className={cn(

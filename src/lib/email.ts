@@ -1,7 +1,9 @@
 import { Resend } from "resend"
 import { prisma } from "./db"
 import { createCircuitBreaker, withTimeout } from "./circuit-breaker"
+import { logger } from "./logger"
 
+const log = logger.child({ module: "email" })
 const emailBreaker = createCircuitBreaker("resend", { threshold: 5, cooldownMs: 60_000 })
 const EMAIL_TIMEOUT_MS = 10_000
 
@@ -1035,14 +1037,14 @@ export async function sendEmail(
     }
 
     return data?.id ?? null
-  } catch (err) {
-    if (err instanceof Error && err.message.includes("RESEND_API_KEY")) {
-      if (process.env.NODE_ENV === "development") {
-        console.warn(`[EMAIL] Dev mode — simulated send to ${to}:`, template.subject)
-        return `dev-${Date.now()}`
+    } catch (err) {
+      if (err instanceof Error && err.message.includes("RESEND_API_KEY")) {
+        if (process.env.NODE_ENV === "development") {
+          log.warn({ to, subject: template.subject }, "Dev mode — simulated email send")
+          return `dev-${Date.now()}`
+        }
       }
+      log.error({ err, to }, "Failed to send email")
+      throw err
     }
-    console.error(`[EMAIL] Failed to send to ${to}:`, err)
-    throw err
-  }
 }

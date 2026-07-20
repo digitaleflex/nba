@@ -1,4 +1,7 @@
 import { createCircuitBreaker, withTimeout } from "../circuit-breaker"
+import { logger } from "../logger"
+
+const log = logger.child({ module: "telegram" })
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_ENABLED = process.env.TELEGRAM_ENABLED !== "false"
@@ -41,7 +44,7 @@ export async function sendTelegramMessage(
   })
 
   if (!result.ok) {
-    console.warn(`[telegram] send failed to ${chatId}: ${(result as any).description || "unknown"}`)
+    log.warn({ chatId, description: (result as any).description }, "Telegram send failed")
     return { ok: false, error: (result as any).description }
   }
 

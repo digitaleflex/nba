@@ -119,6 +119,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                 return (
                   <Link
                     key={link.id}
+                    id={link.id}
                     href={link.href}
                     className={cn(
                       "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative",

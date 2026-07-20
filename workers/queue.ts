@@ -4,6 +4,9 @@ import { prisma } from "../src/lib/db"
 import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
+import { logger } from "../src/lib/logger"
+
+const log = logger.child({ module: "worker" })
 
 // Stable connection initialization with timeouts and circuit breaker
 const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
@@ -12,7 +15,7 @@ const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379"
   commandTimeout: 5000,
   retryStrategy: (times: number) => {
     if (times > 10) {
-      console.error(`[worker] Redis unavailable after ${times} retries`)
+      log.error({ retries: times }, "Redis unavailable after max retries")
       return null
     }
     return Math.min(times * 200, 2000)
@@ -20,7 +23,7 @@ const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379"
 } as any)
 
 connection.on("error", (err: Error) => {
-  console.error("[worker] Redis connection error:", err.message)
+  log.error({ err }, "Redis connection error")
 })
 
 // ── Dead Letter Queue ──
@@ -44,9 +47,9 @@ async function sendToDeadLetter(
       },
       { removeOnComplete: { age: 7 * 24 * 3600 }, removeOnFail: { age: 14 * 24 * 3600 } },
     )
-    console.warn(`[dlq] Job ${job.id} from ${queueName} moved to dead-letter queue`)
-  } catch (dlqErr: any) {
-    console.error(`[dlq] Failed to enqueue to DLQ:`, dlqErr.message)
+      log.warn({ jobId: job.id, queue: queueName }, "Job moved to DLQ")
+    } catch (dlqErr: any) {
+      log.error({ err: dlqErr }, "Failed to enqueue to DLQ")
   }
 }
 
@@ -87,17 +90,17 @@ const worker = new Worker(
 )
 
 worker.on("completed", (job: any) => {
-  console.log(`[cleanup] ${job.id} completed`)
+  log.info({ jobId: job.id, queue: "file-cleanup" }, "Job completed")
 })
 
 worker.on("failed", (job: any, err: any) => {
-  console.error(`[cleanup] ${job?.id} failed:`, err.message)
+  log.error({ jobId: job?.id, queue: "file-cleanup", err }, "Job failed")
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("file-cleanup", job, err)
   }
 })
 
-console.log("🧹 File cleanup worker started")
+log.info("File cleanup worker started")
 
 export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
   await cleanupQueue.add(
@@ -121,7 +124,7 @@ const notificationWorker = new Worker(
         data: { status: "SENT", sentAt: new Date(), externalId: externalId ?? undefined },
       })
     } catch (err: any) {
-      console.error(`[notif] Failed to send email to ${to}:`, err)
+      log.error({ err, to }, "Failed to send email")
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: "FAILED", errorMessage: err.message || "Email error" },
@@ -140,17 +143,17 @@ const notificationWorker = new Worker(
 )
 
 notificationWorker.on("completed", (job: any) => {
-  console.log(`[notif] ${job.id} completed`)
+  log.info({ jobId: job.id, queue: "notification-delivery" }, "Job completed")
 })
 
 notificationWorker.on("failed", (job: any, err: any) => {
-  console.error(`[notif] ${job?.id} failed:`, err.message)
+  log.error({ jobId: job?.id, queue: "notification-delivery", err }, "Job failed")
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("notification-delivery", job, err)
   }
 })
 
-console.log("📧 Notification delivery worker started")
+log.info("Notification delivery worker started")
 
 // ── Signal Distribution Queue ──
 export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any, skipVersionCheck: true })
@@ -175,15 +178,60 @@ const signalWorker = new Worker(
 )
 
 signalWorker.on("completed", (job: any) => {
-  console.log(`[signal] ${job.id} completed`)
+  log.info({ jobId: job.id, queue: "signal-distribution" }, "Job completed")
 })
 
 signalWorker.on("failed", (job: any, err: any) => {
-  console.error(`[signal] ${job?.id} failed:`, err.message)
+  log.error({ jobId: job?.id, queue: "signal-distribution", err }, "Job failed")
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("signal-distribution", job, err)
   }
 })
 
-console.log("📈 Signal distribution worker started")
+log.info("Signal distribution worker started")
+
+// ── Graceful shutdown ──
+const workers = [worker, notificationWorker, signalWorker]
+const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue]
+let shuttingDown = false
+
+async function gracefulShutdown(signal: string) {
+  if (shuttingDown) return
+  shuttingDown = true
+  log.info({ signal }, "Graceful shutdown initiated")
+
+  // Force exit after 30s
+  const forceTimer = setTimeout(() => {
+    log.error("Shutdown timed out, forcing exit")
+    process.exit(1)
+  }, 30_000)
+
+  try {
+    // Close all workers (stop accepting new jobs, wait for running jobs)
+    await Promise.all(workers.map((w) => w.close()))
+    log.info("All workers closed")
+
+    // Close all queues
+    await Promise.all(queues.map((q) => q.close()))
+    log.info("All queues closed")
+
+    // Disconnect Redis
+    await connection.quit()
+    log.info("Redis connection closed")
+
+    // Close Prisma
+    await prisma.$disconnect()
+    log.info("Prisma connection closed")
+
+    clearTimeout(forceTimer)
+    process.exit(0)
+  } catch (err) {
+    log.error({ err }, "Error during graceful shutdown")
+    clearTimeout(forceTimer)
+    process.exit(1)
+  }
+}
+
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"))
+process.on("SIGINT", () => gracefulShutdown("SIGINT"))
 

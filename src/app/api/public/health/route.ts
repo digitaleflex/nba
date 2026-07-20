@@ -1,36 +1,50 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
+import { getAllCircuitStates } from "@nba/lib/circuit-breaker"
 
 export async function GET() {
+  const checks: Record<string, string> = {}
+
+  // DB check
   try {
     await prisma.$queryRaw`SELECT 1`
+    checks.database = "healthy"
+  } catch {
+    checks.database = "unhealthy"
+  }
 
-    // Si le WebSocket est activé, vérifier que le worker écoute bien sur 3001.
-    // Un worker absent rend le conteneur UNHEALTHY (visible via Traefik + make status)
-    // sans pour autant couper le site Next.js.
-    if (process.env.WS_ENABLED === "true") {
+  // WebSocket check
+  if (process.env.WS_ENABLED === "true") {
+    try {
       const ws = await fetch(
         "http://127.0.0.1:3001/socket.io/?EIO=4&transport=polling",
         { signal: AbortSignal.timeout(3000) }
       )
       const body = await ws.text()
-      if (!body.includes('"sid"')) {
-        return NextResponse.json(
-          { status: "unhealthy", reason: "websocket_worker_unreachable", timestamp: new Date().toISOString() },
-          { status: 503 }
-        )
-      }
+      checks.websocket = body.includes('"sid"') ? "healthy" : "unhealthy"
+    } catch {
+      checks.websocket = "unhealthy"
     }
-
-    return NextResponse.json({
-      status: "healthy",
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-    })
-  } catch {
-    return NextResponse.json(
-      { status: "unhealthy", timestamp: new Date().toISOString() },
-      { status: 503 }
-    )
   }
+
+  // Circuit breakers (informational)
+  const circuitStates = getAllCircuitStates()
+  const circuitOpen = Object.values(circuitStates).some((c) => c.state === "open")
+  checks.circuitBreakers = circuitOpen ? "degraded" : "healthy"
+
+  const allHealthy = Object.values(checks).every((s) => s === "healthy")
+  const hasDegraded = Object.values(checks).some((s) => s === "degraded")
+
+  const status = allHealthy ? "healthy" : hasDegraded ? "degraded" : "unhealthy"
+
+  return NextResponse.json(
+    {
+      status,
+      checks,
+      circuitBreakers: circuitStates,
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+    },
+    { status: allHealthy ? 200 : 503 }
+  )
 }

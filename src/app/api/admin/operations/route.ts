@@ -2,7 +2,8 @@ import { NextResponse } from "next/server"
 import { serverError } from "@nba/lib/api-error"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { getCached } from "@nba/lib/cache"
+import { getCached, getStats as getCacheStats } from "@nba/lib/cache"
+import { getAllCircuitStates } from "@nba/lib/circuit-breaker"
 
 export async function GET() {
   try {
@@ -159,6 +160,8 @@ export async function GET() {
         bullmq: redisHealthy ? "healthy" : "warning",
         smtp: smtpHealthy ? "healthy" : "warning",
         storage: storageHealthy ? "healthy" : "warning",
+        circuitBreakers: getAllCircuitStates(),
+        cache: getCacheStats(),
       },
     }
       },

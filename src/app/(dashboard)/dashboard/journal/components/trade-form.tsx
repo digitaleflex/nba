@@ -492,7 +492,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
             Lot
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-48">Taille de votre position. 0.01 = micro lot (1000 unites).</TooltipContent>
@@ -511,7 +511,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
             Spread (coût)
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-48">Coût total du spread en pips ou en euros. Impact votre PnL final.</TooltipContent>
@@ -582,7 +582,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           </div>
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger>
                 <span className="text-[10px] text-muted-foreground uppercase cursor-help">R:R</span>
               </TooltipTrigger>
               <TooltipContent side="top">Risk/Reward : combien vous risquez vs combien vous esperez gagner.</TooltipContent>
@@ -600,7 +600,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
           Émotion
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-48">L'émotion que vous ressentiez pendant le trade. L'honnêteté est la clé du progrès.</TooltipContent>
@@ -627,7 +627,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
           Confiance
           <Tooltip>
-            <TooltipTrigger asChild>
+            <TooltipTrigger>
               <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-48">À quel point étiez-vous confiant ? Comparez avec le résultat pour apprendre.</TooltipContent>

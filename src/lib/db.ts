@@ -1,5 +1,8 @@
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { logger } from "./logger";
+
+const log = logger.child({ module: "db" })
 
 const DEFAULT_ROLE_NAME = "MEMBER";
 
@@ -20,7 +23,17 @@ function isRetryableTransactionError(err: unknown): boolean {
 
 function createPrismaClient() {
   const base = new PrismaClient({
-    adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
+    adapter: new PrismaPg({
+      connectionString: process.env.DATABASE_URL!,
+      // Connection pool: max 10 connections, 30s idle timeout, 10s acquisition timeout
+      maxConnections: parseInt(process.env.DB_POOL_MAX ?? "10", 10),
+      idleTimeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? "30000", 10),
+    }),
+    // Query timeout: abort any query running for more than 30 seconds
+    transactionOptions: {
+      maxWait: 10_000,   // Max 10s to acquire a transaction
+      timeout: 30_000,   // Max 30s for the transaction to complete
+    },
   });
 
   const extended = base.$extends({
@@ -86,9 +99,9 @@ export async function withRetryTransaction<T>(
       }
 
       const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
-      console.warn(
-        `[db] Transaction retry ${attempt + 1}/${maxRetries} after ${delay}ms:`,
-        err instanceof Error ? err.message : err,
+      log.warn(
+        { attempt: attempt + 1, maxRetries, delayMs: delay, err },
+        "Transaction retry",
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }
@@ -117,9 +130,9 @@ export async function withRetryTransactionArray<T>(
       }
 
       const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
-      console.warn(
-        `[db] Transaction array retry ${attempt + 1}/${maxRetries} after ${delay}ms:`,
-        err instanceof Error ? err.message : err,
+      log.warn(
+        { attempt: attempt + 1, maxRetries, delayMs: delay, err },
+        "Transaction array retry",
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
     }

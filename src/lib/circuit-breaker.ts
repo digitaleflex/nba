@@ -1,3 +1,7 @@
+import { logger } from "./logger"
+
+const log = logger.child({ module: "circuit-breaker" })
+
 /**
  * Lightweight circuit breaker for external API calls.
  *
@@ -25,6 +29,17 @@ interface CircuitState {
 }
 
 const circuits = new Map<string, CircuitState>()
+
+/**
+ * Get the state of all registered circuit breakers (for monitoring).
+ */
+export function getAllCircuitStates(): Record<string, { state: string; failures: number }> {
+  const result: Record<string, { state: string; failures: number }> = {}
+  for (const [name, s] of circuits) {
+    result[name] = { state: s.state, failures: s.failures }
+  }
+  return result
+}
 
 export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions) {
   const threshold = opts?.threshold ?? 5
@@ -56,7 +71,7 @@ export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions)
     if (s.failures >= threshold) {
       s.state = "open"
       s.openedAt = Date.now()
-      console.warn(`[circuit:${name}] OPEN after ${s.failures} consecutive failures`)
+      log.warn({ name, failures: s.failures }, "Circuit OPEN")
     }
   }
 
@@ -109,3 +124,6 @@ export function withTimeout<T>(
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   return fn(controller.signal).finally(() => clearTimeout(timer))
 }
+
+// Re-export logger for consumers that import from circuit-breaker
+export { logger } from "./logger"

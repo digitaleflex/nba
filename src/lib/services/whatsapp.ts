@@ -1,4 +1,7 @@
 import { createCircuitBreaker, withTimeout } from "../circuit-breaker"
+import { logger } from "../logger"
+
+const log = logger.child({ module: "whatsapp" })
 
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY
@@ -52,7 +55,7 @@ export async function sendWhatsAppMessage(
       }, WHATSAPP_TIMEOUT_MS),
     )
   } catch (err: any) {
-    console.warn(`[whatsapp] send failed to ${clean}:`, err.message)
+    log.warn({ to: clean, err: err.message }, "WhatsApp send failed")
     return { ok: false, error: err.message }
   }
 }

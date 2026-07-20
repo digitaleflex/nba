@@ -6,6 +6,7 @@ import { User, Bell } from "lucide-react"
 import { AppShell } from "@nba/app/components/app-shell"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
+import { WelcomeGuide } from "./dashboard/welcome-guide"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -30,6 +31,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <div className="flex items-center gap-3">
         <NotificationBell />
         <Link
+          id="profile-nav"
           href="/dashboard/profile"
           className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-muted/50 transition-colors group"
           title="Modifier mon profil"
@@ -59,7 +61,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         >
           <Bell className="size-4" />
         </Link>
-        <Link href="/dashboard/profile" title="Modifier mon profil">
+        <Link id="profile-nav" href="/dashboard/profile" title="Modifier mon profil">
           <div className="size-7 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
             <User className="size-3.5 text-primary" />
           </div>
@@ -70,6 +72,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   return (
     <AppShell space="dashboard" user={user} desktopHeader={desktopHeader} mobileHeader={mobileHeader}>
+      <WelcomeGuide />
       {children}
     </AppShell>
   )
