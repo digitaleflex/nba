@@ -1,5 +1,6 @@
 import { PrismaClient } from "../generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { Pool } from "pg";
 import { logger } from "./logger";
 
 const log = logger.child({ module: "db" })
@@ -22,13 +23,14 @@ function isRetryableTransactionError(err: unknown): boolean {
 }
 
 function createPrismaClient() {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL!,
+    max: parseInt(process.env.DB_POOL_MAX ?? "10", 10),
+    idleTimeoutMillis: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? "30000", 10),
+  })
+
   const base = new PrismaClient({
-    adapter: new PrismaPg({
-      connectionString: process.env.DATABASE_URL!,
-      // Connection pool: max 10 connections, 30s idle timeout, 10s acquisition timeout
-      maxConnections: parseInt(process.env.DB_POOL_MAX ?? "10", 10),
-      idleTimeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT ?? "30000", 10),
-    }),
+    adapter: new PrismaPg(pool),
     // Query timeout: abort any query running for more than 30 seconds
     transactionOptions: {
       maxWait: 10_000,   // Max 10s to acquire a transaction
