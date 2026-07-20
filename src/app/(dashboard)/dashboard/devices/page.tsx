@@ -83,6 +83,7 @@ export default function DevicesPage() {
   }
 
   const revoke = async (deviceId: string) => {
+    if (!confirm("Révoquer cet appareil ? Il sera déconnecté immédiatement.")) return
     setBusy(true)
     try {
       const res = await fetch("/api/dashboard/devices", {
@@ -101,6 +102,7 @@ export default function DevicesPage() {
   }
 
   const revokeOthers = async () => {
+    if (!confirm("Révoquer TOUS les autres appareils ? Cette action est irréversible.")) return
     setBusy(true)
     try {
       const res = await fetch("/api/dashboard/devices", {

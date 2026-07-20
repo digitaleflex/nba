@@ -88,7 +88,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
           <span className="text-[10px] font-medium tracking-tight">Recherche</span>
         </button>
         <button
-          onClick={logout}
+          onClick={() => { if (confirm("Voulez-vous vous déconnecter ?")) logout() }}
           className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-destructive transition-colors relative"
           aria-label="Déconnexion"
         >
