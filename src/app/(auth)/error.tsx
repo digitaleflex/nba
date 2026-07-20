@@ -6,7 +6,7 @@ import { TrendingUp, RefreshCw, LogIn } from "lucide-react"
 import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function AuthError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error(error) }, [error])
+  useEffect(() => { if (process.env.NODE_ENV === "development") console.error(error) }, [error])
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">

@@ -4,7 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, LayoutDashboard } from "lucide-react"
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => { console.error(error) }, [error])
+  useEffect(() => { if (process.env.NODE_ENV === "development") console.error(error) }, [error])
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-4">

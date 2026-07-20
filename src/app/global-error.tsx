@@ -11,7 +11,7 @@ export default function GlobalError({
   error: Error & { digest?: string }
   reset: () => void
 }) {
-  useEffect(() => { console.error(error) }, [error])
+  useEffect(() => { if (process.env.NODE_ENV === "development") console.error(error) }, [error])
 
   return (
     <html>
