@@ -27,7 +27,7 @@ export function AppShell({ space, user, desktopHeader, mobileHeader, children }:
         <div className="flex min-h-dvh flex-col md:flex-row">
           <Sidebar space={space} user={user} />
 
-          <div className="flex flex-1 flex-col overflow-y-auto pb-16 md:pb-0">
+          <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
             {desktopHeader}
             {mobileHeader}
 

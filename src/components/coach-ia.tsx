@@ -43,7 +43,7 @@ export function CoachIA() {
   const cfg = severityConfig[latest.severity]
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 max-w-sm w-full animate-in slide-in-from-bottom-4 duration-300">
+    <div className="fixed bottom-20 right-4 left-4 z-40 max-w-sm w-auto ml-auto md:bottom-4 md:left-auto md:w-full animate-in slide-in-from-bottom-4 duration-300">
       <div className={`rounded-2xl border p-4 shadow-lg backdrop-blur-xl ${cfg.bg} bg-card/95`}>
         <div className="flex items-start gap-3">
           <div className={`flex size-8 shrink-0 items-center justify-center rounded-full ${cfg.bg}`}>
