@@ -24,21 +24,29 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
             </p>
           )}
         </div>
-        <div className="flex gap-3 justify-center">
-          <button
-            onClick={reset}
-            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+        <div className="flex flex-col items-center gap-4">
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={reset}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+            >
+              <RefreshCw className="size-4" />
+              Réessayer
+            </button>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <LayoutDashboard className="size-4" />
+              Tableau de bord
+            </Link>
+          </div>
+          <a
+            href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
-            <RefreshCw className="size-4" />
-            Réessayer
-          </button>
-          <Link
-            href="/dashboard"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-          >
-            <LayoutDashboard className="size-4" />
-            Tableau de bord
-          </Link>
+            Contacter le support
+          </a>
         </div>
       </div>
     </div>
