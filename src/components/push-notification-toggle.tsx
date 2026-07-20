@@ -107,11 +107,11 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
         setSubscribed(true)
       } else {
         await sub.unsubscribe()
-        toast.error("Échec de l&apos;activation côté serveur. Veuillez réessayer.")
+        toast.error("Échec de l'activation côté serveur. Veuillez réessayer.")
       }
     } catch (err) {
       console.error("Push subscription failed:", err)
-      toast.error("Impossible d&apos;activer les notifications. Vérifiez que votre navigateur supporte les notifications push.")
+      toast.error("Impossible d'activer les notifications. Vérifiez que votre navigateur supporte les notifications push.")
     } finally {
       setLoading(false)
     }
