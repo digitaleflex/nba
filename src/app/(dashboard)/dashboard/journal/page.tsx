@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 import { BookOpen, TrendingUp, PenLine, Play, Square, Loader2, Clock } from "lucide-react"
-import { cn, Button } from "@nba/design-system"
+import { cn, Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
 import { toast } from "sonner"
 
 import { TradeList } from "./components/trade-list"
@@ -30,6 +30,7 @@ function SessionBanner() {
   const [session, setSession] = useState<{ id: string; tradeCount: number; elapsed: string } | null>(null)
   const [loading, setLoading] = useState(true)
   const [starting, setStarting] = useState(false)
+  const [stopConfirmOpen, setStopConfirmOpen] = useState(false)
 
   const fetchSession = useCallback(async () => {
     try {
@@ -73,13 +74,13 @@ function SessionBanner() {
 
   async function stopSession() {
     if (!session) return
-    if (!confirm("Fermer la session ?")) return
     try {
       const res = await fetch(`/api/dashboard/journal/sessions/${session.id}`, { method: "POST" })
       if (res.ok) {
         const data = await res.json()
         toast.success(`Session fermée — ${data.summary.tradeCount} trades, ${data.summary.totalPnl?.toFixed(0)}€`)
         setSession(null)
+        setStopConfirmOpen(false)
       }
     } catch {
       toast.error("Erreur")
@@ -95,38 +96,57 @@ function SessionBanner() {
 
   if (loading) return null
 
-  if (session) {
-    return (
-      <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5">
-        <span className="relative flex size-3">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-          <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
-        </span>
-        <div className="flex-1 text-sm">
-          <span className="font-medium">Session active</span>
-          <span className="text-muted-foreground ml-2 inline-flex items-center gap-1">
-            · <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="inline-flex items-center gap-1">
-              <Clock className="size-3" />
-              {session.elapsed}
-            </motion.span>
-            · {session.tradeCount} trade{session.tradeCount > 1 ? "s" : ""}
-          </span>
-        </div>
-        <Button size="sm" variant="outline" onClick={stopSession} className="gap-1.5 text-xs h-7">
-          <Square className="size-3" /> Fermer
-        </Button>
-      </div>
-    )
-  }
-
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-2.5">
-      <span className="size-3 rounded-full bg-muted-foreground/20" />
-      <span className="flex-1 text-sm text-muted-foreground">Aucune session active</span>
-      <Button size="sm" variant="outline" onClick={startSession} disabled={starting} className="gap-1.5 text-xs h-7">
-        <Play className="size-3" /> {starting ? "..." : "Démarrer"}
-      </Button>
-    </div>
+    <>
+      {session ? (
+        <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-2.5">
+          <span className="relative flex size-3">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+            <span className="relative inline-flex size-3 rounded-full bg-emerald-500" />
+          </span>
+          <div className="flex-1 text-sm">
+            <span className="font-medium">Session active</span>
+            <span className="text-muted-foreground ml-2 inline-flex items-center gap-1">
+              · <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="inline-flex items-center gap-1">
+                <Clock className="size-3" />
+                {session.elapsed}
+              </motion.span>
+              · {session.tradeCount} trade{session.tradeCount > 1 ? "s" : ""}
+            </span>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setStopConfirmOpen(true)} className="gap-1.5 text-xs h-7">
+            <Square className="size-3" /> Fermer
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center gap-3 rounded-lg border border-dashed px-4 py-2.5">
+          <span className="size-3 rounded-full bg-muted-foreground/20" />
+          <span className="flex-1 text-sm text-muted-foreground">Aucune session active</span>
+          <Button size="sm" variant="outline" onClick={startSession} disabled={starting} className="gap-1.5 text-xs h-7">
+            <Play className="size-3" /> {starting ? "..." : "Démarrer"}
+          </Button>
+        </div>
+      )}
+
+      <Dialog open={stopConfirmOpen} onOpenChange={setStopConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Fermer la session ?</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            La session en cours sera clôturée et un récapitulatif sera généré.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setStopConfirmOpen(false)}>
+              Annuler
+            </Button>
+            <Button size="sm" onClick={stopSession} disabled={loading}>
+              Fermer la session
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
