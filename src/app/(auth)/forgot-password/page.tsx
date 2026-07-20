@@ -118,7 +118,7 @@ export default function ForgotPasswordPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full h-9" disabled={loading}>
+              <Button type="submit" className="w-full h-9" loading={loading}>
                 {loading ? "Envoi…" : "Envoyer le lien"}
               </Button>
             </CardContent>

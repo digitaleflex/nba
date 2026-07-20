@@ -144,7 +144,7 @@ export default function LoginPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full h-9" disabled={loading}>
+              <Button type="submit" className="w-full h-9" loading={loading}>
                 {loading ? "Connexion…" : "Se connecter"}
               </Button>
               <div className="text-center">
