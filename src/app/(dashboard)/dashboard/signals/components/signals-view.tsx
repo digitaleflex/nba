@@ -350,7 +350,7 @@ export function SignalsView() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
-            <p className="font-semibold text-destructive">{error}</p>
+            <p role="alert" className="font-semibold text-destructive">{error}</p>
             <p className="text-sm text-muted-foreground">Si le problème persiste, contactez le support.</p>
             <Button variant="outline" size="sm" onClick={handleRefresh}>
               Réessayer

@@ -104,7 +104,7 @@ export function StepEmail({ onNext }: StepEmailProps) {
                 )}
                 {loading ? "Envoi en cours..." : "Recevoir le code"}
               </Button>
-              {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+              {error && <p role="alert" className="text-sm text-destructive mt-2">{error}</p>}
             </>
           ) : (
             <div className="space-y-4">
@@ -139,7 +139,7 @@ export function StepEmail({ onNext }: StepEmailProps) {
                 Renvoyer le code
               </button>
 
-              {error && <p className="text-sm text-destructive mt-2">{error}</p>}
+              {error && <p role="alert" className="text-sm text-destructive mt-2">{error}</p>}
             </div>
           )}
           

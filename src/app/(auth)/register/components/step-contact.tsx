@@ -42,7 +42,7 @@ export function StepContact({
           className={email.length > 0 && !emailValid ? "border-destructive focus-visible:border-destructive" : ""}
         />
         {email.length > 0 && !emailValid && (
-          <p className="text-xs text-destructive">Format d&apos;email invalide.</p>
+          <p role="alert" className="text-xs text-destructive">Format d&apos;email invalide.</p>
         )}
       </div>
       <div className="space-y-1.5">
@@ -69,7 +69,7 @@ export function StepContact({
           className={whatsapp.length > 0 && !whatsappValid ? "border-destructive focus-visible:border-destructive" : ""}
         />
         {whatsapp.length > 0 && !whatsappValid && (
-          <p className="text-xs text-destructive">Numéro invalide (8 à 15 chiffres attendus).</p>
+          <p role="alert" className="text-xs text-destructive">Numéro invalide (8 à 15 chiffres attendus).</p>
         )}
       </div>
       <div className="flex gap-3 pt-2">

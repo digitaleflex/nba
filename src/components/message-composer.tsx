@@ -176,7 +176,7 @@ export function MessageComposer({
 
   return (
     <div className="border-t border-border/60 p-3">
-      {error && <p className="text-xs text-destructive mb-2">{error}</p>}
+      {error && <p role="alert" className="text-xs text-destructive mb-2">{error}</p>}
 
       {quotedMessage && (
         <div className="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-primary bg-muted/40 px-3 py-2">

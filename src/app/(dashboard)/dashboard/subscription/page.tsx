@@ -167,7 +167,7 @@ export default function SubscriptionPage() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p role="alert" className="text-sm text-muted-foreground">{error}</p>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>

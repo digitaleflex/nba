@@ -72,7 +72,7 @@ export function StepConfirmation({
         </div>
 
         {error && (
-          <div className={`text-sm flex flex-col gap-2 rounded-lg px-3 py-2 ${
+          <div role="alert" className={`text-sm flex flex-col gap-2 rounded-lg px-3 py-2 ${
             error.includes("déjà") || error.includes("existe")
               ? "text-muted-foreground bg-muted/50"
               : "text-destructive bg-destructive/10"

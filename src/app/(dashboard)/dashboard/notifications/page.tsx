@@ -430,7 +430,7 @@ export default function NotificationsPage() {
             </div>
 
             {soundError && (
-              <p className="text-xs text-destructive mt-2">
+              <p role="alert" className="text-xs text-destructive mt-2">
                 Échec de l'enregistrement. Réessayez.
               </p>
             )}

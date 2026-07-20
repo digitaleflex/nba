@@ -81,7 +81,7 @@ export default function SupportPage() {
               </div>
 
               {error && (
-                <p className="text-sm text-destructive">{error}</p>
+                <p role="alert" className="text-sm text-destructive">{error}</p>
               )}
 
               <Button type="submit" disabled={sending || !subject.trim() || !message.trim()} className="w-full gap-2">

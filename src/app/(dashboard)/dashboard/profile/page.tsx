@@ -238,7 +238,7 @@ export default function ProfilePage() {
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p role="alert" className="text-sm text-muted-foreground">{error}</p>
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>
@@ -507,7 +507,7 @@ export default function ProfilePage() {
               </div>
 
               {passwordError && (
-                <p className="text-xs text-destructive font-medium">{passwordError}</p>
+                <p role="alert" className="text-xs text-destructive font-medium">{passwordError}</p>
               )}
               {passwordSaved && (
                 <p className="text-xs text-success font-medium flex items-center gap-1">
@@ -563,7 +563,7 @@ export default function ProfilePage() {
               </div>
 
               {emailError && (
-                <p className="text-xs text-destructive font-medium">{emailError}</p>
+                <p role="alert" className="text-xs text-destructive font-medium">{emailError}</p>
               )}
               {emailSaved && (
                 <p className="text-xs text-success font-medium flex items-center gap-1">
@@ -630,7 +630,7 @@ export default function ProfilePage() {
             </div>
 
             {deleteError && (
-              <p className="text-xs text-destructive font-medium">{deleteError}</p>
+              <p role="alert" className="text-xs text-destructive font-medium">{deleteError}</p>
             )}
           </div>
 

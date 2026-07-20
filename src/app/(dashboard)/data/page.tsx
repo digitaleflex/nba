@@ -151,7 +151,7 @@ export default function DataPage() {
                 value={deletePassword}
                 onChange={(e) => setDeletePassword(e.target.value)}
               />
-              {deleteError && <p className="text-destructive text-xs">{deleteError}</p>}
+              {deleteError && <p role="alert" className="text-destructive text-xs">{deleteError}</p>}
               <div className="flex gap-3">
                 <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
                   {deleting ? "Suppression…" : "Confirmer la suppression"}

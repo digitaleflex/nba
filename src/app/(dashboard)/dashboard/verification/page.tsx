@@ -64,7 +64,7 @@ export default function VerificationPage() {
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
             <p role="alert" className="font-semibold text-destructive">Erreur de chargement</p>
-            <p className="text-sm text-muted-foreground">{error}</p>
+            <p role="alert" className="text-sm text-muted-foreground">{error}</p>
             <Button variant="outline" size="sm" onClick={fetchState}>Réessayer</Button>
           </CardContent>
         </Card>
