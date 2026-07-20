@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Card, CardContent, Button, EmptyState, Skeleton } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState, Skeleton, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@nba/design-system"
 import {
   BellOff,
   BellRing,
@@ -19,6 +19,7 @@ import {
   TestTube2,
   Trash2,
   ChevronDown,
+  Settings2,
 } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -71,6 +72,7 @@ export default function NotificationsPage() {
 
   const [hasMore, setHasMore] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [prefsOpen, setPrefsOpen] = useState(false)
   const pageRef = useRef(1)
 
   const [selectedSound, setSelectedSound] = useState("default")
@@ -355,7 +357,7 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
           <p className="text-sm text-muted-foreground">
@@ -364,12 +366,18 @@ export default function NotificationsPage() {
               : "Tout est à jour"}
           </p>
         </div>
-        {unreadCount > 0 && (
-          <Button variant="outline" size="sm" onClick={markAllAsRead}>
-            <CheckCheck className="size-4 mr-1.5" />
-            Tout marquer lu
+        <div className="flex items-center gap-2 shrink-0">
+          {unreadCount > 0 && (
+            <Button variant="outline" size="sm" onClick={markAllAsRead}>
+              <CheckCheck className="size-4 mr-1.5" />
+              Tout marquer lu
+            </Button>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setPrefsOpen(true)}>
+            <Settings2 className="size-4 mr-1.5" />
+            Préférences
           </Button>
-        )}
+        </div>
       </div>
 
       {/* ── Autorisation navigateur (section cool) ── */}
@@ -424,138 +432,145 @@ export default function NotificationsPage() {
         </CardContent>
       </Card>
 
-      {/* ── Son de notification ── */}
-      {soundLoaded && (
-        <Card className="border-border">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <Volume2 className="size-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold">Son de notification</h2>
-              </div>
-              <Button
-                variant={soundSaved ? "default" : "outline"}
-                size="sm"
-                onClick={saveSound}
-                disabled={soundSaved}
-              >
-                <Save className="size-3.5 mr-1.5" />
-                {soundSaved ? "Enregistré" : "Enregistrer"}
-              </Button>
-            </div>
+      <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Préférences de notification</DialogTitle>
+            <DialogDescription>
+              Choisissez le son et les types de notifications que vous souhaitez recevoir.
+            </DialogDescription>
+          </DialogHeader>
 
-            {soundError && (
-              <p role="alert" className="text-xs text-destructive mt-2">
-                Échec de l'enregistrement. Réessayez.
-              </p>
-            )}
-
-            {/* Volume slider */}
-            <div className="mb-5 flex items-center gap-3">
-              <button
-                onClick={() => changeVolume(volume === 0 ? 0.5 : 0)}
-                className="p-1.5 rounded-md hover:bg-muted text-muted-foreground shrink-0"
-                title={volume === 0 ? "Activer le son" : "Couper le son"}
-              >
-                {volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
-              </button>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={volume}
-                onChange={(e) => changeVolume(parseFloat(e.target.value))}
-                className="flex-1 accent-primary h-1.5"
-                aria-label="Volume des notifications"
-              />
-              <span className="text-xs text-muted-foreground font-mono w-8 text-right">
-                {Math.round(volume * 100)}
-              </span>
-            </div>
-
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
-              {NOTIFICATION_SOUNDS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    setSelectedSound(s.id)
-                    playSound(s.id)
-                  }}
-                  className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ${
-                    selectedSound === s.id
-                      ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/30"
-                      : "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-                  }`}
+          {/* ── Son de notification ── */}
+          {soundLoaded && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Volume2 className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold">Son de notification</h2>
+                </div>
+                <Button
+                  variant={soundSaved ? "default" : "outline"}
+                  size="sm"
+                  onClick={saveSound}
+                  disabled={soundSaved}
                 >
-                  <Volume2 className="size-3.5 shrink-0" />
-                  <div className="min-w-0">
-                    <div className="font-semibold">{s.label}</div>
-                    <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* ── Préférences par type ── */}
-      {prefsLoaded && (
-        <Card className="border-border">
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <BellRing className="size-4 text-muted-foreground" />
-                <h2 className="text-sm font-semibold">Types de notifications</h2>
+                  <Save className="size-3.5 mr-1.5" />
+                  {soundSaved ? "Enregistré" : "Enregistrer"}
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={savePrefs}
-                disabled={prefsSaving}
-              >
-                <Save className="size-3.5 mr-1.5" />
-                {prefsSaving ? "..." : "Enregistrer"}
-              </Button>
-            </div>
-            <div className="space-y-0.5">
-              {[
-                { key: "signal", label: "Signaux", desc: "Nouveaux signaux de trading publiés" },
-                { key: "kyc", label: "KYC", desc: "Validation de vos documents d'identité" },
-                { key: "broker", label: "Broker", desc: "Validation de votre compte broker" },
-                { key: "access", label: "Abonnement", desc: "Changements de votre abonnement" },
-                { key: "security", label: "Sécurité", desc: "Connexions, changements de mot de passe" },
-                { key: "system", label: "Annonces", desc: "Messages de l'équipe NeverBrokeAgain" },
-                { key: "message", label: "Messages", desc: "Nouveaux messages de la communauté" },
-              ].map(({ key, label, desc }) => (
-                <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
-                  <div className="min-w-0 mr-3">
-                    <p className="text-xs font-medium text-foreground">{label}</p>
-                    <p className="text-[10px] text-muted-foreground">{desc}</p>
-                  </div>
-                  <div
-                    role="switch"
-                    aria-checked={prefs[key] !== false}
-                    tabIndex={0}
-                    onClick={() => togglePref(key)}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePref(key) } }}
-                    className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-primary ${
-                      prefs[key] !== false ? "bg-primary" : "bg-muted"
+
+              {soundError && (
+                <p role="alert" className="text-xs text-destructive">
+                  Échec de l'enregistrement. Réessayez.
+                </p>
+              )}
+
+              {/* Volume slider */}
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => changeVolume(volume === 0 ? 0.5 : 0)}
+                  className="p-1.5 rounded-md hover:bg-muted text-muted-foreground shrink-0"
+                  title={volume === 0 ? "Activer le son" : "Couper le son"}
+                >
+                  {volume === 0 ? <VolumeX className="size-4" /> : <Volume2 className="size-4" />}
+                </button>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(e) => changeVolume(parseFloat(e.target.value))}
+                  className="flex-1 accent-primary h-1.5"
+                  aria-label="Volume des notifications"
+                />
+                <span className="text-xs text-muted-foreground font-mono w-8 text-right">
+                  {Math.round(volume * 100)}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                {NOTIFICATION_SOUNDS.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setSelectedSound(s.id)
+                      playSound(s.id)
+                    }}
+                    className={`flex items-center gap-2 px-3 py-2.5 rounded-lg text-xs font-medium border transition-all text-left ${
+                      selectedSound === s.id
+                        ? "border-primary bg-primary/10 text-primary ring-1 ring-primary/30"
+                        : "border-border text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
-                    <span
-                      className={`pointer-events-none inline-block size-4 rounded-full bg-white shadow-lg transform ring-0 transition-transform duration-200 ${
-                        prefs[key] !== false ? "translate-x-[18px]" : "translate-x-0"
-                      }`}
-                    />
-                  </div>
-                </label>
-              ))}
+                    <Volume2 className="size-3.5 shrink-0" />
+                    <div className="min-w-0">
+                      <div className="font-semibold">{s.label}</div>
+                      <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+
+          {/* ── Préférences par type ── */}
+          {prefsLoaded && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <BellRing className="size-4 text-muted-foreground" />
+                  <h2 className="text-sm font-semibold">Types de notifications</h2>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={savePrefs}
+                  disabled={prefsSaving}
+                >
+                  <Save className="size-3.5 mr-1.5" />
+                  {prefsSaving ? "..." : "Enregistrer"}
+                </Button>
+              </div>
+              <div className="space-y-0.5">
+                {[
+                  { key: "signal", label: "Signaux", desc: "Nouveaux signaux de trading publiés" },
+                  { key: "kyc", label: "KYC", desc: "Validation de vos documents d'identité" },
+                  { key: "broker", label: "Broker", desc: "Validation de votre compte broker" },
+                  { key: "access", label: "Abonnement", desc: "Changements de votre abonnement" },
+                  { key: "security", label: "Sécurité", desc: "Connexions, changements de mot de passe" },
+                  { key: "system", label: "Annonces", desc: "Messages de l'équipe NeverBrokeAgain" },
+                  { key: "message", label: "Messages", desc: "Nouveaux messages de la communauté" },
+                ].map(({ key, label, desc }) => (
+                  <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
+                    <div className="min-w-0 mr-3">
+                      <p className="text-xs font-medium text-foreground">{label}</p>
+                      <p className="text-[10px] text-muted-foreground">{desc}</p>
+                    </div>
+                    <div
+                      role="switch"
+                      aria-checked={prefs[key] !== false}
+                      tabIndex={0}
+                      onClick={() => togglePref(key)}
+                      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); togglePref(key) } }}
+                      className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-1 focus:ring-primary ${
+                        prefs[key] !== false ? "bg-primary" : "bg-muted"
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block size-4 rounded-full bg-white shadow-lg transform ring-0 transition-transform duration-200 ${
+                          prefs[key] !== false ? "translate-x-[18px]" : "translate-x-0"
+                        }`}
+                      />
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {notifications.length === 0 ? (
         <EmptyState
