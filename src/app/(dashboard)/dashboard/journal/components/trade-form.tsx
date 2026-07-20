@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { X, ArrowUp, ArrowDown, Plus, Tag } from "lucide-react"
+import { useState, useMemo, useEffect } from "react"
+import { X, ArrowUp, ArrowDown, Plus, Tag, FileText } from "lucide-react"
 import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
 import { toast } from "sonner"
+import { useFormDraft } from "@nba/hooks/use-form-draft"
 
 const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
@@ -43,6 +44,32 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const [tagInput, setTagInput] = useState("")
   const [tags, setTags] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+
+  const { restore, clear, savedAt } = useFormDraft("trade", {
+    pair, direction, result, entryPrice, exitPrice, stopLoss, takeProfit,
+    strategy, setupType, lotSize, spread, mood, confidence, note, tags,
+  })
+
+  useEffect(() => {
+    const draft = restore()
+    if (draft) {
+      if (typeof draft.pair === "string") setPair(draft.pair)
+      if (draft.direction === "BUY" || draft.direction === "SELL") setDirection(draft.direction)
+      if (draft.result === "WIN" || draft.result === "LOSS" || draft.result === "BREAKEVEN") setResult(draft.result)
+      if (typeof draft.entryPrice === "string") setEntryPrice(draft.entryPrice)
+      if (typeof draft.exitPrice === "string") setExitPrice(draft.exitPrice)
+      if (typeof draft.stopLoss === "string") setStopLoss(draft.stopLoss)
+      if (typeof draft.takeProfit === "string") setTakeProfit(draft.takeProfit)
+      if (typeof draft.strategy === "string") setStrategy(draft.strategy)
+      if (typeof draft.setupType === "string") setSetupType(draft.setupType)
+      if (typeof draft.lotSize === "string") setLotSize(draft.lotSize)
+      if (typeof draft.spread === "string") setSpread(draft.spread)
+      if (typeof draft.mood === "string") setMood(draft.mood)
+      if (typeof draft.confidence === "number") setConfidence(draft.confidence)
+      if (typeof draft.note === "string") setNote(draft.note)
+      if (Array.isArray(draft.tags)) setTags(draft.tags)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const entry = parseFloat(entryPrice) || 0
   const exit = parseFloat(exitPrice) || 0
@@ -108,6 +135,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         }),
       })
       if (!res.ok) throw new Error("Erreur")
+      clear()
       toast.success("Trade enregistré")
       onSaved()
     } catch {
@@ -381,6 +409,12 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             />
           </div>
 
+          {savedAt && (
+            <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+              <FileText className="size-3" />
+              Sauvegardé {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            </p>
+          )}
           <Button onClick={handleSubmit} disabled={saving} className="w-full">
             {saving ? "Enregistrement..." : "Enregistrer le trade"}
           </Button>

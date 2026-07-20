@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button, Card, CardContent, Input } from "@nba/design-system"
-import { Video, Upload, ArrowRight } from "lucide-react"
+import { Video, Upload, ArrowRight, FileText } from "lucide-react"
+import { useFormDraft } from "@nba/hooks/use-form-draft"
 
 export default function BrokerPage() {
   const router = useRouter()
@@ -12,6 +13,16 @@ export default function BrokerPage() {
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  const { restore, clear, savedAt } = useFormDraft("broker", { brokerName, accountId })
+
+  useEffect(() => {
+    const draft = restore()
+    if (draft) {
+      if (typeof draft.brokerName === "string") setBrokerName(draft.brokerName)
+      if (typeof draft.accountId === "string") setAccountId(draft.accountId)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -37,6 +48,7 @@ export default function BrokerPage() {
       return
     }
 
+    clear()
     router.push("/onboarding")
     router.refresh()
   }
@@ -101,6 +113,12 @@ export default function BrokerPage() {
               </label>
             </div>
 
+            {savedAt && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <FileText className="size-3" />
+                Brouillon sauvegardé à {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
                 <span className="size-1.5 rounded-full bg-destructive shrink-0" />

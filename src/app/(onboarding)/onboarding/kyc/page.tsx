@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button, Card, CardContent } from "@nba/design-system"
 import { FileText, Upload, Camera, RefreshCw, Shield, Check, AlertTriangle, ArrowRight, Loader2, Scan, ImageUp } from "lucide-react"
+import { useFormDraft } from "@nba/hooks/use-form-draft"
 
 const DOCUMENT_TYPES = [
   { value: "ID_CARD", label: "Carte Nationale" },
@@ -55,6 +56,15 @@ export default function KycPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
+  const { restore, clear, savedAt } = useFormDraft("kyc", { documentType })
+
+  useEffect(() => {
+    const draft = restore()
+    if (draft && typeof draft.documentType === "string") {
+      setDocumentType(draft.documentType)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!frontFile) {
@@ -83,6 +93,7 @@ export default function KycPage() {
       return
     }
 
+    clear()
     setTimeout(() => {
       router.push("/onboarding/broker")
       router.refresh()
@@ -227,6 +238,12 @@ export default function KycPage() {
 
             {/* Selfie supprimé pour validation rapide */}
 
+            {savedAt && (
+              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                <FileText className="size-3" />
+                Brouillon sauvegardé à {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              </p>
+            )}
             {error && (
               <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2 animate-in fade-in slide-in-from-top-1 duration-200">
                 <span className="size-1.5 rounded-full bg-destructive shrink-0" />
