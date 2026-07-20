@@ -164,4 +164,100 @@ describe("POST /api/dashboard/journal/trades", () => {
     const res = await POST(mockReq("https://x/api/dashboard/journal/trades", { pair: "" }))
     expect(res.status).toBe(400)
   })
+
+  it("crée un trade LOSS et incrémente la LOSS_STREAK", async () => {
+    const body = {
+      pair: "BTCUSDT",
+      direction: "SELL",
+      result: "LOSS",
+      entryPrice: 65000,
+      exitPrice: 66000,
+      lotSize: 0.1,
+    }
+
+    prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.trade.create.mockResolvedValue({ id: "t2", userId: USER_ID, pair: "BTCUSDT", pnl: -100 })
+    prismaMock.streak.findUnique.mockResolvedValue(null)
+    prismaMock.streak.create.mockResolvedValue({})
+
+    const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
+    const json = await res.json()
+
+    expect(res.status).toBe(201)
+    expect(prismaMock.streak.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ userId: USER_ID, type: "LOSS_STREAK", count: 1 }),
+      }),
+    )
+    expect(json.trade.pnl).toBe(-100)
+  })
+
+  it("ne crée pas de streak pour un trade BREAKEVEN", async () => {
+    const body = {
+      pair: "EURUSD",
+      direction: "BUY",
+      result: "BREAKEVEN",
+      entryPrice: 1.08500,
+      exitPrice: 1.08500,
+      lotSize: 0.01,
+    }
+
+    prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.trade.create.mockResolvedValue({ id: "t3", userId: USER_ID, pair: "EURUSD", pnl: 0 })
+
+    const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
+
+    expect(res.status).toBe(201)
+    expect(prismaMock.streak.create).not.toHaveBeenCalled()
+    expect(prismaMock.streak.update).not.toHaveBeenCalled()
+  })
+
+  it("retourne 400 si le SL est supérieur au prix d'entrée en ACHAT", async () => {
+    const body = {
+      pair: "EURUSD",
+      direction: "BUY",
+      result: "WIN",
+      entryPrice: 1.08500,
+      exitPrice: 1.08700,
+      stopLoss: 1.09000,
+      lotSize: 0.01,
+    }
+    const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
+    expect(res.status).toBe(400)
+  })
+
+  it("retourne 400 si le TP est inférieur au prix d'entrée en ACHAT", async () => {
+    const body = {
+      pair: "EURUSD",
+      direction: "BUY",
+      result: "WIN",
+      entryPrice: 1.08500,
+      exitPrice: 1.08700,
+      takeProfit: 1.08000,
+      lotSize: 0.01,
+    }
+    const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
+    expect(res.status).toBe(400)
+  })
+
+  it("associe le trade à la session active si présente", async () => {
+    const body = {
+      pair: "EURUSD",
+      direction: "BUY",
+      result: "WIN",
+      entryPrice: 1.08500,
+      exitPrice: 1.08700,
+      lotSize: 0.01,
+    }
+
+    prismaMock.journalSession.findFirst.mockResolvedValue({ id: "sess-1" })
+    prismaMock.trade.create.mockResolvedValue({ id: "t4", userId: USER_ID, sessionId: "sess-1", pair: "EURUSD", pnl: 20 })
+    prismaMock.streak.findUnique.mockResolvedValue(null)
+    prismaMock.streak.create.mockResolvedValue({})
+
+    const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
+    const createCall = prismaMock.trade.create.mock.calls[0][0]
+    expect(createCall.data.sessionId).toBe("sess-1")
+    expect(res.status).toBe(201)
+  })
 })
