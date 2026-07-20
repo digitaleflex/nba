@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider, ToastProvider, TopLoader, TooltipProvider } from "@nba/design-system";
 import { ImpersonationBanner } from "./components/impersonation-banner";
+import { OfflineBanner } from "./components/offline-banner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -105,6 +106,7 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
+          <OfflineBanner />
           <Suspense fallback={null}>
             <TopLoader />
           </Suspense>
