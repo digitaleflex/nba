@@ -127,13 +127,16 @@ export default function DevicesPage() {
           await fetchDevices()
         } catch {
           toast.error("Échec de la révocation")
-    } finally {
-      setBusy(false)
-    }
+        } finally {
+          setBusy(false)
+        }
+      },
+    })
   }
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto">
+    <>
+      <div className="space-y-8 max-w-4xl mx-auto">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
@@ -280,6 +283,7 @@ export default function DevicesPage() {
         </div>
       )}
       {node}
-    </div>
+      </div>
+    </>
   )
 }

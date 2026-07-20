@@ -50,6 +50,7 @@ body {
 }
 
 /* Selected state */
+.selected {
   background-color: var(--color-selected);
   border-left: 2px solid var(--color-primary);
 }
