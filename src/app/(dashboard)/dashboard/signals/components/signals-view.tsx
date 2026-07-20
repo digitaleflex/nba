@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
+import { motion } from "motion/react"
 import { Card, CardContent, Badge, Input, Button, cn } from "@nba/design-system"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import {
@@ -103,11 +104,15 @@ function getDateGroup(dateStr: string): string {
 }
 
 function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?: boolean }) {
+  const Comp = justArrived ? motion.div : "div"
   return (
+    <Comp
+      {...(justArrived ? { initial: { x: 20, opacity: 0 }, animate: { x: 0, opacity: 1 }, transition: { duration: 0.3 } } : {})}
+    >
     <Link href={`/dashboard/signals/${signal.id}`} className="block">
       <Card className={cn(
         "relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer",
-        justArrived && "ring-2 ring-primary/60 animate-[pulse_1.2s_ease-in-out_1]"
+        justArrived && "ring-2 ring-primary/60"
       )}>
         {!signal.read && (
           <div className="absolute right-3 top-3 z-10">
@@ -173,6 +178,7 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
         </CardContent>
       </Card>
     </Link>
+    </Comp>
   )
 }
 

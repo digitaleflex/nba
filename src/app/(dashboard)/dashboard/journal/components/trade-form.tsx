@@ -20,6 +20,48 @@ function getContractSize(pair: string): number {
   return forex.includes(pair.toUpperCase()) ? 100000 : 1
 }
 
+function LotCalculator({ entry, sl, direction, contractSize, onApply }: {
+  entry: number
+  sl: number
+  direction: "BUY" | "SELL"
+  contractSize: number
+  onApply: (lot: string) => void
+}) {
+  const [balance, setBalance] = useState("1000")
+  const [riskPct, setRiskPct] = useState("1")
+
+  const riskAmount = (parseFloat(balance) || 0) * (parseFloat(riskPct) || 0) / 100
+  const slDistance = Math.abs(entry - sl)
+  const suggestedLot = slDistance > 0 && contractSize > 0
+    ? Math.round((riskAmount / (slDistance * contractSize)) * 100) / 100
+    : 0
+
+  if (riskAmount <= 0 || suggestedLot <= 0) return null
+
+  return (
+    <div className="rounded-lg border border-dashed border-primary/20 bg-primary/5 p-3 space-y-2">
+      <p className="text-[11px] font-medium text-primary">Calculateur de lot</p>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="text-[10px] text-muted-foreground block">Solde ($)</label>
+          <Input value={balance} onChange={(e) => setBalance(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
+        </div>
+        <div>
+          <label className="text-[10px] text-muted-foreground block">Risk (%)</label>
+          <Input value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
+        </div>
+      </div>
+      <div className="flex items-center justify-between text-[11px]">
+        <span className="text-muted-foreground">Risk: {riskAmount.toFixed(2)}€ · SL distance: {(slDistance * contractSize).toFixed(0)}</span>
+        <span className="font-mono font-bold text-primary">→ {suggestedLot.toFixed(2)}</span>
+      </div>
+      <Button size="sm" variant="outline" className="w-full h-7 text-[11px]" onClick={() => onApply(suggestedLot.toFixed(2))}>
+        Appliquer {suggestedLot.toFixed(2)} lots
+      </Button>
+    </div>
+  )
+}
+
 interface FieldErrors {
   pair?: string
   entryPrice?: string
