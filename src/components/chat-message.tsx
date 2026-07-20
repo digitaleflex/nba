@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react"
 import { MarkdownMessage, plainPreview } from "@nba/lib/markdown"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
 import {
   Check,
   CheckCheck,
@@ -312,82 +313,76 @@ export function ChatMessage({
       )}
 
       {/* Confirmation suppression */}
-      {confirmDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setConfirmDelete(false)}>
-          <div className="w-80 rounded-2xl border border-border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-3">
+      <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <Trash2 className="size-4 text-destructive" />
-              <p className="text-sm font-medium">Supprimer le message ?</p>
-              <button onClick={() => setConfirmDelete(false)} className="ml-auto text-muted-foreground hover:text-foreground">
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="flex flex-col gap-2">
+              Supprimer le message ?
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <button
+              onClick={() => {
+                setConfirmDelete(false)
+                onDelete(message.id, false)
+              }}
+              className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
+            >
+              Me le masquer
+            </button>
+            {(isMine || canModerate) && (
               <button
                 onClick={() => {
                   setConfirmDelete(false)
-                  onDelete(message.id, false)
+                  onDelete(message.id, true)
                 }}
-                className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
+                className="rounded-lg bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 transition-opacity"
               >
-                Me le masquer
+                Supprimer pour tout le monde
               </button>
-              {(isMine || canModerate) && (
-                <button
-                  onClick={() => {
-                    setConfirmDelete(false)
-                    onDelete(message.id, true)
-                  }}
-                  className="rounded-lg bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 transition-opacity"
-                >
-                  Supprimer pour tout le monde
-                </button>
-              )}
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       {/* Signalement */}
-      {reporting && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setReporting(false)}>
-          <div className="w-80 rounded-2xl border border-border bg-background p-4 shadow-xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center gap-2 mb-3">
+      <Dialog open={reporting} onOpenChange={setReporting}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
               <Flag className="size-4 text-destructive" />
-              <p className="text-sm font-medium">Signaler ce message</p>
-              <button onClick={() => setReporting(false)} className="ml-auto text-muted-foreground hover:text-foreground">
-                <X className="size-4" />
-              </button>
-            </div>
-            <textarea
-              value={reportReason}
-              onChange={(e) => setReportReason(e.target.value)}
-              rows={3}
-              placeholder="Motif du signalement..."
-              className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
-            />
-            <div className="mt-3 flex justify-end gap-2">
-              <button
-                onClick={() => setReporting(false)}
-                className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
-              >
-                Annuler
-              </button>
-              <button
-                disabled={reportReason.trim().length < 3}
-                onClick={() => {
-                  setReporting(false)
-                  onReport?.(message.id, reportReason.trim())
-                  setReportReason("")
-                }}
-                className="rounded-lg bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
-              >
-                Envoyer
-              </button>
-            </div>
+              Signaler ce message
+            </DialogTitle>
+          </DialogHeader>
+          <textarea
+            value={reportReason}
+            onChange={(e) => setReportReason(e.target.value)}
+            rows={3}
+            placeholder="Motif du signalement..."
+            className="w-full resize-none rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+          />
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              onClick={() => setReporting(false)}
+              className="rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              disabled={reportReason.trim().length < 3}
+              onClick={() => {
+                setReporting(false)
+                onReport?.(message.id, reportReason.trim())
+                setReportReason("")
+              }}
+              className="rounded-lg bg-destructive px-3 py-2 text-sm text-destructive-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+            >
+              Envoyer
+            </button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
