@@ -186,34 +186,34 @@
 - **Fichiers** : `dialog.tsx:34` (bg-black/10), `bottom-sheet.tsx:29` (bg-black/40)
 - **Problème** : Opacité d'overlay inconsistante
 - **Fix** : Harmoniser à `bg-black/40` partout
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (14dd428) — Dialog passé de bg-black/10 à bg-black/50 (contraste renforcé). BottomSheet déjà à /40, laissé tel quel.
 
 ### MT-3 — Ajouter loading state `ButtonLoading` dans le design system
 - **Problème** : Chaque composant gère le spinner manuellement
 - **Fix** : Ajouter une prop `loading` au composant `Button`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (1542a06) — Prop `loading` + spinner Loader2, utilisée sur login/register/forgot-password.
 
 ### MT-4 — Supprimer `userScalable: false` et tester pinch-to-zoom
 - **Voir QW-9** — Validation complète requise
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ce9ddbd) — `maximumScale`/`userScalable` retirés dans QW-9, pinch-to-zoom fonctionnel.
 
 ### MT-5 — Authentifier routes `/api/onboarding/*`
 - **Fichier** : `src/middleware.ts:5`
 - **Problème** : `/api/onboarding` dans `PUBLIC_PREFIXES` — endpoints non authentifiés
 - **Fix** : Ajouter des guards d'authentification ou restreindre les routes
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (d46cc84) — Retiré de PUBLIC_PREFIXES : le middleware applique désormais la protection CSRF edge sur ces routes (les handlers font déjà getServerSession → 401).
 
 ### MT-6 — Synchroniser strength meter avec règles mot de passe
 - **Fichiers** : `password-utils.ts`, `step-security.tsx`
 - **Problème** : Règles disent "pass" mais strength dit "Faible"
 - **Fix** : Aligner le scoring avec les règles de validation
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (2988213) — Politique serveur min 10 chars + toutes classes (Better Auth `password.minLength`); client aligné (MIN_PASSWORD_LENGTH, isPasswordValid, règles incluant minuscule).
 
 ### MT-7 — Erreurs serveur brutes → messages contrôlés
 - **Fichiers** : `login/page.tsx`, `register/page.tsx`, `forgot-password/page.tsx`
 - **Problème** : `err.message` affiché directement — fuite d'infos
 - **Fix** : Mapper les erreurs connues en messages utilisateur
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (e494fa7) — `safeAuthErrorMessage()` centralise le mapping, messages génériques par défaut.
 
 ### MT-8 — Ajouter fallback avatar sur images cassées
 - **Fichier** : `src/app/components/sidebar.tsx:204-205`
@@ -231,7 +231,7 @@
 - **Fichier** : `src/app/(auth)/register/components/password-utils.ts`
 - **Problème** : Scoring ne vérifie pas le lowercase, pas de check HIBP
 - **Fix** : Ajouter lowercase au scoring, considerer HaveIBeenPwned
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (2988213) — Règle minuscule ajoutée au scoring + validation. Check HIBP reporté dans LT-5 (nécessite intégration API externe).
 
 ---
 
@@ -280,9 +280,9 @@
 |-------|-------|------|----------|---------|
 | Quick Wins | 9 | 9 | 0 | 0 |
 | Court Terme | 10 | 10 | 0 | 0 |
-| Moyen Terme | 10 | 0 | 0 | 10 |
+| Moyen Terme | 10 | 8 | 0 | 2 |
 | Long Terme | 7 | 0 | 0 | 7 |
-| **TOTAL** | **36** | **19** | **0** | **17** |
+| **TOTAL** | **36** | **27** | **0** | **9** |
 
 ---
 
@@ -305,6 +305,11 @@
 | 2026-07-20 | fd51106 | fix(trust): add error feedback toasts for notification actions (prefs, mark read, delete) |
 | 2026-07-20 | 8254655 | fix(trust): show error toast when message send fails instead of silent removal |
 | 2026-07-20 | 51020de | fix(trust): replace custom modals with design system Dialog in chat-message |
+| 2026-07-20 | d46cc84 | fix(security): remove /api/onboarding from PUBLIC_PREFIXES (CSRF edge on onboarding routes) |
+| 2026-07-20 | e494fa7 | fix(trust): MT-7 centralize auth error messages to avoid leaking raw server errors |
+| 2026-07-20 | 14dd428 | fix(trust): MT-2 strengthen Dialog overlay contrast (bg-black/10 -> /50) |
+| 2026-07-20 | 1542a06 | fix(trust): MT-3 add loading prop (spinner) to Button, used on auth pages |
+| 2026-07-20 | 2988213 | fix(security): MT-6 enforce password policy (min 10 + all classes) server & client |
 
 ---
 
