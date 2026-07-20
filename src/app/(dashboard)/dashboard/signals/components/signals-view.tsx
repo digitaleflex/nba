@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import { motion } from "motion/react"
-import { Card, CardContent, Badge, Input, Button, cn } from "@nba/design-system"
+import { Card, CardContent, Badge, Input, Button, cn, EmptyState } from "@nba/design-system"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import {
   Radio,
@@ -477,19 +477,14 @@ export function SignalsView() {
           </CardContent>
         </Card>
       ) : filteredSignals.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <Radio className="size-10 text-muted-foreground" />
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">Aucun signal disponible</p>
-              <p className="text-sm text-muted-foreground">
-                {searchQuery
-                  ? "Aucun signal ne correspond à votre recherche."
-                  : "Aucun signal n'a encore été publié pour vos groupes. Les nouveaux signaux apparaîtront automatiquement ici."}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={Radio}
+          title={searchQuery ? "Aucun résultat" : "Aucun signal disponible"}
+          description={searchQuery
+            ? "Aucun signal ne correspond à votre recherche."
+            : "Aucun signal n'a encore été publié pour vos groupes. En attendant, explorez votre journal de trading."}
+          action={searchQuery ? undefined : { label: "Découvrir le Journal", onClick: () => window.location.href = "/dashboard/journal" }}
+        />
       ) : (
         <div className="space-y-8">
           {Object.entries(groupedFiltered).map(([group, sigs]) => (

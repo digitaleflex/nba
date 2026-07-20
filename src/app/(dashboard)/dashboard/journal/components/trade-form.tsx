@@ -540,6 +540,8 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Commission</label>
           <Input
             placeholder="0"
             value={commission}
