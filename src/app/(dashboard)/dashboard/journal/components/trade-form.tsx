@@ -6,6 +6,7 @@ import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, Bottom
 import { toast } from "sonner"
 import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 import { analyzeTrade } from "@nba/lib/coach/patterns"
+import { checkMissions } from "@nba/hooks/use-user-level"
 
 const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
@@ -313,6 +314,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         tags,
         tradedAt: tradedAt || new Date().toISOString(),
       }, localStorage)
+      checkMissions({ mood, stopLoss: stopLoss || null, tags })
       onSaved()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Impossible d'enregistrer le trade")

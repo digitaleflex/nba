@@ -13,7 +13,7 @@ export default function OnboardingError({ error, reset }: { error: Error & { dig
           <TrendingUp className="size-8 text-destructive" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Erreur onboarding</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Configuration interrompue</h1>
           <p className="text-sm text-muted-foreground">
             Une erreur est survenue lors de la configuration de votre compte.
           </p>

@@ -3,6 +3,7 @@
 import { Component, type ReactNode } from "react"
 import { Button } from "@nba/design-system"
 import { AlertTriangle, RefreshCw } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 interface Props {
   children: ReactNode
@@ -39,9 +40,9 @@ export class ErrorBoundary extends Component<Props, State> {
               <AlertTriangle className="size-6 text-amber-500" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-foreground">Quelque chose s'est mal passé</h2>
+              <h2 className="text-sm font-semibold text-foreground">Une erreur est survenue</h2>
               <p className="text-xs text-muted-foreground mt-1">
-                Une erreur inattendue est survenue. Essayez de rafraîchir la page.
+                Une erreur inattendue est survenue. Essayez de rafraîchir la page ou contactez le support si le problème persiste.
               </p>
             </div>
             <Button

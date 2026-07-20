@@ -14,6 +14,7 @@ import { ReflectionsTab } from "./components/reflections-tab"
 import { TradeForm } from "./components/trade-form"
 import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
 import { FirstTradeGuide } from "@nba/components/guides/first-trade-guide"
+import { MissionsPanel } from "@nba/components/missions-panel"
 
 const TABS = [
   { id: "trades", label: "Trades", icon: BookOpen },
@@ -156,6 +157,9 @@ export default function JournalPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Journal de trading</h1>
           <p className="text-sm text-muted-foreground">Suis tes trades, analyse ta performance, maîtrise tes émotions.</p>
+        </div>
+        <div className="relative">
+          <MissionsPanel />
         </div>
       </div>
 

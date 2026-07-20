@@ -14,7 +14,7 @@ export default function AdminError({ error, reset }: { error: Error & { digest?:
           <Shield className="size-8 text-destructive" />
         </div>
         <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight">Erreur administrative</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Une erreur est survenue</h1>
           <p className="text-sm text-muted-foreground">
             Une erreur est survenue sur l&rsquo;interface d&rsquo;administration. Pas d&rsquo;inquiétude, rien n&rsquo;a été perdu. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
