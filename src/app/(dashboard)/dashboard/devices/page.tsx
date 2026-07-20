@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Card, CardContent, Button, Input, Badge } from "@nba/design-system"
+import { useConfirm } from "@nba/components/confirm-dialog"
 import { toast } from "sonner"
 import {
   MonitorSmartphone,
@@ -34,6 +35,7 @@ export default function DevicesPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState("")
   const [busy, setBusy] = useState(false)
+  const { confirm, node } = useConfirm()
 
   const fetchDevices = async () => {
     try {
@@ -82,39 +84,49 @@ export default function DevicesPage() {
     }
   }
 
-  const revoke = async (deviceId: string) => {
-    if (!confirm("Révoquer cet appareil ? Il sera déconnecté immédiatement.")) return
-    setBusy(true)
-    try {
-      const res = await fetch("/api/dashboard/devices", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deviceId }),
-      })
-      if (!res.ok) throw new Error("Erreur")
-      toast.success("Appareil révoqué")
-      await fetchDevices()
-    } catch {
-      toast.error("Échec de la révocation")
-    } finally {
-      setBusy(false)
-    }
+  const revoke = (deviceId: string) => {
+    confirm({
+      title: "Révoquer cet appareil ?",
+      description: "Il sera déconnecté immédiatement.",
+      confirmLabel: "Révoquer",
+      onConfirm: async () => {
+        setBusy(true)
+        try {
+          const res = await fetch("/api/dashboard/devices", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ deviceId }),
+          })
+          if (!res.ok) throw new Error("Erreur")
+          toast.success("Appareil révoqué")
+          await fetchDevices()
+        } catch {
+          toast.error("Échec de la révocation")
+        } finally {
+          setBusy(false)
+        }
+      },
+    })
   }
 
-  const revokeOthers = async () => {
-    if (!confirm("Révoquer TOUS les autres appareils ? Cette action est irréversible.")) return
-    setBusy(true)
-    try {
-      const res = await fetch("/api/dashboard/devices", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ revokeOthers: true }),
-      })
-      if (!res.ok) throw new Error("Erreur")
-      toast.success("Les autres appareils ont été révoqués")
-      await fetchDevices()
-    } catch {
-      toast.error("Échec de la révocation")
+  const revokeOthers = () => {
+    confirm({
+      title: "Révoquer TOUS les autres appareils ?",
+      description: "Cette action est irréversible.",
+      confirmLabel: "Tout révoquer",
+      onConfirm: async () => {
+        setBusy(true)
+        try {
+          const res = await fetch("/api/dashboard/devices", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ revokeOthers: true }),
+          })
+          if (!res.ok) throw new Error("Erreur")
+          toast.success("Les autres appareils ont été révoqués")
+          await fetchDevices()
+        } catch {
+          toast.error("Échec de la révocation")
     } finally {
       setBusy(false)
     }
@@ -267,6 +279,7 @@ export default function DevicesPage() {
           ))}
         </div>
       )}
+      {node}
     </div>
   )
 }

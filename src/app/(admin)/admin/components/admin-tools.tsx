@@ -4,25 +4,33 @@ import { useState } from "react"
 import { Button, Card, CardContent } from "@nba/design-system"
 import { Trash2, RotateCw, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
+import { useConfirm } from "@nba/components/confirm-dialog"
 
 export function AdminTools() {
   const [busy, setBusy] = useState<string | null>(null)
   const [queues, setQueues] = useState<any[] | null>(null)
   const [cacheStats, setCacheStats] = useState<any>(null)
+  const { confirm, node } = useConfirm()
 
   async function purgeCache() {
-    if (!confirm("Purger le cache Redis ? Cela peut ralentir temporairement les requêtes.")) return
-    setBusy("cache")
-    try {
-      const res = await fetch("/api/admin/cache/purge", { method: "POST" })
-      if (!res.ok) throw new Error()
-      const d = await res.json()
-      toast.success(`Cache purgé (${d.purged} préfixes).`)
-    } catch {
-      toast.error("Erreur lors de la purge du cache.")
-    } finally {
-      setBusy(null)
-    }
+    confirm({
+      title: "Purger le cache Redis ?",
+      description: "Cela peut ralentir temporairement les requêtes le temps que le cache se reconstruise.",
+      confirmLabel: "Purger",
+      onConfirm: async () => {
+        setBusy("cache")
+        try {
+          const res = await fetch("/api/admin/cache/purge", { method: "POST" })
+          if (!res.ok) throw new Error()
+          const d = await res.json()
+          toast.success(`Cache purgé (${d.purged} préfixes).`)
+        } catch {
+          toast.error("Erreur lors de la purge du cache.")
+        } finally {
+          setBusy(null)
+        }
+      },
+    })
   }
 
   async function retryQueues() {
@@ -104,5 +112,6 @@ export function AdminTools() {
         )}
       </CardContent>
     </Card>
+    {node}
   )
 }
