@@ -13,6 +13,7 @@ import {
   type NavSpace,
   type UserRole,
 } from "@nba/config/navigation"
+import { useConfirm } from "@nba/components/confirm-dialog"
 import { LogOut, Search } from "lucide-react"
 
 interface MobileBottomNavProps {
@@ -34,6 +35,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const pendingRequests = usePendingAccessRequests(space === "admin")
 
   const links = getMobileNavItems(space, user.role)
+  const { confirm, node } = useConfirm()
 
   const messagesBadge = unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
   const requestsBadge =
@@ -47,7 +49,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/85 backdrop-blur-lg px-1 select-none" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <nav className="flex h-16 items-center justify-around">
+      <nav className="flex h-16 items-center justify-around overflow-x-auto no-scrollbar">
         {links.map((link, idx) => {
           const Icon = link.icon
           const isActive = isNavItemActive(link, pathname, searchParams)
@@ -58,7 +60,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
               key={link.id}
               href={link.href}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-16 gap-1 transition-all duration-200 relative",
+                "flex flex-col items-center justify-center flex-1 h-16 gap-1 transition-all duration-200 relative shrink-0 min-w-[3.75rem]",
                 isActive
                   ? "text-primary scale-105"
                   : "text-muted-foreground hover:text-foreground",
@@ -88,14 +90,22 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
           <span className="text-[10px] font-medium tracking-tight">Recherche</span>
         </button>
         <button
-          onClick={() => { if (confirm("Voulez-vous vous déconnecter ?")) logout() }}
-          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-destructive transition-colors relative"
+          onClick={() =>
+            confirm({
+              title: "Voulez-vous vous déconnecter ?",
+              description: "Vous devrez vous reconnecter pour accéder à votre compte.",
+              confirmLabel: "Se déconnecter",
+              onConfirm: logout,
+            })
+          }
+          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-destructive transition-colors relative shrink-0 min-w-[3.75rem]"
           aria-label="Déconnexion"
         >
           <LogOut className="size-5 shrink-0" />
           <span className="text-[10px] font-medium tracking-tight">Quitter</span>
         </button>
       </nav>
+      {node}
     </div>
   )
 }

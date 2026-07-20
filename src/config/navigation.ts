@@ -88,6 +88,27 @@ const dashboardMobile: NavItem[] = [
     badge: "messages",
     isActive: (pathname) => pathname.startsWith("/dashboard/messages"),
   },
+  {
+    id: "notifications",
+    href: "/dashboard/notifications",
+    label: "Notifs",
+    icon: Bell,
+    isActive: (pathname) => pathname.startsWith("/dashboard/notifications"),
+  },
+  {
+    id: "subscription",
+    href: "/dashboard/subscription",
+    label: "Offre",
+    icon: CreditCard,
+    isActive: (pathname) => pathname === "/dashboard/subscription",
+  },
+  {
+    id: "profile",
+    href: "/dashboard/profile",
+    label: "Profil",
+    icon: Settings,
+    isActive: (pathname) => pathname === "/dashboard/profile",
+  },
 ]
 
 const dashboardSidebar: NavItem[] = [
