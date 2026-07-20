@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button, Card, CardContent, Input } from "@nba/design-system"
 import { Video, Upload, ArrowRight } from "lucide-react"
+import { useOnboardingPersistence } from "../hooks/use-onboarding-persistence"
 
 const VIDEO_GUIDELINES = [
   "Montrez votre visage clairement face caméra",
@@ -16,11 +17,24 @@ interface StepBrokerProps {
 }
 
 export function StepBroker({ onNext }: StepBrokerProps) {
+  const { save, restore, clear } = useOnboardingPersistence()
   const [brokerName, setBrokerName] = useState("")
   const [accountId, setAccountId] = useState("")
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+
+  useEffect(() => {
+    const saved = restore<{ brokerName: string; accountId: string }>("broker")
+    if (saved) {
+      setBrokerName(saved.brokerName ?? "")
+      setAccountId(saved.accountId ?? "")
+    }
+  }, [])
+
+  useEffect(() => {
+    save("broker", { brokerName, accountId })
+  }, [brokerName, accountId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -46,6 +60,7 @@ export function StepBroker({ onNext }: StepBrokerProps) {
       return
     }
 
+    clear()
     onNext()
   }
 

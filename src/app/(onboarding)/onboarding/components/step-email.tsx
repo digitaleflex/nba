@@ -1,19 +1,34 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button, Card, CardContent } from "@nba/design-system"
 import { Mail, CheckCircle2, Loader2, ArrowRight } from "lucide-react"
+import { useOnboardingPersistence } from "../hooks/use-onboarding-persistence"
 
 interface StepEmailProps {
   onNext: () => void
 }
 
 export function StepEmail({ onNext }: StepEmailProps) {
+  const { save, restore, clear } = useOnboardingPersistence()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [sent, setSent] = useState(false)
   const [verified, setVerified] = useState(false)
   const [code, setCode] = useState("")
+
+  useEffect(() => {
+    const saved = restore<{ sent: boolean; verified: boolean; code: string }>("email")
+    if (saved) {
+      setSent(saved.sent)
+      setVerified(saved.verified)
+      setCode(saved.code ?? "")
+    }
+  }, [])
+
+  useEffect(() => {
+    save("email", { sent, verified, code })
+  }, [sent, verified, code])
 
   async function handleSendEmail() {
     setLoading(true)
@@ -53,6 +68,7 @@ export function StepEmail({ onNext }: StepEmailProps) {
       if (!res.ok) throw new Error(data.error || "Code invalide")
       
       setVerified(true)
+      clear()
       setTimeout(() => onNext(), 1500)
     } catch (err: any) {
       setError(err.message)
