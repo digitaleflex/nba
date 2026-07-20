@@ -657,7 +657,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             <span key={t} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary">
               <Tag className="size-3" />
               {t}
-              <button onClick={() => removeTag(t)} className="hover:text-rose-400 ml-0.5">×</button>
+              <button onClick={() => removeTag(t)} className="hover:text-rose-400 ml-0.5" aria-label={`Retirer le tag ${t}`}>×</button>
             </span>
           ))}
         </div>
@@ -672,7 +672,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
               className="font-mono text-xs flex-1"
               maxLength={30}
             />
-            <Button size="icon" variant="outline" onClick={addTag} disabled={!tagInput.trim()}>
+            <Button size="icon" variant="outline" onClick={addTag} disabled={!tagInput.trim()} aria-label="Ajouter un tag">
               <Plus className="size-4" />
             </Button>
           </div>

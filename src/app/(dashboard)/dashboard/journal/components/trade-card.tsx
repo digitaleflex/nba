@@ -129,11 +129,11 @@ export function TradeCard({ trade, onDelete, onEdit }: { trade: Trade; onDelete:
 
         <div className="flex flex-col gap-1">
           {onEdit && (
-            <button onClick={() => onEdit(trade)} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+            <button onClick={() => onEdit(trade)} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors" aria-label="Modifier ce trade">
               <Pencil className="size-4" />
             </button>
           )}
-          <button onClick={handleDelete} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
+          <button onClick={handleDelete} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" aria-label="Supprimer ce trade">
             <Trash2 className="size-4" />
           </button>
         </div>

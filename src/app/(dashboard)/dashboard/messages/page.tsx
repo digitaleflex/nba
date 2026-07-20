@@ -676,6 +676,7 @@ export default function MessagesPage() {
                   <button
                     onClick={() => setSelectedAdmin(null)}
                     className="ml-auto text-muted-foreground hover:text-foreground"
+                    aria-label="Effacer le destinataire"
                   >
                     <X className="size-4" />
                   </button>

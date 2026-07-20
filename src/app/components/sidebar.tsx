@@ -225,6 +225,7 @@ export function Sidebar({ space, user }: SidebarProps) {
               isCollapsed ? "size-9" : "size-8"
             )}
             title="Déconnexion"
+            aria-label="Déconnexion"
           >
             <LogOut className="size-4" />
           </Button>

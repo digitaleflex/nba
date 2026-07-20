@@ -86,7 +86,7 @@ describe("GET /api/dashboard/journal/stats", () => {
       profitFactor: 5,
       avgWinner: 25,
       avgLoser: 10,
-      riskRewardRatio: 0.4,
+      riskRewardRatio: 2.5,
       expectancy: expect.closeTo(1.33, 1),
       maxDrawdown: 10,
     })

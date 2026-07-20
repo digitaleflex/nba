@@ -118,6 +118,7 @@ export function MobileFilterSheet({
             size="icon-sm"
             onClick={() => onOpenChange(false)}
             className="rounded-full"
+            aria-label="Fermer le filtre"
           >
             <X className="size-4" />
           </Button>

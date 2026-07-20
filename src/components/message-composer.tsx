@@ -312,7 +312,7 @@ export function MessageComposer({
           disabled={disabled}
           className="flex-1 resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50 max-h-32"
         />
-        <Button size="icon" onClick={doSend} disabled={!canSend}>
+        <Button size="icon" onClick={doSend} disabled={!canSend} aria-label="Envoyer le message">
           {uploading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
       </div>

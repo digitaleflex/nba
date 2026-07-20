@@ -1,7 +1,10 @@
 import IORedis from "ioredis"
+import { logger } from "./logger"
 
-// Rate-limiting distribué via Redis (fixed window).
-// Remplace l'ancien Map en mémoire qui ne fonctionnait que sur un seul conteneur.
+const log = logger.child({ module: "rate-limit" })
+
+// Rate-limiting distribué via Redis (sliding window using sorted sets).
+// Plus précis que le fixed window : évite les pics aux frontières de fenêtre.
 
 const globalForRl = globalThis as unknown as { redisRl?: IORedis }
 let rlAvailable = true
@@ -31,29 +34,43 @@ function markUnavailable() {
 }
 
 interface RateLimitConfig {
-  window: number
+  window: number // in seconds
   max: number
 }
 
+/**
+ * Sliding window rate limiter using Redis sorted sets.
+ * More accurate than fixed window — prevents burst at window boundaries.
+ */
 export async function checkRateLimit(
   key: string,
   config: RateLimitConfig,
 ): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
   const redis = getRedis()
   if (!redis) {
-    // Pas de Redis -> on laisse passer (dégradé sûr)
     return { allowed: true, remaining: config.max, resetIn: config.window }
   }
-  const rkey = `ratelimit:${config.window}:${key}`
+
+  const rkey = `ratelimit:sw:${key}`
+  const now = Date.now()
+  const windowStart = now - config.window * 1000
+
   try {
-    const count = await redis.incr(rkey)
-    if (count === 1) {
-      await redis.expire(rkey, config.window)
-    }
-    const ttl = await redis.ttl(rkey)
-    const resetIn = ttl > 0 ? ttl : config.window
+    const pipeline = redis.pipeline()
+    // Remove entries outside the window
+    pipeline.zremrangebyscore(rkey, 0, windowStart)
+    // Add current request
+    pipeline.zadd(rkey, `${now}`, `${now}:${crypto.randomUUID().slice(0, 8)}`)
+    // Count entries in window
+    pipeline.zcard(rkey)
+    // Set TTL on the key
+    pipeline.expire(rkey, config.window)
+
+    const results = await pipeline.exec()
+    const count = results?.[2]?.[1] as number ?? 0
     const remaining = Math.max(0, config.max - count)
-    return { allowed: count <= config.max, remaining, resetIn }
+
+    return { allowed: count <= config.max, remaining, resetIn: config.window }
   } catch {
     markUnavailable()
     return { allowed: true, remaining: config.max, resetIn: config.window }
@@ -68,11 +85,15 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
     const key = `${identifier}:${ip}`
     const result = await checkRateLimit(key, config)
     if (!result.allowed) {
+      log.warn({ key, ip, identifier }, "Rate limit exceeded")
       return new Response(JSON.stringify({ error: "Trop de requêtes. Réessayez plus tard." }), {
         status: 429,
         headers: {
           "Content-Type": "application/json",
           "Retry-After": result.resetIn.toString(),
+          "X-RateLimit-Limit": config.max.toString(),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": result.resetIn.toString(),
         },
       })
     }

@@ -67,6 +67,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
               size="icon-sm"
               onClick={() => setOpen(false)}
               className="rounded-full size-8"
+              aria-label="Fermer le menu"
             >
               <X className="size-4" />
             </Button>

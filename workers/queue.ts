@@ -1,10 +1,35 @@
 import { Queue, Worker } from "bullmq"
 import IORedis from "ioredis"
+import * as Sentry from "@sentry/node"
 import { prisma } from "../src/lib/db"
 import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
 import { logger } from "../src/lib/logger"
+
+// Initialize Sentry for worker process
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    environment: process.env.NODE_ENV ?? "production",
+    tracesSampleRate: 0.1,
+    beforeSend(event) {
+      // Scrub PII
+      const scrub = (obj: unknown) => {
+        if (!obj || typeof obj !== "object") return
+        const o = obj as Record<string, unknown>
+        for (const key of ["password", "token", "secret", "authorization", "email"]) {
+          if (key in o) o[key] = "[REDACTED]"
+        }
+      }
+      try {
+        scrub(event.request?.headers)
+        scrub(event.request?.data)
+      } catch {}
+      return event
+    },
+  })
+}
 
 const log = logger.child({ module: "worker" })
 
@@ -95,6 +120,7 @@ worker.on("completed", (job: any) => {
 
 worker.on("failed", (job: any, err: any) => {
   log.error({ jobId: job?.id, queue: "file-cleanup", err }, "Job failed")
+  Sentry.captureException(err, { extra: { queue: "file-cleanup", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("file-cleanup", job, err)
   }
@@ -148,6 +174,7 @@ notificationWorker.on("completed", (job: any) => {
 
 notificationWorker.on("failed", (job: any, err: any) => {
   log.error({ jobId: job?.id, queue: "notification-delivery", err }, "Job failed")
+  Sentry.captureException(err, { extra: { queue: "notification-delivery", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("notification-delivery", job, err)
   }
@@ -183,6 +210,7 @@ signalWorker.on("completed", (job: any) => {
 
 signalWorker.on("failed", (job: any, err: any) => {
   log.error({ jobId: job?.id, queue: "signal-distribution", err }, "Job failed")
+  Sentry.captureException(err, { extra: { queue: "signal-distribution", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("signal-distribution", job, err)
   }
