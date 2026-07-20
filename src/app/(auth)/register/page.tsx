@@ -60,6 +60,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useSessionState("email", "")
   const [whatsapp, setWhatsapp] = useSessionState("whatsapp", "")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -208,6 +209,8 @@ export default function RegisterPage() {
               <StepSecurity
                 password={password}
                 onChangePassword={setPassword}
+                confirmPassword={confirmPassword}
+                onChangeConfirmPassword={setConfirmPassword}
                 onPrev={() => setStep(2)}
                 onNext={() => setStep(4)}
               />

@@ -8,16 +8,19 @@ import { getPasswordStrength, RULES } from "./password-utils"
 interface StepSecurityProps {
   password: string
   onChangePassword: (val: string) => void
+  confirmPassword: string
+  onChangeConfirmPassword: (val: string) => void
   onPrev: () => void
   onNext: () => void
 }
 
-export function StepSecurity({ password, onChangePassword, onPrev, onNext }: StepSecurityProps) {
+export function StepSecurity({ password, onChangePassword, confirmPassword, onChangeConfirmPassword, onPrev, onNext }: StepSecurityProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [touched, setTouched] = useState(false)
 
   const strength = useMemo(() => getPasswordStrength(password), [password])
   const isValid = password.length >= 8
+  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0
 
   return (
     <div className="space-y-4">
@@ -58,6 +61,25 @@ export function StepSecurity({ password, onChangePassword, onPrev, onNext }: Ste
             {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
           </button>
         </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">Confirmer le mot de passe</label>
+        <Input
+          id="confirmPassword"
+          type={showPassword ? "text" : "password"}
+          placeholder="Retapez votre mot de passe"
+          value={confirmPassword}
+          onChange={(e) => onChangeConfirmPassword(e.target.value)}
+          required
+          autoComplete="new-password"
+          minLength={8}
+          aria-invalid={confirmPassword.length > 0 && !passwordsMatch ? true : undefined}
+          className={confirmPassword.length > 0 && !passwordsMatch ? "border-destructive" : ""}
+        />
+        {confirmPassword.length > 0 && !passwordsMatch && (
+          <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
+        )}
       </div>
 
       {touched && (
@@ -103,7 +125,7 @@ export function StepSecurity({ password, onChangePassword, onPrev, onNext }: Ste
         <Button type="button" variant="outline" onClick={onPrev} className="flex-1">
           <ArrowLeft className="size-4" /> Retour
         </Button>
-        <Button type="button" className="flex-1" disabled={!isValid} onClick={onNext}>
+        <Button type="button" className="flex-1" disabled={!isValid || !passwordsMatch} onClick={onNext}>
           Suivant <ArrowRight className="size-4" />
         </Button>
       </div>
