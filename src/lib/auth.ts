@@ -22,11 +22,6 @@ export const auth = betterAuth({
     modelName: "session",
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
     updateAge: 60 * 60 * 24, // refresh token toutes les 24h (stale session prevention)
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-    },
   },
   account: {
     modelName: "account",
@@ -41,7 +36,7 @@ export const auth = betterAuth({
     },
   },
   password: {
-    minLength: 10,
+    minPasswordLength: 10,
   },
   emailVerification: {
     // Désactive l'envoi auto de l'email de vérification better-auth à l'inscription :
