@@ -36,13 +36,12 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    password: {
-      minLength: 10,
-      autoSignIn: false,
-    },
     sendResetPassword: async ({ user, url }) => {
       await sendResetPasswordEmail(user, url)
     },
+  },
+  password: {
+    minLength: 10,
   },
   emailVerification: {
     // Désactive l'envoi auto de l'email de vérification better-auth à l'inscription :
