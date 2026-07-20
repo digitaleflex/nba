@@ -33,13 +33,21 @@ export default function GlobalError({
                 </p>
               )}
             </div>
-            <button
-              onClick={reset}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
-            >
-              <RefreshCw className="size-4" />
-              Réessayer
-            </button>
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors cursor-pointer"
+              >
+                <RefreshCw className="size-4" />
+                Réessayer
+              </button>
+              <a
+                href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+              >
+                Contacter le support
+              </a>
+            </div>
           </div>
         </div>
       </body>
