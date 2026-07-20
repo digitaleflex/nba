@@ -6,7 +6,7 @@ const listeners = new Set<Listener>()
 
 export function onCoachMessage(cb: Listener) {
   listeners.add(cb)
-  return () => listeners.delete(cb)
+  return () => { listeners.delete(cb) }
 }
 
 export function emitCoachMessage(msg: CoachMessage) {

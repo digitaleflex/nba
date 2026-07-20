@@ -15,6 +15,8 @@ import { TradeForm } from "./components/trade-form"
 import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
 import { FirstTradeGuide } from "@nba/components/guides/first-trade-guide"
 import { MissionsPanel } from "@nba/components/missions-panel"
+import { MilestoneModal } from "@nba/components/milestone-modal"
+import { motion, AnimatePresence } from "motion/react"
 
 const TABS = [
   { id: "trades", label: "Trades", icon: BookOpen },
@@ -102,9 +104,12 @@ function SessionBanner() {
         </span>
         <div className="flex-1 text-sm">
           <span className="font-medium">Session active</span>
-          <span className="text-muted-foreground ml-2">
-            · <Clock className="inline size-3 mr-0.5" />
-            {session.elapsed} · {session.tradeCount} trade{session.tradeCount > 1 ? "s" : ""}
+          <span className="text-muted-foreground ml-2 inline-flex items-center gap-1">
+            · <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }} className="inline-flex items-center gap-1">
+              <Clock className="size-3" />
+              {session.elapsed}
+            </motion.span>
+            · {session.tradeCount} trade{session.tradeCount > 1 ? "s" : ""}
           </span>
         </div>
         <Button size="sm" variant="outline" onClick={stopSession} className="gap-1.5 text-xs h-7">
@@ -164,6 +169,7 @@ export default function JournalPage() {
       </div>
 
       <FirstTradeGuide />
+      <MilestoneModal />
       <SessionBanner />
 
       <div className="flex gap-1 rounded-lg bg-muted/50 p-1 w-fit">
@@ -184,11 +190,23 @@ export default function JournalPage() {
         ))}
       </div>
 
-      {activeTab === "trades" && (
-        <TradeList key={`trades-${refreshKey}`} onNewTrade={openNewTrade} />
-      )}
-      {activeTab === "stats" && <StatsDashboard refreshKey={refreshKey} />}
-      {activeTab === "reflections" && <ReflectionsTab />}
+      <AnimatePresence mode="wait">
+        {activeTab === "trades" && (
+          <motion.div key="trades" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.15 }}>
+            <TradeList key={`trades-${refreshKey}`} onNewTrade={openNewTrade} />
+          </motion.div>
+        )}
+        {activeTab === "stats" && (
+          <motion.div key="stats" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.15 }}>
+            <StatsDashboard refreshKey={refreshKey} />
+          </motion.div>
+        )}
+        {activeTab === "reflections" && (
+          <motion.div key="reflections" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.15 }}>
+            <ReflectionsTab />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {formOpen && (
         <TradeForm

@@ -6,41 +6,41 @@ import { handleAuthError } from "@nba/lib/auth-utils"
 import { calculatePnl } from "@nba/lib/services/pnl"
 
 const tradeUpdateSchema = z.object({
-  pair: z.string({ invalid_type_error: "La paire doit etre un texte." })
+  pair: z.string({ error: "La paire doit etre un texte." })
     .min(1, "La paire ne peut pas etre vide.")
     .max(20, "La paire est trop longue (max 20 caracteres).").optional(),
-  direction: z.enum(["BUY", "SELL"], { errorMap: () => ({ message: "La direction doit etre BUY (achat) ou SELL (vente)." }) }).optional(),
-  result: z.enum(["WIN", "LOSS", "BREAKEVEN"], { errorMap: () => ({ message: "Le resultat doit etre WIN, LOSS ou BREAKEVEN." }) }).optional(),
-  entryPrice: z.number({ invalid_type_error: "Le prix d'entree doit etre un nombre." })
+  direction: z.enum(["BUY", "SELL"], { error: "La direction doit etre BUY (achat) ou SELL (vente)." }).optional(),
+  result: z.enum(["WIN", "LOSS", "BREAKEVEN"], { error: "Le resultat doit etre WIN, LOSS ou BREAKEVEN." }).optional(),
+  entryPrice: z.number({ error: "Le prix d'entree doit etre un nombre." })
     .positive("Le prix d'entree doit etre positif.").optional(),
-  exitPrice: z.number({ invalid_type_error: "Le prix de sortie doit etre un nombre." })
+  exitPrice: z.number({ error: "Le prix de sortie doit etre un nombre." })
     .positive("Le prix de sortie doit etre positif.").optional(),
-  stopLoss: z.number({ invalid_type_error: "Le stop-loss doit etre un nombre." })
+  stopLoss: z.number({ error: "Le stop-loss doit etre un nombre." })
     .positive("Le stop-loss doit etre positif.").optional(),
-  takeProfit: z.number({ invalid_type_error: "Le take-profit doit etre un nombre." })
+  takeProfit: z.number({ error: "Le take-profit doit etre un nombre." })
     .positive("Le take-profit doit etre positif.").optional(),
-  lotSize: z.number({ invalid_type_error: "La taille de lot doit etre un nombre." })
+  lotSize: z.number({ error: "La taille de lot doit etre un nombre." })
     .positive("La taille de lot doit etre positive.")
     .max(100, "La taille de lot ne peut pas depasser 100.").optional(),
-  spread: z.number({ invalid_type_error: "Le spread doit etre un nombre." })
+  spread: z.number({ error: "Le spread doit etre un nombre." })
     .min(0, "Le spread ne peut pas etre negatif.").optional(),
-  commission: z.number({ invalid_type_error: "La commission doit etre un nombre." })
+  commission: z.number({ error: "La commission doit etre un nombre." })
     .min(0, "La commission ne peut pas etre negative.").optional(),
-  swap: z.number({ invalid_type_error: "Le swap doit etre un nombre." })
+  swap: z.number({ error: "Le swap doit etre un nombre." })
     .min(0, "Le swap ne peut pas etre negatif.").optional(),
   mood: z.enum(["CONFIDENT","NEUTRAL","ANXIOUS","FEARFUL","GREEDY","REVENGE"], {
-    errorMap: () => ({ message: "L'etat emotionnel est invalide." })
+    error: "L'etat emotionnel est invalide."
   }).optional(),
-  confidence: z.number({ invalid_type_error: "La confiance doit etre un nombre entier (1 a 5)." })
+  confidence: z.number({ error: "La confiance doit etre un nombre entier (1 a 5)." })
     .int("La confiance doit etre un nombre entier.")
     .min(1, "La confiance minimum est 1.")
     .max(5, "La confiance maximum est 5.").optional(),
-  note: z.string({ invalid_type_error: "La note doit etre un texte." })
+  note: z.string({ error: "La note doit etre un texte." })
     .max(500, "La note est trop longue (max 500 caracteres).").optional(),
-  tags: z.array(z.string({ invalid_type_error: "Chaque tag doit etre un texte." })
+  tags: z.array(z.string({ error: "Chaque tag doit etre un texte." })
     .max(30, "Chaque tag est limite a 30 caracteres."))
     .max(10, "Maximum 10 tags autorises.").optional(),
-  tradedAt: z.string({ invalid_type_error: "La date doit etre au format ISO." })
+  tradedAt: z.string({ error: "La date doit etre au format ISO." })
     .datetime("Format de date invalide (ex: 2026-07-20T14:00:00Z).").optional(),
 })
 

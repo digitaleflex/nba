@@ -12,47 +12,47 @@ const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
 const tradeCreateSchema = z.object({
   signalId:      z.string().uuid("ID du signal invalide").nullable().optional(),
-  pair:          z.string({ required_error: "La paire est requise (ex: EURUSD, BTCUSDT)." })
+  pair:          z.string({ error: "La paire est requise (ex: EURUSD, BTCUSDT)." })
                    .min(1, "La paire est requise (ex: EURUSD, BTCUSDT).")
                    .max(20, "La paire est trop longue (max 20 caracteres)."),
-  direction:     z.enum(["BUY", "SELL"], { errorMap: () => ({ message: "La direction doit etre BUY (achat) ou SELL (vente)." }) }),
-  result:        z.enum(["WIN", "LOSS", "BREAKEVEN"], { errorMap: () => ({ message: "Le resultat doit etre WIN (gagnant), LOSS (perdant) ou BREAKEVEN (equilibre)." }) }),
-  entryPrice:    z.number({ required_error: "Le prix d'entree est requis." })
+  direction:     z.enum(["BUY", "SELL"], { error: "La direction doit etre BUY (achat) ou SELL (vente)." }),
+  result:        z.enum(["WIN", "LOSS", "BREAKEVEN"], { error: "Le resultat doit etre WIN (gagnant), LOSS (perdant) ou BREAKEVEN (equilibre)." }),
+  entryPrice:    z.number({ error: "Le prix d'entree est requis." })
                    .positive("Le prix d'entree doit etre un nombre positif."),
-  exitPrice:     z.number({ required_error: "Le prix de sortie est requis." })
+  exitPrice:     z.number({ error: "Le prix de sortie est requis." })
                    .positive("Le prix de sortie doit etre un nombre positif."),
-  stopLoss:      z.number({ invalid_type_error: "Le stop-loss doit etre un nombre." })
+  stopLoss:      z.number({ error: "Le stop-loss doit etre un nombre." })
                    .positive("Le stop-loss doit etre positif.").optional(),
-  takeProfit:    z.number({ invalid_type_error: "Le take-profit doit etre un nombre." })
+  takeProfit:    z.number({ error: "Le take-profit doit etre un nombre." })
                    .positive("Le take-profit doit etre positif.").optional(),
   strategy:      z.enum(["SCALPING", "DAY_TRADING", "SWING", "POSITION"], {
-                   errorMap: () => ({ message: "La strategie doit etre SCALPING, DAY_TRADING, SWING ou POSITION." })
+                   error: "La strategie doit etre SCALPING, DAY_TRADING, SWING ou POSITION."
                  }).optional(),
   setupType:     z.enum(["BREAKOUT", "PULLBACK", "REVERSAL", "RANGE", "TREND", "OTHER"], {
-                   errorMap: () => ({ message: "Le type de setup est invalide (BREAKOUT, PULLBACK, REVERSAL, RANGE, TREND, OTHER)." })
+                   error: "Le type de setup est invalide (BREAKOUT, PULLBACK, REVERSAL, RANGE, TREND, OTHER)."
                  }).optional(),
-  lotSize:       z.number({ invalid_type_error: "La taille de lot doit etre un nombre." })
+  lotSize:       z.number({ error: "La taille de lot doit etre un nombre." })
                    .positive("La taille de lot doit etre positive.")
                    .max(100, "La taille de lot ne peut pas depasser 100.").default(0.01),
-  spread:        z.number({ invalid_type_error: "Le spread doit etre un nombre." })
+  spread:        z.number({ error: "Le spread doit etre un nombre." })
                    .min(0, "Le spread ne peut pas etre negatif.").optional(),
-  commission:    z.number({ invalid_type_error: "La commission doit etre un nombre." })
+  commission:    z.number({ error: "La commission doit etre un nombre." })
                    .min(0, "La commission ne peut pas etre negative.").optional(),
-  swap:          z.number({ invalid_type_error: "Le swap doit etre un nombre." })
+  swap:          z.number({ error: "Le swap doit etre un nombre." })
                    .min(0, "Le swap ne peut pas etre negatif.").optional(),
   mood:          z.enum(["CONFIDENT","NEUTRAL","ANXIOUS","FEARFUL","GREEDY","REVENGE"], {
-                   errorMap: () => ({ message: "L'etat emotionnel est invalide (CONFIDENT, NEUTRAL, ANXIOUS, FEARFUL, GREEDY, REVENGE)." })
+                   error: "L'etat emotionnel est invalide (CONFIDENT, NEUTRAL, ANXIOUS, FEARFUL, GREEDY, REVENGE)."
                  }).optional(),
-  confidence:    z.number({ invalid_type_error: "La confiance doit etre un nombre entier." })
+  confidence:    z.number({ error: "La confiance doit etre un nombre entier." })
                    .int("La confiance doit etre un nombre entier (1 a 5).")
                    .min(1, "La confiance doit etre entre 1 et 5.")
                    .max(5, "La confiance doit etre entre 1 et 5.").optional(),
-  note:          z.string({ invalid_type_error: "La note doit etre un texte." })
+  note:          z.string({ error: "La note doit etre un texte." })
                    .max(500, "La note est trop longue (max 500 caracteres).").optional(),
-  tags:          z.array(z.string({ invalid_type_error: "Chaque tag doit etre un texte." })
+  tags:          z.array(z.string({ error: "Chaque tag doit etre un texte." })
                    .max(30, "Chaque tag est limite a 30 caracteres."))
                    .max(10, "Maximum 10 tags autorises.").optional(),
-  tradedAt:      z.string({ invalid_type_error: "La date doit etre au format ISO (ex: 2026-07-20T14:00:00Z)." })
+  tradedAt:      z.string({ error: "La date doit etre au format ISO (ex: 2026-07-20T14:00:00Z)." })
                    .datetime("Format de date invalide. Utilisez le format ISO (ex: 2026-07-20T14:00:00Z).").optional(),
 })
 

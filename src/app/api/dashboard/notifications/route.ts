@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-    ]) as [number, number, typeof notifications]
+    ]) as [number, number, any[]]
 
     return NextResponse.json({
       notifications,

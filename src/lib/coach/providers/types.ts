@@ -18,8 +18,8 @@ export interface TradeEvent {
   pnl: number
   lotSize: number
   spread: number | null
-  stopLoss: string | null
-  takeProfit: string | null
+  stopLoss: number | null
+  takeProfit: number | null
   mood: string | null
   confidence: number | null
   tags: string[]

@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 import { analyzeTrade } from "@nba/lib/coach/patterns"
 import { checkMissions } from "@nba/hooks/use-user-level"
+import { Confetti } from "@nba/components/confetti"
 
 const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
@@ -118,6 +119,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const [touched, setTouched] = useState<Record<string, boolean>>({})
   const [availableTags, setAvailableTags] = useState<string[]>([])
   const [showTagSuggestions, setShowTagSuggestions] = useState(false)
+  const [showConfetti, setShowConfetti] = useState(false)
   const [availablePairs, setAvailablePairs] = useState<string[]>([])
 
   const isMobile = useMediaQuery("(max-width: 767px)")
@@ -315,6 +317,9 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         tradedAt: tradedAt || new Date().toISOString(),
       }, localStorage)
       checkMissions({ mood, stopLoss: stopLoss || null, tags })
+      const prevCount = parseInt(localStorage.getItem("nba:trade-count") || "0", 10)
+      localStorage.setItem("nba:trade-count", String(prevCount + 1))
+      setShowConfetti(true)
       onSaved()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Impossible d'enregistrer le trade")
@@ -735,28 +740,34 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
 
   if (isMobile) {
     return (
-      <BottomSheet open onOpenChange={onClose}>
-        <BottomSheetContent>
-          <BottomSheetHeader
-            title={signalId ? "Trade depuis un signal" : "Nouveau trade"}
-            onClose={onClose}
-          />
-          {formContent}
-        </BottomSheetContent>
-      </BottomSheet>
+      <>
+        <BottomSheet open onOpenChange={onClose}>
+          <BottomSheetContent>
+            <BottomSheetHeader
+              title={signalId ? "Trade depuis un signal" : "Nouveau trade"}
+              onClose={onClose}
+            />
+            {formContent}
+          </BottomSheetContent>
+        </BottomSheet>
+        {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
+      </>
     )
   }
 
   return (
-    <Dialog open onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            {signalId ? "Trade depuis un signal" : "Nouveau trade"}
-          </DialogTitle>
-        </DialogHeader>
-        {formContent}
-      </DialogContent>
-    </Dialog>
+    <>
+      <Dialog open onOpenChange={onClose}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {signalId ? "Trade depuis un signal" : "Nouveau trade"}
+            </DialogTitle>
+          </DialogHeader>
+          {formContent}
+        </DialogContent>
+      </Dialog>
+      {showConfetti && <Confetti onComplete={() => setShowConfetti(false)} />}
+    </>
   )
 }

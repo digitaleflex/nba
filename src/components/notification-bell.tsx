@@ -6,6 +6,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSocket } from "@nba/lib/hooks/use-socket";
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound";
+import { motion } from "motion/react";
 
 interface Notification {
   id: string;
@@ -186,9 +187,15 @@ export function NotificationBell() {
       >
         <Bell className="size-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground leading-none">
+          <motion.span
+            key={unreadCount}
+            initial={{ scale: 1.5 }}
+            animate={{ scale: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 12 }}
+            className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground leading-none"
+          >
             {unreadCount > 9 ? "9+" : unreadCount}
-          </span>
+          </motion.span>
         )}
         {/* Indicateur de connexion WS (dot dans le coin) */}
         {wsStatus === "connected" ? (
