@@ -1,5 +1,7 @@
+"use client"
+
 import Link from "next/link"
-import { TrendingUp, ArrowLeft } from "lucide-react"
+import { TrendingUp, ArrowLeft, Mail } from "lucide-react"
 
 export default function UnauthorizedPage() {
   return (
@@ -16,13 +18,30 @@ export default function UnauthorizedPage() {
             Vous devez être connecté pour accéder à cette page.
           </p>
         </div>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
-        >
-          <ArrowLeft className="size-4" />
-          Se connecter
-        </Link>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="size-4" />
+              Page précédente
+            </button>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
+            >
+              Se connecter
+            </Link>
+          </div>
+          <a
+            href="mailto:support@neverbrokeagain.com?subject=Erreur%20401"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 inline-flex items-center gap-1"
+          >
+            <Mail className="size-3" />
+            Contacter le support
+          </a>
+        </div>
       </div>
     </div>
   )

@@ -1,5 +1,7 @@
+"use client"
+
 import Link from "next/link"
-import { TrendingUp, ArrowLeft, ShieldX } from "lucide-react"
+import { TrendingUp, ArrowLeft, ShieldX, Mail } from "lucide-react"
 
 export default function ForbiddenPage() {
   return (
@@ -14,15 +16,33 @@ export default function ForbiddenPage() {
           <p className="text-lg font-semibold">Accès refusé</p>
           <p className="text-sm text-muted-foreground">
             Vous n&rsquo;avez pas les permissions nécessaires pour accéder à cette page.
+            Si vous pensez qu&rsquo;il s&rsquo;agit d&rsquo;une erreur, contactez votre administrateur.
           </p>
         </div>
-        <Link
-          href="/dashboard"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
-        >
-          <ArrowLeft className="size-4" />
-          Retour au tableau de bord
-        </Link>
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={() => window.history.back()}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="size-4" />
+              Page précédente
+            </button>
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80 transition-colors"
+            >
+              Tableau de bord
+            </Link>
+          </div>
+          <a
+            href="mailto:support@neverbrokeagain.com?subject=Erreur%20403"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 inline-flex items-center gap-1"
+          >
+            <Mail className="size-3" />
+            Contacter le support
+          </a>
+        </div>
       </div>
     </div>
   )
