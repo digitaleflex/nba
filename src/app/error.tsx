@@ -44,7 +44,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
               Accueil
             </Link>
           </div>
-          <AutoRetryCountdown seconds={10} onRetry={reset} label="Nouvelle tentative" />
+          <AutoRetryCountdown onRetry={reset} label="Nouvelle tentative" />
           <a
             href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
