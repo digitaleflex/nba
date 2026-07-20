@@ -67,7 +67,7 @@ function invalidateAdminCache() {
 export default function AdminPage() {
   return (
     <Suspense fallback={
-      <div className="flex items-center justify-center py-20 text-muted-foreground h-screen">
+      <div className="flex items-center justify-center py-20 text-muted-foreground" role="status" aria-label="Chargement de la console admin">
         <Loader2 className="size-6 animate-spin text-primary" />
       </div>
     }>
