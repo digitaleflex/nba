@@ -7,6 +7,7 @@ import { AppShell } from "@nba/app/components/app-shell"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
 import { WelcomeGuide } from "./dashboard/welcome-guide"
+import { CoachIA } from "@nba/components/coach-ia"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -73,6 +74,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
   return (
     <AppShell space="dashboard" user={user} desktopHeader={desktopHeader} mobileHeader={mobileHeader}>
       <WelcomeGuide />
+      <CoachIA />
       {children}
     </AppShell>
   )
