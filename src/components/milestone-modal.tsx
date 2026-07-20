@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { Trophy, X } from "lucide-react"
 import { Button } from "@nba/design-system"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 
 const MILESTONES = [
   { count: 1, label: "Premier trade", emoji: "🌱" },
@@ -19,6 +20,7 @@ export function checkMilestone(forceCount?: number) {
   const next = MILESTONES.filter((m) => m.count > lastShown && current >= m.count)
   if (next.length > 0) {
     localStorage.setItem("nba:milestone", String(next[0].count))
+    AnalyticsEvents.milestoneReached(next[0].count)
     return next[0]
   }
   return null

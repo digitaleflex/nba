@@ -109,8 +109,6 @@ const worker = new Worker(
     connection: connection as any,
     stalledInterval: 30000,
     lockDuration: 60000,
-    attempts: 3,
-    backoff: { type: "exponential", delay: 5000 },
   }
 )
 
@@ -163,8 +161,6 @@ const notificationWorker = new Worker(
     concurrency: 10,
     stalledInterval: 30000,
     lockDuration: 60000,
-    attempts: 3,
-    backoff: { type: "exponential", delay: 10_000 },
   }
 )
 
@@ -199,8 +195,6 @@ const signalWorker = new Worker(
     connection: connection as any,
     stalledInterval: 60000,
     lockDuration: 120000,
-    attempts: 3,
-    backoff: { type: "exponential", delay: 15_000 },
   }
 )
 

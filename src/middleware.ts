@@ -66,7 +66,7 @@ export default function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return withRequestId(NextResponse.redirect(loginUrl, requestId), requestId);
+      return withRequestId(NextResponse.redirect(loginUrl), requestId);
     }
     // Never cache protected routes (dashboard, admin, onboarding)
     const res = NextResponse.next()

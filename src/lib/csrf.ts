@@ -7,7 +7,7 @@ const ALLOWED_ORIGINS = [
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
 ].filter(Boolean) as string[]
 
-export function csrfCheck(req: NextRequest): Response | null {
+export function csrfCheck(req: NextRequest): NextResponse | null {
   if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") {
     return null
   }

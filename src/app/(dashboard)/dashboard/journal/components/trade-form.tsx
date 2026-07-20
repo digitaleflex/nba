@@ -8,6 +8,7 @@ import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 import { analyzeTrade } from "@nba/lib/coach/patterns"
 import { checkMissions } from "@nba/hooks/use-user-level"
 import { Confetti } from "@nba/components/confetti"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 
 const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
@@ -121,6 +122,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const [showTagSuggestions, setShowTagSuggestions] = useState(false)
   const [showConfetti, setShowConfetti] = useState(false)
   const [availablePairs, setAvailablePairs] = useState<string[]>([])
+  const [pairSuggestionIndex, setPairSuggestionIndex] = useState(-1)
 
   const isMobile = useMediaQuery("(max-width: 767px)")
 
@@ -317,6 +319,11 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         tradedAt: tradedAt || new Date().toISOString(),
       }, localStorage)
       checkMissions({ mood, stopLoss: stopLoss || null, tags })
+      AnalyticsEvents.tradeCreated({
+        pair: pair.toUpperCase(),
+        result: result as string,
+        hasStopLoss: !!stopLoss,
+      })
       const prevCount = parseInt(localStorage.getItem("nba:trade-count") || "0", 10)
       localStorage.setItem("nba:trade-count", String(prevCount + 1))
       setShowConfetti(true)
@@ -356,15 +363,42 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             id="trade-pair"
             placeholder="EURUSD"
             value={pair}
-            onChange={(e) => { setPair(e.target.value.toUpperCase()); markTouched("pair") }}
+            onChange={(e) => { setPair(e.target.value.toUpperCase()); markTouched("pair"); setPairSuggestionIndex(-1) }}
             onBlur={() => markTouched("pair")}
+            onKeyDown={(e) => {
+              if (filteredPairSuggestions.length === 0) return
+              if (e.key === "ArrowDown") {
+                e.preventDefault()
+                setPairSuggestionIndex((i) => (i + 1) % filteredPairSuggestions.length)
+              } else if (e.key === "ArrowUp") {
+                e.preventDefault()
+                setPairSuggestionIndex((i) => (i <= 0 ? filteredPairSuggestions.length - 1 : i - 1))
+              } else if (e.key === "Enter" && pairSuggestionIndex >= 0) {
+                e.preventDefault()
+                selectPairSuggestion(filteredPairSuggestions[pairSuggestionIndex])
+                setPairSuggestionIndex(-1)
+              } else if (e.key === "Escape") {
+                setPairSuggestionIndex(-1)
+              }
+            }}
             className={cn("font-mono uppercase", errors.pair && touched.pair && "border-rose-500/50 focus-visible:ring-rose-500/20")}
             maxLength={20}
+            aria-autocomplete="list"
+            aria-expanded={filteredPairSuggestions.length > 0}
+            role="combobox"
           />
           {filteredPairSuggestions.length > 0 && (
             <div className="absolute z-50 top-full mt-1 w-full rounded-lg border bg-card shadow-lg overflow-hidden">
-              {filteredPairSuggestions.map(p => (
-                <button key={p} onMouseDown={(e) => { e.preventDefault(); selectPairSuggestion(p) }} className="w-full px-3 py-2 text-left text-sm hover:bg-muted/50 flex items-center justify-between">
+              {filteredPairSuggestions.map((p, idx) => (
+                <button
+                  key={p}
+                  onMouseDown={(e) => { e.preventDefault(); selectPairSuggestion(p) }}
+                  onMouseEnter={() => setPairSuggestionIndex(idx)}
+                  className={cn(
+                    "w-full px-3 py-2 text-left text-sm flex items-center justify-between",
+                    idx === pairSuggestionIndex ? "bg-primary/10 text-primary" : "hover:bg-muted/50",
+                  )}
+                >
                   <span className="font-mono">{p}</span>
                 </button>
               ))}

@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-    ]) as [number, number, any[]]
+    ]) as [number, number, unknown[]]
 
     return NextResponse.json({
       notifications,

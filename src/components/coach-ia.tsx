@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { onCoachMessage, emitCoachMessage } from "@nba/lib/coach/events"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 import { X, Lightbulb, AlertTriangle, Sparkles, BrainCircuit } from "lucide-react"
 import type { CoachMessage } from "@nba/lib/coach/providers/types"
 
@@ -34,6 +35,7 @@ export function CoachIA() {
 
   useEffect(() => {
     return onCoachMessage((msg) => {
+      AnalyticsEvents.coachMessageShown(msg.rule ?? "unknown")
       setMessages((prev) => [msg, ...prev].slice(0, 5))
     })
   }, [])

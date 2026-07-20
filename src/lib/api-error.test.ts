@@ -21,19 +21,19 @@ beforeEach(() => {
 
 describe("serverError", () => {
   it("returns 500 with generic error message and errorId", async () => {
-    const result = await serverError(new Error("db connection failed"), "/api/test")
+    const result = await serverError(new Error("db connection failed"), "/api/test") as unknown as { status: number; body: Record<string, unknown> }
 
     expect(result.status).toBe(500)
     expect(result.body.error).toContain("Une erreur inattendue est survenue")
     expect(result.body.errorId).toBeDefined()
     expect(typeof result.body.errorId).toBe("string")
-    expect(result.body.errorId.length).toBeGreaterThanOrEqual(6)
+    expect((result.body.errorId as string).length).toBeGreaterThanOrEqual(6)
   })
 
   it("includes correlationId when x-request-id header is present", async () => {
     mockHeadersGet.mockReturnValue("abc12345")
 
-    const result = await serverError("oops", "/api/test")
+    const result = await serverError("oops", "/api/test") as unknown as { status: number; body: Record<string, unknown> }
 
     expect(result.body.correlationId).toBe("abc12345")
   })
@@ -41,7 +41,7 @@ describe("serverError", () => {
   it("omits correlationId when x-request-id header is absent", async () => {
     mockHeadersGet.mockReturnValue(null)
 
-    const result = await serverError("oops", "/api/test")
+    const result = await serverError("oops", "/api/test") as unknown as { status: number; body: Record<string, unknown> }
 
     expect(result.body.correlationId).toBeUndefined()
   })

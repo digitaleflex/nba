@@ -3,11 +3,13 @@
 import { useEffect } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 
 export function WelcomeGuide() {
   useEffect(() => {
     const seen = localStorage.getItem("nba:welcome-guide")
     if (seen === "true") return
+    AnalyticsEvents.welcomeGuideSeen()
 
     const guide = driver({
       showButtons: ["next", "previous", "close"],

@@ -134,6 +134,13 @@ body {
   box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
 }
 
+/* Global focus-visible for keyboard users (CT7) */
+:where(a, button, input, textarea, select, [tabindex]):focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-background), 0 0 0 4px var(--color-ring);
+  border-radius: 6px;
+}
+
 /* Selected state */
 .selected {
   background-color: var(--color-selected);

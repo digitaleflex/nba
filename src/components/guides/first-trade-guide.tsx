@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 
 export function FirstTradeGuide() {
   const [ready, setReady] = useState(false)
@@ -10,6 +11,7 @@ export function FirstTradeGuide() {
   useEffect(() => {
     const seen = localStorage.getItem("nba:first-trade-guide")
     if (seen === "true") return
+    AnalyticsEvents.firstTradeGuideSeen()
     const timer = setTimeout(() => setReady(true), 500)
     return () => clearTimeout(timer)
   }, [])
