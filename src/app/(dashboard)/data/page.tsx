@@ -5,6 +5,7 @@ import { Card, CardContent, Button, Input } from "@nba/design-system"
 import { Database, Download, Trash2, ShieldAlert, ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
 
 interface UserData {
   id: string
@@ -60,21 +61,15 @@ export default function DataPage() {
     }
     setDeleting(true)
     try {
-      const res = await fetch("/api/dashboard/delete-account", {
+      const data = await (await apiFetch("/api/dashboard/delete-account", {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ password: deletePassword }),
-      })
-      const data = await res.json().catch(() => ({}))
-      if (!res.ok) {
-        setDeleteError(data.error ?? "Échec de la suppression.")
-        setDeleting(false)
-        return
-      }
+      })).json()
       toast.success("Compte supprimé. Redirection…")
       window.location.href = "/blocked?status=deleted"
-    } catch {
-      setDeleteError("Erreur lors de la suppression.")
+    } catch (err) {
+      setDeleteError(getErrorMessage(err))
       setDeleting(false)
     }
   }

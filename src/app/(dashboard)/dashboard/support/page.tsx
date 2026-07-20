@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, Button, Input } from "@nba/design-system"
 import { Send, Check, Loader2 } from "lucide-react"
+import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
 
 export default function SupportPage() {
   const [subject, setSubject] = useState("")
@@ -16,17 +17,16 @@ export default function SupportPage() {
     setSending(true)
     setError(null)
     try {
-      const res = await fetch("/api/dashboard/support", {
+      await apiFetch("/api/dashboard/support", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject, message }),
       })
-      if (!res.ok) throw new Error("Erreur lors de l'envoi")
       setSent(true)
       setSubject("")
       setMessage("")
-    } catch {
-      setError("Erreur lors de l'envoi. Réessaye.")
+    } catch (err) {
+      setError(getErrorMessage(err))
     } finally {
       setSending(false)
     }
