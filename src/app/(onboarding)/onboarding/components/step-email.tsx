@@ -18,17 +18,16 @@ export function StepEmail({ onNext }: StepEmailProps) {
   const [code, setCode] = useState("")
 
   useEffect(() => {
-    const saved = restore<{ sent: boolean; verified: boolean; code: string }>("email")
+    const saved = restore<{ sent: boolean; verified: boolean }>("email")
     if (saved) {
       setSent(saved.sent)
       setVerified(saved.verified)
-      setCode(saved.code ?? "")
     }
   }, [])
 
   useEffect(() => {
-    save("email", { sent, verified, code })
-  }, [sent, verified, code])
+    save("email", { sent, verified })
+  }, [sent, verified])
 
   async function handleSendEmail() {
     setLoading(true)
