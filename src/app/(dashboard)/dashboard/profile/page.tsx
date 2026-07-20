@@ -152,8 +152,8 @@ export default function ProfilePage() {
       setPasswordError("Les mots de passe ne correspondent pas")
       return
     }
-    if (passwordForm.new.length < 8) {
-      setPasswordError("Le mot de passe doit contenir au moins 8 caractères")
+    if (passwordForm.new.length < 10) {
+      setPasswordError("Le mot de passe doit contenir au moins 10 caractères")
       return
     }
 
@@ -485,7 +485,7 @@ export default function ProfilePage() {
                     {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
-                <p className="text-[10px] text-muted-foreground">Minimum 8 caractères</p>
+                <p className="text-[10px] text-muted-foreground">Minimum 10 caractères</p>
               </div>
 
               <div className="space-y-2">

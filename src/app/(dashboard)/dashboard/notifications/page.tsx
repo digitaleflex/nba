@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Card, CardContent, Button, EmptyState } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState, Skeleton } from "@nba/design-system"
 import {
   BellOff,
   BellRing,
@@ -276,8 +276,16 @@ export default function NotificationsPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <Loader2 className="size-8 animate-spin text-primary" />
+      <div className="space-y-3" aria-busy="true" aria-label="Chargement des notifications">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-start gap-3 rounded-xl border border-border p-4">
+            <Skeleton className="size-9 rounded-full shrink-0" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-3.5 w-1/3" />
+              <Skeleton className="h-3 w-3/4" />
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
