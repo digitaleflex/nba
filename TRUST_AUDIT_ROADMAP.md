@@ -33,7 +33,7 @@
 - **Lignes** : 110, 114
 - **Problème** : `&apos;` affiché littéralement dans les toasts au lieu de `'`
 - **Fix** : Remplacer `&apos;` par `'` (apostrophe normale)
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (adc2d60)
 
 ### QW-2 — Supprimer/guarder `console.error` en production (7 fichiers)
 - **Fichiers** :
@@ -46,14 +46,14 @@
   - `src/app/components/error-boundary.tsx:28`
 - **Problème** : Stack traces exposées en production via DevTools
 - **Fix** : Wrap `console.error` dans `if (process.env.NODE_ENV === "development")`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (7f483f4)
 
 ### QW-3 — Ajouter lien Accueil dans `global-error.tsx`
 - **Fichier** : `src/app/global-error.tsx`
 - **Lignes** : 37-51
 - **Problème** : Aucun lien "Accueil" — utilisateur piégé avec Réessayer + Support
 - **Fix** : Ajouter un `<a href="/">Accueil</a>` avec icône Home
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (f9358af)
 
 ### QW-4 — Corriger jargon erreurs
 - **Fichiers** :
@@ -62,42 +62,42 @@
   - `src/app/(admin)/error.tsx:17` — "Erreur administrative" → "Une erreur est survenue"
 - **Problème** : Jargon développeur et langage trop familier
 - **Fix** : Remplacer par des titres professionnels et clairs
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (97dfe8b)
 
 ### QW-5 — Corriger `error-boundary.tsx` message générique
 - **Fichier** : `src/app/components/error-boundary.tsx`
 - **Lignes** : 42-58
 - **Problème** : "Quelque chose s'est mal passé" sans contexte, sans lien support
 - **Fix** : Ajouter digest code, lien support, message plus informatif
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (97dfe8b)
 
 ### QW-6 — Corriger "Close" anglais dans `dialog.tsx`
 - **Fichier** : `packages/design-system/components/ui/dialog.tsx`
 - **Lignes** : 75, 113
 - **Problème** : "Close" en anglais dans une app 100% française
 - **Fix** : Remplacer par "Fermer"
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (97dfe8b)
 
 ### QW-7 — Ajouter confirmation révocation appareils
 - **Fichier** : `src/app/(dashboard)/dashboard/devices/page.tsx`
 - **Lignes** : 85-101 (revoke), 103-119 (revokeOthers), 255 (bouton)
 - **Problème** : Action destructrice sans aucune confirmation
 - **Fix** : Ajouter `confirm()` ou Dialog avant révocation
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ce9ddbd)
 
 ### QW-8 — Ajouter confirmation déconnexion mobile
 - **Fichier** : `src/app/components/mobile-bottom-nav.tsx`
 - **Ligne** : 91
 - **Problème** : Bouton "Quitter" déconnecte sans confirmation au pouce
 - **Fix** : Ajouter `confirm("Voulez-vous vous déconnecter ?")` avant `logout()`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ce9ddbd)
 
 ### QW-9 — Fix viewport `userScalable: false`
 - **Fichier** : `src/app/layout.tsx`
 - **Ligne** : 57
 - **Problème** : Empêche le pinch-to-zoom — violation WCAG 1.4.4
 - **Fix** : Supprimer `maximumScale: 1` et `userScalable: false`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ce9ddbd)
 
 ---
 
@@ -108,69 +108,69 @@
 - **Ligne** : 104
 - **Problème** : `window.prompt()` casse le design system
 - **Fix** : Créer un Dialog avec input pour l'URL
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (df38400)
 
 ### CT-2 — Remplacer `confirm()` natif par Dialog dans journal
 - **Fichier** : `src/app/(dashboard)/dashboard/journal/page.tsx`
 - **Ligne** : 72
 - **Problème** : `confirm("Fermer la session ?")` casse le design system
 - **Fix** : Utiliser le Dialog du design system
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ebe788b)
 
 ### CT-3 — Fix hover-only actions sur tactile (chat-message)
 - **Fichier** : `src/components/chat-message.tsx`
 - **Lignes** : 248-312
 - **Problème** : Actions `opacity-0 group-hover:opacity-100` invisibles sur tactile
 - **Fix** : Ajouter un menu d'actions accessible (tap) pour mobile
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (18e1f67)
 
 ### CT-4 — Fix catch silencieux notifications
 - **Fichier** : `src/app/(dashboard)/dashboard/notifications/page.tsx`
 - **Lignes** : 141-155, 240-268
 - **Problème** : `catch {}` silencieux — l'utilisateur ne sait pas si ça a marché
 - **Fix** : Ajouter `toast.error("...")` dans chaque catch
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (fd51106)
 
 ### CT-5 — Fix message échoué silencieusement supprimé
 - **Fichier** : `src/app/(dashboard)/dashboard/messages/page.tsx`
 - **Ligne** : 196-205
 - **Problème** : En cas d'échec d'envoi, le message optimiste est supprimé sans feedback
 - **Fix** : Ajouter toast d'erreur + marquer le message comme "Échec de l'envoi"
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (8254655)
 
 ### CT-6 — Fix modales custom chat-message → Dialog
 - **Fichier** : `src/components/chat-message.tsx`
 - **Lignes** : 316, 353
 - **Problème** : Modales custom `fixed inset-0 z-50` au lieu du Dialog design system
 - **Fix** : Remplacer par `Dialog` + `DialogContent` du design system
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (51020de)
 
 ### CT-7 — Fix onboarding profile ignore API response
 - **Fichier** : `src/app/(onboarding)/onboarding/profile/page.tsx`
 - **Lignes** : 39-46
 - **Problème** : Réponse API ignorée — perte silencieuse de données
 - **Fix** : Vérifier `res.ok`, afficher erreur en cas d'échec
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (b773784)
 
 ### CT-8 — Ajouter confirm password inscription
 - **Fichier** : `src/app/(auth)/register/components/step-security.tsx`
 - **Problème** : Aucun champ de confirmation de mot de passe
 - **Fix** : Ajouter un champ "Confirmer le mot de passe" avec vérification
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (f2d8008)
 
 ### CT-9 — Fix maintenance page ETA
 - **Fichier** : `src/app/maintenance/page.tsx`
 - **Ligne** : 16
 - **Problème** : "Revenez dans quelques instants" sans ETA réel
 - **Fix** : Ajouter un lien vers une page de status ou afficher une heure estimée
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (ce79266)
 
 ### CT-10 — Supprimer OTP persisted in localStorage
 - **Fichier** : `src/app/(onboarding)/onboarding/components/step-email.tsx`
 - **Ligne** : 18, 29-31
 - **Problème** : Code OTP 6 chiffres sauvegardé dans localStorage — faille sécurité
 - **Fix** : Supprimer `code` de la persistance, garder seulement `sent` et `verified`
-- **Statut** : ⏳ TODO
+- **Statut** : ✅ DONE (92029c0)
 
 ---
 
@@ -278,11 +278,11 @@
 
 | Phase | Total | Done | En cours | Restant |
 |-------|-------|------|----------|---------|
-| Quick Wins | 9 | 0 | 0 | 9 |
-| Court Terme | 10 | 0 | 0 | 10 |
+| Quick Wins | 9 | 9 | 0 | 0 |
+| Court Terme | 10 | 10 | 0 | 0 |
 | Moyen Terme | 10 | 0 | 0 | 10 |
 | Long Terme | 7 | 0 | 0 | 7 |
-| **TOTAL** | **36** | **0** | **0** | **36** |
+| **TOTAL** | **36** | **19** | **0** | **17** |
 
 ---
 
@@ -290,7 +290,21 @@
 
 | Date | Commit | Description |
 |------|--------|-------------|
-| — | — | *Aucun commit pour le moment* |
+| 2026-07-20 | adc2d60 | fix(trust): replace HTML entities &apos; with real apostrophes in push notification toasts |
+| 2026-07-20 | 7f483f4 | fix(trust): guard console.error calls to only run in development (7 error pages) |
+| 2026-07-20 | f9358af | fix(trust): add Home link to global-error page to prevent user trap |
+| 2026-07-20 | 97dfe8b | fix(trust): improve error page titles, add support link to error-boundary, translate Dialog 'Close' to French |
+| 2026-07-20 | ce9ddbd | fix(trust): add confirmation dialogs for device revoke and mobile logout, fix viewport pinch-to-zoom accessibility |
+| 2026-07-20 | df38400 | fix(trust): replace window.prompt() with design system Dialog for link insertion in chat |
+| 2026-07-20 | b773784 | fix(trust): handle API response errors in onboarding profile form |
+| 2026-07-20 | 92029c0 | fix(security): remove OTP code from client-side localStorage persistence |
+| 2026-07-20 | f2d8008 | fix(trust): add confirm password field to registration to prevent typos |
+| 2026-07-20 | ce79266 | fix(trust): improve maintenance page with better copy and support link |
+| 2026-07-20 | ebe788b | fix(trust): replace native confirm() with design system Dialog for session stop in journal |
+| 2026-07-20 | 18e1f67 | fix(trust): make chat message action bar always visible on mobile (touch devices) |
+| 2026-07-20 | fd51106 | fix(trust): add error feedback toasts for notification actions (prefs, mark read, delete) |
+| 2026-07-20 | 8254655 | fix(trust): show error toast when message send fails instead of silent removal |
+| 2026-07-20 | 51020de | fix(trust): replace custom modals with design system Dialog in chat-message |
 
 ---
 
