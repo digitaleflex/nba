@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
 import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash } from "lucide-react"
 import Link from "next/link"
+import { useErrorHandler } from "@nba/hooks/use-error-handler"
 
 interface Plan {
   id: string
@@ -143,14 +144,18 @@ export default function SubscriptionPage() {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const handleError = useErrorHandler("Impossible de charger vos abonnements.")
 
   useEffect(() => {
     fetch("/api/dashboard/subscription")
       .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
       .then((subData) => setAccessRequests(Array.isArray(subData.requests) ? subData.requests : []))
-      .catch(() => setError("Erreur de chargement"))
+      .catch((err) => {
+        setError("Erreur de chargement")
+        handleError(err)
+      })
       .finally(() => setLoading(false))
-  }, [])
+  }, [handleError])
 
   if (loading) {
     return (
