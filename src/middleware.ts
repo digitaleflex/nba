@@ -17,48 +17,54 @@ function redirectTo(url: string, request: NextRequest) {
   return NextResponse.redirect(new URL(url, request.url));
 }
 
+function withRequestId(res: NextResponse, id: string): NextResponse {
+  res.headers.set("x-request-id", id);
+  return res;
+}
+
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const requestId = crypto.randomUUID().slice(0, 8).toUpperCase();
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   // Mode maintenance : rediriger toutes les requêtes sauf /maintenance et les webhooks
   if (process.env.MAINTENANCE_MODE === "true" && pathname !== "/maintenance" && !pathname.startsWith("/api/webhooks")) {
-    return NextResponse.redirect(new URL("/maintenance", request.url));
+    return withRequestId(NextResponse.redirect(new URL("/maintenance", request.url)), requestId);
   }
 
   // Protection CSRF globale sur les routes API mutables (GET/HEAD/OPTIONS gérés dans csrfCheck).
   if (pathname.startsWith("/api/")) {
     const blocked = csrfCheck(request);
-    if (blocked) return blocked;
+    if (blocked) return withRequestId(blocked, requestId);
   }
 
   const isAuthenticated = hasSession(request);
 
   if (pathname === "/") {
-    return redirectTo(isAuthenticated ? "/dashboard" : "/login", request);
+    return withRequestId(redirectTo(isAuthenticated ? "/dashboard" : "/login", request), requestId);
   }
 
   if (AUTH_ROUTES.includes(pathname)) {
-    if (isAuthenticated) return redirectTo("/dashboard", request);
-    return NextResponse.next();
+    if (isAuthenticated) return withRequestId(redirectTo("/dashboard", request), requestId);
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   if (PUBLIC_PATHS.includes(pathname)) {
-    return NextResponse.next();
+    return withRequestId(NextResponse.next(), requestId);
   }
 
   if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return withRequestId(NextResponse.redirect(loginUrl), requestId);
     }
   }
 
-  return NextResponse.next();
+  return withRequestId(NextResponse.next(), requestId);
 }
 
 export const config = {
