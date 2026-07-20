@@ -39,6 +39,16 @@ export function useUserLevel() {
     saveMissions(missions)
   }, [missions])
 
+  useEffect(() => {
+    const sync = () => setMissions(loadMissions())
+    window.addEventListener("nba:missions-updated", sync)
+    window.addEventListener("storage", sync)
+    return () => {
+      window.removeEventListener("nba:missions-updated", sync)
+      window.removeEventListener("storage", sync)
+    }
+  }, [])
+
   const completeMission = useCallback((id: string) => {
     setMissions((prev) => prev.map((m) => (m.id === id ? { ...m, completed: true } : m)))
   }, [])
@@ -48,7 +58,18 @@ export function useUserLevel() {
   return { missions, progress, completeMission }
 }
 
-export function checkMissions(params: { mood: string | null; stopLoss: string | null; tags: string[] }) {
+async function fetchTrades() {
+  try {
+    const res = await fetch("/api/dashboard/journal/trades?limit=50")
+    if (!res.ok) return []
+    const data = await res.json()
+    return Array.isArray(data?.trades) ? data.trades : []
+  } catch {
+    return []
+  }
+}
+
+export async function checkMissions(params: { mood: string | null; stopLoss: string | null; tags: string[] }) {
   const missions = loadMissions()
   let changed = false
 
@@ -66,8 +87,30 @@ export function checkMissions(params: { mood: string | null; stopLoss: string | 
   if (params.stopLoss) complete("j4")
   if (params.tags.length > 0) complete("j6")
 
+  const trades = await fetchTrades()
+
+  // J3 — au moins 3 trades dans la même journée
+  if (!missions.find((m) => m.id === "j3")?.completed) {
+    const byDay = new Map<string, number>()
+    for (const t of trades) {
+      const day = new Date(t.tradedAt).toISOString().slice(0, 10)
+      byDay.set(day, (byDay.get(day) ?? 0) + 1)
+    }
+    if (Math.max(0, ...byDay.values()) >= 3) complete("j3")
+  }
+
+  // J5 — winrate supérieur à 50% sur au moins 5 trades
+  if (!missions.find((m) => m.id === "j5")?.completed) {
+    const valid = trades.filter((t: any) => t.result === "WIN" || t.result === "LOSS")
+    if (valid.length >= 5) {
+      const wins = valid.filter((t: any) => t.result === "WIN").length
+      if (wins / valid.length > 0.5) complete("j5")
+    }
+  }
+
   if (changed) {
     saveMissions(missions)
+    window.dispatchEvent(new Event("nba:missions-updated"))
     // Track first-time completion of each newly completed mission
     for (const m of missions) {
       if (m.completed && !localStorage.getItem(`nba:mission-tracked:${m.id}`)) {
