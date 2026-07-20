@@ -3,7 +3,6 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, LayoutDashboard } from "lucide-react"
-
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error) }, [error])
 
@@ -41,12 +40,12 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
               Tableau de bord
             </Link>
           </div>
-          <a
-            href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
+          <Link
+            href="/dashboard/support"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
             Contacter le support
-          </a>
+          </Link>
         </div>
       </div>
     </div>

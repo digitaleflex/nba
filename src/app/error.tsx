@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, Home } from "lucide-react"
 import { AutoRetryCountdown } from "@nba/components/auto-retry-countdown"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error) }, [error])
@@ -46,7 +47,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
           </div>
           <AutoRetryCountdown onRetry={reset} label="Nouvelle tentative" />
           <a
-            href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
+            href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20${error.digest ?? ""}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
             Contacter le support

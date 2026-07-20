@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { TrendingUp, Home, ArrowLeft, Mail } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function NotFoundPage() {
   return (
@@ -37,7 +38,7 @@ export default function NotFoundPage() {
             </Link>
           </div>
           <a
-            href="mailto:support@neverbrokeagain.com?subject=Erreur%20404"
+            href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20404`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 inline-flex items-center gap-1"
           >
             <Mail className="size-3" />

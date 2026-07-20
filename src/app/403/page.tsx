@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { TrendingUp, ArrowLeft, ShieldX, Mail } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function ForbiddenPage() {
   return (
@@ -36,7 +37,7 @@ export default function ForbiddenPage() {
             </Link>
           </div>
           <a
-            href="mailto:support@neverbrokeagain.com?subject=Erreur%20403"
+            href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20403`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 inline-flex items-center gap-1"
           >
             <Mail className="size-3" />

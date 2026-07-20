@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, LogIn } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function AuthError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { console.error(error) }, [error])
@@ -43,7 +44,7 @@ export default function AuthError({ error, reset }: { error: Error & { digest?: 
             </Link>
           </div>
           <a
-            href={`mailto:support@neverbrokeagain.com?subject=Erreur%20${error.digest ?? ""}`}
+            href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20${error.digest ?? ""}`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
           >
             Contacter le support

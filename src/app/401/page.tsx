@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { TrendingUp, ArrowLeft, Mail } from "lucide-react"
+import { SUPPORT_EMAIL } from "@nba/lib/constants"
 
 export default function UnauthorizedPage() {
   return (
@@ -35,7 +36,7 @@ export default function UnauthorizedPage() {
             </Link>
           </div>
           <a
-            href="mailto:support@neverbrokeagain.com?subject=Erreur%20401"
+            href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20401`}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2 inline-flex items-center gap-1"
           >
             <Mail className="size-3" />
