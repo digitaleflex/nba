@@ -50,7 +50,6 @@ body {
 }
 
 /* Selected state */
-.selected {
   background-color: var(--color-selected);
   border-left: 2px solid var(--color-primary);
 }
@@ -60,6 +59,20 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
+}
+
+/* Reduced motion (WCAG 2.3.3) — désactive les animations décoratives.
+   Les composants motion/react utilisent aussi useReducedMotion() pour
+   se réduire à un fondu simple, mais cette règle couvre le CSS pur. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ─── Glassmorphism ─── */

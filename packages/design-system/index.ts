@@ -33,3 +33,15 @@ export { ToastProvider } from "./providers/toast-provider"
 
 // Utils
 export { cn } from "./lib/utils"
+
+// Animations (variantes respectant prefers-reduced-motion)
+export {
+  useMotionVariant,
+  fadeIn,
+  fadeInUp,
+  fadeInDown,
+  scaleIn,
+  slideInRight,
+  slideInLeft,
+  reducedVariants,
+} from "./animations"
