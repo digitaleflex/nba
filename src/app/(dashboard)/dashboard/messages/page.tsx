@@ -202,6 +202,7 @@ export default function MessagesPage() {
         loadConversations()
       } else {
         setMessages((prev) => prev.filter((m) => m.id !== tempId))
+        toast.error("Échec de l'envoi du message. Veuillez réessayer.")
       }
     },
     [selectedId, sending, myId, emit, appendMessage, loadConversations, quoted],
