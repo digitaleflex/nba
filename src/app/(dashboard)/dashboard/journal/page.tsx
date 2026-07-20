@@ -13,6 +13,7 @@ import { StatsDashboard } from "./components/stats-dashboard"
 import { ReflectionsTab } from "./components/reflections-tab"
 import { TradeForm } from "./components/trade-form"
 import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
+import { FirstTradeGuide } from "@nba/components/guides/first-trade-guide"
 
 const TABS = [
   { id: "trades", label: "Trades", icon: BookOpen },
@@ -158,6 +159,7 @@ export default function JournalPage() {
         </div>
       </div>
 
+      <FirstTradeGuide />
       <SessionBanner />
 
       <div className="flex gap-1 rounded-lg bg-muted/50 p-1 w-fit">
