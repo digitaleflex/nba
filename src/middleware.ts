@@ -24,6 +24,11 @@ export default function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Mode maintenance : rediriger toutes les requêtes sauf /maintenance et les webhooks
+  if (process.env.MAINTENANCE_MODE === "true" && pathname !== "/maintenance" && !pathname.startsWith("/api/webhooks")) {
+    return NextResponse.redirect(new URL("/maintenance", request.url));
+  }
+
   // Protection CSRF globale sur les routes API mutables (GET/HEAD/OPTIONS gérés dans csrfCheck).
   if (pathname.startsWith("/api/")) {
     const blocked = csrfCheck(request);
