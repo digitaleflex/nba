@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { X, ArrowUp, ArrowDown, Plus, Tag, FileText } from "lucide-react"
 import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, cn } from "@nba/design-system"
 import { toast } from "sonner"
-import { useFormDraft } from "@nba/hooks/use-form-draft"
+import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
 const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
@@ -27,49 +27,34 @@ interface TradeFormProps {
 }
 
 export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
-  const [pair, setPair] = useState("")
-  const [direction, setDirection] = useState<"BUY" | "SELL">("BUY")
-  const [result, setResult] = useState<"WIN" | "LOSS" | "BREAKEVEN">("WIN")
-  const [entryPrice, setEntryPrice] = useState("")
-  const [exitPrice, setExitPrice] = useState("")
-  const [stopLoss, setStopLoss] = useState("")
-  const [takeProfit, setTakeProfit] = useState("")
-  const [strategy, setStrategy] = useState<string>("")
-  const [setupType, setSetupType] = useState<string>("")
-  const [lotSize, setLotSize] = useState("0.01")
-  const [spread, setSpread] = useState("")
-  const [mood, setMood] = useState<string | null>(null)
-  const [confidence, setConfidence] = useState(0)
-  const [note, setNote] = useState("")
+  const [pair, setPair] = useState(() => getDraft<{ pair: string }>("trade")?.pair ?? "")
+  const [direction, setDirection] = useState<"BUY" | "SELL">(() => {
+    const d = getDraft<{ direction: "BUY" | "SELL" }>("trade")
+    return d?.direction === "SELL" ? "SELL" : "BUY"
+  })
+  const [result, setResult] = useState<"WIN" | "LOSS" | "BREAKEVEN">(() => {
+    const d = getDraft<{ result: "WIN" | "LOSS" | "BREAKEVEN" }>("trade")
+    return d?.result ?? "WIN"
+  })
+  const [entryPrice, setEntryPrice] = useState(() => getDraft<{ entryPrice: string }>("trade")?.entryPrice ?? "")
+  const [exitPrice, setExitPrice] = useState(() => getDraft<{ exitPrice: string }>("trade")?.exitPrice ?? "")
+  const [stopLoss, setStopLoss] = useState(() => getDraft<{ stopLoss: string }>("trade")?.stopLoss ?? "")
+  const [takeProfit, setTakeProfit] = useState(() => getDraft<{ takeProfit: string }>("trade")?.takeProfit ?? "")
+  const [strategy, setStrategy] = useState(() => getDraft<{ strategy: string }>("trade")?.strategy ?? "")
+  const [setupType, setSetupType] = useState(() => getDraft<{ setupType: string }>("trade")?.setupType ?? "")
+  const [lotSize, setLotSize] = useState(() => getDraft<{ lotSize: string }>("trade")?.lotSize ?? "0.01")
+  const [spread, setSpread] = useState(() => getDraft<{ spread: string }>("trade")?.spread ?? "")
+  const [mood, setMood] = useState<string | null>(() => getDraft<{ mood: string | null }>("trade")?.mood ?? null)
+  const [confidence, setConfidence] = useState(() => getDraft<{ confidence: number }>("trade")?.confidence ?? 0)
+  const [note, setNote] = useState(() => getDraft<{ note: string }>("trade")?.note ?? "")
   const [tagInput, setTagInput] = useState("")
-  const [tags, setTags] = useState<string[]>([])
+  const [tags, setTags] = useState<string[]>(() => getDraft<{ tags: string[] }>("trade")?.tags ?? [])
   const [saving, setSaving] = useState(false)
 
-  const { restore, clear, savedAt } = useFormDraft("trade", {
+  const { clear, savedAt } = useFormDraft("trade", {
     pair, direction, result, entryPrice, exitPrice, stopLoss, takeProfit,
     strategy, setupType, lotSize, spread, mood, confidence, note, tags,
   })
-
-  useEffect(() => {
-    const draft = restore()
-    if (draft) {
-      if (typeof draft.pair === "string") setPair(draft.pair)
-      if (draft.direction === "BUY" || draft.direction === "SELL") setDirection(draft.direction)
-      if (draft.result === "WIN" || draft.result === "LOSS" || draft.result === "BREAKEVEN") setResult(draft.result)
-      if (typeof draft.entryPrice === "string") setEntryPrice(draft.entryPrice)
-      if (typeof draft.exitPrice === "string") setExitPrice(draft.exitPrice)
-      if (typeof draft.stopLoss === "string") setStopLoss(draft.stopLoss)
-      if (typeof draft.takeProfit === "string") setTakeProfit(draft.takeProfit)
-      if (typeof draft.strategy === "string") setStrategy(draft.strategy)
-      if (typeof draft.setupType === "string") setSetupType(draft.setupType)
-      if (typeof draft.lotSize === "string") setLotSize(draft.lotSize)
-      if (typeof draft.spread === "string") setSpread(draft.spread)
-      if (typeof draft.mood === "string") setMood(draft.mood)
-      if (typeof draft.confidence === "number") setConfidence(draft.confidence)
-      if (typeof draft.note === "string") setNote(draft.note)
-      if (Array.isArray(draft.tags)) setTags(draft.tags)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const entry = parseFloat(entryPrice) || 0
   const exit = parseFloat(exitPrice) || 0

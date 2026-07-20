@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button, Card, CardContent } from "@nba/design-system"
-import { FileText, Upload, Camera, RefreshCw, Shield, Check, AlertTriangle, ArrowRight, Loader2, Scan, ImageUp } from "lucide-react"
-import { useFormDraft } from "@nba/hooks/use-form-draft"
+import { FileText, Shield, Check, ArrowRight, Loader2, Scan, ImageUp } from "lucide-react"
+import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
 const DOCUMENT_TYPES = [
   { value: "ID_CARD", label: "Carte Nationale" },
@@ -50,20 +50,13 @@ function DocumentPreview({ file }: { file: File }) {
 
 export default function KycPage() {
   const router = useRouter()
-  const [documentType, setDocumentType] = useState("ID_CARD")
+  const [documentType, setDocumentType] = useState(() => getDraft<{ documentType: string }>("kyc")?.documentType ?? "ID_CARD")
   const [frontFile, setFrontFile] = useState<File | null>(null)
   const [backFile, setBackFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { restore, clear, savedAt } = useFormDraft("kyc", { documentType })
-
-  useEffect(() => {
-    const draft = restore()
-    if (draft && typeof draft.documentType === "string") {
-      setDocumentType(draft.documentType)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const { clear, savedAt } = useFormDraft("kyc", { documentType })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

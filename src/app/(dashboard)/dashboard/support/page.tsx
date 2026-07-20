@@ -1,27 +1,19 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, Button, Input } from "@nba/design-system"
 import { Send, Check, Loader2, FileText } from "lucide-react"
 import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
-import { useFormDraft } from "@nba/hooks/use-form-draft"
+import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
 export default function SupportPage() {
-  const [subject, setSubject] = useState("")
-  const [message, setMessage] = useState("")
+  const [subject, setSubject] = useState(() => { const d = getDraft<{subject: string; message: string}>("support"); return d?.subject ?? "" })
+  const [message, setMessage] = useState(() => { const d = getDraft<{subject: string; message: string}>("support"); return d?.message ?? "" })
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const { restore, clear, savedAt } = useFormDraft("support", { subject, message })
-
-  useEffect(() => {
-    const draft = restore()
-    if (draft && typeof draft.subject === "string" && typeof draft.message === "string") {
-      setSubject(draft.subject)
-      setMessage(draft.message)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const { clear, savedAt } = useFormDraft("support", { subject, message })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

@@ -5,12 +5,6 @@ import { prisma } from "./db"
 import { ValidationError } from "./validations"
 import { Prisma } from "../generated/prisma/client"
 
-function getCorrelationId(): string | undefined {
-  try {
-    headers().then((h) => h.get("x-request-id") ?? undefined)
-  } catch { /* silent */ }
-}
-
 export class AuthError extends Error {
   public statusCode: number
   constructor(message: string, statusCode: number) {

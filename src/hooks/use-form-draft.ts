@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useRef, useState } from "react"
 
-const DRAFT_PREFIX = "nba_draft_"
+export const DRAFT_PREFIX = "nba_draft_"
+
+export function getDraft<T>(key: string): T | null {
+  try {
+    const raw = localStorage.getItem(`${DRAFT_PREFIX}${key}`)
+    if (!raw) return null
+    return JSON.parse(raw) as T
+  } catch { return null }
+}
 
 export function useFormDraft<T extends Record<string, unknown>>(
   key: string,
@@ -32,19 +40,11 @@ export function useFormDraft<T extends Record<string, unknown>>(
     }
   }, [save, debounceMs])
 
-  const restore = useCallback((): T | null => {
-    try {
-      const raw = localStorage.getItem(storageKey)
-      if (!raw) return null
-      return JSON.parse(raw) as T
-    } catch { return null }
-  }, [storageKey])
-
   const clear = useCallback(() => {
     try { localStorage.removeItem(storageKey) } catch { /* silent */ }
     setSavedAt(null)
     prevRef.current = ""
   }, [storageKey])
 
-  return { restore, clear, savedAt }
+  return { clear, savedAt }
 }

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { renderHook, act } from "@testing-library/react"
-import { useFormDraft } from "./use-form-draft"
+import { useFormDraft, getDraft } from "./use-form-draft"
 
 const STORAGE_PREFIX = "nba_draft_"
 const TEST_KEY = "test-form"
@@ -42,20 +42,15 @@ describe("useFormDraft", () => {
     expect(JSON.parse(localStorage.getItem(STORAGE_KEY)!).field).toBe("b")
   })
 
-  it("restores saved draft from localStorage", () => {
+  it("getDraft returns saved draft from localStorage", () => {
     const saved = { email: "test@example.com", message: "hello" }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(saved))
 
-    const { result } = renderHook(() => useFormDraft(TEST_KEY, { email: "", message: "" }))
-
-    const restored = result.current.restore()
-    expect(restored).toEqual(saved)
+    expect(getDraft(TEST_KEY)).toEqual(saved)
   })
 
-  it("returns null from restore when no draft exists", () => {
-    const { result } = renderHook(() => useFormDraft(TEST_KEY, {}))
-
-    expect(result.current.restore()).toBeNull()
+  it("getDraft returns null when no draft exists", () => {
+    expect(getDraft(TEST_KEY)).toBeNull()
   })
 
   it("clears draft from localStorage", () => {
@@ -85,8 +80,6 @@ describe("useFormDraft", () => {
   it("handles corrupt localStorage data gracefully", () => {
     localStorage.setItem(STORAGE_KEY, "not-json")
 
-    const { result } = renderHook(() => useFormDraft(TEST_KEY, {}))
-
-    expect(result.current.restore()).toBeNull()
+    expect(getDraft(TEST_KEY)).toBeNull()
   })
 })

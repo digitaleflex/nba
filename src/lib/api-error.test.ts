@@ -11,7 +11,7 @@ vi.mock("next/headers", () => ({
 
 vi.mock("next/server", () => ({
   NextResponse: {
-    json: vi.fn((body: any, init: any) => ({ body, status: init.status })),
+    json: vi.fn((body: Record<string, unknown>, init: { status: number }) => ({ body, status: init.status })),
   },
 }))
 

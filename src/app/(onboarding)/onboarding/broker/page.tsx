@@ -1,28 +1,26 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button, Card, CardContent, Input } from "@nba/design-system"
 import { Video, Upload, ArrowRight, FileText } from "lucide-react"
-import { useFormDraft } from "@nba/hooks/use-form-draft"
+import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
 export default function BrokerPage() {
   const router = useRouter()
-  const [brokerName, setBrokerName] = useState("")
-  const [accountId, setAccountId] = useState("")
+  const [brokerName, setBrokerName] = useState(() => {
+    const d = getDraft<{ brokerName: string; accountId: string }>("broker")
+    return d?.brokerName ?? ""
+  })
+  const [accountId, setAccountId] = useState(() => {
+    const d = getDraft<{ brokerName: string; accountId: string }>("broker")
+    return d?.accountId ?? ""
+  })
   const [videoFile, setVideoFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
 
-  const { restore, clear, savedAt } = useFormDraft("broker", { brokerName, accountId })
-
-  useEffect(() => {
-    const draft = restore()
-    if (draft) {
-      if (typeof draft.brokerName === "string") setBrokerName(draft.brokerName)
-      if (typeof draft.accountId === "string") setAccountId(draft.accountId)
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const { clear, savedAt } = useFormDraft("broker", { brokerName, accountId })
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
