@@ -15,6 +15,7 @@ import { TradeForm } from "./components/trade-form"
 import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
 import { FirstTradeGuide } from "@nba/components/guides/first-trade-guide"
 import { StatsGuide } from "@nba/components/guides/stats-guide"
+import { ReflectionGuide } from "@nba/components/guides/reflection-guide"
 import { MissionsPanel } from "@nba/components/missions-panel"
 import { MilestoneModal } from "@nba/components/milestone-modal"
 import { motion, AnimatePresence } from "motion/react"
@@ -191,6 +192,7 @@ export default function JournalPage() {
 
       <FirstTradeGuide />
       <StatsGuide />
+      <ReflectionGuide />
       <MilestoneModal />
       <SessionBanner />
 

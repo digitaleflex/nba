@@ -78,7 +78,7 @@ export function ReflectionsTab() {
   return (
     <div className="space-y-6">
       {/* Formulaire aujourd'hui */}
-      <div className="rounded-lg border bg-card p-6">
+      <div id="reflection-form" className="rounded-lg border bg-card p-6">
         <h2 className="font-semibold mb-4">📅 Aujourd'hui — {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</h2>
 
         {/* Note 1-10 */}

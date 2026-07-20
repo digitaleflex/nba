@@ -60,6 +60,7 @@ export const AnalyticsEvents = {
   welcomeGuideSeen: () => track("onboarding_welcome_guide_seen"),
   firstTradeGuideSeen: () => track("onboarding_first_trade_guide_seen"),
   statsGuideSeen: () => track("onboarding_stats_guide_seen"),
+  reflectionGuideSeen: () => track("onboarding_reflection_guide_seen"),
   tradeCreated: (props: { pair: string; result: string; hasStopLoss: boolean }) =>
     track("trade_created", props),
   missionCompleted: (id: string) => track("mission_completed", { missionId: id }),
