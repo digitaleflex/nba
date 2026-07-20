@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react"
 import { Button } from "@nba/design-system"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
 import { EmojiPicker } from "@nba/components/emoji-picker"
 import {
   Bold,
@@ -60,6 +61,8 @@ export function MessageComposer({
   const [pending, setPending] = useState<AttachmentPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false)
+  const [linkUrl, setLinkUrl] = useState("")
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
   const typingTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -101,13 +104,20 @@ export function MessageComposer({
   }
 
   function insertLink(el: HTMLTextAreaElement | null) {
-    const url = window.prompt("URL du lien (https://...)")
-    if (!url) return
+    setLinkUrl("")
+    setLinkDialogOpen(true)
+  }
+
+  function confirmInsertLink() {
+    if (!linkUrl.trim()) return
+    const el = textareaRef.current
     const start = el?.selectionStart ?? text.length
     const end = el?.selectionEnd ?? text.length
     const label = text.slice(start, end) || "lien"
-    const snippet = `[${label}](${url})`
+    const snippet = `[${label}](${linkUrl.trim()})`
     setText(text.slice(0, start) + snippet + text.slice(end))
+    setLinkDialogOpen(false)
+    setLinkUrl("")
   }
 
   function notifyTyping() {
@@ -316,6 +326,31 @@ export function MessageComposer({
           {uploading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
         </Button>
       </div>
+
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Insérer un lien</DialogTitle>
+          </DialogHeader>
+          <input
+            type="url"
+            value={linkUrl}
+            onChange={(e) => setLinkUrl(e.target.value)}
+            placeholder="https://..."
+            autoFocus
+            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); confirmInsertLink() } }}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+          />
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setLinkDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button size="sm" onClick={confirmInsertLink} disabled={!linkUrl.trim()}>
+              Insérer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
