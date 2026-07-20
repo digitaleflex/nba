@@ -57,6 +57,12 @@ export class ErrorBoundary extends Component<Props, State> {
               <RefreshCw className="size-3.5" />
               Rafraîchir
             </Button>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=Erreur%20application`}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+            >
+              Contacter le support
+            </a>
           </div>
         </div>
       )
