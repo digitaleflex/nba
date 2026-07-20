@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { AnalyticsEvents } from "@nba/lib/analytics"
+import { createGuideConfig } from "@nba/lib/guide-config"
 
 export function WelcomeGuide() {
   useEffect(() => {
@@ -11,9 +12,8 @@ export function WelcomeGuide() {
     if (seen === "true") return
     AnalyticsEvents.welcomeGuideSeen()
 
-    const guide = driver({
-      showButtons: ["next", "previous", "close"],
-      steps: [
+    const guide = driver(
+      createGuideConfig([
         {
           element: "#signals",
           popover: {
@@ -54,14 +54,14 @@ export function WelcomeGuide() {
             align: "start",
           },
         },
-      ],
-      onDestroyed: () => {
-        localStorage.setItem("nba:welcome-guide", "true")
-      },
-    })
+      ]),
+    )
 
     const timer = setTimeout(() => guide.drive(), 800)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      guide.destroy()
+    }
   }, [])
 
   return null

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { AnalyticsEvents } from "@nba/lib/analytics"
+import { createGuideConfig } from "@nba/lib/guide-config"
 
 export function FirstTradeGuide() {
   const [ready, setReady] = useState(false)
@@ -22,9 +23,8 @@ export function FirstTradeGuide() {
     const newTradeBtn = document.getElementById("new-trade-btn")
     if (!newTradeBtn) return
 
-    const guide = driver({
-      showButtons: ["next", "previous", "close"],
-      steps: [
+    const guide = driver(
+      createGuideConfig([
         {
           element: "#new-trade-btn",
           popover: {
@@ -35,14 +35,14 @@ export function FirstTradeGuide() {
             align: "start",
           },
         },
-      ],
-      onDestroyed: () => {
-        localStorage.setItem("nba:first-trade-guide", "true")
-      },
-    })
+      ]),
+    )
 
     const timer = setTimeout(() => guide.drive(), 300)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      guide.destroy()
+    }
   }, [ready])
 
   return null

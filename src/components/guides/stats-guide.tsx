@@ -4,6 +4,7 @@ import { useEffect } from "react"
 import { driver } from "driver.js"
 import "driver.js/dist/driver.css"
 import { AnalyticsEvents } from "@nba/lib/analytics"
+import { createGuideConfig } from "@nba/lib/guide-config"
 
 export function StatsGuide() {
   useEffect(() => {
@@ -22,9 +23,8 @@ export function StatsGuide() {
       || Array.from(document.querySelectorAll("button")).find((b) => b.textContent?.trim() === "Stats") as HTMLElement | null
     if (!statsTab) return
 
-    const guide = driver({
-      showButtons: ["next", "previous", "close"],
-      steps: [
+    const guide = driver(
+      createGuideConfig([
         {
           element: statsTab as HTMLElement,
           popover: {
@@ -35,14 +35,14 @@ export function StatsGuide() {
             align: "start",
           },
         },
-      ],
-      onDestroyed: () => {
-        localStorage.setItem("nba:stats-guide", "true")
-      },
-    })
+      ]),
+    )
 
     const timer = setTimeout(() => guide.drive(), 300)
-    return () => clearTimeout(timer)
+    return () => {
+      clearTimeout(timer)
+      guide.destroy()
+    }
   }, [])
 
   return null

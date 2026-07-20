@@ -417,3 +417,69 @@ textarea,
     letter-spacing: 0.01em;
   }
 }
+
+/* ==========================================================================
+   Driver.js — guides interactifs, adaptation mobile
+   Le popover par défaut déborde sur petit écran et les boutons sont trop
+   petits au toucher. On contraint la largeur et on agrandit les cibles.
+   ========================================================================== */
+.nba-driver-popover.driver-popover {
+  max-width: calc(100vw - 24px);
+  width: 360px;
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
+}
+
+.nba-driver-popover .driver-popover-title {
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
+
+.nba-driver-popover .driver-popover-description {
+  font-size: 0.825rem;
+  line-height: 1.45;
+  color: var(--color-muted-foreground);
+}
+
+.nba-driver-popover .driver-popover-progress-text {
+  font-size: 0.7rem;
+  color: var(--color-muted-foreground);
+}
+
+.nba-driver-popover .driver-popover-navigation-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.nba-driver-popover .driver-popover-navigation-btns button {
+  /* Cibles tactiles confortables (min 40px de hauteur recommandé) */
+  min-height: 38px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  border-radius: 9px;
+  font-weight: 600;
+}
+
+.nba-driver-popover .driver-popover-close-btn {
+  /* Croix de fermeture plus facile à toucher */
+  width: 28px;
+  height: 28px;
+  font-size: 22px;
+  line-height: 1;
+}
+
+/* Sur très petits écrans, le popover passe en pleine largeur avec marges. */
+@media (max-width: 639px) {
+  .nba-driver-popover.driver-popover {
+    width: auto;
+    max-width: calc(100vw - 24px);
+    margin: 0 12px;
+  }
+
+  .nba-driver-popover .driver-popover-navigation-btns button {
+    flex: 1 1 auto;
+    min-height: 42px;
+  }
+}
