@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { AnalyticsEvents } from "@nba/lib/analytics"
 
 export interface Mission {
   id: string
@@ -65,5 +66,14 @@ export function checkMissions(params: { mood: string | null; stopLoss: string | 
   if (params.stopLoss) complete("j4")
   if (params.tags.length > 0) complete("j6")
 
-  if (changed) saveMissions(missions)
+  if (changed) {
+    saveMissions(missions)
+    // Track first-time completion of each newly completed mission
+    for (const m of missions) {
+      if (m.completed && !localStorage.getItem(`nba:mission-tracked:${m.id}`)) {
+        localStorage.setItem(`nba:mission-tracked:${m.id}`, "1")
+        AnalyticsEvents.missionCompleted(m.id)
+      }
+    }
+  }
 }

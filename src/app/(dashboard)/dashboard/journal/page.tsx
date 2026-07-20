@@ -189,6 +189,7 @@ export default function JournalPage() {
       </div>
 
       <FirstTradeGuide />
+      <StatsGuide />
       <MilestoneModal />
       <SessionBanner />
 
