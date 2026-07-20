@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { requireRole } from "@nba/lib/auth-utils"
 import { readFile } from "fs/promises"
 import { execSync } from "child_process"
+import { CRON_DEFINITIONS } from "@nba/lib/cron-definitions"
 
 interface CronJobInfo {
   name: string
@@ -14,26 +15,8 @@ interface CronJobInfo {
   enabled: boolean
 }
 
-function parseCronSchedule(cronExpr: string): string {
-  const parts = cronExpr.trim().split(/\s+/)
-  if (parts.length < 5) return cronExpr
-
-  const [min, hour, dom, month, dow] = parts
-
-  const days: Record<string, string> = { "0": "dim", "1": "lun", "2": "mar", "3": "mer", "4": "jeu", "5": "ven", "6": "sam", "7": "dim" }
-  const months: Record<string, string> = { "1": "janv", "2": "fév", "3": "mars", "4": "avr", "5": "mai", "6": "juin", "7": "juil", "8": "août", "9": "sept", "10": "oct", "11": "nov", "12": "déc" }
-
-  const freq = min === "0" && hour === "*" && dom === "*" && month === "*" && dow === "*" ? "Toutes les heures"
-    : min === "0" && hour !== "*" && hour.includes("/") && dom === "*" && month === "*" && dow === "*" ? `Toutes les ${hour.replace("*/", "")}h`
-    : min === "0" && hour !== "*" && !hour.includes("/") && dom === "*" && month === "*" && dow === "*" ? `Tous les jours à ${hour}h`
-    : min === "0" && hour !== "*" && dom === "*" && month === "*" && dow !== "*" && !dow.includes("/") ? `${days[dow] || `jour ${dow}`} à ${hour}h`
-    : `${cronExpr}`
-
-  return freq
-}
-
 function getScriptName(command: string): string {
-  const match = command.match(/scripts\/([\w-]+)\.ts/)
+  const match = command.match(/scripts\/([\w-]+)\.(ts|sh|py)/)
   return match ? match[1] : command.slice(0, 60)
 }
 
@@ -57,13 +40,14 @@ async function readLastLogLine(filePath: string): Promise<{ lastRun: string | nu
   }
 }
 
-export async function GET() {
+/**
+ * Tente de lire la crontab système (VPS Linux). Renvoie null si indisponible
+ * (Windows, CI, conteneur sans crontab) — on se rabat alors sur la config statique.
+ */
+function readSystemCrontab(): { schedule: string; command: string; logFile: string | null }[] | null {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
-
     const crontabOutput = execSync("crontab -l 2>/dev/null", { encoding: "utf-8", timeout: 5000 })
-
-    const jobs: CronJobInfo[] = []
+    const jobs: { schedule: string; command: string; logFile: string | null }[] = []
     const lines = crontabOutput.split("\n")
 
     for (const line of lines) {
@@ -75,14 +59,42 @@ export async function GET() {
 
       const schedule = cronMatch[1]
       const command = cronMatch[2]
-
       const logMatch = command.match(/>>\s*(\/\S+)\s*2>&1/)
       const logFile = logMatch ? logMatch[1] : null
 
+      jobs.push({ schedule, command, logFile })
+    }
+    return jobs.length > 0 ? jobs : null
+  } catch {
+    return null
+  }
+}
+
+export async function GET() {
+  try {
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
+
+    // Source unique de vérité : config statique (toujours disponible, même sur Windows/dev).
+    const systemCrons = readSystemCrontab()
+    const jobs: CronJobInfo[] = []
+
+    for (const def of CRON_DEFINITIONS) {
+      let schedule = def.schedule
+      let logFile: string | null = def.logFile
       let lastRun: string | null = null
       let lastStatus: "success" | "failed" | "unknown" = "unknown"
       let lastMessage: string | null = null
 
+      // Enrichissement depuis la crontab système si présente.
+      if (systemCrons) {
+        const sys = systemCrons.find((s) => getScriptName(s.command) === def.name)
+        if (sys) {
+          schedule = sys.schedule
+          logFile = sys.logFile ?? def.logFile
+        }
+      }
+
+      // Enrichissement depuis le fichier de log si lisible.
       if (logFile) {
         const logInfo = await readLastLogLine(logFile)
         lastRun = logInfo.lastRun
@@ -91,14 +103,14 @@ export async function GET() {
       }
 
       jobs.push({
-        name: getScriptName(command),
+        name: def.name,
         schedule,
-        command: command.slice(0, 120),
+        command: def.command,
         logFile,
         lastRun,
         lastStatus,
         lastMessage,
-        enabled: true,
+        enabled: def.enabled,
       })
     }
 
