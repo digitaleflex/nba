@@ -17,7 +17,7 @@ interface Trade {
   lotSize: string
   pnl: string
   spread: string | null
-  rrRatio: string | null
+  rrRatio: number | null
   mood: string | null
   confidence: number | null
   note: string | null

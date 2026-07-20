@@ -27,7 +27,13 @@ export default function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID().slice(0, 8).toUpperCase();
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
-    return withRequestId(NextResponse.next(), requestId);
+    const res = NextResponse.next()
+    res.headers.set("x-request-id", requestId)
+    // Stale-while-revalidate on public API routes (data can be slightly stale)
+    if (pathname.startsWith("/api/public/")) {
+      res.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
+    }
+    return res
   }
 
   // Mode maintenance : rediriger toutes les requêtes sauf /maintenance et les webhooks
@@ -60,8 +66,13 @@ export default function middleware(request: NextRequest) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return withRequestId(NextResponse.redirect(loginUrl), requestId);
+      return withRequestId(NextResponse.redirect(loginUrl, requestId), requestId);
     }
+    // Never cache protected routes (dashboard, admin, onboarding)
+    const res = NextResponse.next()
+    res.headers.set("x-request-id", requestId)
+    res.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate")
+    return res
   }
 
   return withRequestId(NextResponse.next(), requestId);

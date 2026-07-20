@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useMemo, useEffect, useCallback } from "react"
-import { X, ArrowUp, ArrowDown, Plus, Tag, FileText, AlertTriangle } from "lucide-react"
-import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, BottomSheet, BottomSheetContent, BottomSheetHeader, cn, useMediaQuery } from "@nba/design-system"
+import { X, ArrowUp, ArrowDown, Plus, Tag, FileText, AlertTriangle, HelpCircle } from "lucide-react"
+import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, BottomSheet, BottomSheetContent, BottomSheetHeader, cn, useMediaQuery, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
 import { toast } from "sonner"
 import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
@@ -241,6 +241,9 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           setupType: setupType || undefined,
           lotSize: lot,
           spread: spreadVal || undefined,
+          commission: commissionVal || undefined,
+          swap: swapVal || undefined,
+          tradedAt: tradedAt ? new Date(tradedAt).toISOString() : undefined,
           mood: mood || undefined,
           confidence: confidence || undefined,
           note: note || undefined,
@@ -444,7 +447,15 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">Lot</label>
+          <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+            Lot
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-48">Taille de votre position. 0.01 = micro lot (1000 unites).</TooltipContent>
+            </Tooltip>
+          </label>
           <Input
             value={lotSize}
             onChange={(e) => { setLotSize(e.target.value); markTouched("lotSize") }}
@@ -455,7 +466,15 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           <FieldError error={errors.lotSize} />
         </div>
         <div>
-          <label className="text-xs font-medium text-muted-foreground mb-1 block">Spread (coût)</label>
+          <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+            Spread (coût)
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-48">Coût total du spread en pips ou en euros. Impact votre PnL final.</TooltipContent>
+            </Tooltip>
+          </label>
           <Input
             placeholder="0"
             value={spread}
@@ -468,6 +487,47 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         </div>
       </div>
 
+      {entry > 0 && sl > 0 && (
+        <LotCalculator
+          entry={entry}
+          sl={sl}
+          direction={direction}
+          contractSize={contractSize}
+          onApply={(lot) => setLotSize(lot)}
+        />
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            placeholder="0"
+            value={commission}
+            onChange={(e) => setCommission(e.target.value)}
+            className="font-mono"
+            inputMode="decimal"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground mb-1 block">Swap</label>
+          <Input
+            placeholder="0"
+            value={swap}
+            onChange={(e) => setSwap(e.target.value)}
+            className="font-mono"
+            inputMode="decimal"
+          />
+        </div>
+      </div>
+
+      <div>
+        <label className="text-xs font-medium text-muted-foreground mb-1 block">Date du trade</label>
+        <Input
+          type="datetime-local"
+          value={tradedAt}
+          onChange={(e) => setTradedAt(e.target.value)}
+          className="text-sm"
+        />
+      </div>
+
       {!disablePrice && (
         <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
@@ -477,7 +537,12 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </span>
           </div>
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
-            <span className="text-[10px] text-muted-foreground uppercase">R:R</span>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <span className="text-[10px] text-muted-foreground uppercase cursor-help">R:R</span>
+              </TooltipTrigger>
+              <TooltipContent side="top">Risk/Reward : combien vous risquez vs combien vous esperez gagner.</TooltipContent>
+            </Tooltip>
             <span className="text-sm font-mono font-bold">{rr ?? "—"}</span>
           </div>
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
@@ -488,7 +553,15 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
       )}
 
       <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1 block">Émotion</label>
+        <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+          Émotion
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-48">L'émotion que vous ressentiez pendant le trade. L'honnêteté est la clé du progrès.</TooltipContent>
+          </Tooltip>
+        </label>
         <div className="flex gap-1 justify-between flex-wrap">
           {MOODS.map((m) => (
             <button
@@ -507,7 +580,15 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
       </div>
 
       <div>
-        <label className="text-xs font-medium text-muted-foreground mb-1 block">Confiance</label>
+        <label className="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+          Confiance
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent side="top" className="max-w-48">À quel point étiez-vous confiant ? Comparez avec le résultat pour apprendre.</TooltipContent>
+          </Tooltip>
+        </label>
         <div className="flex gap-1">
           {[1, 2, 3, 4, 5].map((star) => (
             <button

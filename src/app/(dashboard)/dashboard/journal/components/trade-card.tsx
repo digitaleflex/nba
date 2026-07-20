@@ -17,7 +17,7 @@ interface Trade {
   lotSize: string
   pnl: string
   spread: string | null
-  rrRatio: string | null
+  rrRatio: number | null
   mood: string | null
   confidence: number | null
   note: string | null
@@ -90,7 +90,7 @@ export function TradeCard({ trade, onDelete, onEdit }: { trade: Trade; onDelete:
             {hasSL && <span className="text-rose-400/70">SL {trade.stopLoss}</span>}
             {hasTP && <span className="text-emerald-400/70">TP {trade.takeProfit}</span>}
             <span>Lot {trade.lotSize}</span>
-            {trade.rrRatio && <span>R:R {trade.rrRatio}</span>}
+            {trade.rrRatio != null && <span>R:R {trade.rrRatio.toFixed(1)}</span>}
             {Number(trade.spread) > 0 && <span>Spread {trade.spread}€</span>}
           </div>
 
