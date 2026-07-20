@@ -331,6 +331,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Paire</label>
         <div className="relative">
           <Input
+            id="trade-pair"
             placeholder="EURUSD"
             value={pair}
             onChange={(e) => { setPair(e.target.value.toUpperCase()); markTouched("pair") }}
@@ -353,7 +354,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
 
       <div>
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Direction</label>
-        <div className="flex gap-2">
+        <div id="trade-direction" className="flex gap-2">
           <button
             onClick={() => setDirection("BUY")}
             className={cn(
@@ -499,6 +500,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </Tooltip>
           </label>
           <Input
+            id="trade-lot"
             value={lotSize}
             onChange={(e) => { setLotSize(e.target.value); markTouched("lotSize") }}
             onBlur={() => markTouched("lotSize")}
@@ -708,7 +710,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           Sauvegardé {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </p>
       )}
-      <Button onClick={handleSubmit} disabled={saving} className="w-full">
+      <Button id="trade-save" onClick={handleSubmit} disabled={saving} className="w-full">
         {saving ? "Enregistrement..." : "Enregistrer le trade"}
       </Button>
     </div>

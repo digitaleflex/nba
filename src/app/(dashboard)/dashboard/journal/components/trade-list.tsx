@@ -67,7 +67,7 @@ export function TradeList({ onNewTrade }: TradeListProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
-        <Button onClick={() => onNewTrade()} size="sm" className="gap-1.5">
+        <Button id="new-trade-btn" onClick={() => onNewTrade()} size="sm" className="gap-1.5">
           <Plus className="size-4" /> Nouveau trade
         </Button>
 
