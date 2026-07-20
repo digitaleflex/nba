@@ -21,6 +21,7 @@ import {
   ChevronDown,
 } from "lucide-react"
 import Link from "next/link"
+import { toast } from "sonner"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 import { NOTIFICATION_SOUNDS } from "@nba/lib/notification-sounds"
 
@@ -148,7 +149,7 @@ export default function NotificationsPage() {
       })
       if (!res.ok) throw new Error("failed")
     } catch {
-      // silent
+      toast.error("Échec de l'enregistrement des préférences")
     } finally {
       setPrefsSaving(false)
     }
@@ -244,7 +245,9 @@ export default function NotificationsPage() {
         prev.map((n) => (n.id === id ? { ...n, readAt: new Date().toISOString() } : n))
       )
       setUnreadCount((prev) => Math.max(0, prev - 1))
-    } catch {}
+    } catch {
+      toast.error("Impossible de marquer comme lu")
+    }
   }
 
   async function markAllAsRead() {
@@ -256,7 +259,9 @@ export default function NotificationsPage() {
         prev.map((n) => (n.readAt ? n : { ...n, readAt: new Date().toISOString() }))
       )
       setUnreadCount((prev) => Math.max(0, prev - (count ?? prev)))
-    } catch {}
+    } catch {
+      toast.error("Impossible de tout marquer comme lu")
+    }
   }
 
   async function deleteNotification(id: string) {
@@ -264,7 +269,9 @@ export default function NotificationsPage() {
       await fetch(`/api/dashboard/notifications/${id}`, { method: "DELETE" })
       setNotifications((prev) => prev.filter((n) => n.id !== id))
       setUnreadCount((prev) => Math.max(0, prev - (notifications.find((n) => n.id === id)?.readAt ? 0 : 1)))
-    } catch {}
+    } catch {
+      toast.error("Impossible de supprimer la notification")
+    }
   }
 
   if (loading) {
