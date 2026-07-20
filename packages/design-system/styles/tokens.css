@@ -1,0 +1,103 @@
+/**
+ * Design tokens — Source unique de vérité du design system NBA.
+ *
+ * Autrefois dupliqués dans src/app/globals.css, ces tokens sont désormais
+ * propriété du package @nba/design-system pour garantir son autonomie.
+ * globals.css les réimporte via `@import "@nba/design-system/styles/tokens.css"`.
+ *
+ * Tailwind v4 (CSS-first) : tout ce qui est déclaré dans @theme devient une
+ * utilitaire (bg-background, text-primary, rounded-lg, shadow-xl, …).
+ */
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  --color-background: #fafbfc;
+  --color-foreground: oklch(0.15 0.01 260);
+  --color-card: #ffffff;
+  --color-card-foreground: oklch(0.15 0.01 260);
+  --color-popover: #ffffff;
+  --color-popover-foreground: oklch(0.15 0.01 260);
+  --color-primary: oklch(0.35 0.06 260);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: oklch(0.55 0.03 260);
+  --color-secondary-foreground: #ffffff;
+  --color-muted: oklch(0.96 0.005 260);
+  --color-muted-foreground: oklch(0.55 0.01 260);
+  --color-accent: oklch(0.45 0.08 260);
+  --color-accent-foreground: #ffffff;
+  --color-destructive: oklch(0.55 0.2 25);
+  --color-destructive-foreground: #ffffff;
+  --color-success: oklch(0.6 0.18 155);
+  --color-success-foreground: #ffffff;
+  --color-warning: oklch(0.75 0.15 85);
+  --color-warning-foreground: oklch(0.15 0.01 260);
+  --color-border: oklch(0 0 0 / 0.08);
+  --color-input: oklch(0 0 0 / 0.1);
+  --color-ring: oklch(0.45 0.08 260);
+
+  /* Interactive state tokens */
+  --color-hover: oklch(0.93 0.005 260);
+  --color-active: oklch(0.3 0.06 260);
+  --color-selected: oklch(0.35 0.06 260 / 0.1);
+  --color-disabled: oklch(0 0 0 / 0.4);
+
+  /* Spacing tokens */
+  --spacing-1: 4px;
+  --spacing-2: 8px;
+  --spacing-3: 12px;
+  --spacing-4: 16px;
+  --spacing-5: 20px;
+  --spacing-6: 24px;
+  --spacing-8: 32px;
+  --spacing-10: 40px;
+  --spacing-12: 48px;
+
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
+  --radius-2xl: 20px;
+
+  --shadow-xs: 0 1px 2px oklch(0 0 0 / 0.05);
+  --shadow-sm: 0 1px 3px oklch(0 0 0 / 0.06), 0 1px 2px oklch(0 0 0 / 0.04);
+  --shadow-md: 0 4px 12px oklch(0 0 0 / 0.06), 0 2px 4px oklch(0 0 0 / 0.04);
+  --shadow-lg: 0 8px 24px oklch(0 0 0 / 0.08), 0 4px 8px oklch(0 0 0 / 0.04);
+  --shadow-xl: 0 12px 48px oklch(0 0 0 / 0.1), 0 6px 12px oklch(0 0 0 / 0.06);
+}
+
+.dark {
+  --color-background: #09090b;
+  --color-foreground: #fafafa;
+  --color-card: #0c0c0f;
+  --color-card-foreground: #fafafa;
+  --color-popover: #121215;
+  --color-popover-foreground: #fafafa;
+  --color-primary: oklch(0.45 0.08 260);
+  --color-primary-foreground: #ffffff;
+  --color-secondary: oklch(0.25 0.03 260);
+  --color-secondary-foreground: #a1a1aa;
+  --color-muted: #18181b;
+  --color-muted-foreground: #a1a1aa;
+  --color-accent: oklch(0.35 0.06 260);
+  --color-accent-foreground: #fafafa;
+  --color-destructive: oklch(0.55 0.2 25);
+  --color-destructive-foreground: #fafafa;
+  --color-success: oklch(0.6 0.18 155);
+  --color-success-foreground: #09090b;
+  --color-warning: oklch(0.75 0.15 85);
+  --color-warning-foreground: #09090b;
+  --color-border: oklch(1 0 0 / 0.1);
+  --color-input: oklch(1 0 0 / 0.12);
+  --color-ring: oklch(0.45 0.08 260);
+
+  /* Interactive state tokens - dark mode */
+  --color-hover: oklch(0.22 0.02 260);
+  --color-active: oklch(0.55 0.08 260);
+  --color-selected: oklch(0.45 0.08 260 / 0.15);
+  --color-disabled: oklch(1 0 0 / 0.3);
+}
