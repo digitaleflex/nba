@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, Button, Input } from "@nba/design-system"
-import { Send, Check, Loader2 } from "lucide-react"
+import { Send, Check, Loader2, FileText } from "lucide-react"
 import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
+import { useFormDraft } from "@nba/hooks/use-form-draft"
 
 export default function SupportPage() {
   const [subject, setSubject] = useState("")
@@ -11,6 +12,16 @@ export default function SupportPage() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const { restore, clear, savedAt } = useFormDraft("support", { subject, message })
+
+  useEffect(() => {
+    const draft = restore()
+    if (draft && typeof draft.subject === "string" && typeof draft.message === "string") {
+      setSubject(draft.subject)
+      setMessage(draft.message)
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,6 +33,7 @@ export default function SupportPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subject, message }),
       })
+      clear()
       setSent(true)
       setSubject("")
       setMessage("")
@@ -80,6 +92,12 @@ export default function SupportPage() {
                 />
               </div>
 
+              {savedAt && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <FileText className="size-3" />
+                  Brouillon sauvegardé à {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+                </p>
+              )}
               {error && (
                 <p role="alert" className="text-sm text-destructive">{error}</p>
               )}
