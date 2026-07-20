@@ -143,19 +143,20 @@ jobs:
             # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint
             # du Dockerfile lance le serveur et ignore l'arg). Non-destructif : applique
             # uniquement les migrations manquantes. Timeout anti-blocage advisory lock pgbouncer.
-            docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app 2>&1 | tee /tmp/migrate.log
-            echo "Migration exit: ${PIPESTATUS[0]}"
-            if [ "${PIPESTATUS[0]}" != "0" ]; then
-              echo "::error::prisma migrate deploy a echoue (voir ci-dessus)."
+            docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app > /tmp/migrate.log 2>&1 || MIGRATE_EXIT=$?
+            cat /tmp/migrate.log
+            if [ "${MIGRATE_EXIT:-0}" != "0" ]; then
+              echo "::error::prisma migrate deploy a echoue (exit ${MIGRATE_EXIT})."
               echo "Verification manuelle requise sur le VPS."
               exit 1
             fi
 
             echo "=== Seed (one-shot, idempotent) ==="
             # --entrypoint force l'execution reelle du seed (upsert, non-destructif).
-            timeout 180 docker compose -f compose.yml run --rm --entrypoint "pnpm db:seed" app 2>&1 | tee /tmp/seed.log
-            if [ "${PIPESTATUS[0]}" != "0" ]; then
-              echo "::warning::pnpm db:seed a echoue (non-bloquant). Verifier /tmp/seed.log sur le VPS."
+            timeout 180 docker compose -f compose.yml run --rm --entrypoint "pnpm db:seed" app > /tmp/seed.log 2>&1 || SEED_EXIT=$?
+            cat /tmp/seed.log
+            if [ "${SEED_EXIT:-0}" != "0" ]; then
+              echo "::warning::pnpm db:seed a echoue (exit ${SEED_EXIT}) — non-bloquant."
             fi
 
             echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
