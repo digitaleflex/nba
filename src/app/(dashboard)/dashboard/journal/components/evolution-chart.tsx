@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { cn } from "@nba/design-system"
+import { cn, useMediaQuery } from "@nba/design-system"
 
 export interface EvolutionSeries {
   key: string
@@ -21,6 +21,7 @@ interface EvolutionChartProps {
 const COLORS = ["#10b981", "#6366f1", "#f59e0b", "#ec4899", "#06b6d4"]
 
 export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartProps) {
+  const isMobile = useMediaQuery("(max-width: 767px)")
   const [active, setActive] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(series.map((s, i) => [s.key, i < 2]))
   )
@@ -90,7 +91,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
           {labels.map((l, i) => (
             <span key={l} className="font-mono">
               {new Date(l).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}
-              {visible.map((s) => (
+              {!isMobile && visible.map((s) => (
                 <span key={s.key} className="ml-1" style={{ color: s.color }}>
                   {s.values[i] >= 0 && s.unit === "€" ? "+" : ""}
                   {Math.round(s.values[i] * 100) / 100}

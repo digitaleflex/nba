@@ -1,16 +1,26 @@
+import { createCircuitBreaker, withTimeout } from "../circuit-breaker"
+
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const TELEGRAM_ENABLED = process.env.TELEGRAM_ENABLED !== "false"
 const API_BASE = "https://api.telegram.org/bot"
+const TELEGRAM_TIMEOUT_MS = 10_000
+
+const telegramBreaker = createCircuitBreaker("telegram", { threshold: 5, cooldownMs: 60_000 })
 
 async function apiCall(method: string, body: Record<string, unknown>) {
   if (!TELEGRAM_ENABLED) return { ok: false, error: "Telegram notifications are disabled" }
   if (!BOT_TOKEN) return { ok: false, error: "TELEGRAM_BOT_TOKEN not configured" }
-  const res = await fetch(`${API_BASE}${BOT_TOKEN}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  })
-  return res.json() as Promise<{ ok: boolean; result?: unknown; error_code?: number; description?: string }>
+  return telegramBreaker.execute(() =>
+    withTimeout(async (signal) => {
+      const res = await fetch(`${API_BASE}${BOT_TOKEN}/${method}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+        signal,
+      })
+      return res.json() as Promise<{ ok: boolean; result?: unknown; error_code?: number; description?: string }>
+    }, TELEGRAM_TIMEOUT_MS),
+  )
 }
 
 export async function sendTelegramMessage(

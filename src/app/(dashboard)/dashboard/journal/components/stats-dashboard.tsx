@@ -130,7 +130,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
       {stats.byDay.filter(d => d.count > 0).length > 0 && (
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-sm font-semibold mb-3">📊 Win/Loss par jour</h3>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Chart
               type="bar"
               data={stats.byDay.slice(0, 14).reverse().map(d => ({
@@ -162,13 +162,13 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
             <h3 className="text-sm font-semibold mb-3">Par paire</h3>
             <div className="space-y-2">
               {stats.byPair.map(p => (
-                <div key={p.pair} className="flex items-center gap-3 text-sm">
-                  <span className="font-mono font-medium w-16">{p.pair}</span>
+                <div key={p.pair} className="flex items-center gap-2 sm:gap-3 text-sm">
+                  <span className="font-mono font-medium w-14 sm:w-16 truncate text-xs sm:text-sm">{p.pair}</span>
                   <div className="flex-1 h-2 rounded-full bg-muted/50 overflow-hidden">
                     <div className="h-full rounded-full bg-emerald-500 transition-all" style={{ width: `${p.winRate}%` }} />
                   </div>
-                  <span className="w-10 text-right text-xs tabular-nums">{p.winRate}%</span>
-                  <span className={`w-16 text-right text-xs font-mono tabular-nums ${p.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                  <span className="w-10 text-right text-xs tabular-nums shrink-0">{p.winRate}%</span>
+                  <span className={`w-14 sm:w-16 text-right text-xs font-mono tabular-nums shrink-0 ${p.pnl >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
                     {p.pnl >= 0 ? "+" : ""}{p.pnl.toFixed(0)}€
                   </span>
                 </div>

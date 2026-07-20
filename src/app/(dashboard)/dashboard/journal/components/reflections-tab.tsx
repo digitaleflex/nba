@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2, Star } from "lucide-react"
-import { Button, cn } from "@nba/design-system"
+import { Loader2, Star, PenLine } from "lucide-react"
+import { Button, cn, EmptyState } from "@nba/design-system"
 import { toast } from "sonner"
 
 const MOODS = [
@@ -138,7 +138,7 @@ export function ReflectionsTab() {
       </div>
 
       {/* Historique */}
-      {reflections.length > 0 && (
+      {reflections.length > 0 ? (
         <div className="space-y-3">
           <h3 className="text-sm font-semibold">Réflexions passées</h3>
           {reflections.map(r => (
@@ -161,6 +161,14 @@ export function ReflectionsTab() {
             </div>
           ))}
         </div>
+      ) : (
+        !loading && (
+          <EmptyState
+            icon={PenLine}
+            title="Aucune réflexion passée"
+            description="Prends 2 minutes chaque jour pour noter ton état d'esprit. Les traders qui tiennent un journal progressent plus vite."
+          />
+        )
       )}
     </div>
   )

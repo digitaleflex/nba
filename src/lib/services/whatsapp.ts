@@ -1,6 +1,11 @@
+import { createCircuitBreaker, withTimeout } from "../circuit-breaker"
+
 const WHATSAPP_API_URL = process.env.WHATSAPP_API_URL
 const WHATSAPP_API_KEY = process.env.WHATSAPP_API_KEY
 const WHATSAPP_ENABLED = process.env.WHATSAPP_ENABLED !== "false"
+const WHATSAPP_TIMEOUT_MS = 10_000
+
+const whatsappBreaker = createCircuitBreaker("whatsapp", { threshold: 5, cooldownMs: 60_000 })
 
 interface WhatsAppSendResult {
   ok: boolean
@@ -23,24 +28,29 @@ export async function sendWhatsAppMessage(
   const clean = phoneNumber.replace(/[\s+()-]/g, "")
 
   try {
-    const res = await fetch(WHATSAPP_API_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${WHATSAPP_API_KEY}`,
-      },
-      body: JSON.stringify({
-        to: clean,
-        message: text,
-      }),
-    })
+    return whatsappBreaker.execute(() =>
+      withTimeout(async (signal) => {
+        const res = await fetch(WHATSAPP_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${WHATSAPP_API_KEY}`,
+          },
+          body: JSON.stringify({
+            to: clean,
+            message: text,
+          }),
+          signal,
+        })
 
-    if (!res.ok) {
-      console.warn(`[whatsapp] send failed to ${clean}: HTTP ${res.status}`)
-      return { ok: false, error: `HTTP ${res.status}` }
-    }
+        if (!res.ok) {
+          console.warn(`[whatsapp] send failed to ${clean}: HTTP ${res.status}`)
+          return { ok: false, error: `HTTP ${res.status}` }
+        }
 
-    return { ok: true }
+        return { ok: true }
+      }, WHATSAPP_TIMEOUT_MS),
+    )
   } catch (err: any) {
     console.warn(`[whatsapp] send failed to ${clean}:`, err.message)
     return { ok: false, error: err.message }

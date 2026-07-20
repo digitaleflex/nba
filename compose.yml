@@ -132,6 +132,12 @@ services:
           cpus: "1.0"
           memory: 512M
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "pgrep", "-f", "tsx workers/queue.ts"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
 
   bull-board:
     build:

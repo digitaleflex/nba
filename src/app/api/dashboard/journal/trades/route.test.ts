@@ -29,6 +29,7 @@ vi.mock("@nba/lib/db", () => ({
       },
     },
   ),
+  withRetryTransaction: vi.fn(async (fn: any) => fn(prismaMock)),
 }))
 
 vi.mock("@nba/lib/services/journal-psychology", () => ({
@@ -137,18 +138,15 @@ describe("POST /api/dashboard/journal/trades", () => {
       lotSize: 0.01,
     }
 
-    prismaMock.$transaction.mockImplementation(async (fn: any) => {
-      prismaMock.journalSession.findFirst.mockResolvedValue(null)
-      prismaMock.trade.create.mockResolvedValue({
-        id: "t1",
-        userId: USER_ID,
-        pair: "EURUSD",
-        pnl: 20,
-      })
-      prismaMock.streak.findUnique.mockResolvedValue(null)
-      prismaMock.streak.create.mockResolvedValue({})
-      return await fn(prismaMock)
+    prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.trade.create.mockResolvedValue({
+      id: "t1",
+      userId: USER_ID,
+      pair: "EURUSD",
+      pnl: 20,
     })
+    prismaMock.streak.findUnique.mockResolvedValue(null)
+    prismaMock.streak.create.mockResolvedValue({})
 
     const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))
     const json = await res.json()

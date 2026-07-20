@@ -1,11 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from "vitest"
 
-vi.mock("@nba/lib/db", () => ({
-  prisma: {
+const { mockPrisma } = vi.hoisted(() => ({
+  mockPrisma: {
     signal: { create: vi.fn(), update: vi.fn() },
     signalVersion: { create: vi.fn() },
     $transaction: vi.fn(),
-  },
+  } as any,
+}))
+
+vi.mock("@nba/lib/db", () => ({
+  prisma: mockPrisma,
+  withRetryTransaction: vi.fn(async (fn: any) => fn(mockPrisma)),
 }))
 vi.mock("@nba/lib/auth-utils", () => ({
   requirePermission: vi.fn(),
@@ -29,18 +34,15 @@ describe("createSignal", () => {
   beforeEach(() => {
     vi.clearAllMocks()
     ;(requirePermission as any).mockResolvedValue({ user: { id: ADMIN_ID } })
-    ;(prisma.$transaction as any).mockImplementation(async (fn: any) => {
-      ;(prisma.signal.create as any).mockResolvedValue({
-        id: "sig-1",
-        content: "Acheter EURUSD",
-        imageUrl: null,
-        imageUrls: [],
-        status: "PUBLISHED",
-        audience: [{ planId: PLAN_ID, plan: { name: "Forex" } }],
-      })
-      ;(prisma.signalVersion.create as any).mockResolvedValue({})
-      return await fn(prisma)
+    ;(prisma.signal.create as any).mockResolvedValue({
+      id: "sig-1",
+      content: "Acheter EURUSD",
+      imageUrl: null,
+      imageUrls: [],
+      status: "PUBLISHED",
+      audience: [{ planId: PLAN_ID, plan: { name: "Forex" } }],
     })
+    ;(prisma.signalVersion.create as any).mockResolvedValue({})
   })
 
   it("crée un signal publié et enqueue la distribution", async () => {

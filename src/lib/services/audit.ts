@@ -1,4 +1,4 @@
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { headers } from "next/headers"
 import { publishAuditEvent } from "@nba/lib/redis-pubsub"
 import { computeHash } from "@nba/lib/audit/integrity"
@@ -54,7 +54,7 @@ export async function logAuditEvent(params: {
 
   const severity = params.severity ?? inferSeverity(params.action)
 
-  const log = await prisma.$transaction(async (tx) => {
+  const log = await withRetryTransaction(async (tx) => {
     const last = await tx.auditLog.findFirst({
       where: { hash: { not: null } },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],

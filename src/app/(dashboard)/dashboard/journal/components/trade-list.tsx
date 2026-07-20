@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Plus, Search, Loader2 } from "lucide-react"
-import { Button, Input } from "@nba/design-system"
+import { Plus, Search, Loader2, BookOpen } from "lucide-react"
+import { Button, Input, EmptyState } from "@nba/design-system"
 import { TradeCard } from "./trade-card"
 
 interface Trade {
@@ -72,12 +72,12 @@ export function TradeList({ onNewTrade }: TradeListProps) {
         </Button>
 
         <div className="relative flex-1 min-w-[160px] max-w-xs">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
           <Input
             placeholder="Rechercher paire, note, tag..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="pl-8 h-8 text-xs"
+            className="pl-9 h-11 text-sm"
           />
         </div>
 
@@ -85,7 +85,7 @@ export function TradeList({ onNewTrade }: TradeListProps) {
           <select
             value={pairFilter}
             onChange={(e) => { setPairFilter(e.target.value); setPage(1) }}
-            className="rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+            className="rounded-lg border border-input bg-background px-3 py-2.5 text-xs min-h-[44px]"
           >
             <option value="">Toutes paires</option>
             {availablePairs.map(p => <option key={p} value={p}>{p}</option>)}
@@ -94,7 +94,7 @@ export function TradeList({ onNewTrade }: TradeListProps) {
         <select
           value={resultFilter}
           onChange={(e) => { setResultFilter(e.target.value); setPage(1) }}
-          className="rounded-lg border border-input bg-background px-3 py-1.5 text-xs"
+          className="rounded-lg border border-input bg-background px-3 py-2.5 text-xs min-h-[44px]"
         >
           <option value="">Tous résultats</option>
           <option value="WIN">Gagnés</option>
@@ -108,18 +108,12 @@ export function TradeList({ onNewTrade }: TradeListProps) {
           <Loader2 className="size-6 animate-spin text-primary" />
         </div>
       ) : trades.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-16 text-center text-muted-foreground">
-          <div className="size-16 rounded-full bg-muted/30 flex items-center justify-center">
-            <span className="text-3xl">📓</span>
-          </div>
-          <p className="text-sm font-medium">Aucun trade trouvé</p>
-          <p className="text-xs max-w-xs">
-            {search ? "Essaie d'autres termes de recherche." : "Ouvre un signal et clique sur \"J'ai tradé ce signal\" pour journaliser automatiquement."}
-          </p>
-          <Button variant="outline" size="sm" onClick={() => onNewTrade()}>
-            <Plus className="size-4 mr-1.5" /> Premier trade
-          </Button>
-        </div>
+        <EmptyState
+          icon={BookOpen}
+          title={search ? "Aucun résultat" : "Aucun trade"}
+          description={search ? "Essaie d'autres termes de recherche." : "Enregistre ton premier trade pour suivre ta progression. Chaque trade est une opportunité d'apprendre."}
+          action={search ? undefined : { label: "Premier trade", onClick: () => onNewTrade() }}
+        />
       ) : (
         <div className="space-y-2">
           {trades.map((trade) => (

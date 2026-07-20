@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@nba/generated/prisma/client"
+import { withRetryTransactionArray } from "@nba/lib/db"
 
 const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
 
@@ -10,7 +11,7 @@ const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth
 export async function softDeleteUser(prisma: PrismaClient, userId: string): Promise<void> {
   const suffix = Date.now().toString(36) + Math.random().toString(36).substring(2, 6)
 
-  await prisma.$transaction([
+  await withRetryTransactionArray([
     prisma.session.deleteMany({ where: { userId } }),
     prisma.user.update({
       where: { id: userId },
@@ -37,7 +38,7 @@ export async function hardDeleteUser(prisma: PrismaClient, userId: string): Prom
     where: { notification: { userId } },
   })
 
-  await prisma.$transaction([
+  await withRetryTransactionArray([
     prisma.session.deleteMany({ where: { userId } }),
     prisma.account.deleteMany({ where: { userId } }),
     prisma.accessRequest.deleteMany({ where: { userId } }),

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Card, CardContent, Button } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState } from "@nba/design-system"
 import {
   BellOff,
   BellRing,
@@ -543,17 +543,11 @@ export default function NotificationsPage() {
       )}
 
       {notifications.length === 0 ? (
-        <Card className="border-border">
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <PartyPopper className="size-10 text-muted-foreground" />
-            <div className="space-y-1">
-              <p className="font-semibold text-foreground">Aucune notification</p>
-              <p className="text-sm text-muted-foreground">
-                Vous recevrez des notifications lors de la publication de nouveaux signaux.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={PartyPopper}
+          title="Aucune notification"
+          description="Vous recevrez des notifications lors de la publication de nouveaux signaux, des mises à jour KYC et des messages."
+        />
       ) : (
         <div className="space-y-2">
           {notifications.map((n) => {

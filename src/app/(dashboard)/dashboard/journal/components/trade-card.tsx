@@ -47,7 +47,7 @@ function formatDate(iso: string) {
     d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })
 }
 
-export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => void }) {
+export function TradeCard({ trade, onDelete, onEdit }: { trade: Trade; onDelete: () => void; onEdit?: (trade: Trade) => void }) {
   const colors = RESULT_COLORS[trade.result] ?? RESULT_COLORS.BREAKEVEN
   const pnl = Number(trade.pnl) || 0
   const hasSL = trade.stopLoss && Number(trade.stopLoss) > 0
@@ -128,8 +128,13 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
         </div>
 
         <div className="flex flex-col gap-1">
-          <button onClick={handleDelete} className="size-8 flex items-center justify-center rounded-lg text-muted-foreground/40 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
-            <Trash2 className="size-3.5" />
+          {onEdit && (
+            <button onClick={() => onEdit(trade)} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors">
+              <Pencil className="size-4" />
+            </button>
+          )}
+          <button onClick={handleDelete} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 transition-colors">
+            <Trash2 className="size-4" />
           </button>
         </div>
       </div>

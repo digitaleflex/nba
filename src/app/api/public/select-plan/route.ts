@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { selectPlanSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
 import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
 import { newAccessRequestAdminEmail } from "@nba/lib/email"
@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     const parsed = validateOrThrow(selectPlanSchema, body)
 
     // Transaction pour éviter les doublons race condition
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withRetryTransaction(async (tx) => {
       // Supprimer les demandes PENDING existantes
       await tx.accessRequest.deleteMany({
         where: { userId: session.user.id, status: "PENDING" },

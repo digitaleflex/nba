@@ -23,6 +23,33 @@ connection.on("error", (err: Error) => {
   console.error("[worker] Redis connection error:", err.message)
 })
 
+// ── Dead Letter Queue ──
+export const deadLetterQueue = new Queue("dead-letter", { connection: connection as any, skipVersionCheck: true })
+
+async function sendToDeadLetter(
+  queueName: string,
+  job: any,
+  err: Error,
+) {
+  try {
+    await deadLetterQueue.add(
+      `${queueName}:${job.id}`,
+      {
+        originalQueue: queueName,
+        originalJobId: job.id,
+        jobName: job.name,
+        jobData: job.data,
+        errorMessage: err.message,
+        failedAt: new Date().toISOString(),
+      },
+      { removeOnComplete: { age: 7 * 24 * 3600 }, removeOnFail: { age: 14 * 24 * 3600 } },
+    )
+    console.warn(`[dlq] Job ${job.id} from ${queueName} moved to dead-letter queue`)
+  } catch (dlqErr: any) {
+    console.error(`[dlq] Failed to enqueue to DLQ:`, dlqErr.message)
+  }
+}
+
 // ── File Cleanup Queue ──
 export const cleanupQueue = new Queue("file-cleanup", { connection: connection as any, skipVersionCheck: true })
 
@@ -50,7 +77,13 @@ const worker = new Worker(
       await storage.delete(verif.videoFilePath).catch(() => {})
     }
   },
-  { connection: connection as any }
+  {
+    connection: connection as any,
+    stalledInterval: 30000,
+    lockDuration: 60000,
+    attempts: 3,
+    backoff: { type: "exponential", delay: 5000 },
+  }
 )
 
 worker.on("completed", (job: any) => {
@@ -59,6 +92,9 @@ worker.on("completed", (job: any) => {
 
 worker.on("failed", (job: any, err: any) => {
   console.error(`[cleanup] ${job?.id} failed:`, err.message)
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("file-cleanup", job, err)
+  }
 })
 
 console.log("🧹 File cleanup worker started")
@@ -93,7 +129,14 @@ const notificationWorker = new Worker(
       throw err
     }
   },
-  { connection: connection as any, concurrency: 10 } // Process up to 10 emails in parallel
+  {
+    connection: connection as any,
+    concurrency: 10,
+    stalledInterval: 30000,
+    lockDuration: 60000,
+    attempts: 3,
+    backoff: { type: "exponential", delay: 10_000 },
+  }
 )
 
 notificationWorker.on("completed", (job: any) => {
@@ -102,6 +145,9 @@ notificationWorker.on("completed", (job: any) => {
 
 notificationWorker.on("failed", (job: any, err: any) => {
   console.error(`[notif] ${job?.id} failed:`, err.message)
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("notification-delivery", job, err)
+  }
 })
 
 console.log("📧 Notification delivery worker started")
@@ -119,7 +165,13 @@ const signalWorker = new Worker(
       enqueueEmail: (name, data, opts) => notificationDeliveryQueue.add(name, data, opts),
     })
   },
-  { connection: connection as any }
+  {
+    connection: connection as any,
+    stalledInterval: 60000,
+    lockDuration: 120000,
+    attempts: 3,
+    backoff: { type: "exponential", delay: 15_000 },
+  }
 )
 
 signalWorker.on("completed", (job: any) => {
@@ -128,6 +180,9 @@ signalWorker.on("completed", (job: any) => {
 
 signalWorker.on("failed", (job: any, err: any) => {
   console.error(`[signal] ${job?.id} failed:`, err.message)
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("signal-distribution", job, err)
+  }
 })
 
 console.log("📈 Signal distribution worker started")

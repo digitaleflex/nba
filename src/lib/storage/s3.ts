@@ -3,6 +3,30 @@ import { Readable } from "stream"
 import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
 import { validateUpload, safeExtension } from "./validate"
 
+// ── QW5: S3 retry wrapper with exponential backoff ──
+
+const S3_RETRY_MAX = 3;
+const S3_RETRY_BASE_DELAY_MS = 500;
+const S3_RETRYABLE_ERRORS = /ECONNRESET|EPIPE|ETIMEDOUT|ECONNREFUSED|socket hang up|Network Failure/i;
+
+async function withS3Retry<T>(fn: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= S3_RETRY_MAX; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt >= S3_RETRY_MAX) throw err;
+      const msg = err instanceof Error ? err.message : "";
+      if (!S3_RETRYABLE_ERRORS.test(msg)) throw err;
+      const delay = S3_RETRY_BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(`[s3] Retry ${attempt + 1}/${S3_RETRY_MAX} after ${delay}ms:`, msg);
+      await new Promise((r) => setTimeout(r, delay));
+    }
+  }
+  throw lastError;
+}
+
 export class S3StorageProvider implements StorageProvider {
   private client: S3Client
   private bucket: string
@@ -35,12 +59,14 @@ export class S3StorageProvider implements StorageProvider {
     const key = `${subDir}/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
-    await this.client.send(new PutObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      Body: buffer,
-      ContentType: file.type,
-    }))
+    await withS3Retry(() =>
+      this.client.send(new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: file.type,
+      }))
+    )
 
     return {
       path: key,
@@ -51,10 +77,12 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async delete(path: string): Promise<void> {
-    await this.client.send(new DeleteObjectCommand({
-      Bucket: this.bucket,
-      Key: path,
-    }))
+    await withS3Retry(() =>
+      this.client.send(new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: path,
+      }))
+    )
   }
 
   getUrl(path: string): string {
@@ -64,10 +92,12 @@ export class S3StorageProvider implements StorageProvider {
 
   async exists(path: string): Promise<boolean> {
     try {
-      await this.client.send(new HeadObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }))
+      await withS3Retry(() =>
+        this.client.send(new HeadObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }))
+      )
       return true
     } catch {
       return false
@@ -75,10 +105,12 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async read(path: string): Promise<FileStreamResult> {
-    const response = await this.client.send(new GetObjectCommand({
-      Bucket: this.bucket,
-      Key: path,
-    }))
+    const response = await withS3Retry(() =>
+      this.client.send(new GetObjectCommand({
+        Bucket: this.bucket,
+        Key: path,
+      }))
+    )
 
     if (!response.Body) {
       throw new Error("Contenu du fichier vide")

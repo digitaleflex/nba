@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransactionArray } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(req: NextRequest) {
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")))
     const skip = (page - 1) * limit
 
-    const [total, unreadCount, notifications] = await prisma.$transaction([
+    const [total, unreadCount, notifications] = await withRetryTransactionArray([
       prisma.notification.count({ where: { userId: session.user.id } }),
       prisma.notification.count({ where: { userId: session.user.id, readAt: null } }),
       prisma.notification.findMany({
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         skip,
         take: limit,
       }),
-    ])
+    ]) as [number, number, typeof notifications]
 
     return NextResponse.json({
       notifications,

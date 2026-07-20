@@ -105,7 +105,7 @@ export async function GET(request: NextRequest) {
     const profitFactor = grossLoss > 0 ? Math.round((grossProfit / grossLoss) * 100) / 100 : grossProfit > 0 ? Infinity : 0
     const avgWinner = winTrades.length > 0 ? Math.round((grossProfit / winTrades.length) * 100) / 100 : 0
     const avgLoser = lossTrades.length > 0 ? Math.round((grossLoss / lossTrades.length) * 100) / 100 : 0
-    const riskRewardRatio = avgWinner > 0 ? Math.round((avgLoser / avgWinner) * 100) / 100 : 0
+    const riskRewardRatio = avgLoser > 0 ? Math.round((avgWinner / avgLoser) * 100) / 100 : 0
     const winRateDecimal = total > 0 ? wins / total : 0
     const lossRateDecimal = total > 0 ? losses / total : 0
     const expectancy = avgLoser > 0

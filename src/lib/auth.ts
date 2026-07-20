@@ -21,6 +21,7 @@ export const auth = betterAuth({
   session: {
     modelName: "session",
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
+    updateAge: 60 * 60 * 24, // refresh token toutes les 24h (stale session prevention)
     cookie: {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",

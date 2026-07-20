@@ -3,6 +3,21 @@ import { PrismaPg } from "@prisma/adapter-pg";
 
 const DEFAULT_ROLE_NAME = "MEMBER";
 
+// ── Prisma error codes eligible for retry ──
+const RETRYABLE_PRISA_CODES = new Set([
+  "P2028", // Transaction timeout
+  "P2034", // Deadlock / serialization failure
+  "P1017", // Server closed connection
+]);
+
+function isRetryableTransactionError(err: unknown): boolean {
+  if (err && typeof err === "object" && "code" in err) {
+    return RETRYABLE_PRISA_CODES.has((err as { code: string }).code);
+  }
+  const msg = err instanceof Error ? err.message : "";
+  return /ECONNRESET|EPIPE|ETIMEDOUT|connection closed/i.test(msg);
+}
+
 function createPrismaClient() {
   const base = new PrismaClient({
     adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
@@ -38,4 +53,77 @@ export const prisma = globalForPrisma.prisma ?? createPrismaClient();
 
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
+}
+
+// ── QW1: Retry Prisma transactions with exponential backoff ──
+
+const TRANSACTION_MAX_RETRIES = 3;
+const TRANSACTION_BASE_DELAY_MS = 1000;
+
+/**
+ * Wraps prisma.$transaction with automatic retry on transient errors
+ * (deadlock, timeout, connection lost). Uses exponential backoff.
+ *
+ * @example
+ * const result = await withRetryTransaction((tx) =>
+ *   tx.user.update({ where: { id }, data: { name: "New" } })
+ * );
+ */
+export async function withRetryTransaction<T>(
+  fn: (tx: any) => Promise<T>,
+  maxRetries = TRANSACTION_MAX_RETRIES,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await prisma.$transaction(fn);
+    } catch (err) {
+      lastError = err;
+
+      if (attempt >= maxRetries || !isRetryableTransactionError(err)) {
+        throw err;
+      }
+
+      const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(
+        `[db] Transaction retry ${attempt + 1}/${maxRetries} after ${delay}ms:`,
+        err instanceof Error ? err.message : err,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
+}
+
+/**
+ * Wraps prisma.$transaction (array syntax) with automatic retry.
+ */
+export async function withRetryTransactionArray<T>(
+  operations: any[],
+  maxRetries = TRANSACTION_MAX_RETRIES,
+): Promise<T> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await prisma.$transaction(operations) as T;
+    } catch (err) {
+      lastError = err;
+
+      if (attempt >= maxRetries || !isRetryableTransactionError(err)) {
+        throw err;
+      }
+
+      const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
+      console.warn(
+        `[db] Transaction array retry ${attempt + 1}/${maxRetries} after ${delay}ms:`,
+        err instanceof Error ? err.message : err,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError;
 }

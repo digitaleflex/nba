@@ -1,4 +1,4 @@
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOtp } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 import { sendPushToUser } from "./push"
@@ -193,7 +193,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
       const queue = getQueue("notification-delivery")
       const { to, subject, html } = params.email
 
-      await prisma.$transaction(async (tx) => {
+      await withRetryTransaction(async (tx) => {
         const delivery = await tx.notificationDelivery.create({
           data: {
             notificationId: notification.id,

@@ -1,4 +1,4 @@
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { signalUpdateSchema } from "../validators/signal-schema"
 import { AuthError } from "@nba/lib/auth-utils"
 import { canUpdateSignal } from "../policies/signal-policy"
@@ -76,7 +76,7 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
     }
   }
 
-  const [updatedSignal] = await prisma.$transaction(async (tx) => {
+  const [updatedSignal] = await withRetryTransaction(async (tx) => {
     const s = await tx.signal.update({
       where: { id },
       data: updateData,

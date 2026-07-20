@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { checkPsychology } from "@nba/lib/services/journal-psychology"
-import { calculatePnl } from "@nba/lib/services/pnl"
+import { calculatePnl, calculateRR } from "@nba/lib/services/pnl"
 import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
 
 const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
@@ -113,8 +113,18 @@ export async function GET(request: NextRequest) {
       tradeCount: activeSession._count.trades,
     } : null
 
+    const tradesWithRR = trades.map(trade => ({
+      ...trade,
+      rrRatio: calculateRR({
+        entryPrice: Number(trade.entryPrice),
+        stopLoss: trade.stopLoss ? Number(trade.stopLoss) : null,
+        takeProfit: trade.takeProfit ? Number(trade.takeProfit) : null,
+        direction: trade.direction as "BUY" | "SELL",
+      }),
+    }))
+
     return NextResponse.json({
-      trades,
+      trades: tradesWithRR,
       pagination: { page, totalPages: Math.ceil(total / limit), totalCount: total },
       filters: { pairs: pairs.map(p => p.pair) },
       activeSession: activeSessionSummary,
@@ -135,6 +145,33 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const parsed = tradeCreateSchema.parse(body)
 
+    if (parsed.result !== "BREAKEVEN") {
+      if (parsed.stopLoss !== undefined) {
+        if (parsed.direction === "BUY" && parsed.stopLoss >= parsed.entryPrice) {
+          return NextResponse.json({ error: "Le Stop Loss doit être inférieur au prix d'entrée en position ACHETER" }, { status: 400 })
+        }
+        if (parsed.direction === "SELL" && parsed.stopLoss <= parsed.entryPrice) {
+          return NextResponse.json({ error: "Le Stop Loss doit être supérieur au prix d'entrée en position VENDRE" }, { status: 400 })
+        }
+      }
+      if (parsed.takeProfit !== undefined) {
+        if (parsed.direction === "BUY" && parsed.takeProfit <= parsed.entryPrice) {
+          return NextResponse.json({ error: "Le Take Profit doit être supérieur au prix d'entrée en position ACHETER" }, { status: 400 })
+        }
+        if (parsed.direction === "SELL" && parsed.takeProfit >= parsed.entryPrice) {
+          return NextResponse.json({ error: "Le Take Profit doit être inférieur au prix d'entrée en position VENDRE" }, { status: 400 })
+        }
+      }
+      if (parsed.stopLoss !== undefined && parsed.takeProfit !== undefined) {
+        if (parsed.direction === "BUY" && parsed.stopLoss >= parsed.takeProfit) {
+          return NextResponse.json({ error: "Le Stop Loss doit être inférieur au Take Profit en position ACHETER" }, { status: 400 })
+        }
+        if (parsed.direction === "SELL" && parsed.stopLoss <= parsed.takeProfit) {
+          return NextResponse.json({ error: "Le Stop Loss doit être supérieur au Take Profit en position VENDRE" }, { status: 400 })
+        }
+      }
+    }
+
     const pnl = calculatePnl({
       pair: parsed.pair,
       entryPrice: parsed.entryPrice,
@@ -147,7 +184,7 @@ export async function POST(request: NextRequest) {
       swap: parsed.swap,
     })
 
-    const created = await prisma.$transaction(async (tx) => {
+    const created = await withRetryTransaction(async (tx) => {
       const activeSession = await tx.journalSession.findFirst({
         where: { userId: session.user.id, isActive: true },
       })

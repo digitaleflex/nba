@@ -1,4 +1,4 @@
-import { prisma } from "@nba/lib/db"
+import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { signalCreateSchema } from "../validators/signal-schema"
 import { requirePermission } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
@@ -23,7 +23,7 @@ export async function createSignal(input: CreateSignalInput) {
   const initialStatus = isScheduled ? "DRAFT" : parsed.status
   const imageUrl = parsed.imageUrls?.[0] ?? parsed.imageUrl ?? null
 
-  const [signal] = await prisma.$transaction(async (tx) => {
+  const [signal] = await withRetryTransaction(async (tx) => {
     const s = await tx.signal.create({
       data: {
         content: parsed.content,

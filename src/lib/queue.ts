@@ -116,4 +116,5 @@ export async function scheduleFileCleanup(type: "kyc" | "broker", id: string) {
 export const fileCleanupQueue = getQueue("file-cleanup");
 export const signalDistributionQueue = getQueue("signal-distribution");
 export const notificationDeliveryQueue = getQueue("notification-delivery");
+export const deadLetterQueue = getQueue("dead-letter");
 export { getRedisConnection, getQueue, queueEnabled };

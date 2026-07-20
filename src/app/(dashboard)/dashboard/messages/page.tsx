@@ -6,7 +6,7 @@ import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
-import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
+import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState } from "@nba/design-system"
 import { MessageSquare, Loader2, Search, Plus, X, Circle, Send, ArrowLeft, ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 
@@ -492,14 +492,13 @@ export default function MessagesPage() {
                     <Loader2 className="size-6 animate-spin text-primary" />
                   </div>
                 ) : filteredConversations.length === 0 ? (
-                  <div className="flex flex-col items-center gap-2 py-16 text-center px-4">
-                    <MessageSquare className="size-8 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">
-                      {conversations.length === 0
-                        ? "Aucune conversation pour le moment."
-                        : "Aucun résultat."}
-                    </p>
-                  </div>
+                  <EmptyState
+                    icon={MessageSquare}
+                    title={conversations.length === 0 ? "Aucune conversation" : "Aucun résultat"}
+                    description={conversations.length === 0
+                      ? "Contacte le support ou un admin pour démarrer une conversation."
+                      : "Aucune conversation ne correspond à ta recherche."}
+                  />
                 ) : (
                   filteredConversations.map((c) => (
                     <button

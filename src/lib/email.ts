@@ -1,5 +1,9 @@
 import { Resend } from "resend"
 import { prisma } from "./db"
+import { createCircuitBreaker, withTimeout } from "./circuit-breaker"
+
+const emailBreaker = createCircuitBreaker("resend", { threshold: 5, cooldownMs: 60_000 })
+const EMAIL_TIMEOUT_MS = 10_000
 
 function getResend(): Resend {
   const key = process.env.RESEND_API_KEY
@@ -1013,12 +1017,18 @@ export async function sendEmail(
 
   try {
     const resend = getResend()
-    const { data, error } = await resend.emails.send({
-      from: FROM,
-      to,
-      subject: template.subject,
-      html: template.html,
-    })
+    const { data, error } = await emailBreaker.execute(() =>
+      withTimeout(
+        (signal) =>
+          resend.emails.send({
+            from: FROM,
+            to,
+            subject: template.subject,
+            html: template.html,
+          }),
+        EMAIL_TIMEOUT_MS,
+      ),
+    )
 
     if (error) {
       throw new Error(typeof error === "string" ? error : error.message)
