@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { deleteOldAuditLogs } from "@nba/lib/services/audit"
 
 const cleanupRateLimit = rateLimitMiddleware({ window: 600, max: 1 })
 
@@ -23,10 +24,7 @@ export async function POST(req: NextRequest) {
 
     const results: Record<string, number> = {}
 
-    const auditDeleted = await prisma.auditLog.deleteMany({
-      where: { createdAt: { lt: auditCutoff } },
-    })
-    results.auditLogs = auditDeleted.count
+    results.auditLogs = await deleteOldAuditLogs(auditCutoff)
 
     const kycDocuments = await prisma.kycDocument.findMany({
       where: { createdAt: { lt: kycCutoff }, status: "REJECTED" },
