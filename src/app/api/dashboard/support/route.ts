@@ -18,22 +18,22 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { subject, message } = validateOrThrow(supportSchema, body)
 
-    // Notifier les admins
-    const admins = await prisma.user.findMany({
-      where: {
-        role: { name: { in: ["ADMIN", "SUPER_ADMIN"] } },
-      },
+    // Créer UN ticket unique (pas une notif par admin)
+    // On l'assigne au premier admin pour qu'il apparaisse dans /api/admin/support
+    const firstAdmin = await prisma.user.findFirst({
+      where: { role: { name: { in: ["ADMIN", "SUPER_ADMIN"] } } },
       select: { id: true },
+      orderBy: { createdAt: "asc" },
     })
 
-    await prisma.notification.createMany({
-      data: admins.map((admin) => ({
-        userId: admin.id,
+    await prisma.notification.create({
+      data: {
+        userId: firstAdmin?.id ?? session.user.id,
         type: "support",
         title: `Support de ${session.user.email}`,
         body: `[${subject}] ${message}`,
-        data: { userId: session.user.id, subject, message },
-      })),
+        data: { userId: session.user.id, userEmail: session.user.email, userName: session.user.name, subject, message },
+      },
     })
 
     // Envoyer un email à l'équipe support
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         html: template.html,
       })
     } catch {
-      // L'email est optionnel, on ignore l'erreur
+      // L'email est optionnel
     }
 
     return NextResponse.json({ success: true })

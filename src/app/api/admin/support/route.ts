@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 
@@ -14,8 +14,11 @@ export async function GET() {
         id: true,
         title: true,
         body: true,
-        createdAt: true,
         data: true,
+        createdAt: true,
+        user: {
+          select: { id: true, name: true, email: true },
+        },
       },
     })
 
