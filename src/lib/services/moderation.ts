@@ -63,7 +63,7 @@ export async function banEmail(entry: {
       details: { reason: entry.reason, bannedBy: entry.bannedBy } as any,
     },
   }).catch((err) => {
-    log.warn({ err, email: entry.email }, "Failed to create ban audit log")
+    log.warn({ err, email: entry.email, errorCode: "DATABASE_ERROR" }, "Failed to create ban audit log")
   })
 }
 
@@ -80,7 +80,7 @@ export async function unbanEmail(email: string): Promise<void> {
       details: {} as any,
     },
   }).catch((err) => {
-    log.warn({ err, email }, "Failed to create unban audit log")
+    log.warn({ err, email, errorCode: "DATABASE_ERROR" }, "Failed to create unban audit log")
   })
 }
 

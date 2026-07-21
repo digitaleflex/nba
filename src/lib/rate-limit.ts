@@ -85,7 +85,7 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
     const key = `${identifier}:${ip}`
     const result = await checkRateLimit(key, config)
     if (!result.allowed) {
-      log.warn({ key, ip, identifier }, "Rate limit exceeded")
+      log.warn({ key, ip, identifier, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
       return new Response(JSON.stringify({ error: "Trop de requêtes. Réessayez plus tard." }), {
         status: 429,
         headers: {

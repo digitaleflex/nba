@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
         userAgent,
       },
     }).catch((err) => {
-      log.warn({ err, email }, "Failed to log audit event for failed sign-in")
+      log.warn({ err, email, errorCode: "DATABASE_ERROR" }, "Failed to log audit event for failed sign-in")
     })
 
     return NextResponse.json({ message }, { status: 401 })

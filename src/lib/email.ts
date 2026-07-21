@@ -1045,7 +1045,7 @@ export async function sendEmail(
           return `dev-${Date.now()}`
         }
       }
-      log.error({ err, to }, "Failed to send email")
+      log.error({ err, to, errorCode: "INTEGRATION_ERROR" }, "Failed to send email")
       throw err
     }
 }

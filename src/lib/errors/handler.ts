@@ -73,7 +73,7 @@ export async function handleError(
   // 2. Prisma known request errors → map to business codes
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     const errorId = generateErrorId()
-    log.error({ prismaCode: error.code, route, errorId }, error.message)
+    log.error({ prismaCode: error.code, route, errorId, errorCode: ErrorCode.DATABASE_ERROR }, error.message)
     const isRetryable = RETRYABLE_PRISMA_CODES.has(error.code)
     switch (error.code) {
       case "P2025":
@@ -111,7 +111,7 @@ export async function handleError(
   // 3. Prisma validation error
   if (error instanceof Prisma.PrismaClientValidationError) {
     const errorId = generateErrorId()
-    log.error({ route, errorId }, error.message)
+    log.error({ route, errorId, errorCode: ErrorCode.VALIDATION_ERROR }, error.message)
     return buildResponse(400, {
       code: ErrorCode.VALIDATION_ERROR,
       message: msg.validation.INVALID_REQUEST,
@@ -123,7 +123,7 @@ export async function handleError(
   // 4. Prisma initialization error (DB down)
   if (error instanceof Prisma.PrismaClientInitializationError) {
     const errorId = generateErrorId()
-    log.error({ route, errorId }, error.message)
+    log.error({ route, errorId, errorCode: ErrorCode.DATABASE_CONNECTION }, error.message)
     return buildResponse(503, {
       code: ErrorCode.DATABASE_CONNECTION,
       message: msg.validation.DB_UNAVAILABLE,
@@ -142,7 +142,7 @@ export async function handleError(
       if (!details[path]) details[path] = []
       details[path].push(issue.message)
     }
-    log.warn({ route, errorId, issues: error.issues.length }, "Validation error")
+    log.warn({ route, errorId, issues: error.issues.length, errorCode: ErrorCode.VALIDATION_ERROR }, "Validation error")
     return buildResponse(400, {
       code: ErrorCode.VALIDATION_ERROR,
       message: msg.validation.INVALID_DATA,
@@ -155,7 +155,7 @@ export async function handleError(
   // 6. Unknown errors → 500 with errorId
   const errorId = generateErrorId()
   const message = error instanceof Error ? error.message : String(error)
-  log.error({ route, errorId, err: error instanceof Error ? { message: error.message, stack: error.stack } : error }, "Unhandled error")
+  log.error({ route, errorId, errorCode: ErrorCode.INTERNAL_ERROR, err: error instanceof Error ? { message: error.message, stack: error.stack } : error }, "Unhandled error")
   return buildResponse(500, {
     code: ErrorCode.INTERNAL_ERROR,
     message: msg.validation.UNEXPECTED_ERROR,

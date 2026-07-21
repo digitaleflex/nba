@@ -44,7 +44,7 @@ export async function sendTelegramMessage(
   })
 
   if (!result.ok) {
-    log.warn({ chatId, description: (result as any).description }, "Telegram send failed")
+    log.warn({ chatId, description: (result as any).description, errorCode: "INTEGRATION_ERROR" }, "Telegram send failed")
     return { ok: false, error: (result as any).description }
   }
 
@@ -60,6 +60,6 @@ export async function deleteTelegramChat(chatId: string): Promise<void> {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId }),
   }).catch((err) => {
-    log.warn({ err, chatId }, "Telegram deleteChat failed")
+    log.warn({ err, chatId, errorCode: "INTEGRATION_ERROR" }, "Telegram deleteChat failed")
   })
 }

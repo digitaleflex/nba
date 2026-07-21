@@ -17,7 +17,7 @@ async function withQueue<T>(name: string, fn: (q: Queue) => Promise<T>): Promise
     return await fn(queue)
   } finally {
     await queue.close().catch((err) => {
-      log.warn({ err, queueName: name }, "Failed to close queue connection")
+      log.warn({ err, queueName: name, errorCode: "DATABASE_CONNECTION" }, "Failed to close queue connection")
     })
     connection.disconnect()
   }
@@ -40,7 +40,7 @@ export async function GET() {
             "paused",
           )
           await queue.close().catch((err) => {
-            log.warn({ err, queueName: name }, "Failed to close queue connection in GET")
+            log.warn({ err, queueName: name, errorCode: "DATABASE_CONNECTION" }, "Failed to close queue connection in GET")
           })
           q.disconnect()
           return { name, ...counts }

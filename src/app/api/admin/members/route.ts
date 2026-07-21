@@ -177,7 +177,7 @@ export async function PUT(request: NextRequest) {
           const redis = getRedisConnection()
           if (redis) await redis.publish("nba:ws:control", `reset:${userId}`)
         } catch {
-          log.warn({ userId }, "Failed to publish WS reset on role change")
+          log.warn({ userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on role change")
         }
       }
     }
@@ -191,7 +191,7 @@ export async function PUT(request: NextRequest) {
           await redis.publish("nba:ws:control", `reset:${userId}`)
         }
       } catch {
-        log.warn({ userId }, "Failed to publish WS reset on suspension")
+        log.warn({ userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on suspension")
       }
     }
 

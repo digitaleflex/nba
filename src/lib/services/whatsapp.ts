@@ -55,7 +55,7 @@ export async function sendWhatsAppMessage(
       }, WHATSAPP_TIMEOUT_MS),
     )
   } catch (err: any) {
-    log.warn({ to: clean, err: err.message }, "WhatsApp send failed")
+    log.warn({ to: clean, errorCode: "INTEGRATION_ERROR", err: err.message }, "WhatsApp send failed")
     return { ok: false, error: err.message }
   }
 }

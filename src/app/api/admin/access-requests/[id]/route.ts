@@ -101,7 +101,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           await redis.publish("nba:ws:control", `reset:${request.userId}`)
         }
       } catch {
-        log.warn({ userId: request.userId }, "Failed to publish WS reset on access request rejection")
+        log.warn({ userId: request.userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on access request rejection")
       }
     }
 

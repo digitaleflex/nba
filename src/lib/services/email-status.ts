@@ -145,7 +145,7 @@ export async function markUserComplained(
         await redis.publish("nba:ws:control", `reset:${userId}`)
       }
     } catch {
-      log.warn({ userId }, "Failed to publish WS disconnect for email status change")
+      log.warn({ userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS disconnect for email status change")
     }
 
     await logAuditEvent({

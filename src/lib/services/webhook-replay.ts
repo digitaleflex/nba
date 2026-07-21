@@ -81,11 +81,11 @@ export async function replayEmailEvent(args: {
     })
     if (type === "email.bounced") {
       await markUserBounced(externalId).catch((err) => {
-        log.warn({ err, externalId }, "markUserBounced failed during replay")
+        log.warn({ err, externalId, errorCode: "INTEGRATION_ERROR" }, "markUserBounced failed during replay")
       })
     } else {
       await markUserComplained(externalId).catch((err) => {
-        log.warn({ err, externalId }, "markUserComplained failed during replay")
+        log.warn({ err, externalId, errorCode: "INTEGRATION_ERROR" }, "markUserComplained failed during replay")
       })
     }
     const to = Array.isArray(event.data?.to) ? event.data.to.join(", ") : String(event.data?.to ?? "")
