@@ -4,6 +4,7 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { notify } from "@nba/lib/services/notifications"
 import { emailChangedEmail } from "@nba/lib/email"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, changeEmailSchema } from "@nba/lib/validations"
 
 const emailChangeRateLimit = rateLimitMiddleware({ window: 3600, max: 3 })
 
@@ -16,16 +17,7 @@ export async function PUT(request: Request) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
-    const { newEmail, currentPassword } = body
-
-    if (!newEmail || !currentPassword) {
-      return NextResponse.json({ error: "Nouvel email et mot de passe actuel requis" }, { status: 400 })
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newEmail)) {
-      return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 })
-    }
+    const { newEmail, currentPassword } = validateOrThrow(changeEmailSchema, body)
 
     const account = await prisma.account.findFirst({
       where: { userId: session.user.id, providerId: "credential" },

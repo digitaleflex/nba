@@ -4,6 +4,7 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { Resend } from "resend"
 import { supportTicketEmail } from "@nba/lib/email"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, supportSchema } from "@nba/lib/validations"
 
 const supportRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -14,11 +15,8 @@ export async function POST(req: NextRequest) {
     const rateLimitRes = await supportRateLimit(req, `support:${session.user.id}`)
     if (rateLimitRes) return rateLimitRes
 
-    const { subject, message } = await req.json()
-
-    if (!subject?.trim() || !message?.trim()) {
-      return NextResponse.json({ error: "Sujet et message requis" }, { status: 400 })
-    }
+    const body = await req.json()
+    const { subject, message } = validateOrThrow(supportSchema, body)
 
     // Notifier les admins
     const admins = await prisma.user.findMany({

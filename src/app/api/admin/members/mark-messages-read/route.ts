@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { validateOrThrow, memberQuerySchema } from "@nba/lib/validations"
 import { prisma } from "@nba/lib/db"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
@@ -7,10 +8,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const { userId } = await request.json()
-    if (!userId) {
-      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
-    }
+    const { userId } = validateOrThrow(memberQuerySchema, await request.json())
 
     const participants = await prisma.conversationParticipant.findMany({
       where: { userId },

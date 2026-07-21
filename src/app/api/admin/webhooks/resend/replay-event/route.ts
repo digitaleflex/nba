@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { replayEmailEvent } from "@nba/lib/services/webhook-replay"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { validateOrThrow, replayEventSchema } from "@nba/lib/validations"
 import { serverError } from "@nba/lib/api-error"
 
 /**
@@ -19,10 +20,7 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requirePermission("admin.webhooks.dlq")
     const body = await req.json()
-    const eventId = body?.eventId as string | undefined
-    if (!eventId) {
-      return NextResponse.json({ error: "eventId is required" }, { status: 400 })
-    }
+    const { eventId } = validateOrThrow(replayEventSchema, body)
 
     const event = await prisma.emailEvent.findUnique({ where: { id: eventId } })
     if (!event) {

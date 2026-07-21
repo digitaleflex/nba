@@ -3,6 +3,7 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { prisma } from "@nba/lib/db"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, verifyOtpSchema } from "@nba/lib/validations"
 
 const verifyRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
@@ -15,11 +16,7 @@ export async function POST(req: NextRequest) {
     const { email, id } = session.user
 
     const body = await req.json()
-    const { code } = body
-
-    if (!code || code.length !== 6) {
-      return errorResponse(400, ErrorCode.VALIDATION_ERROR, "Code invalide")
-    }
+    const { code } = validateOrThrow(verifyOtpSchema, body)
 
     // Trouver le code
     const verification = await prisma.verification.findFirst({

@@ -4,13 +4,14 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { validateOrThrow, smtpSettingsSchema } from "@nba/lib/validations"
 
 export async function PUT(request: Request) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     const body = await request.json()
-    const { smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom } = body
+    const { smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom } = validateOrThrow(smtpSettingsSchema, body)
 
     const settings = [
       { key: "smtp_host", value: smtpHost || "" },

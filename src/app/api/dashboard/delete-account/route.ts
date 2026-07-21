@@ -7,6 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { softDeleteUser } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
 
 const log = logger.child({ module: "delete-account" })
 
@@ -22,11 +23,7 @@ export async function DELETE(request: Request) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
-    const { password } = body
-
-    if (!password) {
-      return NextResponse.json({ error: "Mot de passe requis pour supprimer le compte" }, { status: 400 })
-    }
+    const { password } = validateOrThrow(deleteAccountSchema, body)
 
     const [user, account] = await Promise.all([
       prisma.user.findUnique({

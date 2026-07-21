@@ -109,6 +109,101 @@ export const reviewDocumentSchema = z.object({
   notes: z.string().optional(),
 })
 
+export const supportSchema = z.object({
+  subject: z.string().trim().min(1, "Sujet requis").max(200, "Sujet trop long"),
+  message: z.string().trim().min(1, "Message requis").max(5000, "Message trop long"),
+})
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, "Mot de passe actuel requis"),
+  newPassword: z.string().min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères").max(128),
+})
+
+export const changeEmailSchema = z.object({
+  newEmail: z.string().email("Email invalide"),
+  currentPassword: z.string().min(1, "Mot de passe requis"),
+})
+
+export const deviceVerifySchema = z.object({
+  code: z.string().min(1, "Code requis"),
+})
+
+export const deviceRenameSchema = z.object({
+  deviceId: z.string().min(1, "ID de périphérique requis"),
+  name: z.string().min(1, "Nom requis").max(100),
+})
+
+export const deviceDeleteSchema = z.object({
+  deviceId: z.string().optional(),
+  revokeOthers: z.boolean().optional(),
+})
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, "Mot de passe requis"),
+})
+
+export const memberUpdateSchema = z.object({
+  userId: z.string().min(1, "ID utilisateur requis"),
+  isActive: z.boolean().optional(),
+  roleId: z.string().optional(),
+  onboardingStatus: z.string().optional(),
+  signalsAccessOverride: z.boolean().optional(),
+  emailStatus: z.string().optional(),
+})
+
+export const memberQuerySchema = z.object({
+  userId: z.string().min(1, "ID utilisateur requis"),
+})
+
+export const adminNotificationSchema = z.object({
+  title: z.string().trim().min(1, "Titre requis").max(200),
+  content: z.string().trim().min(1, "Contenu requis").max(5000),
+  userId: z.string().uuid("ID utilisateur invalide").optional(),
+})
+
+export const banUserSchema = z.object({
+  email: z.string().email("Email invalide"),
+  reason: z.string().trim().min(1, "Motif requis").max(500),
+})
+
+export const unbanUserSchema = z.object({
+  email: z.string().email("Email invalide"),
+})
+
+export const replayEventSchema = z.object({
+  eventId: z.string().min(1, "ID d'événement requis"),
+})
+
+export const smtpSettingsSchema = z.object({
+  smtpHost: z.string().optional(),
+  smtpPort: z.string().optional(),
+  smtpTls: z.string().optional(),
+  smtpUser: z.string().optional(),
+  smtpPass: z.string().optional(),
+  smtpFrom: z.string().optional(),
+})
+
+export const queueRetrySchema = z.object({
+  name: z.string().optional(),
+})
+
+export const verifyOtpSchema = z.object({
+  code: z.string().length(6, "Le code doit contenir 6 caractères"),
+})
+
+export const pushSubscribeSchema = z.object({
+  endpoint: z.string().min(1, "Endpoint requis"),
+  keys: z.object({
+    p256dh: z.string().min(1, "Clé p256dh requise"),
+    auth: z.string().min(1, "Clé auth requise"),
+  }),
+  userAgent: z.string().optional(),
+})
+
+export const pushUnsubscribeSchema = z.object({
+  endpoint: z.string().min(1, "Endpoint requis"),
+})
+
 export function validateOrThrow<T>(schema: z.ZodSchema<T>, data: unknown): T {
   const result = schema.safeParse(data)
   if (!result.success) {

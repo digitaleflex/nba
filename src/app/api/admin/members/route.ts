@@ -5,6 +5,7 @@ import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
+import { validateOrThrow, memberUpdateSchema, memberQuerySchema } from "@nba/lib/validations"
 import { getRedisConnection } from "@nba/lib/queue"
 
 const log = logger.child({ module: "admin-members" })
@@ -127,12 +128,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const body = await request.json()
-    const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = body
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
-    }
+    const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = validateOrThrow(memberUpdateSchema, await request.json())
 
     const data: Record<string, any> = {}
     if (typeof isActive === "boolean") {
@@ -224,11 +220,7 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-
-    if (!userId) {
-      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
-    }
+    const { userId } = validateOrThrow(memberQuerySchema, { userId: searchParams.get("userId") })
 
     const user = await prisma.user.findUnique({
       where: { id: userId },

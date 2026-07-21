@@ -12,6 +12,7 @@ import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
 const log = logger.child({ module: "admin-notifications" })
 import { serverError } from "@nba/lib/api-error"
+import { validateOrThrow, adminNotificationSchema } from "@nba/lib/validations"
 
 const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
@@ -36,11 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { title, content, userId } = body
-
-    if (!title || !content) {
-      return NextResponse.json({ error: "Titre et contenu requis" }, { status: 400 })
-    }
+    const { title, content, userId } = validateOrThrow(adminNotificationSchema, body)
 
     const rateLimitId = userId ? `notif:${userId}` : "notif:broadcast"
     const requestClone = new Request(request.url, { headers: request.headers })
