@@ -1,10 +1,11 @@
-"use client"
+  "use client"
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import { motion } from "motion/react"
 import { Card, CardContent, Badge, Input, Button, cn, EmptyState } from "@nba/design-system"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
+import { ArrowRight } from "lucide-react"
 import {
   Radio,
   Search,
@@ -109,14 +110,14 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
     <Comp
       {...(justArrived ? { initial: { x: 20, opacity: 0 }, animate: { x: 0, opacity: 1 }, transition: { duration: 0.3 } } : {})}
     >
-    <Link href={`/dashboard/signals/${signal.id}`} className="block">
+    <Link href={`/dashboard/signals/${signal.id}`} className="block group">
       <Card className={cn(
         "relative overflow-hidden border border-border/50 bg-card hover:border-primary/30 hover:shadow-sm transition-all duration-200 cursor-pointer",
         justArrived && "ring-2 ring-primary/60"
       )}>
         {!signal.read && (
           <div className="absolute right-3 top-3 z-10">
-            <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5 animate-pulse">
+            <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5 animate-[bounce_1s_ease-in-out_infinite]">
               Nouveau
             </Badge>
           </div>
@@ -173,6 +174,13 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
                 loading="lazy"
                 className="absolute inset-0 w-full h-full object-cover"
               />
+            </div>
+          )}
+
+          {!signal.read && (
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary animate-[fadeIn_0.5s_ease-in] group-hover:gap-2 transition-all">
+              Cliquez pour voir le détail
+              <ArrowRight className="size-3.5 animate-[bounce_1s_ease-in-out_infinite]" />
             </div>
           )}
         </CardContent>

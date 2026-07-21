@@ -1,6 +1,7 @@
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
+import { canViewSignal, canUpdateSignal } from "../policies/signal-policy"
 
 interface SignalPagination {
   page?: number
@@ -141,8 +142,6 @@ export async function deleteSignal(id: string) {
     },
   })
 }
-
-import { canViewSignal, canUpdateSignal } from "../policies/signal-policy"
 
 export async function getSignalById(id: string) {
   const session = await getServerSession()

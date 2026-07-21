@@ -113,10 +113,9 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     where.favorites = { some: { userId: session.user.id } }
   }
 
-  // Exclure les archives par défaut, sauf si on demande explicitement l'onglet archive
   if (filter === "archive") {
     where.archives = { some: { userId: session.user.id } }
-  } else {
+  } else if (filter !== "favorite") {
     where.archives = { none: { userId: session.user.id } }
   }
 

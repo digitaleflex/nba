@@ -8,7 +8,26 @@ import { readFile } from "fs/promises"
 import { join } from "path"
 
 const STORAGE_BASE_PATH = process.cwd() + "/storage"
-const imageCache = new Map<string, Promise<string | null>>()
+const imageCache = new Map<string, { promise: Promise<string | null>; expiresAt: number }>()
+const IMAGE_CACHE_TTL = 60 * 60 * 1000
+
+function getCachedImage(imageUrl: string): Promise<string | null> | undefined {
+  const entry = imageCache.get(imageUrl)
+  if (!entry) return undefined
+  if (Date.now() > entry.expiresAt) {
+    imageCache.delete(imageUrl)
+    return undefined
+  }
+  return entry.promise
+}
+
+function setCachedImage(imageUrl: string, promise: Promise<string | null>) {
+  if (imageCache.size > 100) {
+    const oldest = imageCache.entries().next().value
+    if (oldest) imageCache.delete(oldest[0])
+  }
+  imageCache.set(imageUrl, { promise, expiresAt: Date.now() + IMAGE_CACHE_TTL })
+}
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -93,10 +112,10 @@ async function readImageAsDataUri(path: string): Promise<string | null> {
 
 function getImageDataUri(imageUrl: string | null): Promise<string | null> {
   if (!imageUrl) return Promise.resolve(null)
-  const existing = imageCache.get(imageUrl)
+  const existing = getCachedImage(imageUrl)
   if (existing) return existing
   const promise = readImageAsDataUri(imageUrl)
-  imageCache.set(imageUrl, promise)
+  setCachedImage(imageUrl, promise)
   return promise
 }
 
