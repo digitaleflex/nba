@@ -1,11 +1,12 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { Loader2, MailQuestion } from "lucide-react"
 import { authClient } from "@nba/lib/auth-client"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 import { Card, CardContent, Input, Button, EmptyState } from "@nba/design-system"
+import { useAdminFetch } from "../components/use-admin-fetch"
 import { CachedGet } from "./types"
 
 interface NotificationsTabProps {
@@ -16,32 +17,16 @@ interface NotificationsTabProps {
 export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProps) {
   const { data: currentSession } = authClient.useSession()
   const { play: playNotifSound } = useNotificationSound()
+  const { data: notifData, loading: loadingNotifHistory, refetch: fetchNotifHistory } = useAdminFetch<{ notifications: any[] }>(
+    "/api/admin/notifications",
+    cachedGet,
+  )
+  const notifHistory = notifData?.notifications ?? []
 
   const [notifTitle, setNotifTitle] = useState("")
   const [notifContent, setNotifContent] = useState("")
   const [sendingNotif, setSendingNotif] = useState(false)
   const [sendingTest, setSendingTest] = useState(false)
-  const [notifHistory, setNotifHistory] = useState<any[]>([])
-  const [loadingNotifHistory, setLoadingNotifHistory] = useState(false)
-
-  const fetchNotifHistory = useCallback(async () => {
-    setLoadingNotifHistory(true)
-    try {
-      const { ok, data } = await cachedGet("/api/admin/notifications")
-      if (ok) {
-        setNotifHistory(data.notifications || [])
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoadingNotifHistory(false)
-    }
-  }, [cachedGet])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchNotifHistory()
-  }, [fetchNotifHistory])
 
   const handleSendNotification = async () => {
     if (!notifTitle.trim() || !notifContent.trim()) return

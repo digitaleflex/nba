@@ -6,7 +6,6 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { Button, Badge, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useLogout } from "@nba/hooks/use-logout"
-import { usePendingKyc } from "@nba/hooks/use-pending-kyc"
 import {
   getSidebarSections,
   isNavItemActive,
@@ -38,7 +37,19 @@ export function Sidebar({ space, user }: SidebarProps) {
   const searchParams = useSearchParams()
   const { logout } = useLogout({ confirm: false })
   const { unreadTotal } = useMessagingUnread()
-  const pendingKyc = usePendingKyc(space === "admin")
+  const [pendingKyc, setPendingKyc] = useState(0)
+  useEffect(() => {
+    if (space !== "admin") return
+    const controller = new AbortController()
+    fetch("/api/admin/kyc?status=PENDING", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: any) => {
+        if (d?.total != null) setPendingKyc(d.total)
+        else if (Array.isArray(d?.docs)) setPendingKyc(d.docs.length)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [space])
 
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [mounted, setMounted] = useState(false)

@@ -1,12 +1,12 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useCommandPalette } from "@nba/components/command-palette"
 import { useLogout } from "@nba/hooks/use-logout"
-import { usePendingAccessRequests } from "@nba/hooks/use-pending-access-requests"
 import {
   getMobileNavItems,
   isNavItemActive,
@@ -32,7 +32,20 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { openPalette } = useCommandPalette()
   const { logout } = useLogout()
   const { unreadTotal } = useMessagingUnread()
-  const pendingRequests = usePendingAccessRequests(space === "admin")
+  const [pendingRequests, setPendingRequests] = useState(0)
+  useEffect(() => {
+    if (space !== "admin") return
+    const controller = new AbortController()
+    fetch("/api/admin/access-requests?status=PENDING", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: any) => {
+        if (d?.total != null) setPendingRequests(d.total)
+        else if (Array.isArray(d?.requests)) setPendingRequests(d.requests.length)
+        else if (Array.isArray(d)) setPendingRequests(d.length)
+      })
+      .catch(() => {})
+    return () => controller.abort()
+  }, [space])
 
   const links = getMobileNavItems(space, user.role)
   const { confirm, node } = useConfirm()

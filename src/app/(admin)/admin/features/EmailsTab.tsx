@@ -1,9 +1,19 @@
 "use client"
 
-import { useEffect, useState, useCallback } from "react"
+import { useState } from "react"
 import { Loader2, MailQuestion } from "lucide-react"
 import { Card, Badge, cn, EmptyState } from "@nba/design-system"
+import { useAdminFetch } from "../components/use-admin-fetch"
+import { FilterPills } from "../components/filter-pills"
 import { CachedGet } from "./types"
+
+const EMAIL_FILTERS = [
+  { value: "ALL", label: "Tous" },
+  { value: "PENDING", label: "En attente" },
+  { value: "SENT", label: "Envoyés" },
+  { value: "FAILED", label: "En échec" },
+  { value: "BOUNCED", label: "Rejetés" },
+]
 
 interface EmailsTabProps {
   cachedGet: CachedGet
@@ -11,28 +21,12 @@ interface EmailsTabProps {
 }
 
 export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
-  const [emails, setEmails] = useState<any[]>([])
-  const [loadingEmails, setLoadingEmails] = useState(false)
-  const [emailStatusFilter, setEmailStatusFilter] = useState<string>("ALL")
-
-  const fetchEmails = useCallback(async (status = "ALL") => {
-    setLoadingEmails(true)
-    try {
-      const { ok, data } = await cachedGet(`/api/admin/emails?status=${status}`)
-      if (ok) {
-        setEmails(data || [])
-      }
-    } catch (err) {
-      console.error(err)
-    } finally {
-      setLoadingEmails(false)
-    }
-  }, [cachedGet])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    fetchEmails(emailStatusFilter)
-  }, [emailStatusFilter, fetchEmails])
+  const [emailStatusFilter, setEmailStatusFilter] = useState("ALL")
+  const { data: emailsData, loading: loadingEmails } = useAdminFetch<any[]>(
+    `/api/admin/emails?status=${emailStatusFilter}`,
+    cachedGet,
+  )
+  const emails = emailsData ?? []
 
   return (
     <div className="space-y-6">
@@ -66,22 +60,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
         </Card>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {["ALL", "PENDING", "SENT", "FAILED", "BOUNCED"].map((s) => (
-          <button
-            key={s}
-            onClick={() => setEmailStatusFilter(s)}
-            className={cn(
-              "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
-              emailStatusFilter === s
-                ? "bg-primary text-primary-foreground border-primary"
-                : "border-border text-muted-foreground hover:bg-muted/50"
-            )}
-          >
-            {s === "ALL" ? "Tous" : s}
-          </button>
-        ))}
-      </div>
+      <FilterPills options={EMAIL_FILTERS} active={emailStatusFilter} onChange={setEmailStatusFilter} />
 
       {loadingEmails ? (
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
