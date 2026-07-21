@@ -9,9 +9,11 @@ const DEFAULT_ROLE_NAME = "MEMBER";
 
 // ── Prisma error codes eligible for retry ──
 const RETRYABLE_PRISA_CODES = new Set([
+  "P1001", // Can't reach database server
+  "P1008", // Operations timed out
+  "P1017", // Server closed connection
   "P2028", // Transaction timeout
   "P2034", // Deadlock / serialization failure
-  "P1017", // Server closed connection
 ]);
 
 function isRetryableTransactionError(err: unknown): boolean {
@@ -54,6 +56,7 @@ function createPrismaClient() {
         const delay = Math.min(1000 * Math.pow(2, attempt), 3000)
         log.warn(
           { attempt: attempt + 1, maxRetries, delayMs: delay, err, model: params.model, action: params.action, errorCode: "DATABASE_ERROR" },
+          { attempt: attempt + 1, maxRetries, delayMs: delay, err, model: params.model, action: params.action },
           "Query retry",
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
