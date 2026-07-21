@@ -6,6 +6,8 @@ import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
 import { processRecovery, enqueueRecovery, type RecoveryJobData } from "../src/lib/services/recovery"
+import { listPendingForRetry, incrementAttempts, escalateDlq } from "../src/lib/services/webhook-dlq"
+import { replayEmailEvent } from "../src/lib/services/webhook-replay"
 import { logger } from "../src/lib/logger"
 
 // Initialize Sentry for worker process
@@ -272,6 +274,55 @@ recoveryWorker.on("failed", (job: any, err: any) => {
 
 log.info("Recovery worker started")
 
+// ── DLQ Auto-Retry Cron (every 5 minutes) ──
+const DLQ_RETRY_INTERVAL_MS = 5 * 60 * 1000
+
+let dlqTimer: ReturnType<typeof setInterval> | null = null
+
+async function processDlqRetry() {
+  const entries = await listPendingForRetry()
+  if (entries.length === 0) return
+
+  log.info({ count: entries.length }, "DLQ auto-retry cycle started")
+
+  for (const entry of entries) {
+    try {
+      let body: any
+      try {
+        body = entry.rawBody ? JSON.parse(entry.rawBody) : entry.payload
+      } catch {
+        body = entry.payload
+      }
+
+      const result = await replayEmailEvent({
+        event: body,
+        externalId: entry.externalId ?? "",
+        svixId: entry.svixId ?? `dlq-cron-${entry.id}`,
+      })
+
+      if (result.ok) {
+        await prisma.webhookDlq.update({
+          where: { id: entry.id },
+          data: { status: "REPLAYED", replayedAt: new Date(), lastAttemptAt: new Date() },
+        })
+        log.info({ id: entry.id, eventType: entry.eventType }, "DLQ auto-retry succeeded")
+      }
+    } catch (err: any) {
+      await incrementAttempts(entry.id, err?.message ?? "Auto-retry failed")
+
+      if (entry.attempts + 1 >= 3) {
+        await escalateDlq([entry.id])
+        log.warn({ id: entry.id, eventType: entry.eventType, attempts: entry.attempts + 1 }, "DLQ entry escalated after exhausting retries")
+      } else {
+        log.warn({ id: entry.id, eventType: entry.eventType, attempt: entry.attempts + 1 }, "DLQ auto-retry failed, will retry later")
+      }
+    }
+  }
+}
+
+dlqTimer = setInterval(processDlqRetry, DLQ_RETRY_INTERVAL_MS)
+log.info({ intervalMs: DLQ_RETRY_INTERVAL_MS }, "DLQ auto-retry cron started")
+
 // ── Graceful shutdown ──
 const workers = [worker, notificationWorker, signalWorker, recoveryWorker]
 const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue, recoveryQueue]
@@ -289,6 +340,10 @@ async function gracefulShutdown(signal: string) {
   }, 30_000)
 
   try {
+    // Stop DLQ cron timer
+    if (dlqTimer) clearInterval(dlqTimer)
+    log.info("DLQ auto-retry cron stopped")
+
     // Close all workers (stop accepting new jobs, wait for running jobs)
     await Promise.all(workers.map((w) => w.close()))
     log.info("All workers closed")
