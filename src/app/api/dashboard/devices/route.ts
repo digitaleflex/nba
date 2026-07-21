@@ -22,16 +22,8 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const session = await requireActiveUser()
-    const { deviceId, name } = (await req.json()) as {
-      deviceId?: string
-      name?: string
-    }
-    if (!deviceId || typeof name !== "string") {
-      return NextResponse.json(
-        { error: "Paramètres invalides" },
-        { status: 400 },
-      )
-    }
+    const body = await req.json()
+    const { deviceId, name } = validateOrThrow(deviceRenameSchema, body)
     await renameDevice(deviceId, name, session.user.id)
     return NextResponse.json({ ok: true })
   } catch (error) {
@@ -42,10 +34,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await requireActiveUser()
-    const { deviceId, revokeOthers } = (await req.json()) as {
-      deviceId?: string
-      revokeOthers?: boolean
-    }
+    const body = await req.json()
+    const { deviceId, revokeOthers } = validateOrThrow(deviceDeleteSchema, body)
 
     if (revokeOthers) {
       const devices = await getUserDevices(session.user.id)

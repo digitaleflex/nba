@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { validateOrThrow, memberQuerySchema } from "@nba/lib/validations"
 import { getRedisConnection } from "@nba/lib/queue"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { msg } from "@nba/lib/messages"
@@ -7,10 +8,7 @@ import { msg } from "@nba/lib/messages"
 export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const { userId } = await request.json()
-    if (!userId) {
-      return NextResponse.json({ error: "userId est requis" }, { status: 400 })
-    }
+    const { userId } = validateOrThrow(memberQuerySchema, await request.json())
 
     const redis = getRedisConnection()
     if (!redis) {

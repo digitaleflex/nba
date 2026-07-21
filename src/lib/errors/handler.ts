@@ -9,6 +9,14 @@ import { ErrorCode } from "./codes"
 
 const log = logger.child({ module: "error-handler" })
 
+const RETRYABLE_PRISMA_CODES = new Set([
+  "P1001",
+  "P1008",
+  "P1017",
+  "P2028",
+  "P2034",
+])
+
 export interface ErrorHandlerContext {
   route?: string
   userId?: string
@@ -32,6 +40,7 @@ interface ErrorResponseBody {
   message: string
   errorId: string
   correlationId?: string
+  retryable?: boolean
   details?: Record<string, unknown>
 }
 
@@ -90,11 +99,12 @@ export async function handleError(
           correlationId,
         })
       default:
-        return buildResponse(500, {
+        return buildResponse(isRetryable ? 503 : 500, {
           code: ErrorCode.DATABASE_ERROR,
-          message: msg.validation.DB_ERROR,
+          message: msg.validation.DB_UNAVAILABLE,
           errorId,
           correlationId,
+          retryable: isRetryable,
         })
     }
   }
@@ -120,6 +130,7 @@ export async function handleError(
       message: msg.validation.DB_UNAVAILABLE,
       errorId,
       correlationId,
+      retryable: true,
     })
   }
 

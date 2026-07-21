@@ -4,6 +4,7 @@ import IORedis from "ioredis"
 import { logger } from "@nba/lib/logger"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { validateOrThrow, queueRetrySchema } from "@nba/lib/validations"
 
 const log = logger.child({ module: "admin-queues" })
 
@@ -57,7 +58,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const { name } = await request.json().catch(() => ({ name: null }))
+    const { name } = validateOrThrow(queueRetrySchema, await request.json().catch(() => ({ name: null })))
     const targets = name ? [name] : QUEUE_NAMES
 
     let retried = 0
