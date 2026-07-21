@@ -155,8 +155,13 @@ export function isAppError(error: unknown): error is AppError {
   return error instanceof AppError
 }
 
-export function toAppError(error: unknown, defaultCode = ErrorCode.INTERNAL_ERROR): AppError {
+export function toAppError(error: unknown, defaultCode: string = ErrorCode.INTERNAL_ERROR): AppError {
   if (error instanceof AppError) return error
   const message = error instanceof Error ? error.message : "Erreur inconnue"
-  return new AppError({ code: defaultCode, message, httpStatus: 500 })
+  return new AppError({ code: defaultCode as any, message, httpStatus: 500 })
+}
+
+export function errorResponse(status: number, code: string, message: string): NextResponse {
+  const errorId = generateErrorId()
+  return NextResponse.json({ code, message, errorId }, { status })
 }

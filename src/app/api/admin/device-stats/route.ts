@@ -1,23 +1,10 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 
 export async function GET() {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    const userDb = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: { select: { name: true } } },
-    })
-
-    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-    }
-
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
     const total = await prisma.device.count()
 
     const [byType, byBrand, byOs, byBrowser, recent] = await Promise.all([
@@ -90,7 +77,6 @@ export async function GET() {
       recent,
     })
   } catch (error) {
-    console.error("device-stats error", error)
-    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 })
+    return handleAuthError(error)
   }
 }

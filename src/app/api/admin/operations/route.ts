@@ -1,26 +1,12 @@
 import { NextResponse } from "next/server"
-import { serverError } from "@nba/lib/api-error"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { getCached, getStats as getCacheStats } from "@nba/lib/cache"
 import { getAllCircuitStates } from "@nba/lib/circuit-breaker"
 
 export async function GET() {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    // Vérifier le rôle
-    const userDb = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: { select: { name: true } } },
-    })
-
-    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-    }
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     const data = await getCached(
       "ops",
@@ -169,7 +155,7 @@ export async function GET() {
     )
 
     return NextResponse.json(data)
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 })
+  } catch (error) {
+    return handleAuthError(error)
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Resend } from "resend"
+import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
 import { markUserBounced, markUserComplained, markUserSuppressed } from "@nba/lib/services/email-status"
@@ -26,7 +27,7 @@ interface ResendWebhookEvent {
 export async function POST(req: NextRequest) {
   const secret = process.env.RESEND_WEBHOOK_SECRET
   if (!secret) {
-    return NextResponse.json({ error: "webhook not configured" }, { status: 500 })
+    return errorResponse(500, ErrorCode.INTERNAL_ERROR, "webhook not configured")
   }
 
   const payload = await req.text()
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       webhookSecret: secret,
     }) as unknown as ResendWebhookEvent
   } catch {
-    return NextResponse.json({ error: "invalid signature" }, { status: 401 })
+    return errorResponse(401, ErrorCode.AUTH_UNAUTHENTICATED, "invalid signature")
   }
 
   const type = event.type

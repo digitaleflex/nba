@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { randomInt } from "crypto"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { sendOtpEmail } from "@nba/lib/services/notifications"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
@@ -12,17 +12,7 @@ export async function POST(req: NextRequest) {
     const blocked = await otpRateLimit(req, "send-otp")
     if (blocked) return blocked
 
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    // Vérifier que le compte n'est pas suspendu
-    const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
-    if (!me?.isActive) {
-      return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
-    }
-
+    const session = await requireActiveUser()
     const { email } = session.user
 
     // Generer code a 6 chiffres (cryptographiquement securise)
@@ -46,8 +36,7 @@ export async function POST(req: NextRequest) {
     await sendOtpEmail(session.user.name, email, code)
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error("OTP Send error:", error)
-    return NextResponse.json({ error: "Erreur lors de l'envoi du code" }, { status: 500 })
+  } catch (error) {
+    return handleAuthError(error)
   }
 }

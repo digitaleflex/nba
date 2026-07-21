@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { requireRole } from "@nba/lib/auth-utils"
+import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { readFile } from "fs/promises"
 import { execSync } from "child_process"
 import { CRON_DEFINITIONS } from "@nba/lib/cron-definitions"
@@ -116,10 +116,6 @@ export async function GET() {
 
     return NextResponse.json({ jobs })
   } catch (error) {
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
-    }
-    console.error("[crons] Erreur:", error)
-    return NextResponse.json({ error: "Erreur lors de la récupération des crons" }, { status: 500 })
+    return handleAuthError(error)
   }
 }
