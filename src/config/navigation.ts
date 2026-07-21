@@ -50,6 +50,13 @@ export interface NavSection {
 
 const dashboardMobile: NavItem[] = [
   {
+    id: "dashboard",
+    href: "/dashboard",
+    label: "Tableau",
+    icon: LayoutDashboard,
+    isActive: (pathname) => pathname === "/dashboard",
+  },
+  {
     id: "signals",
     href: "/dashboard/signals",
     label: "Signaux",
@@ -112,6 +119,13 @@ const dashboardMobile: NavItem[] = [
 ]
 
 const dashboardSidebar: NavItem[] = [
+  {
+    id: "dashboard",
+    href: "/dashboard",
+    label: "Tableau de bord",
+    icon: LayoutDashboard,
+    isActive: (pathname) => pathname === "/dashboard",
+  },
   {
     id: "signals",
     href: "/dashboard/signals",
