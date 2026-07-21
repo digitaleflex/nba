@@ -4,6 +4,7 @@ import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { serverError } from "@nba/lib/api-error"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ id: signal.id })
   } catch (err: any) {
     if (err?.name === "ZodError") {
-      return NextResponse.json({ error: "Brouillon invalide", details: err.errors }, { status: 400 })
+      return NextResponse.json({ error: msg.signal.DRAFT_INVALID, details: err.errors }, { status: 400 })
     }
     console.error("[signals/draft] failed:", err)
     return serverError(err, "POST /api/admin/signals/draft")

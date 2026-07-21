@@ -3,6 +3,7 @@ import { auth } from "@nba/lib/auth"
 import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "sign-in" })
 
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     // Failed login: record a security audit event so the admin inbox
     // "Sécurité" category and the SecurityTab brute-force counter are real.
-    const message = err instanceof Error ? err.message : "Identifiants invalides"
+    const message = err instanceof Error ? err.message : msg.auth.INVALID_CREDENTIALS
     const status = (err as { status?: number; code?: number })?.status ?? (err as { status?: number; code?: number })?.code ?? 0
     await logAuditEvent({
       userId: undefined,

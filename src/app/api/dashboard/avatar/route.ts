@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { getStorage } from "@nba/lib/storage"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,15 +12,15 @@ export async function POST(req: NextRequest) {
     const file = formData.get("avatar") as File | null
 
     if (!file) {
-      return NextResponse.json({ error: "Aucun fichier fourni" }, { status: 400 })
+      return NextResponse.json({ error: msg.onboarding.NO_FILE }, { status: 400 })
     }
 
     if (!file.type.startsWith("image/")) {
-      return NextResponse.json({ error: "Le fichier doit être une image" }, { status: 400 })
+      return NextResponse.json({ error: msg.onboarding.FILE_MUST_BE_IMAGE }, { status: 400 })
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "L'image ne doit pas dépasser 5 MB" }, { status: 400 })
+      return NextResponse.json({ error: msg.onboarding.IMAGE_TOO_LARGE }, { status: 400 })
     }
 
     const storage = getStorage()

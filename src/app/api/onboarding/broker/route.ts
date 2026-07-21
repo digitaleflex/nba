@@ -7,6 +7,7 @@ import { updateOnboardingStatus, getOnboardingState } from "@nba/lib/services/on
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { sendBrokerSubmittedEmail, sendOnboardingStepEmail } from "@nba/lib/services/notifications"
 import { z } from "zod"
+import { msg } from "@nba/lib/messages"
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const state = await getOnboardingState(userId)
     if (!state.checklist.kycSubmitted) {
-      throw new AppError({ code: ErrorCode.AUTH_FORBIDDEN, message: "Vous devez d'abord soumettre vos documents d'identité", httpStatus: 403 })
+      throw new AppError({ code: ErrorCode.AUTH_FORBIDDEN, message: msg.onboarding.KYC_REQUIRED_FIRST, httpStatus: 403 })
     }
 
     const form = await req.formData()
@@ -43,11 +44,11 @@ export async function POST(req: NextRequest) {
     const video = form.get("video") as File
 
     if (!video) {
-      return errorResponse(400, ErrorCode.UPLOAD_INVALID, "Vidéo requise")
+      return errorResponse(400, ErrorCode.UPLOAD_INVALID, msg.onboarding.VIDEO_REQUIRED)
     }
 
     if (!video.type.startsWith("video/")) {
-      return errorResponse(400, ErrorCode.UPLOAD_INVALID, "Le fichier doit être une vidéo")
+      return errorResponse(400, ErrorCode.UPLOAD_INVALID, msg.onboarding.FILE_MUST_BE_VIDEO)
     }
 
     const storage = getStorage()

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireAuth, handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function GET() {
   try {
@@ -31,7 +32,7 @@ export async function GET() {
     ])
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     const isAdmin = user.role?.name === "ADMIN" || user.role?.name === "SUPER_ADMIN"

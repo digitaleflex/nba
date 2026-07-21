@@ -1,3 +1,4 @@
+import { msg } from "./messages"
 import { getServerSession } from "./get-session"
 import { prisma } from "./db"
 import { AppError } from "./errors/app-error"
@@ -20,7 +21,7 @@ export class AuthError extends AppError {
 
 export async function requireAuth() {
   const session = await getServerSession()
-  if (!session || !session.user) throw new AuthError("Non authentifié", 401)
+  if (!session || !session.user) throw new AuthError(msg.auth.NOT_AUTHENTICATED, 401)
   return session
 }
 
@@ -34,7 +35,7 @@ export async function requireActiveUser() {
     select: { isActive: true },
   })
   if (!user || !user.isActive) {
-    throw new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
+    throw new AuthError(msg.auth.ACCOUNT_SUSPENDED, 403)
   }
   return session
 }
@@ -46,7 +47,7 @@ export async function requireRole(allowedRoles: string[]) {
     select: { role: { select: { name: true } }, isActive: true },
   })
   if (!user || !user.isActive || !user.role || !allowedRoles.includes(user.role.name)) {
-    throw new AuthError("Accès refusé", 403)
+    throw new AuthError(msg.auth.ACCESS_DENIED, 403)
   }
   return session
 }
@@ -70,13 +71,13 @@ export async function requirePermission(permissionName: string) {
       },
     },
   })
-  if (!user || !user.isActive) throw new AuthError("Accès refusé", 403)
-  if (!user.role) throw new AuthError("Accès refusé", 403)
+  if (!user || !user.isActive) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
+  if (!user.role) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
 
   const hasPermission = user.role.permissions.some(
     (rp: any) => rp.permission.name === permissionName,
   )
-  if (!hasPermission) throw new AuthError("Accès refusé", 403)
+  if (!hasPermission) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
 
   return session
 }

@@ -5,6 +5,7 @@ import { notify } from "@nba/lib/services/notifications"
 import { emailChangedEmail } from "@nba/lib/email"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, changeEmailSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 const emailChangeRateLimit = rateLimitMiddleware({ window: 3600, max: 3 })
 
@@ -25,13 +26,13 @@ export async function PUT(request: Request) {
     })
 
     if (!account?.password) {
-      return NextResponse.json({ error: "Aucun mot de passe configuré" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.NO_PASSWORD_SET }, { status: 400 })
     }
 
     const { verifyPassword } = await import("@better-auth/utils/password")
     const valid = await verifyPassword(account.password, currentPassword)
     if (!valid) {
-      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.INCORRECT_PASSWORD }, { status: 400 })
     }
 
     const existingUser = await prisma.user.findUnique({
@@ -39,7 +40,7 @@ export async function PUT(request: Request) {
     })
 
     if (existingUser) {
-      return NextResponse.json({ error: "Cet email est déjà utilisé" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.EMAIL_ALREADY_USED }, { status: 400 })
     }
 
     // Récupérer l'ancien email avant mise à jour
@@ -49,7 +50,7 @@ export async function PUT(request: Request) {
     })
 
     if (!currentUser) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     const oldEmail = currentUser.email

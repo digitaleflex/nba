@@ -5,6 +5,7 @@ import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { markDlqReplayed, abandonDlq } from "@nba/lib/services/webhook-dlq"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { serverError } from "@nba/lib/api-error"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "dlq-replay" })
 
@@ -23,7 +24,7 @@ export async function POST(
 
     const dlq = await prisma.webhookDlq.findUnique({ where: { id } })
     if (!dlq) {
-      return NextResponse.json({ error: "DLQ entry not found" }, { status: 404 })
+      return NextResponse.json({ error: msg.admin.DLQ_ENTRY_NOT_FOUND }, { status: 404 })
     }
     if (dlq.status !== "PENDING") {
       return NextResponse.json(
@@ -47,7 +48,7 @@ export async function POST(
 
     if (!type) {
       await markDlqReplayed(id, false)
-      return NextResponse.json({ ok: false, error: "Missing type" }, { status: 500 })
+      return NextResponse.json({ ok: false, error: msg.admin.MISSING_TYPE }, { status: 500 })
     }
 
     // Domain events : on marque REPLAYED directement (audit only, non critique)
@@ -65,7 +66,7 @@ export async function POST(
 
     if (!emailId) {
       await markDlqReplayed(id, false)
-      return NextResponse.json({ ok: false, error: "Missing email_id" }, { status: 500 })
+      return NextResponse.json({ ok: false, error: msg.admin.MISSING_EMAIL_ID }, { status: 500 })
     }
 
     // Email events : on rejoue le processing directement.

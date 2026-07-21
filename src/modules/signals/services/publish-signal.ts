@@ -1,3 +1,4 @@
+import { msg } from "../../../lib/messages"
 import { prisma } from "@nba/lib/db"
 import { AuthError } from "@nba/lib/auth-utils"
 import { canPublishSignal } from "../policies/signal-policy"
@@ -10,13 +11,13 @@ export async function publishSignal(id: string, userId: string) {
   })
 
   if (!signal) {
-    throw new Error("Signal introuvable")
+    throw new Error(msg.signal.NOT_FOUND)
   }
 
   // Check publish permissions AND ownership for the user
   const allowed = await canPublishSignal(userId, signal)
   if (!allowed) {
-    throw new AuthError("Accès refusé", 403)
+    throw new AuthError(msg.auth.ACCESS_DENIED, 403)
   }
 
   // Cancel any scheduled job

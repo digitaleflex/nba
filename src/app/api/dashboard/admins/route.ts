@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function GET(req: NextRequest) {
   try {
     const session = await requireActiveUser()
     if (!session) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 401 })
     }
 
     const q = req.nextUrl.searchParams.get("q")?.trim() ?? ""

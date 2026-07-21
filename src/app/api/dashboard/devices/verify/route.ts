@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { verifyDeviceCode } from "@nba/lib/services/device"
 import { validateOrThrow, deviceVerifySchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof Error && error.message === "Code invalide ou expiré") {
-      return NextResponse.json({ error: error.message }, { status: 400 })
+      return NextResponse.json({ error: msg.onboarding.CODE_INCORRECT }, { status: 400 })
     }
     return handleAuthError(error)
   }

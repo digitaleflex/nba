@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(
   req: NextRequest,
@@ -15,7 +16,7 @@ export async function POST(
     // Strict security check: must be allowed to view this signal to record a read receipt!
     const allowed = await canViewSignal(session.user.id, id)
     if (!allowed) {
-      return NextResponse.json({ error: "Accès refusé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.ACCESS_DENIED }, { status: 403 })
     }
 
     // Upsert the read record

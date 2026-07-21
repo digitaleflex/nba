@@ -1,3 +1,4 @@
+import { msg } from "../../../lib/messages"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
@@ -49,7 +50,7 @@ interface GetSignalsResponse {
 export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignalsResponse> {
   const session = await getServerSession()
   if (!session) {
-    throw new AuthError("Non autorisé", 401)
+    throw new AuthError(msg.auth.UNAUTHORIZED, 401)
   }
 
   const { search = "", filter = "all", page = 1, limit = 20 } = params
@@ -66,11 +67,11 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   })
 
   if (!user) {
-    throw new AuthError("Utilisateur non trouvé", 404)
+    throw new AuthError(msg.member.NOT_FOUND_ALT, 404)
   }
 
   if (!user.isActive) {
-    throw new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
+    throw new AuthError(msg.auth.ACCOUNT_SUSPENDED, 403)
   }
 
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"

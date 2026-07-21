@@ -1,3 +1,4 @@
+import { msg } from "../messages"
 import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { ZodError } from "zod"
@@ -68,28 +69,28 @@ export async function handleError(
       case "P2025":
         return buildResponse(404, {
           code: ErrorCode.NOT_FOUND,
-          message: "Ressource introuvable.",
+          message: msg.validation.RESOURCE_NOT_FOUND,
           errorId,
           correlationId,
         })
       case "P2002":
         return buildResponse(409, {
           code: ErrorCode.CONFLICT,
-          message: "Ressource en conflit (contrainte unique).",
+          message: msg.validation.UNIQUE_CONSTRAINT,
           errorId,
           correlationId,
         })
       case "P2003":
         return buildResponse(400, {
           code: ErrorCode.VALIDATION_INVALID_INPUT,
-          message: "Référence invalide (clé étrangère).",
+          message: msg.validation.FOREIGN_KEY,
           errorId,
           correlationId,
         })
       default:
         return buildResponse(500, {
           code: ErrorCode.DATABASE_ERROR,
-          message: "Une erreur de base de données est survenue.",
+          message: msg.validation.DB_ERROR,
           errorId,
           correlationId,
         })
@@ -102,7 +103,7 @@ export async function handleError(
     log.error({ route, errorId }, error.message)
     return buildResponse(400, {
       code: ErrorCode.VALIDATION_ERROR,
-      message: "Requête invalide.",
+      message: msg.validation.INVALID_REQUEST,
       errorId,
       correlationId,
     })
@@ -114,7 +115,7 @@ export async function handleError(
     log.error({ route, errorId }, error.message)
     return buildResponse(503, {
       code: ErrorCode.DATABASE_CONNECTION,
-      message: "Base de données temporairement indisponible. Réessayez plus tard.",
+      message: msg.validation.DB_UNAVAILABLE,
       errorId,
       correlationId,
     })
@@ -132,7 +133,7 @@ export async function handleError(
     log.warn({ route, errorId, issues: error.issues.length }, "Validation error")
     return buildResponse(400, {
       code: ErrorCode.VALIDATION_ERROR,
-      message: "Données invalides. Vérifiez votre saisie.",
+      message: msg.validation.INVALID_DATA,
       errorId,
       correlationId,
       details,
@@ -145,7 +146,7 @@ export async function handleError(
   log.error({ route, errorId, err: error instanceof Error ? { message: error.message, stack: error.stack } : error }, "Unhandled error")
   return buildResponse(500, {
     code: ErrorCode.INTERNAL_ERROR,
-    message: "Une erreur inattendue est survenue. L'équipe technique en a été informée. Réessayez dans quelques instants, ou contactez le support.",
+    message: msg.validation.UNEXPECTED_ERROR,
     errorId,
     correlationId,
   })
@@ -157,7 +158,7 @@ export function isAppError(error: unknown): error is AppError {
 
 export function toAppError(error: unknown, defaultCode: string = ErrorCode.INTERNAL_ERROR): AppError {
   if (error instanceof AppError) return error
-  const message = error instanceof Error ? error.message : "Erreur inconnue"
+  const message = error instanceof Error ? error.message : msg.validation.UNKNOWN_ERROR
   return new AppError({ code: defaultCode as any, message, httpStatus: 500 })
 }
 

@@ -5,6 +5,7 @@ import { notify, sendEmailSync } from "@nba/lib/services/notifications"
 import { passwordChangedEmail } from "@nba/lib/email"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, changePasswordSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 const passwordChangeRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -25,7 +26,7 @@ export async function PUT(request: Request) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     // Use Better Auth's API to change password
@@ -71,7 +72,7 @@ export async function PUT(request: Request) {
     }
     const message = error.message || "Erreur lors du changement de mot de passe"
     if (message.includes("Invalid password") || message.includes("incorrect")) {
-      return NextResponse.json({ error: "Le mot de passe actuel est incorrect" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.CURRENT_PASSWORD_INCORRECT }, { status: 400 })
     }
     return NextResponse.json({ error: message }, { status: 500 })
   }

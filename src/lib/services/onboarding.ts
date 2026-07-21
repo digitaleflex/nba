@@ -1,3 +1,4 @@
+import { msg } from "../messages";
 import { prisma } from "../db";
 import type { OnboardingStatus } from "@nba/generated/prisma/enums";
 
@@ -47,7 +48,7 @@ export async function getOnboardingState(
     }),
   ])
   if (!user) {
-    throw new Error("Utilisateur introuvable")
+    throw new Error(msg.member.NOT_FOUND)
   }
 
   const checklist: OnboardingChecklist = {

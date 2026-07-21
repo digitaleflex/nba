@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { calculatePnl } from "@nba/lib/services/pnl"
+import { msg } from "@nba/lib/messages"
 
 const tradeUpdateSchema = z.object({
   pair: z.string({ error: "La paire doit etre un texte." })
@@ -47,12 +48,12 @@ const tradeUpdateSchema = z.object({
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     const { id } = await params
 
     const trade = await prisma.trade.findUnique({ where: { id } })
     if (!trade || trade.userId !== session.user.id) {
-      return NextResponse.json({ error: "Trade introuvable" }, { status: 404 })
+      return NextResponse.json({       error: msg.dashboard.TRADE_NOT_FOUND }, { status: 404 })
     }
 
     const body = await request.json()
@@ -99,7 +100,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
-        error: "Donnees invalides",
+        error: msg.dashboard.INVALID_DATA,
         details: error.issues.map(i => ({ champ: i.path.join("."), message: i.message })),
       }, { status: 400 })
     }
@@ -110,12 +111,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     const { id } = await params
 
     const trade = await prisma.trade.findUnique({ where: { id } })
     if (!trade || trade.userId !== session.user.id) {
-      return NextResponse.json({ error: "Trade introuvable" }, { status: 404 })
+      return NextResponse.json({       error: msg.dashboard.TRADE_NOT_FOUND }, { status: 404 })
     }
 
     await prisma.trade.update({ where: { id }, data: { deletedAt: new Date() } })

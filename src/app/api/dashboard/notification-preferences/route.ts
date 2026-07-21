@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { notificationPrefsSchema, validateOrThrow } from "@nba/lib/validations"
 import { NOTIFICATION_SOUND_IDS } from "@nba/lib/notification-sounds"
+import { msg } from "@nba/lib/messages"
 
 const SOUNDS = NOTIFICATION_SOUND_IDS
 export type NotificationSound = (typeof SOUNDS)[number]
@@ -50,7 +51,7 @@ export async function PUT(req: NextRequest) {
 
     if (sound) {
       if (!SOUNDS.includes(sound)) {
-        return NextResponse.json({ error: "Son invalide" }, { status: 400 })
+        return NextResponse.json({ error: msg.dashboard.INVALID_SOUND }, { status: 400 })
       }
       data.notificationSound = sound
     }
@@ -69,7 +70,7 @@ export async function PUT(req: NextRequest) {
     }
 
     if (Object.keys(data).length === 0) {
-      return NextResponse.json({ error: "Aucune donnée" }, { status: 400 })
+      return NextResponse.json({ error: msg.dashboard.NO_DATA }, { status: 400 })
     }
 
     await prisma.user.update({ where: { id: session.user.id }, data })

@@ -3,6 +3,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
 import { serverError } from "@nba/lib/api-error"
+import { msg } from "@nba/lib/messages"
 
 const ONBOARDING_LABELS: Record<string, string> = {
   REGISTERED: "Inscrit (non onboardé)",
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
   try {
     const session = await getServerSession()
     if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     }
 
     const userDb = await prisma.user.findUnique({
@@ -45,7 +46,7 @@ export async function GET(request: Request) {
     })
 
     if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
     }
 
     const { searchParams } = new URL(request.url)

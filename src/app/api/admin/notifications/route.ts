@@ -17,6 +17,7 @@ import { validateOrThrow, adminNotificationSchema } from "@nba/lib/validations"
 const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
 import { csrfCheck } from "@nba/lib/csrf"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(request: NextRequest) {
   const csrf = csrfCheck(request)
@@ -24,7 +25,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession()
     if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     }
 
     const userDb = await prisma.user.findUnique({
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
     }
 
     const body = await request.json()
@@ -53,7 +54,7 @@ export async function POST(request: NextRequest) {
       })
 
       if (!targetUser) {
-        return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+        return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
       }
 
       await notify({
@@ -153,7 +154,7 @@ export async function GET() {
   try {
     const session = await getServerSession()
     if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     }
 
     const userDb = await prisma.user.findUnique({
@@ -162,7 +163,7 @@ export async function GET() {
     })
 
     if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
     }
 
     const notifications = await getCached(

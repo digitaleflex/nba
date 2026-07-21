@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getSignalsApi } from "@nba/modules/signals/services/get-signals-api"
 import { handleAuthError, AuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,6 +18,6 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: error.httpStatus })
     }
     console.error("Signals API error:", error)
-    return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })
+    return NextResponse.json({ error: msg.signal.INTERNAL_ERROR }, { status: 500 })
   }
 }

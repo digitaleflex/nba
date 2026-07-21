@@ -1,3 +1,4 @@
+import { msg } from "./messages"
 import { Resend } from "resend"
 import { prisma } from "./db"
 import { createCircuitBreaker, withTimeout } from "./circuit-breaker"
@@ -10,7 +11,7 @@ const EMAIL_TIMEOUT_MS = 10_000
 function getResend(): Resend {
   const key = process.env.RESEND_API_KEY
   if (!key) {
-    throw new Error("RESEND_API_KEY non configurée — les emails ne peuvent pas être envoyés")
+    throw new Error(msg.email.API_KEY_MISSING)
   }
   return new Resend(key)
 }

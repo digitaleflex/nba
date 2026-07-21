@@ -8,6 +8,7 @@ import { softDeleteUser } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "delete-account" })
 
@@ -37,18 +38,18 @@ export async function DELETE(request: Request) {
     ])
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     if (!account?.password) {
-      return NextResponse.json({ error: "Aucun mot de passe configuré" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.NO_PASSWORD_SET }, { status: 400 })
     }
 
     // Verify password using Better Auth's scrypt hasher (avoids signInEmail which creates a session)
     const { verifyPassword } = await import("@better-auth/utils/password")
     const valid = await verifyPassword(account.password, password)
     if (!valid) {
-      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.INCORRECT_PASSWORD }, { status: 400 })
     }
 
     // Soft delete: anonymise l'email + désactive le compte + supprime les sessions

@@ -1,3 +1,4 @@
+import { msg } from "../messages"
 import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3"
 import { Readable } from "stream"
 import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
@@ -113,7 +114,7 @@ export class S3StorageProvider implements StorageProvider {
     )
 
     if (!response.Body) {
-      throw new Error("Contenu du fichier vide")
+      throw new Error(msg.storage.CONTENT_EMPTY)
     }
 
     // Le corps de réponse de GetObjectCommand sous Node.js est un stream Node.js

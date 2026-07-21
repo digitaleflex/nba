@@ -7,6 +7,7 @@ import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { sendKycSubmittedEmail, sendOnboardingStepEmail } from "@nba/lib/services/notifications"
 import { documentTypeSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     const parsedDocType = documentTypeSchema.safeParse(form.get("documentType"))
     if (!parsedDocType.success) {
-      return errorResponse(400, ErrorCode.VALIDATION_ERROR, "Type de document invalide")
+      return errorResponse(400, ErrorCode.VALIDATION_ERROR, msg.onboarding.DOCUMENT_TYPE_INVALID)
     }
     const documentType = parsedDocType.data
 
@@ -29,14 +30,14 @@ export async function POST(req: NextRequest) {
     const back = form.get("back") as File | null
 
     if (!front) {
-      return errorResponse(400, ErrorCode.UPLOAD_INVALID, "Fichier requis")
+      return errorResponse(400, ErrorCode.UPLOAD_INVALID, msg.onboarding.FILE_REQUIRED)
     }
 
     if (!front.type.startsWith("image/")) {
-      return errorResponse(400, ErrorCode.UPLOAD_INVALID, "Le fichier doit être une image")
+      return errorResponse(400, ErrorCode.UPLOAD_INVALID, msg.onboarding.FILE_MUST_BE_IMAGE)
     }
     if (back && !back.type.startsWith("image/")) {
-      return errorResponse(400, ErrorCode.UPLOAD_INVALID, "Le fichier verso doit être une image")
+      return errorResponse(400, ErrorCode.UPLOAD_INVALID, msg.onboarding.FILE_BACK_MUST_BE_IMAGE)
     }
 
     const storage = getStorage()

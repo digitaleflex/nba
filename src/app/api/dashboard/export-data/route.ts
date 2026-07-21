@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "export-data" })
 
@@ -120,7 +121,7 @@ export async function GET(request: Request) {
     ])
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     const exportPayload = {

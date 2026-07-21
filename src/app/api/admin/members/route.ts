@@ -7,6 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { validateOrThrow, memberUpdateSchema, memberQuerySchema } from "@nba/lib/validations"
 import { getRedisConnection } from "@nba/lib/queue"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "admin-members" })
 
@@ -147,7 +148,7 @@ export async function PUT(request: NextRequest) {
     if (roleId) {
       const role = await prisma.role.findUnique({ where: { id: roleId } })
       if (!role) {
-        return NextResponse.json({ error: "Rôle invalide" }, { status: 400 })
+        return NextResponse.json({ error: msg.member.ROLE_INVALID }, { status: 400 })
       }
       data.roleId = roleId
     }
@@ -228,7 +229,7 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND }, { status: 404 })
     }
 
     await hardDeleteUser(prisma, userId)
@@ -247,7 +248,7 @@ export async function DELETE(request: NextRequest) {
 
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
-    return NextResponse.json({ success: true, message: "Utilisateur supprimé" })
+    return NextResponse.json({ success: true, message: msg.member.DELETED })
   } catch (error) {
     return handleAuthError(error)
   }

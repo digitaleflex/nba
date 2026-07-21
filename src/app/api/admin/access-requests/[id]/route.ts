@@ -7,6 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
 import { invalidatePrefix } from "@nba/lib/cache"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "admin-access-requests" })
 
@@ -41,7 +42,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     })
 
     if (!request) {
-      return NextResponse.json({ error: "Demande introuvable" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.REQUEST_NOT_FOUND }, { status: 404 })
     }
 
     return NextResponse.json(request)

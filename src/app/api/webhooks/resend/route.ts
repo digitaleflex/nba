@@ -5,6 +5,7 @@ import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
 import { markUserBounced, markUserComplained, markUserSuppressed } from "@nba/lib/services/email-status"
 import { enqueueDlq } from "@nba/lib/services/webhook-dlq"
+import { msg } from "@nba/lib/messages"
 
 export const runtime = "nodejs"
 
@@ -27,7 +28,7 @@ interface ResendWebhookEvent {
 export async function POST(req: NextRequest) {
   const secret = process.env.RESEND_WEBHOOK_SECRET
   if (!secret) {
-    return errorResponse(500, ErrorCode.INTERNAL_ERROR, "webhook not configured")
+    return errorResponse(500, ErrorCode.INTERNAL_ERROR, msg.webhook.NOT_CONFIGURED)
   }
 
   const payload = await req.text()
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
       webhookSecret: secret,
     }) as unknown as ResendWebhookEvent
   } catch {
-    return errorResponse(401, ErrorCode.AUTH_UNAUTHENTICATED, "invalid signature")
+    return errorResponse(401, ErrorCode.AUTH_UNAUTHENTICATED, msg.webhook.INVALID_SIGNATURE)
   }
 
   const type = event.type
