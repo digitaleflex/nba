@@ -6,15 +6,19 @@ vi.mock("@nba/lib/db", () => ({
     emailEvent: { create: vi.fn() },
   },
 }))
-vi.mock("@nba/lib/services/email-status", () => ({
-  markUserBounced: vi.fn(async () => null),
-  markUserComplained: vi.fn(async () => null),
-}))
+vi.mock("./email-webhooks", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./email-webhooks")>()
+  return {
+    ...actual,
+    markUserBounced: vi.fn(async () => null),
+    markUserComplained: vi.fn(async () => null),
+  }
+})
 vi.mock("@nba/lib/email", () => ({
   sendEmail: vi.fn(async () => "id"),
 }))
 
-import { replayEmailEvent } from "./webhook-replay"
+import { replayEmailEvent } from "./email-webhooks"
 import { prisma } from "@nba/lib/db"
 
 describe("replayEmailEvent", () => {
@@ -63,7 +67,7 @@ describe("replayEmailEvent", () => {
       status: "PENDING",
       lastEventAt: null,
     })
-    const { markUserBounced } = await import("@nba/lib/services/email-status")
+    const { markUserBounced } = await import("./email-webhooks")
     const r = await replayEmailEvent({
       event: {
         type: "email.bounced",

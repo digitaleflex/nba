@@ -1,5 +1,5 @@
 import { prisma } from "@nba/lib/db"
-import { listDlq } from "./webhook-dlq"
+import { listDlq } from "./email-webhooks"
 
 export type InboxCategory = "pending" | "security" | "system" | "messages"
 export type InboxAction = "approve" | "reject" | "snooze" | "investigate" | "dismiss"

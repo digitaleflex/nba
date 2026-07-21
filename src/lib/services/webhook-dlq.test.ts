@@ -16,7 +16,7 @@ vi.mock("@nba/lib/services/audit", () => ({
   logAuditEvent: vi.fn(async () => {}),
 }))
 
-import { enqueueDlq, listDlq, dlqStats, markDlqReplayed, abandonDlq } from "./webhook-dlq"
+import { enqueueDlq, listDlq, dlqStats, markDlqReplayed, abandonDlq } from "./email-webhooks"
 import { prisma } from "@nba/lib/db"
 import { logAuditEvent } from "@nba/lib/services/audit"
 

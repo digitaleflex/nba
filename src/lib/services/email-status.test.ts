@@ -11,7 +11,7 @@ vi.mock("@nba/lib/services/audit", () => ({
   logAuditEvent: vi.fn(async () => {}),
 }))
 
-import { markUserBounced, markUserComplained, markUserSuppressed } from "./email-status"
+import { markUserBounced, markUserComplained, markUserSuppressed } from "./email-webhooks"
 import { prisma } from "@nba/lib/db"
 import { logAuditEvent } from "@nba/lib/services/audit"
 

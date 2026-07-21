@@ -6,8 +6,7 @@ import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
 import { processRecovery, enqueueRecovery, type RecoveryJobData } from "../src/lib/services/recovery"
-import { listPendingForRetry, incrementAttempts, escalateDlq } from "../src/lib/services/webhook-dlq"
-import { replayEmailEvent } from "../src/lib/services/webhook-replay"
+import { listPendingForRetry, incrementAttempts, escalateDlq, replayEmailEvent } from "../src/lib/services/email-webhooks"
 import { logger } from "../src/lib/logger"
 
 // Initialize Sentry for worker process

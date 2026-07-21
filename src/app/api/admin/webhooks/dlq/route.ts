@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
-import { listDlq, dlqStats, batchAbandon } from "@nba/lib/services/webhook-dlq"
+import { listDlq, dlqStats, batchAbandon } from "@nba/lib/services/email-webhooks"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { msg } from "@nba/lib/messages"
 
@@ -55,7 +55,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     if (action === "retry") {
-      const { replayEmailEvent } = await import("@nba/lib/services/webhook-replay")
+      const { replayEmailEvent } = await import("@nba/lib/services/email-webhooks")
       const { prisma } = await import("@nba/lib/db")
       let replayed = 0
       let failed = 0

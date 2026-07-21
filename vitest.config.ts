@@ -20,7 +20,6 @@ export default defineConfig({
       "dist/**",
       "coverage/**",
       "src/app/(auth)/login/login.test.tsx",
-      "src/lib/services/email-status.test.ts",
       "src/lib/services/notifications.test.ts",
       "src/lib/services/signal-distribution.test.ts",
       "src/lib/storage/storage.test.ts",

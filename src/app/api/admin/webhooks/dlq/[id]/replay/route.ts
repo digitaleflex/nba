@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
-import { markDlqReplayed, abandonDlq } from "@nba/lib/services/webhook-dlq"
+import { markDlqReplayed, abandonDlq } from "@nba/lib/services/email-webhooks"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { serverError } from "@nba/lib/api-error"
 import { msg } from "@nba/lib/messages"
@@ -74,7 +74,7 @@ export async function POST(
     // on l'ignore (le but est de re-jouer les effets de bord, pas le store).
     try {
       const { markUserBounced, markUserComplained } = await import(
-        "@nba/lib/services/email-status"
+        "@nba/lib/services/email-webhooks"
       )
       const { sendEmail } = await import("@nba/lib/email")
 
