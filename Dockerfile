@@ -39,8 +39,8 @@ ENV HOSTNAME="0.0.0.0"
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Install pg_isready for database readiness check in entrypoint
-RUN apk add --no-cache postgresql-client
+# Install pg_isready for database readiness check + CA certificates for TLS
+RUN apk add --no-cache postgresql-client ca-certificates
 
 # Create a non-root system user for security hardening
 RUN addgroup --system --gid 1001 nodejs
@@ -50,10 +50,6 @@ RUN adduser --system --uid 1001 nextjs
 # `pnpm prisma migrate deploy` and `pnpm db:seed` (tsx) at container startup.
 # These are devDependencies not traced/included by the Next.js standalone output.
 COPY --from=deps /app/node_modules ./node_modules
-
-# Copy generated Prisma client from the prepared stage (prisma generate runs there).
-# The deps stage only has installed packages — no generated client.
-COPY --from=prepared /app/node_modules/.prisma ./node_modules/.prisma
 
 # Copy standalone build outputs
 COPY --from=builder /app/public ./public
