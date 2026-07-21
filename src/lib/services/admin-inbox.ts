@@ -65,7 +65,9 @@ async function loadSnoozed(): Promise<string[]> {
     else pruned = true
   }
   // Prune expired entries so the Setting row does not grow unbounded.
-  if (pruned) await saveJson(SNOOZE_KEY, active).catch(() => {})
+  if (pruned) await saveJson(SNOOZE_KEY, active).catch(() => {
+    // Non-critical pruning, best-effort
+  })
   return active
 }
 

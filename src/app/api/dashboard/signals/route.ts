@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+      return NextResponse.json({ error: error.message }, { status: error.httpStatus })
     }
     console.error("Signals API error:", error)
     return NextResponse.json({ error: "Erreur interne du serveur" }, { status: 500 })

@@ -1,5 +1,8 @@
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "./audit"
+
+const log = logger.child({ module: "email-status" })
 
 /**
  * Marque le user comme BOUNCED (1er bounce) ou INVALID (>= 2 bounces) suite a
@@ -141,7 +144,9 @@ export async function markUserComplained(
       if (redis) {
         await redis.publish("nba:ws:control", `reset:${userId}`)
       }
-    } catch {}
+    } catch {
+      log.warn({ userId }, "Failed to publish WS disconnect for email status change")
+    }
 
     await logAuditEvent({
       userId: triggeredBy,

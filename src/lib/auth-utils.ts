@@ -1,16 +1,20 @@
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
 import { getServerSession } from "./get-session"
 import { prisma } from "./db"
-import { ValidationError } from "./validations"
-import { Prisma } from "../generated/prisma/client"
+import { AppError } from "./errors/app-error"
+import { ErrorCode } from "./errors/codes"
+import { handleError } from "./errors/handler"
 
-export class AuthError extends Error {
-  public statusCode: number
+export class AuthError extends AppError {
   constructor(message: string, statusCode: number) {
-    super(message)
+    super({
+      code: statusCode === 401 ? ErrorCode.AUTH_UNAUTHENTICATED
+        : statusCode === 403 ? ErrorCode.AUTH_FORBIDDEN
+        : ErrorCode.AUTH_UNAUTHENTICATED,
+      message,
+      httpStatus: statusCode,
+      module: "auth",
+    })
     this.name = "AuthError"
-    this.statusCode = statusCode
   }
 }
 
@@ -78,47 +82,5 @@ export async function requirePermission(permissionName: string) {
 }
 
 export async function handleAuthError(error: unknown) {
-  let correlationId: string | null = null
-  try {
-    const h = await headers()
-    correlationId = h.get("x-request-id")
-  } catch { /* silent */ }
-
-  function respond(status: number, errorMsg: string, extra?: Record<string, string>) {
-    return NextResponse.json({ error: errorMsg, ...(correlationId ? { correlationId } : {}), ...extra }, { status })
-  }
-
-  if (error instanceof AuthError) {
-    return respond(error.statusCode, error.message)
-  }
-  if (error instanceof ValidationError) {
-    return respond(400, error.message)
-  }
-
-  // Erreurs Prisma typées → codes HTTP métiers appropriés (évite les 500 systématiques)
-  if (error instanceof Prisma.PrismaClientKnownRequestError) {
-    console.error(`[auth-utils] Prisma error ${error.code}:`, error.meta)
-    switch (error.code) {
-      case "P2025":
-        return respond(404, "Ressource introuvable.")
-      case "P2002":
-        return respond(409, "Ressource en conflit (contrainte unique).")
-      case "P2003":
-        return respond(400, "Référence invalide (clé étrangère).")
-      default:
-        return respond(500, "Une erreur de base de données est survenue.")
-    }
-  }
-  if (error instanceof Prisma.PrismaClientValidationError) {
-    console.error("[auth-utils] Prisma validation error:", error.message)
-    return respond(400, "Requête invalide.")
-  }
-  if (error instanceof Prisma.PrismaClientInitializationError) {
-    console.error("[auth-utils] Prisma init error:", error.message)
-    return respond(503, "Base de données temporairement indisponible. Réessayez plus tard.", { retryAfter: "30" })
-  }
-
-  console.error("[auth-utils] Unexpected error:", error)
-  // Message générique rassurant : aucun détail technique ne fuit vers le client.
-  return respond(500, "Une erreur inattendue est survenue de notre côté. Réessayez dans quelques instants, ou contactez le support.")
+  return handleError(error, { route: "auth-utils" })
 }

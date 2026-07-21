@@ -35,7 +35,7 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ ok: true })
   } catch (error) {
     if (error instanceof AuthError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode })
+      return NextResponse.json({ error: error.message }, { status: error.httpStatus })
     }
     if (error instanceof ValidationError) {
       return NextResponse.json({ error: error.message }, { status: 400 })

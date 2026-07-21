@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { Queue } from "bullmq"
 import IORedis from "ioredis"
+import { logger } from "@nba/lib/logger"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
+
+const log = logger.child({ module: "admin-queues" })
 
 const QUEUE_NAMES = ["file-cleanup", "signal-distribution", "notification-delivery"]
 
@@ -12,7 +15,9 @@ async function withQueue<T>(name: string, fn: (q: Queue) => Promise<T>): Promise
   try {
     return await fn(queue)
   } finally {
-    await queue.close().catch(() => {})
+    await queue.close().catch((err) => {
+      log.warn({ err, queueName: name }, "Failed to close queue connection")
+    })
     connection.disconnect()
   }
 }
@@ -33,7 +38,9 @@ export async function GET() {
             "delayed",
             "paused",
           )
-          await queue.close().catch(() => {})
+          await queue.close().catch((err) => {
+            log.warn({ err, queueName: name }, "Failed to close queue connection in GET")
+          })
           q.disconnect()
           return { name, ...counts }
         } catch (e) {

@@ -2,12 +2,15 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { notify } from "@nba/lib/services/notifications"
 import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const log = logger.child({ module: "admin-notifications" })
 import { serverError } from "@nba/lib/api-error"
 
 const broadcastRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
@@ -115,9 +118,13 @@ export async function POST(request: NextRequest) {
         title,
         body: content,
         createdAt: n.createdAt,
-      }).catch(() => {})
+      }).catch((err) => {
+        log.warn({ err, userId: n.userId }, "Failed to publish notification")
+      })
       sendPushToUser(n.userId, { title, body: content, url: "/dashboard", tag: n.id })
-        .catch(() => {})
+        .catch((err) => {
+          log.warn({ err, userId: n.userId }, "Failed to send push notification")
+        })
     }
 
     // 4. Jobs email en lot (une seule opération de queue)

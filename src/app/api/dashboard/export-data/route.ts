@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const log = logger.child({ module: "export-data" })
 
 const exportRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -146,7 +149,9 @@ export async function GET(request: Request) {
         resourceId: userId,
         details: { selfService: true },
       }),
-    ]).catch(() => {})
+    ]).catch((err) => {
+      log.warn({ err, userId }, "Non-blocking audit log failed during data export")
+    })
 
     return NextResponse.json(exportPayload, {
       headers: {

@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getCached, invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { getRedisConnection } from "@nba/lib/queue"
+
+const log = logger.child({ module: "admin-members" })
 
 export async function GET(request: NextRequest) {
   try {
@@ -176,7 +179,9 @@ export async function PUT(request: NextRequest) {
         try {
           const redis = getRedisConnection()
           if (redis) await redis.publish("nba:ws:control", `reset:${userId}`)
-        } catch {}
+        } catch {
+          log.warn({ userId }, "Failed to publish WS reset on role change")
+        }
       }
     }
 
@@ -188,7 +193,9 @@ export async function PUT(request: NextRequest) {
         if (redis) {
           await redis.publish("nba:ws:control", `reset:${userId}`)
         }
-      } catch {}
+      } catch {
+        log.warn({ userId }, "Failed to publish WS reset on suspension")
+      }
     }
 
     await logAuditEvent({

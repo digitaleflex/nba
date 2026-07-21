@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server"
+import { logger } from "@nba/lib/logger"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getStats } from "@nba/lib/cache"
 import { prisma } from "@nba/lib/db"
+
+const log = logger.child({ module: "admin-cache-status" })
 
 const QUEUE_NAMES = ["file-cleanup", "signal-distribution", "notification-delivery"]
 const REDIS_URL = process.env.REDIS_URL?.trim()
@@ -64,7 +67,9 @@ export async function GET() {
               os: info.os || "?",
               processId: parseInt(info.process_id || "0"),
             }
-          } catch {}
+          } catch {
+            log.warn({}, "Failed to parse Redis INFO")
+          }
         }
 
         // Queue stats via BullMQ
@@ -85,7 +90,9 @@ export async function GET() {
             })
             await q.close()
           }
-        } catch {}
+        } catch {
+          log.warn({}, "Failed to get Bull queue counts")
+        }
 
         // WebSocket health check
         try {

@@ -59,5 +59,7 @@ export async function deleteTelegramChat(chatId: string): Promise<void> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId }),
-  }).catch(() => {})
+  }).catch((err) => {
+    log.warn({ err, chatId }, "Telegram deleteChat failed")
+  })
 }

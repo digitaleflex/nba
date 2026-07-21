@@ -118,9 +118,17 @@ export function validateOrThrow<T>(schema: z.ZodSchema<T>, data: unknown): T {
   return result.data
 }
 
-export class ValidationError extends Error {
+import { AppError } from "../errors/app-error"
+import { ErrorCode } from "../errors/codes"
+
+export class ValidationError extends AppError {
   constructor(message: string) {
-    super(message)
+    super({
+      code: ErrorCode.VALIDATION_ERROR,
+      message,
+      httpStatus: 400,
+      module: "validation",
+    })
     this.name = "ValidationError"
   }
 }

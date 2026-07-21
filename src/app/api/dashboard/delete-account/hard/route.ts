@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const log = logger.child({ module: "hard-delete" })
 
 const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
 const hardDeleteRateLimit = rateLimitMiddleware({ window: 3600, max: 1 })
@@ -52,7 +55,9 @@ export async function DELETE(request: NextRequest) {
       }),
       invalidatePrefix("members:"),
       invalidatePrefix("ops"),
-    ]).catch(() => {})
+    ]).catch((err) => {
+      log.warn({ err, userId: session.user.id }, "Non-blocking audit/cache invalidation failed during hard delete")
+    })
 
     const response = NextResponse.json({ success: true })
     const isSecure = process.env.NODE_ENV === "production"

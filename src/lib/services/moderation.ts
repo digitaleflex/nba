@@ -1,5 +1,8 @@
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { hardDeleteUser } from "./user-deletion"
+
+const log = logger.child({ module: "moderation" })
 
 interface BannedEmail {
   email: string
@@ -59,7 +62,9 @@ export async function banEmail(entry: {
       resourceId: entry.email,
       details: { reason: entry.reason, bannedBy: entry.bannedBy } as any,
     },
-  }).catch(() => {})
+  }).catch((err) => {
+    log.warn({ err, email: entry.email }, "Failed to create ban audit log")
+  })
 }
 
 export async function unbanEmail(email: string): Promise<void> {
@@ -74,7 +79,9 @@ export async function unbanEmail(email: string): Promise<void> {
       resourceId: email,
       details: {} as any,
     },
-  }).catch(() => {})
+  }).catch((err) => {
+    log.warn({ err, email }, "Failed to create unban audit log")
+  })
 }
 
 export async function isEmailBanned(email: string): Promise<BannedEmail | null> {

@@ -1,10 +1,13 @@
 import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOtp } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
+import { logger } from "@nba/lib/logger"
 import { sendPushToUser } from "./push"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendTelegramMessage } from "./telegram"
 import { sendWhatsAppSignal } from "./whatsapp"
+
+const log = logger.child({ module: "notifications" })
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING" | "MESSAGE" | "JOURNAL_PSYCHOLOGY"
 type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH" | "TELEGRAM"
@@ -55,7 +58,10 @@ async function telegramSend(notificationId: string, userId: string, title: strin
 
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
-  }).catch(() => null)
+  }).catch((err) => {
+    log.warn({ err, notificationId }, "Failed to create TELEGRAM delivery record")
+    return null
+  })
 
   const result = await sendTelegramMessage(
     meta.telegram_chat_id,
@@ -67,7 +73,9 @@ async function telegramSend(notificationId: string, userId: string, title: strin
     await prisma.notificationDelivery.update({
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch(() => {})
+    }).catch((err) => {
+      log.warn({ err, deliveryId: delivery.id }, "Failed to update TELEGRAM delivery status")
+    })
   }
 }
 
@@ -82,7 +90,10 @@ async function whatsappSend(notificationId: string, userId: string, title: strin
 
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
-  }).catch(() => null)
+  }).catch((err) => {
+    log.warn({ err, notificationId }, "Failed to create WHATSAPP delivery record")
+    return null
+  })
 
   const result = await sendWhatsAppSignal(phone, title, body)
 
@@ -90,7 +101,9 @@ async function whatsappSend(notificationId: string, userId: string, title: strin
     await prisma.notificationDelivery.update({
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch(() => {})
+    }).catch((err) => {
+      log.warn({ err, deliveryId: delivery.id }, "Failed to update WHATSAPP delivery status")
+    })
   }
 }
 
@@ -143,7 +156,10 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   })
 
   // Vérifier les préférences de notification
-  const prefs = await getUserPrefs(params.userId).catch(() => ({}))
+  const prefs = await getUserPrefs(params.userId).catch((err) => {
+    log.warn({ err, userId: params.userId }, "Failed to get notification prefs, using defaults")
+    return {} as Record<string, boolean>
+  })
   const prefKey = TYPE_TO_PREF_KEY[params.type]
   const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
@@ -159,7 +175,10 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
           status: "PENDING",
         },
       })
-      .catch(() => null)
+      .catch((err) => {
+        log.warn({ err, notificationId: notification.id }, "Failed to create PUSH delivery record")
+        return null
+      })
 
     sendPushToUser(params.userId, {
       title: params.title,
@@ -175,17 +194,21 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
             where: { id: pushDelivery.id },
             data: { status: failed ? "FAILED" : "SENT" },
           })
-          .catch(() => {})
+          .catch((err) => {
+            log.warn({ err, deliveryId: pushDelivery.id }, "Failed to update PUSH delivery after send")
+          })
       })
       .catch(async (err) => {
-        console.error("[notify] push failed:", err)
+        log.error({ err, notificationId: notification.id }, "Push send failed")
         if (pushDelivery) {
           await prisma.notificationDelivery
             .update({
               where: { id: pushDelivery.id },
               data: { status: "FAILED" },
             })
-            .catch(() => {})
+            .catch((innerErr) => {
+              log.warn({ err: innerErr, deliveryId: pushDelivery.id }, "Failed to mark PUSH delivery as FAILED")
+            })
         }
       })
 
@@ -219,9 +242,13 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     }
 
     // Telegram
-    telegramSend(notification.id, params.userId, params.title, params.body).catch(() => {})
+    telegramSend(notification.id, params.userId, params.title, params.body).catch((err) => {
+      log.warn({ err, userId: params.userId }, "Telegram send failed")
+    })
     // WhatsApp
-    whatsappSend(notification.id, params.userId, params.title, params.body).catch(() => {})
+    whatsappSend(notification.id, params.userId, params.title, params.body).catch((err) => {
+      log.warn({ err, userId: params.userId }, "WhatsApp send failed")
+    })
   }
 
   // WebSocket temps réel via Redis Pub/Sub
@@ -234,7 +261,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     linkUrl: params.linkUrl,
     createdAt: notification.createdAt,
   }).catch((err) => {
-    console.error("[notify] pubsub failed:", err)
+    log.error({ err, userId: params.userId }, "Redis pubsub failed")
   })
 
   return { id: notification.id }
