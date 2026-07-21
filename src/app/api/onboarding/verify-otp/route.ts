@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { prisma } from "@nba/lib/db"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
@@ -10,25 +11,15 @@ export async function POST(req: NextRequest) {
     const blocked = await verifyRateLimit(req, "verify-otp")
     if (blocked) return blocked
 
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
-    }
-
-    // Vérifier que le compte n'est pas suspendu
-    const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
-    if (!me?.isActive) {
-      return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
-    }
+    const session = await requireActiveUser()
+    const { email, id } = session.user
 
     const body = await req.json()
     const { code } = body
 
     if (!code || code.length !== 6) {
-      return NextResponse.json({ error: "Code invalide" }, { status: 400 })
+      return errorResponse(400, ErrorCode.VALIDATION_ERROR, "Code invalide")
     }
-
-    const { email, id } = session.user
 
     // Trouver le code
     const verification = await prisma.verification.findFirst({
@@ -42,7 +33,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!verification) {
-      return NextResponse.json({ error: "Code incorrect ou expiré" }, { status: 400 })
+      return errorResponse(400, ErrorCode.VALIDATION_ERROR, "Code incorrect ou expiré")
     }
 
     // Vérifier si l'utilisateur est suspendu avant de marquer comme actif
@@ -70,8 +61,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ success: true })
-  } catch (error: any) {
-    console.error("OTP Verify error:", error)
-    return NextResponse.json({ error: "Erreur lors de la vérification du code" }, { status: 500 })
+  } catch (error) {
+    return handleAuthError(error)
   }
 }

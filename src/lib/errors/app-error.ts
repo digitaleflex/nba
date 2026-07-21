@@ -1,4 +1,4 @@
-import { ErrorCode, ErrorCodeType } from "./codes"
+import type { ErrorCodeType } from "./codes"
 
 export type Severity = "error" | "warning" | "info"
 

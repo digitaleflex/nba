@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireRole } from "@nba/lib/auth-utils"
+import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { uploadMessageAttachment } from "@nba/lib/services/messaging"
 
@@ -14,14 +15,12 @@ export async function POST(req: NextRequest) {
     const form = await req.formData()
     const file = form.get("file") as File | null
     if (!file) {
-      return NextResponse.json({ error: "Fichier requis" }, { status: 400 })
+      return errorResponse(400, ErrorCode.VALIDATION_MISSING_FIELD, "Fichier requis")
     }
 
     const result = await uploadMessageAttachment(file)
     return NextResponse.json({ path: result.path, url: result.url, mimeType: result.mimeType, size: result.size, name: result.name })
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Erreur lors du chargement de la vidéo"
-    console.error("[message-attachment]", message)
-    return NextResponse.json({ error: message }, { status: 400 })
+    return handleAuthError(error)
   }
 }

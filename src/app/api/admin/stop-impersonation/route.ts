@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server"
+import { ErrorCode, errorResponse } from "@nba/lib/errors"
 
-// IMPERSONATION DÉSACTIVÉE (voir /api/admin/members/[id]/impersonate).
+// IMPERSONATION DÉSACTIVÉE — voir members/[id]/impersonate
 export async function POST() {
-  return NextResponse.json(
-    { error: "Impersonation temporairement indisponible." },
-    { status: 503 },
-  )
+  return errorResponse(503, ErrorCode.NOT_IMPLEMENTED, "Impersonation temporairement indisponible.")
 }
