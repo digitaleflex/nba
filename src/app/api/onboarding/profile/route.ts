@@ -4,16 +4,17 @@ import { prisma } from "@nba/lib/db"
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding"
 import { profileSchema, validateOrThrow, ValidationError } from "@nba/lib/validations"
 import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession()
-    if (!session) throw new AuthError("Non authentifié", 401)
+    if (!session) throw new AuthError(msg.auth.NOT_AUTHENTICATED, 401)
 
     // Vérifier que le compte n'est pas suspendu
     const me = await prisma.user.findUnique({ where: { id: session.user.id }, select: { isActive: true } })
     if (!me?.isActive) {
-      return NextResponse.json({ error: "Votre compte a été suspendu" }, { status: 403 })
+      return NextResponse.json({ error: msg.onboarding.ACCOUNT_SUSPENDED }, { status: 403 })
     }
 
     const body = await req.json()

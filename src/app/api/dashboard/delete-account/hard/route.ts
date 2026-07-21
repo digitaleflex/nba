@@ -6,6 +6,8 @@ import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "hard-delete" })
 
@@ -32,13 +34,13 @@ export async function DELETE(request: NextRequest) {
     })
 
     if (!account?.password) {
-      return NextResponse.json({ error: "Aucun mot de passe configuré" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.NO_PASSWORD_SET }, { status: 400 })
     }
 
     const { verifyPassword } = await import("@better-auth/utils/password")
     const valid = await verifyPassword(account.password, password)
     if (!valid) {
-      return NextResponse.json({ error: "Le mot de passe est incorrect" }, { status: 400 })
+      return NextResponse.json({ error: msg.auth.INCORRECT_PASSWORD }, { status: 400 })
     }
 
     const userEmail = session.user.email
@@ -76,6 +78,6 @@ export async function DELETE(request: NextRequest) {
     if (error instanceof Error && error.name === "AuthError") {
       return handleAuthError(error)
     }
-    return NextResponse.json({ error: error.message || "Erreur" }, { status: 500 })
+    return NextResponse.json({ error: error.message || msg.dashboard.ERROR }, { status: 500 })
   }
 }

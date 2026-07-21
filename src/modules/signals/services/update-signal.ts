@@ -1,3 +1,4 @@
+import { msg } from "../../../lib/messages"
 import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { signalUpdateSchema } from "../validators/signal-schema"
 import { AuthError } from "@nba/lib/auth-utils"
@@ -23,12 +24,12 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
   })
 
   if (!signal) {
-    throw new Error("Signal introuvable")
+    throw new Error(msg.signal.NOT_FOUND)
   }
 
   const allowed = await canUpdateSignal(userId, signal)
   if (!allowed) {
-    throw new AuthError("Accès refusé", 403)
+    throw new AuthError(msg.auth.ACCESS_DENIED, 403)
   }
 
   const parsed = signalUpdateSchema.parse(input)

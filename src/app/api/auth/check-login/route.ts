@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { msg } from "@nba/lib/messages"
 
 const checkLoginRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
 export async function GET(req: NextRequest) {
   const email = req.nextUrl.searchParams.get("email")
   if (!email) {
-    return errorResponse(400, ErrorCode.VALIDATION_MISSING_FIELD, "Email requis")
+    return errorResponse(400, ErrorCode.VALIDATION_MISSING_FIELD, msg.auth.EMAIL_REQUIRED)
   }
 
   const rateLimitRes = await checkLoginRateLimit(req, `check-login:${email}`)

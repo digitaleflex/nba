@@ -1,3 +1,4 @@
+import { msg } from "./messages"
 import { NextResponse } from "next/server"
 import { handleError } from "./errors/handler"
 
@@ -15,7 +16,7 @@ export async function serverError(error: unknown, route?: string): Promise<NextR
  */
 export function safeErrorMessage(error: unknown): string {
   if (error instanceof Error && /prisma|unique constraint|foreign key/i.test(error.message)) {
-    return "Une erreur de base de données est survenue. Réessayez, ou contactez le support si cela persiste."
+    return msg.validation.SAFE_DB_ERROR
   }
-  return "Une erreur inattendue est survenue. Réessayez dans quelques instants."
+  return msg.validation.SAFE_UNEXPECTED
 }

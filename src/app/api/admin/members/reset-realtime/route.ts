@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getRedisConnection } from "@nba/lib/queue"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { msg } from "@nba/lib/messages"
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function POST(request: NextRequest) {
 
     const redis = getRedisConnection()
     if (!redis) {
-      return NextResponse.json({ error: "Redis indisponible" }, { status: 503 })
+      return NextResponse.json({ error: msg.member.REDIS_UNAVAILABLE }, { status: 503 })
     }
     await redis.publish("nba:ws:control", `reset:${userId}`)
     await logAuditEvent({

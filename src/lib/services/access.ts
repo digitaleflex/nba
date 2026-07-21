@@ -1,3 +1,4 @@
+import { msg } from "../messages";
 import { prisma } from "../db";
 import type { AccessStatus } from "@nba/generated/prisma/enums";
 
@@ -16,7 +17,7 @@ export async function createAccessRequest(input: CreateAccessRequestInput) {
   });
 
   if (existing) {
-    throw new Error("Une demande d'accès existe déjà pour ce service");
+    throw new Error(msg.member.REQUEST_EXISTS);
   }
 
   return prisma.accessRequest.create({

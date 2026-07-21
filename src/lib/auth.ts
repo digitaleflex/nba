@@ -1,3 +1,4 @@
+import { msg } from "./messages"
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
 import { prisma } from "./db"
@@ -77,7 +78,7 @@ export const auth = betterAuth({
         before: async (user) => {
           const banned = await isEmailBanned(user.email)
           if (banned) {
-            throw new Error(`Ce compte a été banni : ${banned.reason}. Contactez le support.`)
+            throw new Error(msg.auth.ACCOUNT_BANNED(banned.reason))
           }
           await purgeSoftDeletedUser(prisma, user.email)
         },

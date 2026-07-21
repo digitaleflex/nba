@@ -1,3 +1,4 @@
+import { msg } from "../messages"
 import { randomInt } from "crypto"
 import { prisma } from "../db"
 import { parseUserAgent, type ParsedUserAgent } from "../ua-parser"
@@ -93,7 +94,7 @@ export async function verifyDeviceCode(userId: string, code: string, req: Reques
   })
 
   if (!verification) {
-    throw new Error("Code invalide ou expiré")
+    throw new Error(msg.onboarding.CODE_INVALID)
   }
 
   await prisma.deviceVerification.update({

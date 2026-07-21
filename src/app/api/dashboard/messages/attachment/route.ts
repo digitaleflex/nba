@@ -3,6 +3,7 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { ErrorCode, errorResponse } from "@nba/lib/errors"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { uploadMessageAttachment } from "@nba/lib/services/messaging"
+import { msg } from "@nba/lib/messages"
 
 const messageUploadLimit = rateLimitMiddleware({ window: 3600, max: 30 })
 
@@ -15,7 +16,7 @@ export async function POST(req: NextRequest) {
     const form = await req.formData()
     const file = form.get("file") as File | null
     if (!file) {
-      return errorResponse(400, ErrorCode.VALIDATION_MISSING_FIELD, "Fichier requis")
+      return errorResponse(400, ErrorCode.VALIDATION_MISSING_FIELD, msg.onboarding.FILE_REQUIRED)
     }
 
     const result = await uploadMessageAttachment(file)

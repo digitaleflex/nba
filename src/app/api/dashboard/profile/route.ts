@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { profileSchema, validateOrThrow } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 export async function GET() {
   try {
@@ -26,7 +27,7 @@ export async function GET() {
     })
 
     if (!user) {
-      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 })
+      return NextResponse.json({ error: msg.member.NOT_FOUND_ALT }, { status: 404 })
     }
 
     return NextResponse.json({ user })

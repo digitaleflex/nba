@@ -7,6 +7,7 @@ import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { checkPsychology } from "@nba/lib/services/journal-psychology"
 import { calculatePnl, calculateRR } from "@nba/lib/services/pnl"
 import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
+import { msg } from "@nba/lib/messages"
 
 const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
@@ -59,7 +60,7 @@ const tradeCreateSchema = z.object({
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
 
     const { searchParams } = new URL(request.url)
     const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"))
@@ -137,7 +138,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession()
-    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+    if (!session) return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
 
     const rateLimitRes = await tradeCreateRateLimit(request, `journal:trade:${session.user.id}`)
     if (rateLimitRes) return rateLimitRes
@@ -148,26 +149,26 @@ export async function POST(request: NextRequest) {
     if (parsed.result !== "BREAKEVEN") {
       if (parsed.stopLoss !== undefined) {
         if (parsed.direction === "BUY" && parsed.stopLoss >= parsed.entryPrice) {
-          return NextResponse.json({ error: "Le Stop Loss doit être inférieur au prix d'entrée en position ACHETER" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.SL_BUY }, { status: 400 })
         }
         if (parsed.direction === "SELL" && parsed.stopLoss <= parsed.entryPrice) {
-          return NextResponse.json({ error: "Le Stop Loss doit être supérieur au prix d'entrée en position VENDRE" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.SL_SELL }, { status: 400 })
         }
       }
       if (parsed.takeProfit !== undefined) {
         if (parsed.direction === "BUY" && parsed.takeProfit <= parsed.entryPrice) {
-          return NextResponse.json({ error: "Le Take Profit doit être supérieur au prix d'entrée en position ACHETER" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.TP_BUY }, { status: 400 })
         }
         if (parsed.direction === "SELL" && parsed.takeProfit >= parsed.entryPrice) {
-          return NextResponse.json({ error: "Le Take Profit doit être inférieur au prix d'entrée en position VENDRE" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.TP_SELL }, { status: 400 })
         }
       }
       if (parsed.stopLoss !== undefined && parsed.takeProfit !== undefined) {
         if (parsed.direction === "BUY" && parsed.stopLoss >= parsed.takeProfit) {
-          return NextResponse.json({ error: "Le Stop Loss doit être inférieur au Take Profit en position ACHETER" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.SL_LT_TP_BUY }, { status: 400 })
         }
         if (parsed.direction === "SELL" && parsed.stopLoss <= parsed.takeProfit) {
-          return NextResponse.json({ error: "Le Stop Loss doit être supérieur au Take Profit en position VENDRE" }, { status: 400 })
+          return NextResponse.json({ error: msg.dashboard.SL_GT_TP_SELL }, { status: 400 })
         }
       }
     }
@@ -250,7 +251,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
-        error: "Donnees invalides",
+        error: msg.dashboard.INVALID_DATA,
         details: error.issues.map(i => ({ champ: i.path.join("."), message: i.message })),
       }, { status: 400 })
     }

@@ -1,3 +1,4 @@
+import { msg } from "../../../lib/messages"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
@@ -12,7 +13,7 @@ interface SignalPagination {
 
 export async function getSignals(options: SignalPagination = {}) {
   const session = await getServerSession()
-  if (!session) throw new AuthError("Non autorisé", 401)
+  if (!session) throw new AuthError(msg.auth.UNAUTHORIZED, 401)
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -23,7 +24,7 @@ export async function getSignals(options: SignalPagination = {}) {
     },
   })
 
-  if (!user) throw new AuthError("Utilisateur non trouvé", 404)
+  if (!user) throw new AuthError(msg.member.NOT_FOUND_ALT, 404)
 
   const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
 
@@ -120,7 +121,7 @@ export async function getSignals(options: SignalPagination = {}) {
 
 export async function deleteSignal(id: string) {
   const session = await getServerSession()
-  if (!session) throw new AuthError("Non autorisé", 401)
+  if (!session) throw new AuthError(msg.auth.UNAUTHORIZED, 401)
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
@@ -132,7 +133,7 @@ export async function deleteSignal(id: string) {
   })
 
   if (!user || (user.role.name !== "ADMIN" && user.role.name !== "SUPER_ADMIN")) {
-    throw new AuthError("Accès refusé", 403)
+    throw new AuthError(msg.auth.ACCESS_DENIED, 403)
   }
 
   return prisma.signal.update({
@@ -145,11 +146,11 @@ export async function deleteSignal(id: string) {
 
 export async function getSignalById(id: string) {
   const session = await getServerSession()
-  if (!session) throw new AuthError("Non autorisé", 401)
+  if (!session) throw new AuthError(msg.auth.UNAUTHORIZED, 401)
 
   const hasAccess = await canViewSignal(session.user.id, id)
   if (!hasAccess) {
-    throw new AuthError("Accès refusé", 403)
+    throw new AuthError(msg.auth.ACCESS_DENIED, 403)
   }
 
   const signal = await prisma.signal.findUnique({
@@ -164,10 +165,10 @@ export async function getSignalById(id: string) {
 
 export async function getSignalVersions(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
-  if (!signal) throw new Error("Signal introuvable")
+  if (!signal) throw new Error(msg.signal.NOT_FOUND)
 
   const allowed = await canUpdateSignal(userId, signal)
-  if (!allowed) throw new AuthError("Accès refusé", 403)
+  if (!allowed) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
 
   return prisma.signalVersion.findMany({
     where: { signalId: id },
@@ -180,10 +181,10 @@ export async function getSignalVersions(id: string, userId: string) {
 
 export async function getSignalStats(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({ where: { id } })
-  if (!signal) throw new Error("Signal introuvable")
+  if (!signal) throw new Error(msg.signal.NOT_FOUND)
 
   const allowed = await canUpdateSignal(userId, signal)
-  if (!allowed) throw new AuthError("Accès refusé", 403)
+  if (!allowed) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
 
   const [uniqueMembers, aggregate, firstReadRow, reads] = await Promise.all([
     prisma.signalRead.count({ where: { signalId: id } }),
@@ -260,10 +261,10 @@ export async function getSignalDelivery(
   includeFailures = true
 ): Promise<SignalDeliveryReport> {
   const signal = await prisma.signal.findUnique({ where: { id } })
-  if (!signal) throw new Error("Signal introuvable")
+  if (!signal) throw new Error(msg.signal.NOT_FOUND)
 
   const allowed = await canUpdateSignal(userId, signal)
-  if (!allowed) throw new AuthError("Accès refusé", 403)
+  if (!allowed) throw new AuthError(msg.auth.ACCESS_DENIED, 403)
 
   const notificationIds = (
     await prisma.notification.findMany({

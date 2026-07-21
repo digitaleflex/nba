@@ -4,6 +4,7 @@ import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { replayEmailEvent } from "@nba/lib/services/webhook-replay"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { serverError } from "@nba/lib/api-error"
+import { msg } from "@nba/lib/messages"
 
 /**
  * Rejoue le processing d'un ancien event stocke dans email_events.
@@ -26,7 +27,7 @@ export async function POST(req: NextRequest) {
 
     const event = await prisma.emailEvent.findUnique({ where: { id: eventId } })
     if (!event) {
-      return NextResponse.json({ error: "email_event not found" }, { status: 404 })
+      return NextResponse.json({ error: msg.admin.EMAIL_EVENT_NOT_FOUND }, { status: 404 })
     }
     if (!event.externalId) {
       return NextResponse.json(

@@ -1,3 +1,4 @@
+import { msg } from "../messages"
 import { prisma } from "@nba/lib/db"
 import { publishMessage, publishMessageRead } from "@nba/lib/redis-pubsub"
 import { getStorage } from "@nba/lib/storage"
@@ -18,15 +19,11 @@ export async function uploadMessageAttachment(file: File) {
   const isImage = MESSAGE_IMAGE_MIME.includes(file.type)
   const isVideo = MESSAGE_VIDEO_MIME.includes(file.type)
   if (!isImage && !isVideo) {
-    throw new Error(
-      `Format non supporté : ${file.type}. Formats acceptés : images (JPEG, PNG, WebP, GIF) et vidéos (MP4, WebM, MOV).`,
-    )
+    throw new Error(msg.support.FORMAT_NOT_SUPPORTED(file.type))
   }
   const maxSize = isImage ? MESSAGE_IMAGE_MAX_SIZE : MESSAGE_MAX_SIZE
   if (file.size > maxSize) {
-    throw new Error(
-      isImage ? "Image trop volumineuse (max 10 Mo)" : "Vidéo trop volumineuse (max 50 Mo)",
-    )
+    throw new Error(isImage ? msg.support.IMAGE_TOO_LARGE : msg.support.VIDEO_TOO_LARGE)
   }
   const storage = getStorage()
   const result = await storage.upload(file, "messages")
@@ -166,7 +163,7 @@ export async function getConversationMessages(
   const conversation = await prisma.conversation.findFirst({
     where: { id: conversationId, participants: { some: { userId } } },
   })
-  if (!conversation) throw new AuthError("Conversation introuvable", 404)
+  if (!conversation) throw new AuthError(msg.support.CONVERSATION_NOT_FOUND, 404)
 
   // Marque comme lus les messages reçus, et notifie leurs expéditeurs
   // en temps réel (accusé de lecture).
@@ -263,7 +260,7 @@ export async function sendMessage(
   const conversation = await prisma.conversation.findFirst({
     where: { id: conversationId, participants: { some: { userId: senderId } } },
   })
-  if (!conversation) throw new AuthError("Conversation introuvable", 404)
+  if (!conversation) throw new AuthError(msg.support.CONVERSATION_NOT_FOUND, 404)
 
   const isVideo = attachment?.mime?.startsWith("video/") ?? false
   const isImage = attachment?.mime?.startsWith("image/") ?? false
@@ -409,9 +406,9 @@ export async function reactToMessage(
     where: { id: messageId, deletedAt: null },
     include: { conversation: { include: { participants: true } } },
   })
-  if (!message) throw new AuthError("Message introuvable", 404)
+  if (!message) throw new AuthError(msg.support.MESSAGE_NOT_FOUND, 404)
   const isParticipant = message.conversation.participants.some((p) => p.userId === userId)
-  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+  if (!isParticipant) throw new AuthError(msg.auth.UNAUTHORIZED, 403)
 
   if (emoji) {
     await prisma.messageReaction.upsert({
@@ -450,14 +447,14 @@ export async function editMessage(
   content: string,
 ): Promise<MessageDTO> {
   const trimmed = content.trim()
-  if (!trimmed) throw new Error("Le message ne peut pas être vide")
+  if (!trimmed) throw new Error(msg.support.MESSAGE_EMPTY)
 
   const message = await prisma.message.findFirst({
     where: { id: messageId, deletedAt: null },
     include: { conversation: { include: { participants: true } } },
   })
-  if (!message) throw new AuthError("Message introuvable", 404)
-  if (message.senderId !== userId) throw new AuthError("Non autorisé", 403)
+  if (!message) throw new AuthError(msg.support.MESSAGE_NOT_FOUND, 404)
+  if (message.senderId !== userId) throw new AuthError(msg.auth.UNAUTHORIZED, 403)
 
   const updated = await prisma.message.update({
     where: { id: messageId },
@@ -511,15 +508,15 @@ export async function deleteMessage(
     where: { id: messageId, deletedAt: null },
     include: { conversation: { include: { participants: true } } },
   })
-  if (!message) throw new AuthError("Message introuvable", 404)
+  if (!message) throw new AuthError(msg.support.MESSAGE_NOT_FOUND, 404)
   const isParticipant = message.conversation.participants.some((p) => p.userId === userId)
-  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+  if (!isParticipant) throw new AuthError(msg.auth.UNAUTHORIZED, 403)
 
   if (forEveryone) {
     const canDelete =
       message.senderId === userId ||
       (await isModerator(userId))
-    if (!canDelete) throw new AuthError("Non autorisé", 403)
+    if (!canDelete) throw new AuthError(msg.auth.UNAUTHORIZED, 403)
     await prisma.message.update({
       where: { id: messageId },
       data: { deletedAt: new Date(), content: "" },
@@ -560,9 +557,9 @@ export async function reportMessage(
     where: { id: messageId, deletedAt: null },
     include: { conversation: { include: { participants: true } } },
   })
-  if (!message) throw new AuthError("Message introuvable", 404)
+  if (!message) throw new AuthError(msg.support.MESSAGE_NOT_FOUND, 404)
   const isParticipant = message.conversation.participants.some((p) => p.userId === reporterId)
-  if (!isParticipant) throw new AuthError("Non autorisé", 403)
+  if (!isParticipant) throw new AuthError(msg.auth.UNAUTHORIZED, 403)
 
   const existing = await prisma.messageReport.findFirst({
     where: { messageId, reporterId },

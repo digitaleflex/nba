@@ -6,6 +6,7 @@ import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
 import { newAccessRequestAdminEmail } from "@nba/lib/email"
 import { sendEmail } from "@nba/lib/email"
 import IORedis from "ioredis"
+import { msg } from "@nba/lib/messages"
 
 const RATE_LIMIT_WINDOW = 60 // secondes
 const RATE_LIMIT_MAX = 3 // max 3 requêtes par fenêtre
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
   let redis: IORedis | null = null
   try {
     const session = await getServerSession()
-    if (!session) throw new AuthError("Non authentifié", 401)
+    if (!session) throw new AuthError(msg.auth.NOT_AUTHENTICATED, 401)
 
     // Rate limit par utilisateur
     try {
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
       if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW)
       if (count > RATE_LIMIT_MAX) {
         return NextResponse.json(
-          { error: "Trop de tentatives. Veuillez patienter." },
+          { error: msg.dashboard.TOO_MANY_ATTEMPTS },
           { status: 429 },
         )
       }

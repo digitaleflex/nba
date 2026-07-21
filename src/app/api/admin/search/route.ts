@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { handleAuthError } from "@nba/lib/auth-utils"
+import { msg } from "@nba/lib/messages"
 
 export async function GET(req: Request) {
   try {
     const session = await getServerSession()
     if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     }
 
     // Vérifier le rôle
@@ -17,7 +18,7 @@ export async function GET(req: Request) {
     })
 
     if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
     }
 
     const { searchParams } = new URL(req.url)

@@ -1,3 +1,4 @@
+import { msg } from "./messages"
 import { NextRequest, NextResponse } from "next/server"
 
 const ALLOWED_ORIGINS = [
@@ -20,14 +21,14 @@ export function csrfCheck(req: NextRequest): NextResponse | null {
   // et same-site ; son absence pour un POST/PUT/DELETE indique un contexte non navigable
   // (curl, serveur-à-serveur non autorisé) et doit être bloqué par défaut.
   if (!origin && !referer) {
-    return NextResponse.json({ error: "Forbidden — missing origin/referer" }, { status: 403 })
+    return NextResponse.json({ error: msg.security.MISSING_ORIGIN }, { status: 403 })
   }
 
   const originOk = origin ? ALLOWED_ORIGINS.some((o) => new URL(origin).origin === o) : false
   const refererOk = referer ? ALLOWED_ORIGINS.some((o) => referer.startsWith(o)) : false
 
   if (!originOk && !refererOk) {
-    return NextResponse.json({ error: "Forbidden — cross-origin request rejected" }, { status: 403 })
+    return NextResponse.json({ error: msg.security.CROSS_ORIGIN_REJECTED }, { status: 403 })
   }
 
   return null

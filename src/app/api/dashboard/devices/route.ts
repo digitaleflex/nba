@@ -6,6 +6,8 @@ import {
   revokeDevice,
   revokeOtherDevices,
 } from "@nba/lib/services/device"
+import { validateOrThrow, deviceRenameSchema, deviceDeleteSchema } from "@nba/lib/validations"
+import { msg } from "@nba/lib/messages"
 
 export async function GET() {
   try {
@@ -57,7 +59,7 @@ export async function DELETE(req: NextRequest) {
 
     if (!deviceId) {
       return NextResponse.json(
-        { error: "Paramètres invalides" },
+        { error: msg.dashboard.INVALID_PARAMS },
         { status: 400 },
       )
     }

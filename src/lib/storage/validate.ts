@@ -1,3 +1,5 @@
+import { msg } from "../messages"
+
 const ALLOWED_MIME_TYPES = [
   "image/jpeg",
   "image/png",
@@ -44,26 +46,20 @@ function sanitizeExtension(mime: string): string {
 
 export async function validateUpload(file: File): Promise<void> {
   if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error(
-      `Type de fichier non autorisé : ${file.type}. Types acceptés : ${ALLOWED_MIME_TYPES.join(", ")}`,
-    )
+    throw new Error(msg.storage.FILE_TYPE_NOT_ALLOWED(file.type, ALLOWED_MIME_TYPES.join(", ")))
   }
 
   if (file.size > MAX_FILE_SIZE) {
-    throw new Error(
-      `Fichier trop volumineux (max ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(0)} MB)`,
-    )
+    throw new Error(msg.storage.FILE_TOO_LARGE((MAX_FILE_SIZE / 1024 / 1024).toFixed(0)))
   }
 
   if (file.size === 0) {
-    throw new Error("Fichier vide")
+    throw new Error(msg.storage.FILE_EMPTY)
   }
 
   const headerBuffer = await file.slice(0, 12).arrayBuffer()
   if (!validateMagicBytes(headerBuffer, file.type)) {
-    throw new Error(
-      `Le contenu du fichier ne correspond pas au type déclaré : ${file.type}`,
-    )
+    throw new Error(msg.storage.CONTENT_MISMATCH(file.type))
   }
 }
 

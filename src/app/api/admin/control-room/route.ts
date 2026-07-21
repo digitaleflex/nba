@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
 import { getBannedList } from "@nba/lib/services/moderation"
 import { serverError } from "@nba/lib/api-error"
+import { msg } from "@nba/lib/messages"
 
 /**
  * Centre de contrôle admin : données temps réel pour le monitoring opérationnel.
@@ -13,7 +14,7 @@ export async function GET() {
   try {
     const session = await getServerSession()
     if (!session) {
-      return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
+      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
     }
 
     const userDb = await prisma.user.findUnique({
@@ -22,7 +23,7 @@ export async function GET() {
     })
 
     if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 })
+      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
     }
 
     const data = await getCached(
