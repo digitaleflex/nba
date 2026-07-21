@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { markDlqReplayed, abandonDlq } from "@nba/lib/services/webhook-dlq"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { serverError } from "@nba/lib/api-error"
+
+const log = logger.child({ module: "dlq-replay" })
 
 /**
  * Rejoue une entree DLQ : re-publie l'event dans la logique applicative
@@ -116,15 +119,19 @@ export async function POST(
           ? "Marqué comme spam (complaint)"
           : (event.data?.bounce?.message ?? "Bounce")
 
-      if (type === "email.bounced" || type === "email.complained") {
+        if (type === "email.bounced" || type === "email.complained") {
         await prisma.notificationDelivery.update({
           where: { id: delivery.id },
           data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
         })
         if (type === "email.bounced") {
-          await markUserBounced(emailId).catch(() => {})
+          await markUserBounced(emailId).catch((err) => {
+            log.warn({ err, emailId }, "markUserBounced failed during DLQ replay")
+          })
         } else {
-          await markUserComplained(emailId).catch(() => {})
+          await markUserComplained(emailId).catch((err) => {
+            log.warn({ err, emailId }, "markUserComplained failed during DLQ replay")
+          })
         }
         const to = Array.isArray(event.data?.to) ? event.data.to.join(", ") : String(event.data?.to ?? "")
         await sendEmail(ADMIN_EMAIL, {

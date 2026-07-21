@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
 import { invalidatePrefix } from "@nba/lib/cache"
+
+const log = logger.child({ module: "admin-access-requests" })
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -96,7 +99,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (redis) {
           await redis.publish("nba:ws:control", `reset:${request.userId}`)
         }
-      } catch {}
+      } catch {
+        log.warn({ userId: request.userId }, "Failed to publish WS reset on access request rejection")
+      }
     }
 
     await logAuditEvent({

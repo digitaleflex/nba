@@ -1,6 +1,9 @@
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { markUserBounced, markUserComplained } from "./email-status"
 import { sendEmail } from "@nba/lib/email"
+
+const log = logger.child({ module: "webhook-replay" })
 
 const ADMIN_EMAIL =
   process.env.ADMIN_EMAIL ?? process.env.RESEND_FROM_EMAIL ?? "admin@signauxx.com"
@@ -77,9 +80,13 @@ export async function replayEmailEvent(args: {
       data: { status: "BOUNCED", errorMessage, lastEventAt: eventTs },
     })
     if (type === "email.bounced") {
-      await markUserBounced(externalId).catch(() => {})
+      await markUserBounced(externalId).catch((err) => {
+        log.warn({ err, externalId }, "markUserBounced failed during replay")
+      })
     } else {
-      await markUserComplained(externalId).catch(() => {})
+      await markUserComplained(externalId).catch((err) => {
+        log.warn({ err, externalId }, "markUserComplained failed during replay")
+      })
     }
     const to = Array.isArray(event.data?.to) ? event.data.to.join(", ") : String(event.data?.to ?? "")
     await sendEmail(ADMIN_EMAIL, {

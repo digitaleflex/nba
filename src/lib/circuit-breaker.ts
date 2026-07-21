@@ -105,9 +105,19 @@ export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions)
   return { execute, getState, reset }
 }
 
-export class CircuitOpenError extends Error {
+import { AppError } from "./errors/app-error"
+import { ErrorCode } from "./errors/codes"
+
+export class CircuitOpenError extends AppError {
   constructor(name: string) {
-    super(`[circuit:${name}] Circuit is OPEN — call short-circuited`)
+    super({
+      code: ErrorCode.CIRCUIT_OPEN,
+      message: `[circuit:${name}] Circuit is OPEN — call short-circuited`,
+      httpStatus: 503,
+      retryable: true,
+      module: "circuit-breaker",
+      details: { circuitName: name },
+    })
     this.name = "CircuitOpenError"
   }
 }

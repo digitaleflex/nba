@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@nba/lib/auth"
+import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const log = logger.child({ module: "sign-in" })
 
 const signInRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 
@@ -46,7 +49,9 @@ export async function POST(req: NextRequest) {
         ipAddress,
         userAgent,
       },
-    }).catch(() => {})
+    }).catch((err) => {
+      log.warn({ err, email }, "Failed to log audit event for failed sign-in")
+    })
 
     return NextResponse.json({ message }, { status: 401 })
   }

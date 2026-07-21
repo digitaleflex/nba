@@ -1,5 +1,8 @@
 import webpush from "web-push";
 import { prisma } from "@nba/lib/db";
+import { logger } from "@nba/lib/logger";
+
+const log = logger.child({ module: "push" })
 
 let configured = false;
 
@@ -70,12 +73,16 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
         errors[code] = (errors[code] || 0) + 1
 
         if (shouldDeleteSub(code)) {
-          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+          await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
+            log.warn({ err, subscriptionId: sub.id }, "Failed to delete expired push subscription")
+          });
         } else if (code >= 500 || code === 0) {
           const key = `${sub.endpoint.slice(0, 40)}:${code}`
           errorCounters.set(key, (errorCounters.get(key) || 0) + 1)
           if ((errorCounters.get(key) || 0) >= 3) {
-            await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {});
+            await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
+              log.warn({ err, subscriptionId: sub.id }, "Failed to delete unreliable push subscription")
+            });
           }
         }
       }
@@ -88,7 +95,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
     .join(", ")
 
   if (failed > 0) {
-    console.warn(`[push] userId=${userId.slice(0, 8)} sent=${sent} failed=${failed} errors={${errorSummary}}`)
+    log.warn({ userId: userId.slice(0, 8), sent, failed, errors: errorSummary }, "Push send had failures")
   }
 
   return { sent, failed };

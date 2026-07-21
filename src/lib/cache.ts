@@ -1,4 +1,7 @@
 import IORedis from "ioredis"
+import { logger } from "./logger"
+
+const log = logger.child({ module: "cache" })
 
 const PREFIX = "nba:cache:v1:"
 
@@ -61,7 +64,9 @@ export async function getCached<T>(
           return JSON.parse(cached) as T
         } catch {
           // Valeur corrompue dans le cache : on l'ignore et on re-fetch.
-          await invalidateKey(key).catch(() => {})
+          await invalidateKey(key).catch((err) => {
+            log.warn({ err, key }, "Failed to invalidate corrupted cache key")
+          })
         }
       }
     } catch {

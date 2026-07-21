@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { softDeleteUser } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const log = logger.child({ module: "delete-account" })
 
 const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
 const deleteAccountRateLimit = rateLimitMiddleware({ window: 3600, max: 2 })
@@ -65,11 +68,13 @@ export async function DELETE(request: Request) {
       }),
       invalidatePrefix("members:"),
       invalidatePrefix("ops"),
-    ]).catch(() => {})
+    ]).catch((err) => {
+      log.warn({ err, userId: session.user.id }, "Non-blocking audit/cache invalidation failed")
+    })
 
     // Send confirmation email (non-blocking)
     sendAccountDeletionEmail(user).catch((err) =>
-      console.error("[delete-account] email failed:", err)
+      log.error({ err, userId: session.user.id }, "Deletion confirmation email failed")
     )
 
     // Clear session cookies
