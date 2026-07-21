@@ -7,7 +7,10 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
+<<<<<<< HEAD
 import { msg } from "@nba/lib/messages"
+=======
+>>>>>>> 4265e29 (feat(errors): E06 — Zod validation for all mutation routes)
 
 const log = logger.child({ module: "hard-delete" })
 
@@ -22,11 +25,7 @@ export async function DELETE(request: NextRequest) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
-    const { password } = body
-
-    if (!password) {
-      return NextResponse.json({ error: "Mot de passe requis pour la suppression définitive" }, { status: 400 })
-    }
+    const { password } = validateOrThrow(deleteAccountSchema, body)
 
     const account = await prisma.account.findFirst({
       where: { userId: session.user.id, providerId: "credential" },

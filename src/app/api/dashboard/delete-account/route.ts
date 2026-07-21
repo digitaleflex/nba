@@ -24,11 +24,7 @@ export async function DELETE(request: Request) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
-    const { password } = body
-
-    if (!password) {
-      return NextResponse.json({ error: "Mot de passe requis pour supprimer le compte" }, { status: 400 })
-    }
+    const { password } = validateOrThrow(deleteAccountSchema, body)
 
     const [user, account] = await Promise.all([
       prisma.user.findUnique({

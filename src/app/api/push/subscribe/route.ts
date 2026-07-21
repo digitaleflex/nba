@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { validateOrThrow, pushSubscribeSchema, pushUnsubscribeSchema } from "@nba/lib/validations"
 
 const pushSubscribeRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
@@ -18,11 +19,7 @@ export async function POST(req: NextRequest) {
     const rateLimitRes = await pushSubscribeRateLimit(req, `push-subscribe:${session.user.id}`)
     if (rateLimitRes) return rateLimitRes
 
-    const body: SubscribeBody = await req.json()
-    if (!body.endpoint || !body.keys?.p256dh || !body.keys?.auth) {
-      return NextResponse.json({ error: "Champs manquants" }, { status: 400 })
-    }
-
+    const body = validateOrThrow(pushSubscribeSchema, await req.json())
     const userAgent = body.userAgent || req.headers.get("user-agent") || undefined
 
     // Upsert : si l'endpoint existe déjà (autre user ou même user), on met à jour
@@ -75,10 +72,7 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await requireActiveUser()
 
-    const body = await req.json()
-    if (!body.endpoint) {
-      return NextResponse.json({ error: "endpoint requis" }, { status: 400 })
-    }
+    const body = validateOrThrow(pushUnsubscribeSchema, await req.json())
 
     await prisma.pushSubscription.deleteMany({
       where: { endpoint: body.endpoint, userId: session.user.id },

@@ -12,7 +12,7 @@ export async function PUT(request: Request) {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
 
     const body = await request.json()
-    const { smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom } = body
+    const { smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom } = validateOrThrow(smtpSettingsSchema, body)
 
     const settings = [
       { key: "smtp_host", value: smtpHost || "" },

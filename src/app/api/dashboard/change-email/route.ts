@@ -18,16 +18,7 @@ export async function PUT(request: Request) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await request.json()
-    const { newEmail, currentPassword } = body
-
-    if (!newEmail || !currentPassword) {
-      return NextResponse.json({ error: "Nouvel email et mot de passe actuel requis" }, { status: 400 })
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(newEmail)) {
-      return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 })
-    }
+    const { newEmail, currentPassword } = validateOrThrow(changeEmailSchema, body)
 
     const account = await prisma.account.findFirst({
       where: { userId: session.user.id, providerId: "credential" },

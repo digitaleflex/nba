@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { handleAuthError, requireRole } from "@nba/lib/auth-utils"
 import { banEmail, unbanEmail, getBannedList } from "@nba/lib/services/moderation"
+import { validateOrThrow, banUserSchema, unbanUserSchema } from "@nba/lib/validations"
 
 export async function GET() {
   try {
@@ -15,10 +16,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const { email, reason } = await req.json()
-    if (!email || !reason) {
-      return NextResponse.json({ error: "Email et motif requis" }, { status: 400 })
-    }
+    const { email, reason } = validateOrThrow(banUserSchema, await req.json())
     await banEmail({ email, reason, bannedBy: "admin" })
     return NextResponse.json({ ok: true })
   } catch (error) {
@@ -29,10 +27,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
-    const { email } = await req.json()
-    if (!email) {
-      return NextResponse.json({ error: "Email requis" }, { status: 400 })
-    }
+    const { email } = validateOrThrow(unbanUserSchema, await req.json())
     await unbanEmail(email)
     return NextResponse.json({ ok: true })
   } catch (error) {
