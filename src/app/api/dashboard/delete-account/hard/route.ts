@@ -7,10 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
-<<<<<<< HEAD
 import { msg } from "@nba/lib/messages"
-=======
->>>>>>> 4265e29 (feat(errors): E06 — Zod validation for all mutation routes)
 
 const log = logger.child({ module: "hard-delete" })
 

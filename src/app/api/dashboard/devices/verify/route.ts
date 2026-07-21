@@ -3,10 +3,7 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { verifyDeviceCode } from "@nba/lib/services/device"
 import { validateOrThrow, deviceVerifySchema } from "@nba/lib/validations"
 import { msg } from "@nba/lib/messages"
-<<<<<<< HEAD
-=======
 import { rateLimitOrDeny } from "@nba/lib/rate-limit"
->>>>>>> 2ae613b (feat(errors): E12 — rate limiting amélioré)
 
 export async function POST(req: NextRequest) {
   try {
