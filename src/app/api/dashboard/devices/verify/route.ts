@@ -3,10 +3,13 @@ import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { verifyDeviceCode } from "@nba/lib/services/device"
 import { validateOrThrow, deviceVerifySchema } from "@nba/lib/validations"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("DEVICE_MUTATION", session.user.id)
+    if (rl) return rl
     const body = await req.json()
     const { code } = validateOrThrow(deviceVerifySchema, body)
     await verifyDeviceCode(session.user.id, code, req)

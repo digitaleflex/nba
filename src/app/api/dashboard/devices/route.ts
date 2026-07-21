@@ -8,6 +8,7 @@ import {
 } from "@nba/lib/services/device"
 import { validateOrThrow, deviceRenameSchema, deviceDeleteSchema } from "@nba/lib/validations"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function GET() {
   try {
@@ -22,6 +23,8 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("DEVICE_MUTATION", session.user.id)
+    if (rl) return rl
     const body = await req.json()
     const { deviceId, name } = validateOrThrow(deviceRenameSchema, body)
     await renameDevice(deviceId, name, session.user.id)
@@ -34,6 +37,8 @@ export async function PUT(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("DEVICE_MUTATION", session.user.id)
+    if (rl) return rl
     const body = await req.json()
     const { deviceId, revokeOthers } = validateOrThrow(deviceDeleteSchema, body)
 

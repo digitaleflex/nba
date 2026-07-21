@@ -6,10 +6,13 @@ import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { validateOrThrow, smtpSettingsSchema } from "@nba/lib/validations"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function PUT(request: Request) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const rl = await rateLimitOrDeny("ADMIN_SETTINGS", session.user.id)
+    if (rl) return rl
 
     const body = await request.json()
     const { smtpHost, smtpPort, smtpTls, smtpUser, smtpPass, smtpFrom } = validateOrThrow(smtpSettingsSchema, body)
