@@ -55,11 +55,20 @@ export async function sendTelegramMessage(
 
 export async function deleteTelegramChat(chatId: string): Promise<void> {
   if (!BOT_TOKEN || !chatId) return
-  await fetch(`${API_BASE}${BOT_TOKEN}/deleteChat`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId }),
-  }).catch((err) => {
-    log.warn({ err, chatId, errorCode: "INTEGRATION_ERROR" }, "Telegram deleteChat failed")
-  })
+  try {
+    await telegramBreaker.execute(() =>
+      withTimeout(async (signal) => {
+        await fetch(`${API_BASE}${BOT_TOKEN}/deleteChat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: chatId }),
+          signal,
+        })
+      }, TELEGRAM_TIMEOUT_MS),
+    )
+  } catch (err: any) {
+    if (err?.code !== "EXT_001") {
+      log.warn({ err, chatId, errorCode: "INTEGRATION_ERROR" }, "Telegram deleteChat failed")
+    }
+  }
 }
