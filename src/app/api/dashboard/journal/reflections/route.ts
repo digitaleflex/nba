@@ -52,13 +52,6 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const existing = await prisma.dailyReflection.findUnique({
-      where: { userId_date: { userId: session.user.id, date } },
-      select: { tradeCount: true },
-    })
-
-    const needsRecalc = !existing || existing.tradeCount === 0
-
     const reflection = await prisma.dailyReflection.upsert({
       where: { userId_date: { userId: session.user.id, date } },
       create: {
@@ -67,19 +60,19 @@ export async function POST(request: NextRequest) {
         rating: parsed.rating,
         mood: parsed.mood,
         note: parsed.note,
-        tradeCount: needsRecalc ? dayTrades.length : existing.tradeCount,
-        wins: needsRecalc ? dayTrades.filter(t => t.result === "WIN").length : 0,
-        losses: needsRecalc ? dayTrades.filter(t => t.result === "LOSS").length : 0,
-        totalPnl: needsRecalc ? dayTrades.reduce((s, t) => s + Number(t.pnl), 0) : 0,
+        tradeCount: dayTrades.length,
+        wins: dayTrades.filter(t => t.result === "WIN").length,
+        losses: dayTrades.filter(t => t.result === "LOSS").length,
+        totalPnl: dayTrades.reduce((s, t) => s + Number(t.pnl), 0),
       },
       update: {
         rating: parsed.rating,
         mood: parsed.mood,
         note: parsed.note,
-        tradeCount: needsRecalc ? dayTrades.length : undefined,
-        wins: needsRecalc ? dayTrades.filter(t => t.result === "WIN").length : undefined,
-        losses: needsRecalc ? dayTrades.filter(t => t.result === "LOSS").length : undefined,
-        totalPnl: needsRecalc ? dayTrades.reduce((s, t) => s + Number(t.pnl), 0) : undefined,
+        tradeCount: dayTrades.length,
+        wins: dayTrades.filter(t => t.result === "WIN").length,
+        losses: dayTrades.filter(t => t.result === "LOSS").length,
+        totalPnl: dayTrades.reduce((s, t) => s + Number(t.pnl), 0),
       },
     })
 

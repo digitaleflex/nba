@@ -36,7 +36,7 @@ export function ReflectionsTab() {
   const [note, setNote] = useState("")
   const [saving, setSaving] = useState(false)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = new Date().toLocaleDateString("fr-CA")
 
   useEffect(() => {
     fetch("/api/dashboard/journal/reflections")
