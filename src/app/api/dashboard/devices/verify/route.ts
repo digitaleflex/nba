@@ -2,14 +2,17 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { verifyDeviceCode } from "@nba/lib/services/device"
 import { validateOrThrow, deviceVerifySchema } from "@nba/lib/validations"
-<<<<<<< HEAD
 import { msg } from "@nba/lib/messages"
+<<<<<<< HEAD
 =======
->>>>>>> 4265e29 (feat(errors): E06 — Zod validation for all mutation routes)
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
+>>>>>>> 2ae613b (feat(errors): E12 — rate limiting amélioré)
 
 export async function POST(req: NextRequest) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("DEVICE_MUTATION", session.user.id)
+    if (rl) return rl
     const body = await req.json()
     const { code } = validateOrThrow(deviceVerifySchema, body)
     await verifyDeviceCode(session.user.id, code, req)

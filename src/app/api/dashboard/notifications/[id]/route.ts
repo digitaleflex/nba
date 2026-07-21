@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function PUT(
   req: NextRequest,
@@ -9,6 +10,8 @@ export async function PUT(
 ) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("NOTIFICATION_MUTATION", session.user.id)
+    if (rl) return rl
 
     const { id } = await params
 
@@ -46,6 +49,8 @@ export async function DELETE(
 ) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("NOTIFICATION_MUTATION", session.user.id)
+    if (rl) return rl
 
     const { id } = await params
 

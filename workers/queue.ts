@@ -5,6 +5,9 @@ import { prisma } from "../src/lib/db"
 import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
+import { processRecovery, enqueueRecovery, type RecoveryJobData } from "../src/lib/services/recovery"
+import { listPendingForRetry, incrementAttempts, escalateDlq } from "../src/lib/services/webhook-dlq"
+import { replayEmailEvent } from "../src/lib/services/webhook-replay"
 import { logger } from "../src/lib/logger"
 
 // Initialize Sentry for worker process
@@ -121,6 +124,15 @@ worker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "file-cleanup", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("file-cleanup", job, err)
+    enqueueRecovery({
+      type: "FILE_CLEANUP",
+      originalQueue: "file-cleanup",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
@@ -173,6 +185,15 @@ notificationWorker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "notification-delivery", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("notification-delivery", job, err)
+    enqueueRecovery({
+      type: "EMAIL_SEND",
+      originalQueue: "notification-delivery",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
@@ -207,14 +228,104 @@ signalWorker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "signal-distribution", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("signal-distribution", job, err)
+    enqueueRecovery({
+      type: "SIGNAL_DISTRIBUTION",
+      originalQueue: "signal-distribution",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
 log.info("Signal distribution worker started")
 
+// ── Recovery Queue ──
+export const recoveryQueue = new Queue("recovery", { connection: connection as any, skipVersionCheck: true })
+
+const recoveryWorker = new Worker(
+  "recovery",
+  async (job: any) => {
+    const data = job.data as RecoveryJobData
+    log.info({ type: data.type, originalJobId: data.originalJobId, attempt: job.attemptsMade + 1 }, "Processing recovery job")
+    await processRecovery(data)
+  },
+  {
+    connection: connection as any,
+    concurrency: 5,
+    stalledInterval: 30000,
+    lockDuration: 60000,
+  }
+)
+
+recoveryWorker.on("completed", (job: any) => {
+  log.info({ jobId: job.id, type: job.data?.type }, "Recovery job completed")
+})
+
+recoveryWorker.on("failed", (job: any, err: any) => {
+  log.error({ jobId: job?.id, type: job?.data?.type, err }, "Recovery job exhausted retries")
+  Sentry.captureException(err, { extra: { queue: "recovery", jobId: job?.id } })
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("recovery", job, err)
+  }
+})
+
+log.info("Recovery worker started")
+
+// ── DLQ Auto-Retry Cron (every 5 minutes) ──
+const DLQ_RETRY_INTERVAL_MS = 5 * 60 * 1000
+
+let dlqTimer: ReturnType<typeof setInterval> | null = null
+
+async function processDlqRetry() {
+  const entries = await listPendingForRetry()
+  if (entries.length === 0) return
+
+  log.info({ count: entries.length }, "DLQ auto-retry cycle started")
+
+  for (const entry of entries) {
+    try {
+      let body: any
+      try {
+        body = entry.rawBody ? JSON.parse(entry.rawBody) : entry.payload
+      } catch {
+        body = entry.payload
+      }
+
+      const result = await replayEmailEvent({
+        event: body,
+        externalId: entry.externalId ?? "",
+        svixId: entry.svixId ?? `dlq-cron-${entry.id}`,
+      })
+
+      if (result.ok) {
+        await prisma.webhookDlq.update({
+          where: { id: entry.id },
+          data: { status: "REPLAYED", replayedAt: new Date(), lastAttemptAt: new Date() },
+        })
+        log.info({ id: entry.id, eventType: entry.eventType }, "DLQ auto-retry succeeded")
+      }
+    } catch (err: any) {
+      await incrementAttempts(entry.id, err?.message ?? "Auto-retry failed")
+
+      if (entry.attempts + 1 >= 3) {
+        await escalateDlq([entry.id])
+        log.warn({ id: entry.id, eventType: entry.eventType, attempts: entry.attempts + 1 }, "DLQ entry escalated after exhausting retries")
+      } else {
+        log.warn({ id: entry.id, eventType: entry.eventType, attempt: entry.attempts + 1 }, "DLQ auto-retry failed, will retry later")
+      }
+    }
+  }
+}
+
+dlqTimer = setInterval(processDlqRetry, DLQ_RETRY_INTERVAL_MS)
+log.info({ intervalMs: DLQ_RETRY_INTERVAL_MS }, "DLQ auto-retry cron started")
+
 // ── Graceful shutdown ──
-const workers = [worker, notificationWorker, signalWorker]
-const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue]
+const workers = [worker, notificationWorker, signalWorker, recoveryWorker]
+const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue, recoveryQueue]
 let shuttingDown = false
 
 async function gracefulShutdown(signal: string) {
@@ -229,6 +340,10 @@ async function gracefulShutdown(signal: string) {
   }, 30_000)
 
   try {
+    // Stop DLQ cron timer
+    if (dlqTimer) clearInterval(dlqTimer)
+    log.info("DLQ auto-retry cron stopped")
+
     // Close all workers (stop accepting new jobs, wait for running jobs)
     await Promise.all(workers.map((w) => w.close()))
     log.info("All workers closed")

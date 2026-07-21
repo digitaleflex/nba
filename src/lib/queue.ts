@@ -117,4 +117,5 @@ export const fileCleanupQueue = getQueue("file-cleanup");
 export const signalDistributionQueue = getQueue("signal-distribution");
 export const notificationDeliveryQueue = getQueue("notification-delivery");
 export const deadLetterQueue = getQueue("dead-letter");
+export const recoveryQueue = getQueue("recovery");
 export { getRedisConnection, getQueue, queueEnabled };

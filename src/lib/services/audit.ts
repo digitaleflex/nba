@@ -2,6 +2,9 @@ import { prisma, withRetryTransaction } from "@nba/lib/db"
 import { headers } from "next/headers"
 import { publishAuditEvent } from "@nba/lib/redis-pubsub"
 import { computeHash } from "@nba/lib/audit/integrity"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "audit" })
 
 function buildSearchText(action: string, resourceType: string, details?: Record<string, unknown>): string {
   const parts = [action, resourceType]
@@ -105,4 +108,60 @@ export async function logAuditEvent(params: {
     ipAddress: log.ipAddress,
     severity,
   })
+}
+
+const AUDIT_DELETE_CHUNK_SIZE = 1000
+
+export async function deleteOldAuditLogs(cutoff: Date): Promise<number> {
+  let total = 0
+  let deleted = 0
+
+  do {
+    const batch = await prisma.auditLog.findMany({
+      where: { createdAt: { lt: cutoff } },
+      select: { id: true },
+      take: AUDIT_DELETE_CHUNK_SIZE,
+    })
+
+    if (batch.length === 0) break
+
+    const ids = batch.map((r) => r.id)
+    const result = await prisma.auditLog.deleteMany({
+      where: { id: { in: ids } },
+    })
+    deleted = result.count
+    total += deleted
+    log.info({ chunkSize: batch.length, deleted, total }, "Audit log cleanup chunk")
+  } while (deleted >= AUDIT_DELETE_CHUNK_SIZE)
+
+  return total
+}
+
+export async function auditHealth() {
+  const [total, bySeverity, oldest, newest, hashGaps] = await Promise.all([
+    prisma.auditLog.count(),
+    Promise.all(
+      ["info", "warning", "error"].map((s) =>
+        prisma.auditLog.count({ where: { severity: s } }).then((c) => ({ severity: s, count: c })),
+      ),
+    ),
+    prisma.auditLog.findFirst({ orderBy: { createdAt: "asc" }, select: { createdAt: true } }),
+    prisma.auditLog.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
+    prisma.auditLog.count({ where: { hash: null } }),
+  ])
+
+  const oldestPending = await prisma.auditLog.findFirst({
+    where: { hash: null },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  })
+
+  return {
+    total,
+    bySeverity,
+    oldestAt: oldest?.createdAt ?? null,
+    newestAt: newest?.createdAt ?? null,
+    hashGaps,
+    oldestHashGapAt: oldestPending?.createdAt ?? null,
+  }
 }

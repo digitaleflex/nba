@@ -3,6 +3,9 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand, HeadObjectCommand, Get
 import { Readable } from "stream"
 import type { StorageProvider, UploadResult, FileStreamResult } from "./types"
 import { validateUpload, safeExtension } from "./validate"
+import { createCircuitBreaker } from "../circuit-breaker"
+
+const s3Breaker = createCircuitBreaker("s3", { threshold: 5, cooldownMs: 60_000 })
 
 // ── QW5: S3 retry wrapper with exponential backoff ──
 
@@ -60,13 +63,15 @@ export class S3StorageProvider implements StorageProvider {
     const key = `${subDir}/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
 
-    await withS3Retry(() =>
-      this.client.send(new PutObjectCommand({
-        Bucket: this.bucket,
-        Key: key,
-        Body: buffer,
-        ContentType: file.type,
-      }))
+    await s3Breaker.execute(() =>
+      withS3Retry(() =>
+        this.client.send(new PutObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          Body: buffer,
+          ContentType: file.type,
+        }))
+      )
     )
 
     return {
@@ -78,11 +83,13 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async delete(path: string): Promise<void> {
-    await withS3Retry(() =>
-      this.client.send(new DeleteObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }))
+    await s3Breaker.execute(() =>
+      withS3Retry(() =>
+        this.client.send(new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }))
+      )
     )
   }
 
@@ -93,11 +100,13 @@ export class S3StorageProvider implements StorageProvider {
 
   async exists(path: string): Promise<boolean> {
     try {
-      await withS3Retry(() =>
-        this.client.send(new HeadObjectCommand({
-          Bucket: this.bucket,
-          Key: path,
-        }))
+      await s3Breaker.execute(() =>
+        withS3Retry(() =>
+          this.client.send(new HeadObjectCommand({
+            Bucket: this.bucket,
+            Key: path,
+          }))
+        )
       )
       return true
     } catch {
@@ -106,11 +115,13 @@ export class S3StorageProvider implements StorageProvider {
   }
 
   async read(path: string): Promise<FileStreamResult> {
-    const response = await withS3Retry(() =>
-      this.client.send(new GetObjectCommand({
-        Bucket: this.bucket,
-        Key: path,
-      }))
+    const response = await s3Breaker.execute(() =>
+      withS3Retry(() =>
+        this.client.send(new GetObjectCommand({
+          Bucket: this.bucket,
+          Key: path,
+        }))
+      )
     )
 
     if (!response.Body) {

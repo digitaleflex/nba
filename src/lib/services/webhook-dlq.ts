@@ -110,3 +110,61 @@ export async function abandonDlq(id: string, reason: string) {
     details: { reason },
   })
 }
+
+const DLQ_AUTO_RETRY_MIN_AGE_MINUTES = 60
+const DLQ_AUTO_RETRY_MAX_ATTEMPTS = 3
+
+export async function listPendingForRetry(opts?: {
+  minAgeMinutes?: number
+  maxAttempts?: number
+  limit?: number
+}) {
+  const minAge = opts?.minAgeMinutes ?? DLQ_AUTO_RETRY_MIN_AGE_MINUTES
+  const maxAttempts = opts?.maxAttempts ?? DLQ_AUTO_RETRY_MAX_ATTEMPTS
+
+  return prisma.webhookDlq.findMany({
+    where: {
+      status: "PENDING",
+      attempts: { lt: maxAttempts },
+      createdAt: { lte: new Date(Date.now() - minAge * 60_000) },
+    },
+    orderBy: { createdAt: "asc" },
+    take: opts?.limit ?? 20,
+  })
+}
+
+export async function incrementAttempts(id: string, error: string) {
+  return prisma.webhookDlq.update({
+    where: { id },
+    data: {
+      attempts: { increment: 1 },
+      lastAttemptAt: new Date(),
+      lastError: error,
+    },
+  })
+}
+
+export async function batchAbandon(ids: string[], reason: string) {
+  const [count] = await Promise.all([
+    prisma.webhookDlq.updateMany({
+      where: { id: { in: ids }, status: "PENDING" },
+      data: { status: "ABANDONED", abandonedAt: new Date(), lastError: reason },
+    }),
+    ...ids.map((id) =>
+      logAuditEvent({
+        action: "webhook.dlq.abandoned",
+        resourceType: "webhook_dlq",
+        resourceId: id,
+        details: { reason, batch: true },
+      }),
+    ),
+  ])
+  return count
+}
+
+export async function escalateDlq(ids: string[]) {
+  await prisma.webhookDlq.updateMany({
+    where: { id: { in: ids }, status: "PENDING" },
+    data: { lastError: "ESCALATED — exhausted auto-retry" },
+  })
+}

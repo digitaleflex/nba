@@ -4,10 +4,13 @@ import { validateOrThrow, memberQuerySchema } from "@nba/lib/validations"
 import { prisma } from "@nba/lib/db"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const rl = await rateLimitOrDeny("ADMIN_MEMBER_MUTATION", session.user.id)
+    if (rl) return rl
     const { userId } = validateOrThrow(memberQuerySchema, await request.json())
 
     const result = await prisma.session.deleteMany({ where: { userId } })
