@@ -65,7 +65,7 @@ export async function getCached<T>(
         } catch {
           // Valeur corrompue dans le cache : on l'ignore et on re-fetch.
           await invalidateKey(key).catch((err) => {
-            log.warn({ err, key }, "Failed to invalidate corrupted cache key")
+            log.warn({ err, key, errorCode: "DATABASE_CONNECTION" }, "Failed to invalidate corrupted cache key")
           })
         }
       }

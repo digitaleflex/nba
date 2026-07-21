@@ -71,7 +71,7 @@ export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions)
     if (s.failures >= threshold) {
       s.state = "open"
       s.openedAt = Date.now()
-      log.warn({ name, failures: s.failures }, "Circuit OPEN")
+      log.warn({ name, failures: s.failures, errorCode: "SYSTEM_CIRCUIT_OPEN" }, "Circuit OPEN")
     }
   }
 

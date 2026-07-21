@@ -127,11 +127,11 @@ export async function POST(
         })
         if (type === "email.bounced") {
           await markUserBounced(emailId).catch((err) => {
-            log.warn({ err, emailId }, "markUserBounced failed during DLQ replay")
+            log.warn({ err, emailId, errorCode: "INTEGRATION_ERROR" }, "markUserBounced failed during DLQ replay")
           })
         } else {
           await markUserComplained(emailId).catch((err) => {
-            log.warn({ err, emailId }, "markUserComplained failed during DLQ replay")
+            log.warn({ err, emailId, errorCode: "INTEGRATION_ERROR" }, "markUserComplained failed during DLQ replay")
           })
         }
         const to = Array.isArray(event.data?.to) ? event.data.to.join(", ") : String(event.data?.to ?? "")

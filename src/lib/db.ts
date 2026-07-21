@@ -38,6 +38,31 @@ function createPrismaClient() {
     },
   });
 
+  // ── Global query-level retry middleware (Prisma $use) ──
+  ;(base as any).$use(async (params: any, next: any) => {
+    const maxRetries = 2
+    let lastError: unknown
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await next(params)
+      } catch (err) {
+        lastError = err
+        if (attempt >= maxRetries || !isRetryableTransactionError(err)) {
+          throw err
+        }
+        const delay = Math.min(1000 * Math.pow(2, attempt), 3000)
+        log.warn(
+          { attempt: attempt + 1, maxRetries, delayMs: delay, err, model: params.model, action: params.action, errorCode: "DATABASE_ERROR" },
+          "Query retry",
+        )
+        await new Promise((resolve) => setTimeout(resolve, delay))
+      }
+    }
+
+    throw lastError
+  })
+
   const extended = base.$extends({
     query: {
       user: {
@@ -102,7 +127,7 @@ export async function withRetryTransaction<T>(
 
       const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
       log.warn(
-        { attempt: attempt + 1, maxRetries, delayMs: delay, err },
+        { attempt: attempt + 1, maxRetries, delayMs: delay, err, errorCode: "DATABASE_ERROR" },
         "Transaction retry",
       );
       await new Promise((resolve) => setTimeout(resolve, delay));
@@ -133,7 +158,7 @@ export async function withRetryTransactionArray<T>(
 
       const delay = TRANSACTION_BASE_DELAY_MS * Math.pow(2, attempt);
       log.warn(
-        { attempt: attempt + 1, maxRetries, delayMs: delay, err },
+        { attempt: attempt + 1, maxRetries, delayMs: delay, err, errorCode: "DATABASE_ERROR" },
         "Transaction array retry",
       );
       await new Promise((resolve) => setTimeout(resolve, delay));

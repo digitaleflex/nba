@@ -58,7 +58,7 @@ export async function DELETE(request: NextRequest) {
       invalidatePrefix("members:"),
       invalidatePrefix("ops"),
     ]).catch((err) => {
-      log.warn({ err, userId: session.user.id }, "Non-blocking audit/cache invalidation failed during hard delete")
+      log.warn({ err, userId: session.user.id, errorCode: "DATABASE_ERROR" }, "Non-blocking audit/cache invalidation failed during hard delete")
     })
 
     const response = NextResponse.json({ success: true })

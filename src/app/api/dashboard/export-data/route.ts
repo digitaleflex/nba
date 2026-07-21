@@ -151,7 +151,7 @@ export async function GET(request: Request) {
         details: { selfService: true },
       }),
     ]).catch((err) => {
-      log.warn({ err, userId }, "Non-blocking audit log failed during data export")
+      log.warn({ err, userId, errorCode: "DATABASE_ERROR" }, "Non-blocking audit log failed during data export")
     })
 
     return NextResponse.json(exportPayload, {

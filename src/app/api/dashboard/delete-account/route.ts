@@ -71,12 +71,12 @@ export async function DELETE(request: Request) {
       invalidatePrefix("members:"),
       invalidatePrefix("ops"),
     ]).catch((err) => {
-      log.warn({ err, userId: session.user.id }, "Non-blocking audit/cache invalidation failed")
+      log.warn({ err, userId: session.user.id, errorCode: "DATABASE_ERROR" }, "Non-blocking audit/cache invalidation failed")
     })
 
     // Send confirmation email (non-blocking)
     sendAccountDeletionEmail(user).catch((err) =>
-      log.error({ err, userId: session.user.id }, "Deletion confirmation email failed")
+      log.error({ err, userId: session.user.id, errorCode: "INTEGRATION_ERROR" }, "Deletion confirmation email failed")
     )
 
     // Clear session cookies

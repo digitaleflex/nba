@@ -59,7 +59,7 @@ async function telegramSend(notificationId: string, userId: string, title: strin
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
   }).catch((err) => {
-    log.warn({ err, notificationId }, "Failed to create TELEGRAM delivery record")
+    log.warn({ err, notificationId, errorCode: "INTEGRATION_ERROR" }, "Failed to create TELEGRAM delivery record")
     return null
   })
 
@@ -74,7 +74,7 @@ async function telegramSend(notificationId: string, userId: string, title: strin
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
     }).catch((err) => {
-      log.warn({ err, deliveryId: delivery.id }, "Failed to update TELEGRAM delivery status")
+      log.warn({ err, deliveryId: delivery.id, errorCode: "INTEGRATION_ERROR" }, "Failed to update TELEGRAM delivery status")
     })
   }
 }
@@ -91,7 +91,7 @@ async function whatsappSend(notificationId: string, userId: string, title: strin
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
   }).catch((err) => {
-    log.warn({ err, notificationId }, "Failed to create WHATSAPP delivery record")
+    log.warn({ err, notificationId, errorCode: "INTEGRATION_ERROR" }, "Failed to create WHATSAPP delivery record")
     return null
   })
 
@@ -102,7 +102,7 @@ async function whatsappSend(notificationId: string, userId: string, title: strin
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
     }).catch((err) => {
-      log.warn({ err, deliveryId: delivery.id }, "Failed to update WHATSAPP delivery status")
+      log.warn({ err, deliveryId: delivery.id, errorCode: "INTEGRATION_ERROR" }, "Failed to update WHATSAPP delivery status")
     })
   }
 }
@@ -176,7 +176,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
         },
       })
       .catch((err) => {
-        log.warn({ err, notificationId: notification.id }, "Failed to create PUSH delivery record")
+        log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
         return null
       })
 
@@ -195,11 +195,11 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
             data: { status: failed ? "FAILED" : "SENT" },
           })
           .catch((err) => {
-            log.warn({ err, deliveryId: pushDelivery.id }, "Failed to update PUSH delivery after send")
+            log.warn({ err, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to update PUSH delivery after send")
           })
       })
       .catch(async (err) => {
-        log.error({ err, notificationId: notification.id }, "Push send failed")
+        log.error({ err, notificationId: notification.id, errorCode: "INTEGRATION_ERROR" }, "Push send failed")
         if (pushDelivery) {
           await prisma.notificationDelivery
             .update({
@@ -207,7 +207,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
               data: { status: "FAILED" },
             })
             .catch((innerErr) => {
-              log.warn({ err: innerErr, deliveryId: pushDelivery.id }, "Failed to mark PUSH delivery as FAILED")
+              log.warn({ err: innerErr, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to mark PUSH delivery as FAILED")
             })
         }
       })
@@ -243,11 +243,11 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
 
     // Telegram
     telegramSend(notification.id, params.userId, params.title, params.body).catch((err) => {
-      log.warn({ err, userId: params.userId }, "Telegram send failed")
+      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Telegram send failed")
     })
     // WhatsApp
     whatsappSend(notification.id, params.userId, params.title, params.body).catch((err) => {
-      log.warn({ err, userId: params.userId }, "WhatsApp send failed")
+      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "WhatsApp send failed")
     })
   }
 
@@ -261,7 +261,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     linkUrl: params.linkUrl,
     createdAt: notification.createdAt,
   }).catch((err) => {
-    log.error({ err, userId: params.userId }, "Redis pubsub failed")
+    log.error({ err, userId: params.userId, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
   })
 
   return { id: notification.id }

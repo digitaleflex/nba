@@ -68,7 +68,7 @@ export async function GET() {
               processId: parseInt(info.process_id || "0"),
             }
           } catch {
-            log.warn({}, "Failed to parse Redis INFO")
+            log.warn({ errorCode: "DATABASE_CONNECTION" }, "Failed to parse Redis INFO")
           }
         }
 
@@ -91,7 +91,7 @@ export async function GET() {
             await q.close()
           }
         } catch {
-          log.warn({}, "Failed to get Bull queue counts")
+          log.warn({ errorCode: "DATABASE_CONNECTION" }, "Failed to get Bull queue counts")
         }
 
         // WebSocket health check

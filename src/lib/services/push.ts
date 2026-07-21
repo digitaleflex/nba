@@ -74,14 +74,14 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
 
         if (shouldDeleteSub(code)) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
-            log.warn({ err, subscriptionId: sub.id }, "Failed to delete expired push subscription")
+            log.warn({ err, subscriptionId: sub.id, errorCode: "DATABASE_ERROR" }, "Failed to delete expired push subscription")
           });
         } else if (code >= 500 || code === 0) {
           const key = `${sub.endpoint.slice(0, 40)}:${code}`
           errorCounters.set(key, (errorCounters.get(key) || 0) + 1)
           if ((errorCounters.get(key) || 0) >= 3) {
             await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
-              log.warn({ err, subscriptionId: sub.id }, "Failed to delete unreliable push subscription")
+              log.warn({ err, subscriptionId: sub.id, errorCode: "DATABASE_ERROR" }, "Failed to delete unreliable push subscription")
             });
           }
         }
@@ -95,7 +95,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
     .join(", ")
 
   if (failed > 0) {
-    log.warn({ userId: userId.slice(0, 8), sent, failed, errors: errorSummary }, "Push send had failures")
+    log.warn({ userId: userId.slice(0, 8), sent, failed, errors: errorSummary, errorCode: "INTEGRATION_ERROR" }, "Push send had failures")
   }
 
   return { sent, failed };

@@ -120,11 +120,11 @@ export async function POST(request: NextRequest) {
         body: content,
         createdAt: n.createdAt,
       }).catch((err) => {
-        log.warn({ err, userId: n.userId }, "Failed to publish notification")
+        log.warn({ err, userId: n.userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish notification")
       })
       sendPushToUser(n.userId, { title, body: content, url: "/dashboard", tag: n.id })
         .catch((err) => {
-          log.warn({ err, userId: n.userId }, "Failed to send push notification")
+          log.warn({ err, userId: n.userId, errorCode: "INTEGRATION_ERROR" }, "Failed to send push notification")
         })
     }
 
