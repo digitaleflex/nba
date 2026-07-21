@@ -51,6 +51,10 @@ RUN adduser --system --uid 1001 nextjs
 # These are devDependencies not traced/included by the Next.js standalone output.
 COPY --from=deps /app/node_modules ./node_modules
 
+# Copy generated Prisma client from the prepared stage (prisma generate runs there).
+# The deps stage only has installed packages — no generated client.
+COPY --from=prepared /app/node_modules/.prisma ./node_modules/.prisma
+
 # Copy standalone build outputs
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
