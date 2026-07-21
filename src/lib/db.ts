@@ -57,7 +57,6 @@ function createPrismaClient() {
         const delay = Math.min(1000 * Math.pow(2, attempt), 3000)
         log.warn(
           { attempt: attempt + 1, maxRetries, delayMs: delay, err, model: params.model, action: params.action, errorCode: "DATABASE_ERROR" },
-          { attempt: attempt + 1, maxRetries, delayMs: delay, err, model: params.model, action: params.action },
           "Query retry",
         )
         await new Promise((resolve) => setTimeout(resolve, delay))
