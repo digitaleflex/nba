@@ -8,6 +8,7 @@ import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { validateOrThrow, memberUpdateSchema, memberQuerySchema } from "@nba/lib/validations"
 import { getRedisConnection } from "@nba/lib/queue"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 const log = logger.child({ module: "admin-members" })
 
@@ -129,6 +130,8 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const rl = await rateLimitOrDeny("ADMIN_MEMBER_MUTATION", session.user.id)
+    if (rl) return rl
     const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = validateOrThrow(memberUpdateSchema, await request.json())
 
     const data: Record<string, any> = {}
@@ -220,6 +223,8 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const rl = await rateLimitOrDeny("ADMIN_MEMBER_MUTATION", session.user.id)
+    if (rl) return rl
     const { searchParams } = new URL(request.url)
     const { userId } = validateOrThrow(memberQuerySchema, { userId: searchParams.get("userId") })
 

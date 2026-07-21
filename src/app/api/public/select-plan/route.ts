@@ -5,37 +5,16 @@ import { selectPlanSchema, validateOrThrow, ValidationError } from "@nba/lib/val
 import { AuthError, handleAuthError } from "@nba/lib/auth-utils"
 import { newAccessRequestAdminEmail } from "@nba/lib/email"
 import { sendEmail } from "@nba/lib/email"
-import IORedis from "ioredis"
 import { msg } from "@nba/lib/messages"
-
-const RATE_LIMIT_WINDOW = 60 // secondes
-const RATE_LIMIT_MAX = 3 // max 3 requêtes par fenêtre
-
-function getRedis(): IORedis {
-  return new IORedis(process.env.REDIS_URL!)
-}
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
-  let redis: IORedis | null = null
   try {
     const session = await getServerSession()
     if (!session) throw new AuthError(msg.auth.NOT_AUTHENTICATED, 401)
 
-    // Rate limit par utilisateur
-    try {
-      redis = getRedis()
-      const key = `rl:select-plan:${session.user.id}`
-      const count = await redis.incr(key)
-      if (count === 1) await redis.expire(key, RATE_LIMIT_WINDOW)
-      if (count > RATE_LIMIT_MAX) {
-        return NextResponse.json(
-          { error: msg.dashboard.TOO_MANY_ATTEMPTS },
-          { status: 429 },
-        )
-      }
-    } catch {
-      // Redis down → fail-open (ne pas bloquer l'inscription)
-    }
+    const rl = await rateLimitOrDeny("SELECT_PLAN", session.user.id)
+    if (rl) return rl
 
     const body = await req.json()
     const parsed = validateOrThrow(selectPlanSchema, body)
@@ -105,9 +84,5 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 400 })
     }
     return handleAuthError(error)
-  } finally {
-    if (redis) {
-      try { redis.disconnect() } catch { /* best-effort cleanup */ } 
-    }
   }
 }

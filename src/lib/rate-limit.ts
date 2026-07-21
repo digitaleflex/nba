@@ -3,9 +3,6 @@ import { logger } from "./logger"
 
 const log = logger.child({ module: "rate-limit" })
 
-// Rate-limiting distribué via Redis (sliding window using sorted sets).
-// Plus précis que le fixed window : évite les pics aux frontières de fenêtre.
-
 const globalForRl = globalThis as unknown as { redisRl?: IORedis }
 let rlAvailable = true
 let rlUnavailableUntil = 0
@@ -33,22 +30,71 @@ function markUnavailable() {
   rlUnavailableUntil = Date.now() + 30000
 }
 
-interface RateLimitConfig {
-  window: number // in seconds
+export interface RateLimitConfig {
+  window: number
   max: number
+}
+
+export const rateLimits = {
+  AUTH_SIGN_IN: { window: 60, max: 5 },
+  AUTH_CHECK_LOGIN: { window: 60, max: 10 },
+  ONBOARDING_SEND_OTP: { window: 60, max: 3 },
+  ONBOARDING_VERIFY_OTP: { window: 60, max: 5 },
+  ONBOARDING_KYC: { window: 3600, max: 5 },
+  ONBOARDING_BROKER: { window: 3600, max: 5 },
+  PUSH_SUBSCRIBE: { window: 60, max: 10 },
+  SUPPORT_SEND: { window: 3600, max: 5 },
+  MESSAGE_SEND: { window: 60, max: 20 },
+  MESSAGE_ATTACHMENT: { window: 3600, max: 30 },
+  JOURNAL_TRADE: { window: 60, max: 30 },
+  JOURNAL_REFLECTION: { window: 60, max: 10 },
+  JOURNAL_SESSION: { window: 60, max: 10 },
+  DELETE_ACCOUNT: { window: 3600, max: 2 },
+  HARD_DELETE: { window: 3600, max: 1 },
+  CHANGE_PASSWORD: { window: 3600, max: 5 },
+  CHANGE_EMAIL: { window: 3600, max: 3 },
+  EXPORT_DATA: { window: 3600, max: 5 },
+  ADMIN_NOTIFICATION: { window: 60, max: 5 },
+  ADMIN_SIGNAL_UPLOAD: { window: 3600, max: 20 },
+  ADMIN_CRON_CLEANUP: { window: 600, max: 1 },
+  ADMIN_MEMBER_MUTATION: { window: 60, max: 10 },
+  ADMIN_SETTINGS: { window: 60, max: 10 },
+  DEVICE_MUTATION: { window: 60, max: 10 },
+  NOTIFICATION_MUTATION: { window: 60, max: 30 },
+  SELECT_PLAN: { window: 60, max: 5 },
+} as const
+
+export type RateLimitName = keyof typeof rateLimits
+
+export interface RateLimitResult {
+  allowed: boolean
+  remaining: number
+  resetIn: number
+  headers: Record<string, string>
 }
 
 /**
  * Sliding window rate limiter using Redis sorted sets.
  * More accurate than fixed window — prevents burst at window boundaries.
+ * Fails closed (503) when Redis is unavailable.
  */
 export async function checkRateLimit(
   key: string,
   config: RateLimitConfig,
-): Promise<{ allowed: boolean; remaining: number; resetIn: number }> {
+): Promise<RateLimitResult> {
   const redis = getRedis()
   if (!redis) {
-    return { allowed: true, remaining: config.max, resetIn: config.window }
+    return {
+      allowed: false,
+      remaining: 0,
+      resetIn: config.window,
+      headers: {
+        "Retry-After": config.window.toString(),
+        "X-RateLimit-Limit": config.max.toString(),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": config.window.toString(),
+      },
+    }
   }
 
   const rkey = `ratelimit:sw:${key}`
@@ -57,24 +103,77 @@ export async function checkRateLimit(
 
   try {
     const pipeline = redis.pipeline()
-    // Remove entries outside the window
     pipeline.zremrangebyscore(rkey, 0, windowStart)
-    // Add current request
     pipeline.zadd(rkey, `${now}`, `${now}:${crypto.randomUUID().slice(0, 8)}`)
-    // Count entries in window
     pipeline.zcard(rkey)
-    // Set TTL on the key
     pipeline.expire(rkey, config.window)
 
     const results = await pipeline.exec()
     const count = results?.[2]?.[1] as number ?? 0
     const remaining = Math.max(0, config.max - count)
 
-    return { allowed: count <= config.max, remaining, resetIn: config.window }
+    return {
+      allowed: count <= config.max,
+      remaining,
+      resetIn: config.window,
+      headers: {
+        "X-RateLimit-Limit": config.max.toString(),
+        "X-RateLimit-Remaining": remaining.toString(),
+        "X-RateLimit-Reset": config.window.toString(),
+      },
+    }
   } catch {
     markUnavailable()
-    return { allowed: true, remaining: config.max, resetIn: config.window }
+    return {
+      allowed: false,
+      remaining: 0,
+      resetIn: config.window,
+      headers: {
+        "Retry-After": config.window.toString(),
+        "X-RateLimit-Limit": config.max.toString(),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": config.window.toString(),
+      },
+    }
   }
+}
+
+/**
+ * Quick check for mutation routes. Returns 429/503 Response if over limit, else null.
+ * On success, adds rate limit headers to the existing Response.
+ */
+export async function rateLimitOrDeny(
+  name: RateLimitName,
+  identifier: string,
+): Promise<Response | null> {
+  const config = rateLimits[name]
+  const ip = identifier.includes(":")
+    ? identifier.split(":").pop() ?? "unknown"
+    : "unknown"
+  const result = await checkRateLimit(`${name}:${identifier}`, config)
+
+  if (!result.allowed) {
+    const status = result.remaining === 0 ? 429 : 503
+    log.warn({ name, identifier, ip, status, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
+    return new Response(
+      JSON.stringify({
+        code: "BUSINESS_RATE_LIMIT",
+        message: status === 503
+          ? "Service de limite de taux indisponible. Réessayez plus tard."
+          : "Trop de requêtes. Réessayez plus tard.",
+        errorId: Math.random().toString(36).slice(2, 10).toUpperCase(),
+      }),
+      {
+        status,
+        headers: {
+          "Content-Type": "application/json",
+          ...result.headers,
+        },
+      },
+    )
+  }
+
+  return null
 }
 
 export function rateLimitMiddleware(config: RateLimitConfig) {
@@ -85,15 +184,13 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
     const key = `${identifier}:${ip}`
     const result = await checkRateLimit(key, config)
     if (!result.allowed) {
-      log.warn({ key, ip, identifier, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
-      return new Response(JSON.stringify({ error: "Trop de requêtes. Réessayez plus tard." }), {
-        status: 429,
+      const status = result.remaining === 0 ? 429 : 503
+      log.warn({ key, ip, identifier, status, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
+      return new Response(JSON.stringify({ error: status === 503 ? "Service de limite de taux indisponible. Réessayez plus tard." : "Trop de requêtes. Réessayez plus tard." }), {
+        status,
         headers: {
           "Content-Type": "application/json",
-          "Retry-After": result.resetIn.toString(),
-          "X-RateLimit-Limit": config.max.toString(),
-          "X-RateLimit-Remaining": "0",
-          "X-RateLimit-Reset": result.resetIn.toString(),
+          ...result.headers,
         },
       })
     }
