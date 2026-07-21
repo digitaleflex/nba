@@ -7,7 +7,7 @@ export async function GET() {
 
   // DB check
   try {
-    await prisma.$queryRaw`SELECT 1`
+    await prisma.$connect()
     checks.database = "healthy"
   } catch {
     checks.database = "unhealthy"

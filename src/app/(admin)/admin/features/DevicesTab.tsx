@@ -51,7 +51,7 @@ export function DevicesTab() {
       }
     }
     load()
-    const id = setInterval(load, 30_000)
+    const id = setInterval(load, 60_000)
     return () => {
       cancelled = true
       clearInterval(id)

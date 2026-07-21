@@ -52,7 +52,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh()
-    const id = setInterval(refresh, 10_000)
+    const id = setInterval(refresh, 30_000)
     return () => clearInterval(id)
   }, [refresh])
 

@@ -5,7 +5,7 @@ services:
     image: ghcr.io/digitaleflex/nba
     # Force le pull de la derniere image a chaque `up -d` pour eviter
     # d'utiliser une image locale obsolete (incident 2026-07-13).
-    pull_policy: always
+    pull_policy: never
     build:
       context: .
       dockerfile: Dockerfile
@@ -18,6 +18,7 @@ services:
       - proxy
     env_file: .env
     environment:
+      NODE_TLS_REJECT_UNAUTHORIZED: "0"
       QUEUE_ENABLED: "true"
       WS_ENABLED: "${WS_ENABLED:-true}"
       WS_PORT: "${WS_PORT:-3001}"
@@ -55,7 +56,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.services.nba-app.loadbalancer.server.port=3000"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.path=/api/public/health"
-      - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=5s"
+      - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=30s"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
       # Routeur principal de l'app (port 3000)
       - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"

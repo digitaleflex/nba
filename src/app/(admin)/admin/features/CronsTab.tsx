@@ -75,7 +75,7 @@ export function CronsTab() {
 
   useEffect(() => {
     fetchCrons()
-    const id = setInterval(fetchCrons, 30_000)
+    const id = setInterval(fetchCrons, 60_000)
     return () => clearInterval(id)
   }, [fetchCrons])
 

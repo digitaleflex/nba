@@ -37,7 +37,7 @@ const AdminContextPanel = dynamic(
 // Cache client léger pour éviter les refetch redondants entre onglets admin.
 const adminCache = new Map<string, { time: number; data: unknown }>()
 
-async function cachedGet(url: string, ttlMs = 20000): Promise<{ ok: boolean; data: any }> {
+async function cachedGet(url: string, ttlMs = 60000): Promise<{ ok: boolean; data: any }> {
   const hit = adminCache.get(url)
   if (hit && Date.now() - hit.time < ttlMs) {
     return { ok: true, data: hit.data }
