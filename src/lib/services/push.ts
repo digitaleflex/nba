@@ -1,8 +1,11 @@
 import webpush from "web-push";
 import { prisma } from "@nba/lib/db";
 import { logger } from "@nba/lib/logger";
+import { createCircuitBreaker, withTimeout } from "@nba/lib/circuit-breaker";
 
 const log = logger.child({ module: "push" })
+
+const pushBreaker = createCircuitBreaker("push", { threshold: 5, cooldownMs: 60_000 })
 
 let configured = false;
 
@@ -59,12 +62,16 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
   await Promise.all(
     subscriptions.map(async (sub) => {
       try {
-        await webpush.sendNotification(
-          {
-            endpoint: sub.endpoint,
-            keys: { p256dh: sub.p256dh, auth: sub.auth },
-          },
-          jsonPayload
+        await pushBreaker.execute(() =>
+          withTimeout(async () => {
+            await webpush.sendNotification(
+              {
+                endpoint: sub.endpoint,
+                keys: { p256dh: sub.p256dh, auth: sub.auth },
+              },
+              jsonPayload
+            );
+          }, 10_000),
         );
         sent++;
       } catch (err: any) {
