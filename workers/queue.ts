@@ -5,6 +5,7 @@ import { prisma } from "../src/lib/db"
 import { getStorage } from "../src/lib/storage"
 import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
+import { processRecovery, enqueueRecovery, type RecoveryJobData } from "../src/lib/services/recovery"
 import { logger } from "../src/lib/logger"
 
 // Initialize Sentry for worker process
@@ -121,6 +122,15 @@ worker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "file-cleanup", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("file-cleanup", job, err)
+    enqueueRecovery({
+      type: "FILE_CLEANUP",
+      originalQueue: "file-cleanup",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
@@ -173,6 +183,15 @@ notificationWorker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "notification-delivery", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("notification-delivery", job, err)
+    enqueueRecovery({
+      type: "EMAIL_SEND",
+      originalQueue: "notification-delivery",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
@@ -207,14 +226,55 @@ signalWorker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "signal-distribution", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("signal-distribution", job, err)
+    enqueueRecovery({
+      type: "SIGNAL_DISTRIBUTION",
+      originalQueue: "signal-distribution",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
 log.info("Signal distribution worker started")
 
+// ── Recovery Queue ──
+export const recoveryQueue = new Queue("recovery", { connection: connection as any, skipVersionCheck: true })
+
+const recoveryWorker = new Worker(
+  "recovery",
+  async (job: any) => {
+    const data = job.data as RecoveryJobData
+    log.info({ type: data.type, originalJobId: data.originalJobId, attempt: job.attemptsMade + 1 }, "Processing recovery job")
+    await processRecovery(data)
+  },
+  {
+    connection: connection as any,
+    concurrency: 5,
+    stalledInterval: 30000,
+    lockDuration: 60000,
+  }
+)
+
+recoveryWorker.on("completed", (job: any) => {
+  log.info({ jobId: job.id, type: job.data?.type }, "Recovery job completed")
+})
+
+recoveryWorker.on("failed", (job: any, err: any) => {
+  log.error({ jobId: job?.id, type: job?.data?.type, err }, "Recovery job exhausted retries")
+  Sentry.captureException(err, { extra: { queue: "recovery", jobId: job?.id } })
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("recovery", job, err)
+  }
+})
+
+log.info("Recovery worker started")
+
 // ── Graceful shutdown ──
-const workers = [worker, notificationWorker, signalWorker]
-const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue]
+const workers = [worker, notificationWorker, signalWorker, recoveryWorker]
+const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue, recoveryQueue]
 let shuttingDown = false
 
 async function gracefulShutdown(signal: string) {
