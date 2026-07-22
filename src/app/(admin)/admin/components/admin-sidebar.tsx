@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
   Mail, Bell, Settings, BarChart3, Activity, Gavel, Radio, ShieldCheck,
-  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson, Code2,
+  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson, Code2, Terminal,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 

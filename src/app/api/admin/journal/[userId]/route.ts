@@ -4,26 +4,28 @@ import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { userId: string } },
+  { params }: { params: Promise<{ userId: string }> },
 ) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
 
+    const { userId } = await params
+
     const user = await prisma.user.findUnique({
-      where: { id: params.userId },
+      where: { id: userId },
       select: { id: true, name: true, email: true, isActive: true },
     })
     if (!user) return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
 
     const [trades, recentTrades, reflections, streaks, sessions] = await Promise.all([
       prisma.trade.aggregate({
-        where: { userId: params.userId, deletedAt: null },
+        where: { userId, deletedAt: null },
         _count: true,
         _sum: { pnl: true },
         _avg: { pnl: true },
       }),
       prisma.trade.findMany({
-        where: { userId: params.userId, deletedAt: null },
+        where: { userId: userId, deletedAt: null },
         orderBy: { tradedAt: "desc" },
         take: 20,
         select: {
@@ -34,17 +36,17 @@ export async function GET(
         },
       }),
       prisma.dailyReflection.findMany({
-        where: { userId: params.userId },
+        where: { userId: userId },
         orderBy: { date: "desc" },
         take: 30,
         select: { id: true, date: true, rating: true, mood: true, tradeCount: true, wins: true, losses: true, totalPnl: true, note: true },
       }),
       prisma.streak.findMany({
-        where: { userId: params.userId },
+        where: { userId: userId },
         select: { type: true, count: true, bestCount: true },
       }),
       prisma.journalSession.findMany({
-        where: { userId: params.userId },
+        where: { userId: userId },
         orderBy: { startedAt: "desc" },
         take: 10,
         select: { id: true, startedAt: true, endedAt: true, isActive: true },
