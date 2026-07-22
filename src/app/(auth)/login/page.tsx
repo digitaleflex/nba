@@ -13,17 +13,22 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+  const errors: Record<string, string> = {}
+  if (!email.trim()) errors.email = "Veuillez saisir votre email."
+  if (!password) errors.password = "Veuillez saisir votre mot de passe."
+
+  function handleBlur(field: string) {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
 
-    if (!email.trim()) {
-      setError("Veuillez saisir votre email.")
-      return
-    }
-    if (!password) {
-      setError("Veuillez saisir votre mot de passe.")
+    if (errors.email || errors.password) {
+      setTouched({ email: true, password: true })
       return
     }
 
@@ -101,9 +106,14 @@ export default function LoginPage() {
                   placeholder="exemple@email.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => handleBlur("email")}
                   required
                   autoComplete="email"
+                  aria-invalid={touched.email && !!errors.email}
                 />
+                {touched.email && errors.email && (
+                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.email}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="password" className="text-sm font-medium text-foreground">
@@ -116,9 +126,11 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => handleBlur("password")}
                     required
                     autoComplete="current-password"
                     className="pr-9"
+                    aria-invalid={touched.password && !!errors.password}
                   />
                   <button
                     type="button"
@@ -133,6 +145,9 @@ export default function LoginPage() {
                     )}
                   </button>
                 </div>
+                {touched.password && errors.password && (
+                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.password}</p>
+                )}
               </div>
               {error && (
                 <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">

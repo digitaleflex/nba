@@ -21,18 +21,22 @@ export default function ResetPasswordPage({
   const [done, setDone] = useState(false)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
+  const [touched, setTouched] = useState<Record<string, boolean>>({})
+
+  const errors: Record<string, string> = {}
+  if (password.length < 10) errors.password = "Le mot de passe doit contenir au moins 10 caractères"
+  if (password !== confirmPassword && confirmPassword.length > 0) errors.confirm = "Les mots de passe ne correspondent pas"
+
+  function handleBlur(field: string) {
+    setTouched((prev) => ({ ...prev, [field]: true }))
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError("")
 
-    if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas")
-      return
-    }
-
-    if (password.length < 10) {
-      setError("Le mot de passe doit contenir au moins 10 caractères")
+    if (errors.password || (confirmPassword.length > 0 && errors.confirm) || !confirmPassword) {
+      setTouched({ password: true, confirm: true })
       return
     }
 
@@ -125,10 +129,12 @@ export default function ResetPasswordPage({
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onBlur={() => handleBlur("password")}
                     required
                     minLength={10}
                     autoComplete="new-password"
                     className="pr-9"
+                    aria-invalid={touched.password && !!errors.password}
                   />
                   <button
                     type="button"
@@ -138,6 +144,9 @@ export default function ResetPasswordPage({
                     {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
+                {touched.password && errors.password && (
+                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.password}</p>
+                )}
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="confirm" className="text-sm font-medium text-foreground">
@@ -149,9 +158,14 @@ export default function ResetPasswordPage({
                   placeholder="••••••••"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  onBlur={() => handleBlur("confirm")}
                   required
                   autoComplete="new-password"
+                  aria-invalid={touched.confirm && !!errors.confirm}
                 />
+                {touched.confirm && errors.confirm && (
+                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.confirm}</p>
+                )}
               </div>
               {error && (
                 <div className="space-y-2">

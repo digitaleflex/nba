@@ -64,6 +64,17 @@ export default function ProfilePage() {
   const [emailError, setEmailError] = useState<string | null>(null)
   const [emailSaved, setEmailSaved] = useState(false)
 
+  // Form validation
+  const [profileTouched, setProfileTouched] = useState<Record<string, boolean>>({})
+  const [passwordTouched, setPasswordTouched] = useState<Record<string, boolean>>({})
+  const [emailTouched, setEmailTouched] = useState(false)
+  const profileErrors: Record<string, string> = {}
+  if (!form.name.trim()) profileErrors.name = "Le nom est requis"
+  const passwordErrors: Record<string, string> = {}
+  if (passwordForm.new.length > 0 && passwordForm.new.length < 10) passwordErrors.new = "Minimum 10 caractères"
+  if (passwordForm.confirm.length > 0 && passwordForm.new !== passwordForm.confirm) passwordErrors.confirm = "Les mots de passe ne correspondent pas"
+  const invalidEmail = emailForm.newEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailForm.newEmail) ? "Format d'email invalide" : ""
+
   // Delete account
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [deletePassword, setDeletePassword] = useState("")
@@ -317,9 +328,14 @@ export default function ProfilePage() {
                   className="pl-9"
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onBlur={() => setProfileTouched((p) => ({ ...p, name: true }))}
                   required
+                  aria-invalid={!!profileErrors.name}
                 />
               </div>
+              {profileTouched.name && profileErrors.name && (
+                <p className="text-[11px] text-destructive mt-1" role="alert">{profileErrors.name}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -471,8 +487,10 @@ export default function ProfilePage() {
                     className="pl-9 pr-10"
                     value={passwordForm.new}
                     onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                    onBlur={() => setPasswordTouched((p) => ({ ...p, new: true }))}
                     required
                     minLength={10}
+                    aria-invalid={!!passwordErrors.new}
                   />
                   <button
                     type="button"
@@ -483,6 +501,9 @@ export default function ProfilePage() {
                     {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
+                {passwordTouched.new && passwordErrors.new && (
+                  <p className="text-[11px] text-destructive" role="alert">{passwordErrors.new}</p>
+                )}
                 <p className="text-[10px] text-muted-foreground">Minimum 10 caractères</p>
               </div>
 
@@ -496,7 +517,9 @@ export default function ProfilePage() {
                     className="pl-9 pr-10"
                     value={passwordForm.confirm}
                     onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                    onBlur={() => setPasswordTouched((p) => ({ ...p, confirm: true }))}
                     required
+                    aria-invalid={!!passwordErrors.confirm}
                   />
                   <button
                     type="button"
@@ -507,6 +530,9 @@ export default function ProfilePage() {
                     {showPasswords.confirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
                   </button>
                 </div>
+                {passwordTouched.confirm && passwordErrors.confirm && (
+                  <p className="text-[11px] text-destructive" role="alert">{passwordErrors.confirm}</p>
+                )}
               </div>
 
               {passwordError && (
@@ -559,9 +585,14 @@ export default function ProfilePage() {
                     className="pl-9"
                     value={emailForm.newEmail}
                     onChange={(e) => setEmailForm({ newEmail: e.target.value })}
+                    onBlur={() => setEmailTouched(true)}
                     required
+                    aria-invalid={!!invalidEmail}
                   />
                 </div>
+                {emailTouched && invalidEmail && (
+                  <p className="text-[11px] text-destructive" role="alert">{invalidEmail}</p>
+                )}
                 <p className="text-[10px] text-muted-foreground">Un email de vérification sera envoyé à la nouvelle adresse</p>
               </div>
 
