@@ -8,7 +8,7 @@ function generateCode(): string {
   return String(randomInt(100_000, 999_999))
 }
 
-function fingerprint(req: Request): string {
+export function fingerprint(req: Request): string {
   const ua = req.headers.get("user-agent") ?? ""
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
   return `${ip}|${ua}`
@@ -19,9 +19,10 @@ function deviceInfo(req: Request): ParsedUserAgent {
   return parseUserAgent(ua)
 }
 
-export async function detectNewDevice(userId: string, req: Request): Promise<boolean> {
+export async function detectNewDevice(userId: string, req: Request): Promise<{ isNew: boolean; deviceId?: string; trustLevel?: string }> {
   const fp = fingerprint(req)
   const parsed = deviceInfo(req)
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
 
   const existing = await prisma.device.findUnique({
     where: { userId_fingerprint: { userId, fingerprint: fp } },
@@ -32,7 +33,7 @@ export async function detectNewDevice(userId: string, req: Request): Promise<boo
       where: { id: existing.id },
       data: {
         lastSeenAt: new Date(),
-        ipAddress: fp.split("|")[0],
+        ipAddress: ip,
         userAgent: fp.split("|")[1],
         deviceType: parsed.deviceType,
         brand: parsed.brand,
@@ -41,10 +42,27 @@ export async function detectNewDevice(userId: string, req: Request): Promise<boo
         browser: parsed.browser,
       },
     })
-    return false
+    return { isNew: false, deviceId: existing.id, trustLevel: existing.trustLevel }
   }
 
-  return true
+  const device = await prisma.device.create({
+    data: {
+      userId,
+      fingerprint: fp,
+      ipAddress: ip,
+      userAgent: fp.split("|")[1],
+      deviceType: parsed.deviceType,
+      brand: parsed.brand,
+      model: parsed.model,
+      os: parsed.os,
+      browser: parsed.browser,
+      name: `Appareil - ${new Date().toLocaleDateString()}`,
+      trustLevel: "UNKNOWN",
+      firstSeenAt: new Date(),
+    },
+  })
+
+  return { isNew: true, deviceId: device.id, trustLevel: "UNKNOWN" }
 }
 
 export async function sendVerificationCode(userId: string, email: string, req: Request) {
@@ -119,7 +137,14 @@ export async function verifyDeviceCode(userId: string, code: string, req: Reques
         os: parsed.os,
         browser: parsed.browser,
         name: `Appareil - ${new Date().toLocaleDateString()}`,
+        trustLevel: "VERIFIED",
+        firstSeenAt: new Date(),
       },
+    })
+  } else {
+    await prisma.device.update({
+      where: { id: existing.id },
+      data: { trustLevel: "VERIFIED" },
     })
   }
 
@@ -134,8 +159,9 @@ export async function getUserDevices(userId: string) {
 }
 
 export async function revokeDevice(deviceId: string, userId: string) {
-  await prisma.device.deleteMany({
+  await prisma.device.updateMany({
     where: { id: deviceId, userId },
+    data: { trustLevel: "BLOCKED" },
   })
 }
 
@@ -147,7 +173,18 @@ export async function renameDevice(deviceId: string, name: string, userId: strin
 }
 
 export async function revokeOtherDevices(currentDeviceId: string, userId: string) {
-  await prisma.device.deleteMany({
+  await prisma.device.updateMany({
     where: { userId, id: { not: currentDeviceId } },
+    data: { trustLevel: "BLOCKED" },
+  })
+}
+
+export async function trustDevice(deviceId: string, userId: string): Promise<void> {
+  await prisma.device.updateMany({
+    where: { id: deviceId, userId },
+    data: {
+      trustLevel: "TRUSTED",
+      trustedUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    },
   })
 }

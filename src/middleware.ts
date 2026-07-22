@@ -29,19 +29,20 @@ export default function middleware(request: NextRequest) {
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
     const res = NextResponse.next()
     res.headers.set("x-request-id", requestId)
-    // Stale-while-revalidate on public API routes (data can be slightly stale)
     if (pathname.startsWith("/api/public/")) {
       res.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
     }
+    // Security headers
+    res.headers.set("X-Content-Type-Options", "nosniff")
+    res.headers.set("X-Frame-Options", "DENY")
+    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
     return res
   }
 
-  // Mode maintenance : rediriger toutes les requêtes sauf /maintenance et les webhooks
   if (process.env.MAINTENANCE_MODE === "true" && pathname !== "/maintenance" && !pathname.startsWith("/api/webhooks")) {
     return withRequestId(NextResponse.redirect(new URL("/maintenance", request.url)), requestId);
   }
 
-  // Protection CSRF globale sur les routes API mutables (GET/HEAD/OPTIONS gérés dans csrfCheck).
   if (pathname.startsWith("/api/")) {
     const blocked = csrfCheck(request);
     if (blocked) return withRequestId(blocked, requestId);
@@ -68,14 +69,21 @@ export default function middleware(request: NextRequest) {
       loginUrl.searchParams.set("redirect", pathname);
       return withRequestId(NextResponse.redirect(loginUrl), requestId);
     }
-    // Never cache protected routes (dashboard, admin, onboarding)
     const res = NextResponse.next()
     res.headers.set("x-request-id", requestId)
     res.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate")
+    // Security headers
+    res.headers.set("X-Content-Type-Options", "nosniff")
+    res.headers.set("X-Frame-Options", "DENY")
+    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
+    res.headers.set("X-XSS-Protection", "0")
+    res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
     return res
   }
 
-  return withRequestId(NextResponse.next(), requestId);
+  const res = NextResponse.next()
+  res.headers.set("x-request-id", requestId)
+  return withRequestId(res, requestId);
 }
 
 export const config = {

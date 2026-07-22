@@ -45,6 +45,22 @@ export const msg = {
     IMAGE_TOO_LARGE: "L'image ne doit pas dépasser 5 MB",
   },
 
+  security: {
+    MISSING_ORIGIN: "Forbidden — missing origin/referer",
+    CROSS_ORIGIN_REJECTED: "Forbidden — cross-origin request rejected",
+    SESSION_LIMIT_REACHED: "Limite de sessions atteinte. L'ancienne session a ete revoquee.",
+    DEVICE_BLOCKED: "Cet appareil a ete bloque. Contactez le support.",
+    NEW_DEVICE_DETECTED: "Nouvel appareil detecte. Un code de verification a ete envoye par email.",
+    RISK_SCORE_HIGH: "Connexion bloquee pour des raisons de securite.",
+    SESSION_REVOKED: "Session revoquee avec succes.",
+    TWOFA_REQUIRED: "Authentification a deux facteurs requise.",
+    VERIFICATION_CODE_SENT: "Un code de verification a ete envoye par email.",
+    CODE_INVALID: "Code invalide ou expire.",
+    DEVICE_TRUSTED: "Appareil marque comme de confiance.",
+    DEVICE_RENAMED: "Appareil renomme avec succes.",
+    LOGIN_BLOCKED: "Connexion bloquee pour des raisons de securite. Contactez le support.",
+  },
+
   admin: {
     IMPERSONATION_UNAVAILABLE: "Impersonation temporairement indisponible.",
     ID_REQUIRED: "id requis",
@@ -119,11 +135,6 @@ export const msg = {
     CONTENT_MISMATCH: (type: string) =>
       `Le contenu du fichier ne correspond pas au type déclaré : ${type}`,
     CONTENT_EMPTY: "Contenu du fichier vide",
-  },
-
-  security: {
-    MISSING_ORIGIN: "Forbidden — missing origin/referer",
-    CROSS_ORIGIN_REJECTED: "Forbidden — cross-origin request rejected",
   },
 
   email: {

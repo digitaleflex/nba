@@ -1,15 +1,21 @@
 import { msg } from "./messages"
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
+import { twoFactor } from "better-auth/plugins"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
-import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
+import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail, sendOtpEmail } from "./services/notifications"
 import { isEmailBanned } from "./services/moderation"
 import { purgeSoftDeletedUser } from "./services/user-deletion"
+import { SessionManager } from "./security/session-manager"
+import { securityEventBus } from "./security/security-event-bus"
+import { securityNotificationService } from "./security/security-notification-service"
 
 const trustedOrigins = [
   process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
 ].filter(Boolean) as string[]
+
+const sessionManager = new SessionManager()
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -22,7 +28,7 @@ export const auth = betterAuth({
   session: {
     modelName: "session",
     expiresIn: 60 * 60 * 24 * 7, // 7 jours
-    updateAge: 60 * 60 * 24, // refresh token toutes les 24h (stale session prevention)
+    updateAge: 60 * 60 * 24, // refresh token toutes les 24h
   },
   account: {
     modelName: "account",
@@ -40,9 +46,6 @@ export const auth = betterAuth({
     minPasswordLength: 10,
   },
   emailVerification: {
-    // Désactive l'envoi auto de l'email de vérification better-auth à l'inscription :
-    // la vérification est gérée par notre propre OTP onboarding (/api/onboarding/send-otp),
-    // évitant un double email (lien better-auth + OTP) redondant et confus pour l'utilisateur.
     sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
       await sendVerificationEmail(user, url)
@@ -63,9 +66,6 @@ export const auth = betterAuth({
       generateId: () => crypto.randomUUID(),
     },
     ipAddress: {
-      // En production derrière Cloudflare, truster uniquement cf-connecting-ip
-      // (Cloudflare écrase le header, il ne peut pas être spoofé par le client).
-      // En dev/staging sans CDN, ne truster aucun header proxy.
       ipAddressHeaders:
         process.env.NODE_ENV === "production"
           ? ["cf-connecting-ip"]
@@ -87,9 +87,57 @@ export const auth = betterAuth({
         },
       },
     },
+    session: {
+      create: {
+        before: async (session) => {
+          const limit = await sessionManager.checkSessionLimit(session.userId)
+          if (!limit.allowed) {
+            const revoked = await sessionManager.revokeExcessSessions(session.userId, limit.maxSessions)
+            if (revoked > 0) {
+              await securityEventBus.emit({
+                userId: session.userId,
+                type: "LOGIN_SESSION_LIMIT",
+                severity: "WARNING",
+                details: {
+                  action: "revoked_oldest",
+                  count: revoked,
+                  maxSessions: limit.maxSessions,
+                  activeCount: limit.activeCount,
+                },
+              })
+            }
+          }
+        },
+        after: async (session) => {
+          try {
+            await securityEventBus.emit({
+              userId: session.userId,
+              type: "LOGIN_SUCCESS",
+              severity: "INFO",
+              sessionId: session.id,
+              details: {
+                token: session.token?.slice(0, 8) + "...",
+              },
+            })
+            const user = await prisma.user.findUnique({
+              where: { id: session.userId },
+              select: { email: true },
+            })
+            if (user) {
+              await securityNotificationService.handlePostLogin(session.userId, user.email, {})
+            }
+          } catch {
+            // Non-critical
+          }
+        },
+      },
+    },
   },
   plugins: [
     nextCookies(),
+    twoFactor({
+      otpOptions: { async sendOTP({ user, otp }) { await sendOtpEmail(user.name, user.email, otp) } },
+    }),
   ],
 })
 

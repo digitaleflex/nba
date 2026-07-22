@@ -1,0 +1,1119 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.9 [39m[90mC:/Users/PC/Documents/GitHub/nba[39m
+
+ [31m×[39m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mreturns 500 with generic error message and errorId[32m 12[2mms[22m[39m
+[31m   → the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+ [32m✓[39m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mincludes correlationId when x-request-id header is present[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22momits correlationId when x-request-id header is absent[32m 2[2mms[22m[39m
+ [31m×[39m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mincludes route in console error log[32m 5[2mms[22m[39m
+[31m   → expected "error" to be called with arguments: [ StringContaining "/api/users", …(1) ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+ [31m×[39m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mlogs Error instances with message and stack[32m 2[2mms[22m[39m
+[31m   → expected "error" to be called with arguments: [ Any<String>, ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+ [31m×[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 401 if user is not authenticated[32m 34[2mms[22m[39m
+[31m   → expected a thrown error to be AuthError: Non autorisé { …(9) }[39m
+ [31m×[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 404 if user is not found[32m 5[2mms[22m[39m
+[31m   → expected a thrown error to be AuthError: Utilisateur non trouvé { …(9) }[39m
+ [31m×[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 403 if user is inactive[32m 3[2mms[22m[39m
+[31m   → expected a thrown error to be AuthError: Votre compte a été suspendu. C… { …(9) }[39m
+ [32m✓[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mallows access and returns signals for user with approved plan[32m 3[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mallows access and returns signals for users with signalsAccessOverride[32m 2[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mreturns empty for user without approved plan[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22mretourne erreur si pas de delivery[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22memail.delivered -> SENT[32m 6[2mms[22m[39m
+ [31m×[39m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22memail.bounced -> BOUNCED (markUserBounced appele)[32m 7[2mms[22m[39m
+[31m   → expected "vi.fn()" to be called with arguments: [ 'ext-bounce' ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+ [32m✓[39m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22memail.failed -> FAILED avec reason[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22mP2002 sur emailEvent.create est ignore (idempotent)[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserBounced[2m > [22mretourne null si pas de delivery associee[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserBounced[2m > [22m1er bounce -> BOUNCED + audit[32m 6[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserBounced[2m > [22m2e+ bounce -> INVALID[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserBounced[2m > [22midempotent : ne re-update pas si meme statut[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserBounced[2m > [22mne downgrade jamais depuis COMPLAINED/SUPPRESSED/INVALID[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserComplained[2m > [22mretourne null si pas de delivery[32m 1[2mms[22m[39m
+ [31m×[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserComplained[2m > [22m1ere plainte -> COMPLAINED + isActive=false + audit[32m 9[2mms[22m[39m
+[31m   → Cannot read properties of undefined (reading 'deleteMany')[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserComplained[2m > [22midempotent : si deja COMPLAINED, ne re-suspend pas[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserComplained[2m > [22mne downgrade jamais depuis INVALID ou SUPPRESSED[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserSuppressed[2m > [22mretourne null si pas de delivery[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserSuppressed[2m > [22mOK -> SUPPRESSED + audit (Bonus #74)[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserSuppressed[2m > [22midempotent : deja SUPPRESSED -> pas d'update[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/email-status.test.ts[2m > [22mmarkUserSuppressed[2m > [22mne downgrade jamais depuis COMPLAINED ou INVALID[32m 0[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mrenders step 0 with service selector and disabled continue button[33m 652[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mloads plans and shows options on combobox click[33m 1432[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mshows confirmation card when a plan is selected[33m 1240[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mnavigates from service selection to identity step[33m 1128[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mdisables next button when identity fields are empty[33m 1061[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22menables next button after filling identity fields[33m 1526[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mgoes back to previous step[33m 1312[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mdisplays password strength rules on typing[33m 2204[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mstores data in localStorage with correct prefix after debounce[32m 36[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mdebounces writes and only saves latest value[32m 7[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mgetDraft returns saved draft from localStorage[32m 2[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mgetDraft returns null when no draft exists[32m 1[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mclears draft from localStorage[32m 22[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22msets savedAt timestamp after saving[32m 4[2mms[22m[39m
+ [32m✓[39m src/hooks/use-form-draft.test.ts[2m > [22museFormDraft[2m > [22mhandles corrupt localStorage data gracefully[32m 155[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mupdates strength label from Faible to Très bon as password improves[33m 2271[2mms[22m[39m
+[90mstderr[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mstocke l'event et alerte l'admin sur bounce
+[22m[39m[resend-webhook] notifySignalDeliveryUpdate failed: TypeError: __vite_ssr_import_3__.prisma.notificationDelivery.findUnique is not a function
+    at notifySignalDeliveryUpdate (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:238:52)
+    at processDeliveryEvent (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:162:11)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at Module.POST (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:106:5)
+    at C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.test.ts:72:17
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:20
+
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mstocke l'event et alerte l'admin sur bounce[32m 223[2mms[22m[39m
+[90mstderr[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mmarque SENT sur delivered
+[22m[39m[resend-webhook] notifySignalDeliveryUpdate failed: TypeError: __vite_ssr_import_3__.prisma.notificationDelivery.findUnique is not a function
+    at notifySignalDeliveryUpdate (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:238:52)
+    at processDeliveryEvent (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:198:11)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at Module.POST (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:106:5)
+    at C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.test.ts:97:17
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:20
+
+[90mstderr[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mmarque FAILED + alerte admin sur email.failed (Sprint 1 #61)
+[22m[39m[resend-webhook] notifySignalDeliveryUpdate failed: TypeError: __vite_ssr_import_3__.prisma.notificationDelivery.findUnique is not a function
+    at notifySignalDeliveryUpdate (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:238:52)
+    at processDeliveryEvent (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:185:13)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at Module.POST (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:106:5)
+    at C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.test.ts:150:17
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:20
+
+[90mstderr[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mout-of-order : delivered AVANT opened (opened anterieur) -> delivered pris, opened ignore (Sprint 2 #65)
+[22m[39m[resend-webhook] notifySignalDeliveryUpdate failed: TypeError: __vite_ssr_import_3__.prisma.notificationDelivery.findUnique is not a function
+    at notifySignalDeliveryUpdate (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:238:52)
+    at processDeliveryEvent (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:198:11)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at Module.POST (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:106:5)
+    at C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.test.ts:267:5
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:20
+
+[90mstdout[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mout-of-order : delivered AVANT opened (opened anterieur) -> delivered pris, opened ignore (Sprint 2 #65)
+[22m[39m[resend-webhook] Out-of-order event ignored: type=email.opened eventTs=2026-07-13T10:00:02.000Z lastEventAt=2026-07-13T10:00:05.000Z
+
+[90mstderr[2m | src/app/api/webhooks/resend/route.test.ts[2m > [22m[2mPOST /api/webhooks/resend[2m > [22m[2mterminal negatif (bounced) s'applique TOUJOURS meme si en retard (Sprint 2 #65)
+[22m[39m[resend-webhook] notifySignalDeliveryUpdate failed: TypeError: __vite_ssr_import_3__.prisma.notificationDelivery.findUnique is not a function
+    at notifySignalDeliveryUpdate (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:238:52)
+    at processDeliveryEvent (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:162:11)
+[90m    at processTicksAndRejections (node:internal/process/task_queues:103:5)[39m
+    at Module.POST (C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.ts:106:5)
+    at C:/Users/PC/Documents/GitHub/nba/src/app/api/webhooks/resend/route.test.ts:320:17
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:20
+
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mmarque SENT sur delivered[32m 25[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mretourne 401 si signature invalide[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mdédupplique sur svix-id (P2002)[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mignore les events sans email_id[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mmarque FAILED + alerte admin sur email.failed (Sprint 1 #61)[32m 5[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22malerte critique sur domain.deleted + audit log (Sprint 1 #62)[32m 5[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22maudit log seul (pas d'alerte) sur domain.created / domain.updated[32m 4[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mextrait clickLink du payload email.clicked (Sprint 2 #63)[32m 4[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22memail.clicked sans click.link -> clickLink null[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mout-of-order : delivered AVANT opened (opened anterieur) -> delivered pris, opened ignore (Sprint 2 #65)[32m 7[2mms[22m[39m
+ [32m✓[39m src/app/api/webhooks/resend/route.test.ts[2m > [22mPOST /api/webhooks/resend[2m > [22mterminal negatif (bounced) s'applique TOUJOURS meme si en retard (Sprint 2 #65)[32m 9[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mtoggles password visibility[33m 2354[2mms[22m[39m
+ [31m×[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mshows confirmation step with all entered data[33m 5060[2mms[22m[39m
+[31m   → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to SelectPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to FloatingPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FloatingPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CompositeList inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CompositeList inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to CompositeList inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectList inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FloatingFocusManager inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectRoot inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FloatingFocusManager inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectIcon inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FloatingPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectIcon inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectTrigger inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPortal inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectItem inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPopup inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+[90mstderr[2m | src/app/(auth)/register/register.test.tsx[2m > [22m[2mRegister Wizard[2m > [22m[2msubmits form and redirects on success
+[22m[39mAn update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to SelectPositioner inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [31m×[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22msubmits form and redirects on success[33m 5012[2mms[22m[39m
+[31m   → Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22msends select-plan request after successful signup[33m 4350[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mshows error on failed submission[33m 4359[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mGET /api/dashboard/journal/reflections[2m > [22mretourne 401 si non authentifié[32m 9[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mGET /api/dashboard/journal/reflections[2m > [22mretourne les réflexions de l'utilisateur[32m 8[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si rating manquant[33m 1579[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mclears sessionStorage on successful registration[33m 3020[2mms[22m[39m
+ [32m✓[39m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mhas a link to login page[32m 47[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mcrée ou met à jour la réflexion du jour[33m 1011[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si rating hors borne (0)[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si rating hors borne (11)[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si mood invalide[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si note trop longue (>1000)[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mretourne 400 si date absente[32m 3[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mne recalcule pas les stats si une réflexion existante a déjà des trades[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections[2m > [22mrecalcul les stats si aucune réflexion existante (tradeCount=0)[32m 3[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/reflections/route.test.ts[2m > [22mPOST /api/dashboard/journal/reflections — rate limit[2m > [22mretourne 429 si le rate limit bloque la requête[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mGET /api/dashboard/journal/trades[2m > [22mretourne 401 si non authentifié[32m 11[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mGET /api/dashboard/journal/trades[2m > [22mretourne les trades paginés avec filtres[32m 6[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mGET /api/dashboard/journal/trades[2m > [22mfiltre par recherche (paire, note, tag)[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mretourne 401 si non authentifié[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mcrée un trade WIN Forex avec PnL correct et streak[32m 14[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mretourne 400 si validation Zod échoue[32m 10[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mcrée un trade LOSS et incrémente la LOSS_STREAK[32m 17[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mne crée pas de streak pour un trade BREAKEVEN[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mretourne 400 si le SL est supérieur au prix d'entrée en ACHAT[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22mretourne 400 si le TP est inférieur au prix d'entrée en ACHAT[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/trades/route.test.ts[2m > [22mPOST /api/dashboard/journal/trades[2m > [22massocie le trade à la session active si présente[32m 2[2mms[22m[39m
+[90mstderr[2m | src/modules/signals/services/update-signal.test.ts[2m > [22m[2mupdateSignal[2m > [22m[2mretourne queueFailed=true si BullMQ est indisponible
+[22m[39m[signal] BullMQ failed during update publication: Error: Redis down
+    at C:/Users/PC/Documents/GitHub/nba/src/modules/signals/services/update-signal.test.ts:119:61
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:302:11
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:26
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2323:10[90m)[39m
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2272:10[90m)[39m
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2955:64
+
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mpublie un signal DRAFT et enqueue la distribution[32m 13[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mincrémente la version uniquement si le contenu change[32m 2[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mcrée une nouvelle version si le contenu change[32m 4[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mprogramme un signal futur et annule l'ancien job[32m 4[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mretourne queueFailed=true si BullMQ est indisponible[32m 21[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/update-signal.test.ts[2m > [22mupdateSignal[2m > [22mlève AuthError si l'utilisateur n'a pas le droit[32m 4[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22mretourne 401 si non authentifié[32m 12[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22mcalcule le win rate et le PnL total[32m 8[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22magrège par paire avec win rate[32m 5[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22magrège par mood en excluant les valeurs nulles[32m 4[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22mconstruit l'évolution et le byDay triés[32m 3[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22mcalcule le profit factor et le max drawdown[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats/route.test.ts[2m > [22mGET /api/dashboard/journal/stats[2m > [22mapplique le filtre de période 7d[32m 3[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mpasses with valid minimum fields[32m 8[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mpasses with all optional and required fields[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mrejects empty content[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mrejects empty planIds array[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mrejects invalid plan UUIDs[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-schema.test.ts[2m > [22msignalCreateSchema[2m > [22mrejects invalid status enum value[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mdétecte le revenge trading (3 pertes en 60 min)[32m 15[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mdétecte l'overtrading (10+ trades aujourd'hui)[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mdétecte l'overconfidence (5+ wins d'affilée)[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mdétecte la loss streak (3+ pertes d'affilée)[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22msuggère de fermer la session après 5 pertes d'affilée[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mrespecte le cooldown de 15 minutes par règle[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-psychology.test.ts[2m > [22mcheckPsychology[2m > [22mne logue pas d'alerte si aucun pattern[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats-by-signal/route.test.ts[2m > [22mGET /api/dashboard/journal/stats-by-signal[2m > [22mretourne 401 si non authentifié[32m 25[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/stats-by-signal/route.test.ts[2m > [22mGET /api/dashboard/journal/stats-by-signal[2m > [22mretourne les stats agrégées par signal[32m 6[2mms[22m[39m
+[90mstderr[2m | src/modules/signals/services/create-signal.test.ts[2m > [22m[2mcreateSignal[2m > [22m[2mretourne queueFailed=true si BullMQ est indisponible
+[22m[39m[signal] BullMQ failed during publication (signalId=sig-1): Error: Redis down
+    at C:/Users/PC/Documents/GitHub/nba/src/modules/signals/services/create-signal.test.ts:103:61
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:302:11
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:1903:26
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2326:20
+    at new Promise (<anonymous>)
+    at runWithCancel [90m(file:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2323:10[90m)[39m
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2305:20
+    at new Promise (<anonymous>)
+    at runWithTimeout [90m(file:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2272:10[90m)[39m
+    at [90mfile:///C:/Users/PC/Documents/GitHub/nba/[39mnode_modules/[4m.pnpm[24m/@vitest+runner@4.1.9/node_modules/[4m@vitest/runner[24m/dist/chunk-artifact.js:2955:64
+
+ [32m✓[39m src/modules/signals/services/create-signal.test.ts[2m > [22mcreateSignal[2m > [22mcrée un signal publié et enqueue la distribution[32m 22[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/create-signal.test.ts[2m > [22mcreateSignal[2m > [22mstocke suggestedStopLoss et suggestedTakeProfit[32m 2[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/create-signal.test.ts[2m > [22mcreateSignal[2m > [22mprogramme un signal futur en DRAFT avec job BullMQ[32m 4[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/create-signal.test.ts[2m > [22mcreateSignal[2m > [22mretourne queueFailed=true si BullMQ est indisponible[32m 24[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22menqueueDlq cree une nouvelle entree[32m 6[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22menqueueDlq dedup sur svixId existant[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22mlistDlq avec status PENDING[32m 4[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22mdlqStats agrege pending/replayed/abandoned + oldest[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22mmarkDlqReplayed incremente attempts et set replayedAt si succes[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/webhook-dlq.test.ts[2m > [22mwebhook-dlq service[2m > [22mabandonDlq marque ABANDONED + audit[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mprofileSchema[2m > [22maccepts valid profile[32m 5[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mprofileSchema[2m > [22maccepts missing country (optional)[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mprofileSchema[2m > [22mrejects country over max length[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mselectPlanSchema[2m > [22maccepts valid UUID[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mselectPlanSchema[2m > [22mrejects non-UUID[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mreviewAccessSchema[2m > [22maccepts valid status[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mreviewAccessSchema[2m > [22maccepts optional notes[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mreviewAccessSchema[2m > [22mrejects invalid status[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mreviewDocumentSchema[2m > [22maccepts APPROVED[32m 8[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mreviewDocumentSchema[2m > [22mrejects SUSPENDED (not in verification)[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mvalidateOrThrow[2m > [22mreturns parsed data on success[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/validations/index.test.ts[2m > [22mvalidateOrThrow[2m > [22mthrows ValidationError on failure[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/sessions/route.test.ts[2m > [22mGET /api/dashboard/journal/sessions[2m > [22mretourne 401 si non authentifié[32m 10[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/sessions/route.test.ts[2m > [22mGET /api/dashboard/journal/sessions[2m > [22mretourne session active et sessions récentes[32m 8[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/sessions/route.test.ts[2m > [22mPOST /api/dashboard/journal/sessions[2m > [22mretourne la session existante si déjà active[32m 3[2mms[22m[39m
+ [32m✓[39m src/app/api/dashboard/journal/sessions/route.test.ts[2m > [22mPOST /api/dashboard/journal/sessions[2m > [22mcrée une nouvelle session si aucune active[32m 2[2mms[22m[39m
+ [32m✓[39m src/lib/services/access-cleanup.test.ts[2m > [22mcleanupGhostAccess[2m > [22mretourne 0 si aucun fantome[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/services/access-cleanup.test.ts[2m > [22mcleanupGhostAccess[2m > [22mrevoke les acces APPROVED des users inactifs/supprimes et journalise[32m 7[2mms[22m[39m
+ [32m✓[39m src/lib/services/access-cleanup.test.ts[2m > [22mcleanupGhostAccess[2m > [22mdryRun ne modifie pas la base mais retourne le resultat[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-discipline.test.ts[2m > [22mupdateDisciplineStreak[2m > [22mne fait rien si aucun trade ou aucune réflexion (jour non discipliné)[32m 6[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-discipline.test.ts[2m > [22mupdateDisciplineStreak[2m > [22mcrée un streak à 1 quand le jour est discipliné et qu'aucun streak n'existe[32m 28[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-discipline.test.ts[2m > [22mupdateDisciplineStreak[2m > [22mincrémente le streak de 1 si le jour précédent était discipliné (consécutif)[32m 3[2mms[22m[39m
+ [32m✓[39m src/lib/services/journal-discipline.test.ts[2m > [22mupdateDisciplineStreak[2m > [22mreset le streak à 1 si un jour non discipliné sépare les deux (trou > 1 jour)[32m 1[2mms[22m[39m
+ [32m✓[39m src/app/api/admin/signals/estimate/route.test.ts[2m > [22madmin/signals/estimate route[2m > [22mretourne total=0 et breakdown vide si aucun planId[32m 43[2mms[22m[39m
+ [32m✓[39m src/app/api/admin/signals/estimate/route.test.ts[2m > [22madmin/signals/estimate route[2m > [22mcalcule le total avec breakdown par plan + override[32m 2[2mms[22m[39m
+ [32m✓[39m src/app/api/admin/signals/estimate/route.test.ts[2m > [22madmin/signals/estimate route[2m > [22mexclut l'expediteur et filtre par accès APPROVED + override[32m 3[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/publish-signal.test.ts[2m > [22mpublishSignal[2m > [22mpublie et enqueue la distribution quand l'utilisateur a le droit[32m 10[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/publish-signal.test.ts[2m > [22mpublishSignal[2m > [22mlève AuthError si l'utilisateur n'a pas le droit de publier[32m 3[2mms[22m[39m
+ [32m✓[39m src/modules/signals/services/publish-signal.test.ts[2m > [22mpublishSignal[2m > [22mlève une erreur si le signal n'existe pas[32m 2[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22ma des items pour chaque espace et device[32m 4[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mfiltre les items par rôle[32m 1[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mretourne les liens mobile dashboard sans admin pour un user standard[32m 0[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mretourne le lien admin pour un admin[32m 0[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mretourne 4 contextes admin en mobile[32m 1[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mretourne les sections admin pour la sidebar[32m 1[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mdétecte l'active state par pathname[32m 0[2mms[22m[39m
+ [32m✓[39m src/config/navigation.test.ts[2m > [22mnavigation config[2m > [22mdétecte l'active state par search params pour les tabs admin[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mcalcule le PnL brut d'un trade Forex BUY gagnant[32m 3[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mcalcule le PnL brut d'un trade Forex SELL gagnant[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mcalcule le PnL brut d'un trade Forex BUY perdant[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mretourne 0 pour un trade BREAKEVEN[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mdéduit spread, commission et swap[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22mutilise un contractSize de 1 pour le crypto[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculatePnl[2m > [22maccepte les paires en majuscules ou minuscules[32m 0[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculateRR[2m > [22mretourne null si SL ou TP manquant[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculateRR[2m > [22mcalcule le R:R pour un BUY[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculateRR[2m > [22mcalcule le R:R pour un SELL[32m 1[2mms[22m[39m
+ [32m✓[39m src/lib/services/pnl.test.ts[2m > [22mcalculateRR[2m > [22mretourne null si le risque est nul[32m 0[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanCreateSignal[2m > [22mallows ADMIN users[32m 4[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanCreateSignal[2m > [22mallows users with signals.create permission[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanCreateSignal[2m > [22mdenies regular users without permission[32m 0[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanViewSignal[2m > [22mallows users with approved access to a targeted plan[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanViewSignal[2m > [22mallows admin users unconditionally[32m 0[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanViewSignal[2m > [22mallows users with signalsAccessOverride[32m 0[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanViewSignal[2m > [22mdenies inactive users[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/policies/signal-policy.test.ts[2m > [22mcanViewSignal[2m > [22mdenies users without approved access request[32m 0[2mms[22m[39m
+ [32m✓[39m src/app/api/admin/control-room/route.test.ts[2m > [22madmin/control-room route[2m > [22mretourne 401 si non authentifié[32m 9[2mms[22m[39m
+ [32m✓[39m src/app/api/admin/control-room/route.test.ts[2m > [22madmin/control-room route[2m > [22mretourne 403 si l'utilisateur n'est pas admin[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-template-schema.test.ts[2m > [22msignalTemplateSchema[2m > [22mpasses with valid fields[32m 4[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-template-schema.test.ts[2m > [22msignalTemplateSchema[2m > [22mrejects empty name[32m 1[2mms[22m[39m
+ [32m✓[39m src/modules/signals/validators/signal-template-schema.test.ts[2m > [22msignalTemplateSchema[2m > [22mrejects empty content[32m 1[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 10 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mreturns 500 with generic error message and errorId
+[31m[1mAssertionError[22m: the given combination of arguments (undefined and string) is invalid for this assertion. You can use an array, a map, an object, a set, a string, or a weakset instead of a string[39m
+[36m [2m❯[22m src/lib/api-error.test.ts:[2m27:31[22m[39m
+    [90m 25|[39m
+    [90m 26|[39m     [34mexpect[39m(result[33m.[39mstatus)[33m.[39m[34mtoBe[39m([34m500[39m)
+    [90m 27|[39m     expect(result.body.error).toContain("Une erreur inattendue est sur…
+    [90m   |[39m                               [31m^[39m
+    [90m 28|[39m     [34mexpect[39m(result[33m.[39mbody[33m.[39merrorId)[33m.[39m[34mtoBeDefined[39m()
+    [90m 29|[39m     [34mexpect[39m([35mtypeof[39m result[33m.[39mbody[33m.[39merrorId)[33m.[39m[34mtoBe[39m([32m"string"[39m)
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mincludes route in console error log
+[31m[1mAssertionError[22m: expected "error" to be called with arguments: [ StringContaining "/api/users", …(1) ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m src/lib/api-error.test.ts:[2m54:24[22m[39m
+    [90m 52|[39m     [35mawait[39m [34mserverError[39m([32m"test error"[39m[33m,[39m [32m"/api/users"[39m)
+    [90m 53|[39m
+    [90m 54|[39m     [34mexpect[39m(consoleSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m   |[39m                        [31m^[39m
+    [90m 55|[39m       expect[33m.[39m[34mstringContaining[39m([32m"/api/users"[39m)[33m,[39m
+    [90m 56|[39m       [32m"test error"[39m[33m,[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/api-error.test.ts[2m > [22mserverError[2m > [22mlogs Error instances with message and stack
+[31m[1mAssertionError[22m: expected "error" to be called with arguments: [ Any<String>, ObjectContaining{…} ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m src/lib/api-error.test.ts:[2m67:24[22m[39m
+    [90m 65|[39m     [35mawait[39m [34mserverError[39m(error[33m,[39m [32m"/api/test"[39m)
+    [90m 66|[39m
+    [90m 67|[39m     [34mexpect[39m(consoleSpy)[33m.[39m[34mtoHaveBeenCalledWith[39m(
+    [90m   |[39m                        [31m^[39m
+    [90m 68|[39m       expect[33m.[39m[34many[39m([33mString[39m)[33m,[39m
+    [90m 69|[39m       expect.objectContaining({ message: "something broke", stack: exp…
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/services/email-status.test.ts[2m > [22mmarkUserComplained[2m > [22m1ere plainte -> COMPLAINED + isActive=false + audit
+[31m[1mTypeError[22m: Cannot read properties of undefined (reading 'deleteMany')[39m
+[36m [2m❯[22m Module.markUserComplained src/lib/services/email-webhooks.ts:[2m148:26[22m[39m
+    [90m146|[39m
+    [90m147|[39m     [90m// Révoquer les sessions + déconnecter le WebSocket[39m
+    [90m148|[39m     [35mawait[39m prisma[33m.[39msession[33m.[39m[34mdeleteMany[39m({ where[33m:[39m { userId } })
+    [90m   |[39m                          [31m^[39m
+    [90m149|[39m     [35mtry[39m {
+    [90m150|[39m       [35mconst[39m { getRedisConnection } [33m=[39m [35mawait[39m [35mimport[39m([32m"@nba/lib/queue"[39m)
+[90m [2m❯[22m src/lib/services/email-status.test.ts:[2m127:15[22m[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/lib/services/webhook-replay.test.ts[2m > [22mreplayEmailEvent[2m > [22memail.bounced -> BOUNCED (markUserBounced appele)
+[31m[1mAssertionError[22m: expected "vi.fn()" to be called with arguments: [ 'ext-bounce' ][90m
+
+Number of calls: [1m0[22m
+[31m[39m
+[36m [2m❯[22m src/lib/services/webhook-replay.test.ts:[2m81:29[22m[39m
+    [90m 79|[39m     })
+    [90m 80|[39m     [34mexpect[39m(r[33m.[39mdeliveryStatus)[33m.[39m[34mtoBe[39m([32m"BOUNCED"[39m)
+    [90m 81|[39m     [34mexpect[39m(markUserBounced)[33m.[39m[34mtoHaveBeenCalledWith[39m([32m"ext-bounce"[39m)
+    [90m   |[39m                             [31m^[39m
+    [90m 82|[39m   })
+    [90m 83|[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22mshows confirmation step with all entered data
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m src/app/(auth)/register/register.test.tsx:[2m267:3[22m[39m
+    [90m265|[39m   })[33m;[39m
+    [90m266|[39m
+    [90m267|[39m   [34mit[39m([32m"shows confirmation step with all entered data"[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   |[39m   [31m^[39m
+    [90m268|[39m     [34mmockFetchSuccess[39m()[33m;[39m
+    [90m269|[39m     mockSignUpEmail[33m.[39m[34mmockResolvedValue[39m({ error[33m:[39m [35mnull[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/app/(auth)/register/register.test.tsx[2m > [22mRegister Wizard[2m > [22msubmits form and redirects on success
+[31m[1mError[22m: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".[39m
+[36m [2m❯[22m src/app/(auth)/register/register.test.tsx:[2m283:3[22m[39m
+    [90m281|[39m   })[33m;[39m
+    [90m282|[39m
+    [90m283|[39m   [34mit[39m([32m"submits form and redirects on success"[39m[33m,[39m [35masync[39m () [33m=>[39m {
+    [90m   |[39m   [31m^[39m
+    [90m284|[39m     [34mmockFetchSuccess[39m()[33m;[39m
+    [90m285|[39m     mockSignUpEmail[33m.[39m[34mmockResolvedValue[39m({ error[33m:[39m [35mnull[39m })[33m;[39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 401 if user is not authenticated
+[31m[1mAssertionError[22m: expected a thrown error to be AuthError: Non autorisé { …(9) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[33m@@ -7,7 +7,7 @@[39m
+[2m    "retryable": false,[22m
+[2m    "module": "auth",[22m
+[2m    "details": undefined,[22m
+[2m    "requestId": undefined,[22m
+[2m    "userId": undefined,[22m
+[32m-   "errorId": "AUHTB6C5",[39m
+[31m+   "errorId": "BVSM5S88",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/modules/signals/services/get-signals-api.test.ts:[2m47:36[22m[39m
+    [90m 45|[39m     vi[33m.[39m[34mmocked[39m(getServerSession)[33m.[39m[34mmockResolvedValue[39m([35mnull[39m)
+    [90m 46|[39m
+    [90m 47|[39m     [35mawait[39m [34mexpect[39m([34mgetSignalsApi[39m({}))[33m.[39mrejects[33m.[39m[34mtoThrowError[39m(
+    [90m   |[39m                                    [31m^[39m
+    [90m 48|[39m       [35mnew[39m [33mAuthError[39m([32m"Non autorisé"[39m[33m,[39m [34m401[39m)
+    [90m 49|[39m     )
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 404 if user is not found
+[31m[1mAssertionError[22m: expected a thrown error to be AuthError: Utilisateur non trouvé { …(9) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[33m@@ -7,7 +7,7 @@[39m
+[2m    "retryable": false,[22m
+[2m    "module": "auth",[22m
+[2m    "details": undefined,[22m
+[2m    "requestId": undefined,[22m
+[2m    "userId": undefined,[22m
+[32m-   "errorId": "X8XGKSU2",[39m
+[31m+   "errorId": "6RBFKKB9",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/modules/signals/services/get-signals-api.test.ts:[2m59:36[22m[39m
+    [90m 57|[39m     vi[33m.[39m[34mmocked[39m(prisma[33m.[39muser[33m.[39mfindUnique)[33m.[39m[34mmockResolvedValue[39m([35mnull[39m)
+    [90m 58|[39m
+    [90m 59|[39m     [35mawait[39m [34mexpect[39m([34mgetSignalsApi[39m({}))[33m.[39mrejects[33m.[39m[34mtoThrowError[39m(
+    [90m   |[39m                                    [31m^[39m
+    [90m 60|[39m       [35mnew[39m [33mAuthError[39m([32m"Utilisateur non trouvé"[39m[33m,[39m [34m404[39m)
+    [90m 61|[39m     )
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/10]⎯[22m[39m
+
+[41m[1m FAIL [22m[49m src/modules/signals/services/get-signals-api.test.ts[2m > [22mgetSignalsApi[2m > [22mthrows 403 if user is inactive
+[31m[1mAssertionError[22m: expected a thrown error to be AuthError: Votre compte a été suspendu. C… { …(9) }[39m
+
+[32m- Expected[39m
+[31m+ Received[39m
+
+[33m@@ -7,7 +7,7 @@[39m
+[2m    "retryable": false,[22m
+[2m    "module": "auth",[22m
+[2m    "details": undefined,[22m
+[2m    "requestId": undefined,[22m
+[2m    "userId": undefined,[22m
+[32m-   "errorId": "8JV8LEJH",[39m
+[31m+   "errorId": "U1EEOLG8",[39m
+[2m  }[22m
+
+[36m [2m❯[22m src/modules/signals/services/get-signals-api.test.ts:[2m76:36[22m[39m
+    [90m 74|[39m     } [35mas[39m any)
+    [90m 75|[39m
+    [90m 76|[39m     [35mawait[39m [34mexpect[39m([34mgetSignalsApi[39m({}))[33m.[39mrejects[33m.[39m[34mtoThrowError[39m(
+    [90m   |[39m                                    [31m^[39m
+    [90m 77|[39m       new AuthError("Votre compte a été suspendu. Contactez le support…
+    [90m 78|[39m     )
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/10]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m5 failed[39m[22m[2m | [22m[1m[32m22 passed[39m[22m[90m (27)[39m
+[2m      Tests [22m [1m[31m10 failed[39m[22m[2m | [22m[1m[32m176 passed[39m[22m[90m (186)[39m
+[2m   Start at [22m 00:25:43
+[2m   Duration [22m 169.64s[2m (transform 48.91s, setup 33.14s, import 73.72s, tests 40.90s, environment 299.57s)[22m
+

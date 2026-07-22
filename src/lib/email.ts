@@ -993,6 +993,158 @@ export function weeklyJournalReport(
 }
 
 // ══════════════════════════════════════
+//  SECURITY ALERT TEMPLATES
+// ══════════════════════════════════════
+
+interface DeviceDetails {
+  name?: string
+  browser?: string
+  os?: string
+  ipAddress?: string
+  location?: string
+}
+
+export function securityAlertNewDeviceEmail(user: TemplateUser, device: DeviceDetails): { subject: string; html: string } {
+  return {
+    subject: `🔐 Nouvel appareil connecte — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Nouvel appareil detecte
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Un nouvel appareil s'est connecte a votre compte ${APP_NAME}.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Appareil")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        ${device.name ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.name}</td></tr>` : ""}
+        ${device.browser ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Navigateur</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.browser}</td></tr>` : ""}
+        ${device.os ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">OS</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.os}</td></tr>` : ""}
+        ${device.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.ipAddress}</td></tr>` : ""}
+        ${device.location ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Localisation</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.location}</td></tr>` : ""}
+      </table>
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si c'etait vous, vous pouvez ignorer cet email. Sinon, securisez votre compte immediatement.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/devices`, text: "Gerer mes appareils" })}
+    `),
+  }
+}
+
+export function securityAlertNewLocationEmail(user: TemplateUser, location: { country?: string; city?: string; ipAddress?: string }): { subject: string; html: string } {
+  return {
+    subject: `📍 Nouvelle localisation detectee — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Nouvelle localisation de connexion
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre compte a ete connecte depuis une nouvelle localisation.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Localisation")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        ${location.country ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Pays</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.country}</td></tr>` : ""}
+        ${location.city ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Ville</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.city}</td></tr>` : ""}
+        ${location.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.ipAddress}</td></tr>` : ""}
+      </table>
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous ne reconnaissez pas cette connexion, contactez notre support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Gerer mon compte" })}
+    `),
+  }
+}
+
+export function securityAlertSuspiciousEmail(user: TemplateUser, details: { riskScore?: number; reason?: string; ipAddress?: string }): { subject: string; html: string } {
+  const riskLabel = details.riskScore && details.riskScore > 70 ? "ELEVE" : "MOYEN"
+  return {
+    subject: `⚠️ Connexion suspecte detectee — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Alerte de securite
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Une connexion suspecte a ete detectee sur votre compte.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Details")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Risque</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${riskLabel} (${details.riskScore ?? "N/A"})</td></tr>
+        ${details.reason ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Raison</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.reason}</td></tr>` : ""}
+        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.ipAddress}</td></tr>` : ""}
+      </table>
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous ne reconnaissez pas cette activite, changez votre mot de passe et activez la 2FA.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Securiser mon compte" })}
+    `),
+  }
+}
+
+export function twoFactorEnabledEmail(user: TemplateUser): { subject: string; html: string } {
+  return {
+    subject: `✅ Authentification a deux facteurs activee — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Securite renforcee
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        L'authentification a deux facteurs (2FA) a ete activee sur votre compte.
+      </p>
+
+      ${divider()}
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Votre compte est desormais mieux protege contre les acces non autorises.
+      </p>
+      <p style="margin:0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous n'etes pas a l'origine de cette modification, contactez immediatement notre support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Gerer mon compte" })}
+    `),
+  }
+}
+
+export function twoFactorDisabledEmail(user: TemplateUser): { subject: string; html: string } {
+  return {
+    subject: `🔓 Authentification a deux facteurs desactivee — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        2FA desactivee
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        L'authentification a deux facteurs (2FA) a ete desactivee sur votre compte.
+      </p>
+
+      ${divider()}
+
+      <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Votre compte est desormais moins securise. Nous recommandons de reactiver la 2FA.
+      </p>
+      <p style="margin:0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous n'etes pas a l'origine de cette modification, contactez immediatement notre support.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/profile`, text: "Activer la 2FA" })}
+    `),
+  }
+}
+
+// ══════════════════════════════════════
 //  SENDER
 // ══════════════════════════════════════
 
