@@ -140,16 +140,9 @@ jobs:
             # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
             docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker 2>&1 | tail -15 || true
 
-            echo "=== Resolution des migrations echeouees (si existantes) ==="
+            echo "=== Resolution des migrations echouees (si existantes) ==="
             DIRECT_URL="$(echo "$DATABASE_URL" | sed 's/-pooler//')"
-            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint "sh" app -c '
-              FAILED=$(npx prisma migrate status 2>&1 | awk "/have failed:/{in_failed=1; next} in_failed && /^[0-9][0-9][0-9][0-9]/{print; next} /^$/{in_failed=0}")
-              for name in $FAILED; do
-                echo "Resolving failed migration: $name"
-                npx prisma migrate resolve --rolled-back "$name" 2>&1 || true
-              done
-              [ -z "$FAILED" ] && echo "Aucune migration en echec."
-            ' > /tmp/resolve.log 2>&1 || true
+            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint "npx prisma migrate resolve --rolled-back 20260722194600_add_session_last_rotation" app > /tmp/resolve.log 2>&1 || true
             cat /tmp/resolve.log
 
             echo "=== Migrations Prisma (connexion directe, sans pooler) ==="
