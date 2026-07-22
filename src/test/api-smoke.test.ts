@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest"
 
-const BASE = process.env.TEST_API_URL ?? "http://localhost:3000"
+const BASE = process.env.TEST_API_URL
+
+const skipIfNoServer = BASE ? describe : describe.skip
 
 async function api(path: string, init?: RequestInit) {
   const res = await fetch(`${BASE}${path}`, {
@@ -12,7 +14,7 @@ async function api(path: string, init?: RequestInit) {
   return { status: res.status, ok: res.ok, body }
 }
 
-describe("Public API (no auth required)", () => {
+skipIfNoServer("Public API (no auth required)", () => {
   it("GET /api/auth/captcha returns question + token", async () => {
     const { status, ok, body } = await api("/api/auth/captcha")
     expect(ok).toBe(true)
@@ -27,7 +29,7 @@ describe("Public API (no auth required)", () => {
   })
 })
 
-describe("Auth routes", () => {
+skipIfNoServer("Auth routes", () => {
   it("POST /api/auth/sign-in with no body returns 400", async () => {
     const { status } = await api("/api/auth/sign-in", { method: "POST", body: JSON.stringify({}) })
     expect(status).toBe(400)
@@ -44,7 +46,7 @@ describe("Auth routes", () => {
   })
 })
 
-describe("Admin routes (without auth)", () => {
+skipIfNoServer("Admin routes (without auth)", () => {
   const adminEndpoints = [
     "/api/admin/security/fraud/abuse",
     "/api/admin/security/fraud/events",
@@ -64,7 +66,7 @@ describe("Admin routes (without auth)", () => {
   }
 })
 
-describe("Public API openapi spec", () => {
+skipIfNoServer("Public API openapi spec", () => {
   it("GET /api/docs/openapi.json returns valid spec", async () => {
     const { ok, body } = await api("/api/docs/openapi.json")
     expect(ok).toBe(true)
@@ -76,7 +78,7 @@ describe("Public API openapi spec", () => {
   })
 })
 
-describe("Security modules (unit tests via API)", () => {
+skipIfNoServer("Security modules (unit tests via API)", () => {
   it("Captcha generates unique tokens", async () => {
     const { body: r1 } = await api("/api/auth/captcha")
     const { body: r2 } = await api("/api/auth/captcha")
