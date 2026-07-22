@@ -1,6 +1,7 @@
 "use client"
 
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect, useState, useRef } from "react"
+import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
   Mail, Bell, Settings, BarChart3, Activity, Gavel, Radio, ShieldCheck,
@@ -23,6 +24,29 @@ interface NavGroup {
 
 export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; supportCount: number }) {
   const router = useRouter()
+  const [securityAlerts, setSecurityAlerts] = useState(0)
+  const [pulse, setPulse] = useState(false)
+  const prevRef = useRef(0)
+
+  useEffect(() => {
+    const fetchAlerts = async () => {
+      try {
+        const res = await fetch("/api/admin/security/alerts")
+        if (res.ok) {
+          const data = await res.json()
+          setSecurityAlerts(data.alerts)
+          if (data.alerts > prevRef.current && prevRef.current > 0) {
+            setPulse(true)
+            setTimeout(() => setPulse(false), 2000)
+          }
+          prevRef.current = data.alerts
+        }
+      } catch {}
+    }
+    fetchAlerts()
+    const id = setInterval(fetchAlerts, 15000)
+    return () => clearInterval(id)
+  }, [])
 
   const groups: NavGroup[] = [
     {
@@ -56,8 +80,8 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
     {
       label: "Sécurité", icon: ShieldCheck,
       items: [
-        { tab: "security", label: "Centre sécurité", icon: ShieldCheck },
-        { tab: "fraud", label: "Anti-Fraude", icon: AlertTriangle },
+        { tab: "security", label: "Centre sécurité", icon: ShieldCheck, badge: securityAlerts > 0 ? "security" : undefined },
+        { tab: "fraud", label: "Anti-Fraude", icon: AlertTriangle, badge: securityAlerts > 0 ? "security" : undefined },
         { tab: "moderation", label: "Modération", icon: Gavel },
         { tab: "audit", label: "Audit", icon: Database },
       ],
@@ -118,6 +142,14 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
                     {item.badge === "support" && (
                       <span className="ml-auto size-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
                         {supportCount > 9 ? "9+" : supportCount}
+                      </span>
+                    )}
+                    {item.badge === "security" && (
+                      <span className={cn(
+                        "ml-auto size-5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center",
+                        pulse && "animate-pulse",
+                      )}>
+                        {securityAlerts > 9 ? "9+" : securityAlerts}
                       </span>
                     )}
                   </button>
