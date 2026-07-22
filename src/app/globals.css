@@ -140,6 +140,24 @@ body {
   ) 1;
 }
 
+/* ─── Gradient signature ─── */
+.bg-gradient-primary {
+  background: var(--gradient-primary);
+  color: var(--color-primary-foreground);
+}
+.bg-gradient-primary:hover {
+  opacity: 0.88;
+  filter: brightness(1.05);
+}
+
+.border-t-gradient {
+  border-top: 1px solid transparent;
+  background-image: linear-gradient(var(--color-card), var(--color-card)),
+    var(--gradient-primary);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+}
+
 /* ─── Animations (with Safari support) ─── */
 
 /* Safari needs explicit -webkit- keyframes */

@@ -88,8 +88,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card size="sm" className="relative overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <Card size="sm" className="relative overflow-hidden border-t-gradient">
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-1.5">
@@ -141,7 +140,7 @@ export default function LoginPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full h-9" loading={loading}>
+              <Button type="submit" className="w-full h-9 bg-gradient-primary border-0 shadow-primary" loading={loading}>
                 {loading ? "Connexion…" : "Se connecter"}
               </Button>
               <div className="text-center">
