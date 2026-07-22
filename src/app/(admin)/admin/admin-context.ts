@@ -71,6 +71,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "audit", label: "Audit" },
       { value: "moderation", label: "Modération" },
       { value: "security", label: "Sécurité" },
+      { value: "fraud", label: "Anti-Fraude" },
       { value: "settings", label: "Paramètres" },
       { value: "formation", label: "Formation" },
     ],
