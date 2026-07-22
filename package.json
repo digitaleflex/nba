@@ -73,7 +73,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/express": "^5.0.6",
     "@types/howler": "^2.2.13",
-    "@types/node": "^20",
+    "@types/node": "^26",
     "@types/pdfkit": "^0.17.6",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
