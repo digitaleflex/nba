@@ -1,8 +1,6 @@
 import type { PrismaClient } from "@nba/generated/prisma/client"
 import { withRetryTransactionArray } from "@nba/lib/db"
 
-const SESSION_COOKIE_NAMES = ["__Secure-better-auth.session_token", "better-auth.session_token"]
-
 /**
  * Soft-deletes a user : anonymise l'email pour libérer l'adresse,
  * désactive le compte, supprime les sessions, et conserve les données
