@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import {
-  Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw,
+  Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
 import { Card, CardContent, Button } from "@nba/design-system"
 import { toast } from "sonner"
@@ -163,18 +163,39 @@ export function FraudTab() {
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
-              <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th>
+              <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th><th className="px-3 py-2 text-right">Action</th>
             </tr></thead>
             <tbody className="divide-y">
-              {events.slice(0, 20).map(e => (
-                <tr key={e.id} className="hover:bg-accent/30">
+              {events.slice(0, 20).map(e => {
+                const acknowledged = !!(e.details as any)?.acknowledgedAt
+                return (
+                <tr key={e.id} className={`hover:bg-accent/30 ${acknowledged ? "opacity-60" : ""}`}>
                   <td className="px-3 py-2 text-muted-foreground">{new Date(e.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2 font-medium">{e.type}</td>
                   <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
                   <td className="px-3 py-2">{e.user ? `${e.user.email}` : "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground font-mono text-[10px]">{e.ipAddress || "—"}</td>
+                  <td className="px-3 py-2 text-right">
+                    {acknowledged ? (
+                      <CheckCircle2 className="size-3.5 text-emerald-500 inline" />
+                    ) : (
+                      <button
+                        onClick={async () => {
+                          await fetch(`/api/admin/security/events/${e.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ acknowledged: true }),
+                          })
+                          refresh()
+                        }}
+                        className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
+                      >
+                        Marquer
+                      </button>
+                    )}
+                  </td>
                 </tr>
-              ))}
+              )})}
             </tbody>
           </table>
           {events.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">Aucun evenement</p>}

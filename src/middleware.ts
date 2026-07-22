@@ -9,6 +9,32 @@ const PROTECTED_PREFIXES = ["/onboarding", "/dashboard", "/admin"];
 
 const SESSION_COOKIES = ["__Secure-better-auth.session_token", "better-auth.session_token"];
 
+// In-memory rate-limit pour routes admin (Edge-compatible, reset au restart)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
+
+function checkAdminRateLimit(ip: string): boolean {
+  const now = Date.now()
+  const key = `admin:${ip}`
+  const entry = rateLimitMap.get(key)
+  if (!entry || now > entry.resetAt) {
+    rateLimitMap.set(key, { count: 1, resetAt: now + 60000 })
+    return true
+  }
+  entry.count++
+  if (entry.count > 120) return false // 120 req/min max
+  return true
+}
+
+// Nettoyage periodique de la map (toutes les 5 min)
+if (typeof setInterval !== "undefined") {
+  setInterval(() => {
+    const now = Date.now()
+    for (const [key, entry] of rateLimitMap) {
+      if (now > entry.resetAt) rateLimitMap.delete(key)
+    }
+  }, 300000)
+}
+
 function hasSession(request: NextRequest): boolean {
   return request.cookies.getAll().some((c) => SESSION_COOKIES.includes(c.name));
 }
@@ -46,6 +72,19 @@ export default function middleware(request: NextRequest) {
   if (pathname.startsWith("/api/")) {
     const blocked = csrfCheck(request);
     if (blocked) return withRequestId(blocked, requestId);
+
+    // Rate-limit global pour les routes admin
+    if (pathname.startsWith("/api/admin/")) {
+      const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
+        ?? request.headers.get("x-real-ip")
+        ?? "unknown"
+      if (!checkAdminRateLimit(ip)) {
+        return withRequestId(
+          NextResponse.json({ error: "Trop de requetes" }, { status: 429 }),
+          requestId,
+        )
+      }
+    }
   }
 
   const isAuthenticated = hasSession(request);
