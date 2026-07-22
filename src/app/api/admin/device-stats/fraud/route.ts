@@ -18,7 +18,9 @@ export async function GET() {
     const sharedIps = await prisma.$queryRawUnsafe<{ ip_address: string; user_count: number }[]>(
       `SELECT ip_address, COUNT(DISTINCT user_id) as user_count
        FROM devices
-       WHERE ip_address IS NOT NULL AND ip_address != 'unknown'
+       WHERE ip_address IS NOT NULL
+         AND ip_address != ''
+         AND ip_address != 'unknown'
        GROUP BY ip_address
        HAVING COUNT(DISTINCT user_id) > 1
        ORDER BY user_count DESC
@@ -50,7 +52,7 @@ export async function GET() {
     const multiDevice = await prisma.$queryRawUnsafe<{ name: string; email: string; device_count: number }[]>(
       `SELECT u.name, u.email, COUNT(d.id) as device_count
        FROM devices d
-       JOIN "user" u ON u.id = d.user_id
+       JOIN users u ON u.id = d.user_id
        GROUP BY u.id, u.name, u.email
        HAVING COUNT(d.id) > 5
        ORDER BY device_count DESC
@@ -72,6 +74,8 @@ export async function GET() {
       `SELECT fingerprint, COUNT(DISTINCT user_id) as user_count
        FROM devices
        WHERE fingerprint IS NOT NULL
+         AND fingerprint != ''
+         AND fingerprint NOT LIKE '|%'
        GROUP BY fingerprint
        HAVING COUNT(DISTINCT user_id) > 1
        ORDER BY user_count DESC
