@@ -86,7 +86,7 @@ jobs:
             NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
             NEXT_PUBLIC_APP_URL=https://access.signauxx.com
             NEXT_PUBLIC_WS_URL=https://access.signauxx.com:8443
-      - uses: aquasecurity/trivy-action@0.33.0
+      - uses: aquasecurity/trivy-action@v0.33.0
         with:
           image-ref: nba:ci-${{ github.sha }}
           format: sarif
@@ -96,7 +96,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
-      - uses: aquasecurity/trivy-action@0.33.0
+      - uses: aquasecurity/trivy-action@v0.33.0
         with:
           image-ref: nba:ci-${{ github.sha }}
           format: spdx-json
