@@ -164,40 +164,49 @@ jobs:
             # ne le route qu'une fois healthy), puis stop l'ancien. Aucune coupure.
             docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
 
-            echo "=== Smoke test (health de la prod via Traefik) ==="
-            # On interroge le site en local sur le VPS (Host header pour router via Traefik).
-            # Un 200/301/302/307/308 = l'app repond. 5xx / pas de reponse = deploiement casse.
-            SMOKE_URL="https://access.signauxx.com/"
+            echo "=== Smoke test API (15 routes) ==="
+            # Execute le script de smoke test complet qui verifie :
+            # - Routes publiques (captcha, health)
+            # - Routes admin sans auth (401 attendu)
+            # - Documentation OpenAPI
             SMOKE_OK=0
             for i in $(seq 1 12); do
-              CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "$SMOKE_URL" || echo 000)"
+              # Attendre que l'app soit prete
+              CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "https://access.signauxx.com/api/auth/captcha" || echo 000)"
               echo "  tentative $i -> HTTP $CODE"
               case "$CODE" in
-                2*|3*) SMOKE_OK=1; break ;;
+                2*) SMOKE_OK=1; break ;;
               esac
               sleep 10
             done
 
             if [ "$SMOKE_OK" != "1" ]; then
-              echo "!!! SMOKE TEST ECHOUE — le nouveau build ne repond pas correctement."
+              echo "!!! L'APP NE REPOND PAS — rollback immediat."
               if [ -n "$PREV_IMAGE" ]; then
                 echo "=== ROLLBACK vers l'image precedente: $PREV_IMAGE ==="
                 docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
                 docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
-                echo "=== Re-verification post-rollback ==="
                 for i in $(seq 1 6); do
-                  CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "$SMOKE_URL" || echo 000)"
+                  CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "https://access.signauxx.com/api/auth/captcha" || echo 000)"
                   echo "  rollback tentative $i -> HTTP $CODE"
-                  case "$CODE" in 2*|3*) echo "Rollback OK."; break ;; esac
+                  case "$CODE" in 2*) echo "Rollback OK."; break ;; esac
                   sleep 10
                 done
-              else
-                echo "!!! Aucune image precedente connue — rollback impossible."
               fi
-              echo "Deploiement marque en echec (smoke test rouge)."
               exit 1
             fi
-            echo "Smoke test OK."
+
+            # Smoke test detaille via le script bash
+            TEST_URL="https://access.signauxx.com" bash scripts/api-smoke-test.sh || SMOKE_DETAIL=$?
+            if [ "${SMOKE_DETAIL:-0}" != "0" ]; then
+              echo "!!! SMOKE TEST ECHOUE — rollback."
+              if [ -n "$PREV_IMAGE" ]; then
+                docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
+                docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
+              fi
+              exit 1
+            fi
+            echo "Smoke test API OK."
 
             echo "=== Nettoyage des images orphelines ==="
             docker image prune -f
