@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get("search") || ""
-    const filter = (searchParams.get("filter") || "all") as "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv"
+    const filter = (searchParams.get("filter") || "all") as "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices"
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const limit = parseInt(searchParams.get("limit") || "20")
 

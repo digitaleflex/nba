@@ -11,7 +11,7 @@ import {
 } from "@nba/design-system"
 import { SlidersHorizontal, X } from "lucide-react"
 
-type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv" | "favorite" | "archive"
+type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive"
 
 interface FilterGroup {
   label: string
@@ -39,8 +39,8 @@ const FILTER_GROUPS: FilterGroup[] = [
     label: "Marché",
     filters: [
       { key: "forex", label: "Forex" },
-      { key: "deriv", label: "Deriv" },
-      { key: "forex+deriv", label: "Forex + Deriv" },
+      { key: "indices", label: "Indices" },
+      { key: "forex+indices", label: "Forex + Indices" },
     ],
   },
 ]
@@ -69,7 +69,7 @@ export function MobileFilterSheet({
 
     const groupStr = group.toLowerCase()
     const hasForex = groupStr.includes("forex")
-    const hasDeriv = groupStr.includes("deriv")
+    const hasIndices = groupStr.includes("indices")
 
     return FILTER_GROUPS.map((g) => {
       if (g.label !== "Marché") return g
@@ -78,8 +78,8 @@ export function MobileFilterSheet({
         ...g,
         filters: g.filters.filter((f) => {
           if (f.key === "forex" && !hasForex) return false
-          if (f.key === "deriv" && !hasDeriv) return false
-          if (f.key === "forex+deriv" && (!hasForex || !hasDeriv)) return false
+          if (f.key === "indices" && !hasIndices) return false
+          if (f.key === "forex+indices" && (!hasForex || !hasIndices)) return false
           return true
         }),
       }
