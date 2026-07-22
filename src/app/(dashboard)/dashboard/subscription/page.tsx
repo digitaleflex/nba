@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
-import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash } from "lucide-react"
+import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash, ExternalLink, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 
@@ -42,6 +42,12 @@ function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurr
     ? new Date(new Date(reviewedAt).getTime() + plan.durationDays * 86400000)
     : null
 
+  const features = Array.isArray(plan.features) ? plan.features : []
+  const checkoutUrl = features.find(f => f.startsWith("http")) ?? null
+  const displayFeatures = features.filter(f => !f.startsWith("http"))
+
+  const canResubscribe = ["REVOKED", "SUSPENDED", "REJECTED"].includes(status) && checkoutUrl
+
   return (
     <Card className="border-border/50">
       <CardContent className="p-5 space-y-4">
@@ -50,6 +56,9 @@ function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurr
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
+              <span className="text-sm font-bold text-primary">
+                {plan.price} {plan.currency}
+              </span>
               {isCurrentChoice && (
                 <Badge variant="outline" className="text-[10px] text-primary border-primary/30 bg-primary/5">
                   Choix initial
@@ -114,17 +123,29 @@ function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurr
         )}
 
         {/* Features */}
-        {plan.features && plan.features.length > 0 && (
+        {displayFeatures.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-border/50">
             <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Inclus</p>
             <ul className="space-y-1">
-              {plan.features.map((f, i) => (
+              {displayFeatures.map((f, i) => (
                 <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
                   <Check className="size-3.5 text-primary shrink-0" />
                   {f}
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Bouton se réabonner */}
+        {canResubscribe && (
+          <div className="pt-2 border-t border-border/50">
+            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
+              <Button variant="default" size="sm" className="w-full cursor-pointer">
+                <RefreshCw className="size-3.5 mr-1.5" />
+                Se réabonner ({plan.price} {plan.currency})
+              </Button>
+            </a>
           </div>
         )}
 
