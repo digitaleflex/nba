@@ -76,7 +76,7 @@ echo "=== Setup complete. Starting app... ==="
 # Both modes use a background process pattern so cleanup() trap works.
 if [ "$WS_ENABLED" = "true" ]; then
   echo "Starting WebSocket + Next.js via PM2..."
-  ECOSYSTEM_FILE="/app/ecosystem.config.cjs"
+  ECOSYSTEM_FILE="/tmp/ecosystem.config.cjs"
   cat > "$ECOSYSTEM_FILE" <<'EOF'
 module.exports = {
   apps: [
@@ -104,7 +104,7 @@ module.exports = {
   ],
 }
 EOF
-  npx pm2-runtime start /app/ecosystem.config.cjs &
+  npx pm2-runtime start $ECOSYSTEM_FILE &
   APP_PID=$!
   wait $APP_PID
 else
