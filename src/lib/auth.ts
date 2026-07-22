@@ -11,13 +11,14 @@ import { SessionManager } from "./security/session-manager"
 import { securityEventBus } from "./security/security-event-bus"
 import { securityNotificationService } from "./security/security-notification-service"
 
-const trustedOrigins = [
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-].filter(Boolean) as string[]
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "")
+
+const trustedOrigins = [appUrl].filter(Boolean) as string[]
 
 const sessionManager = new SessionManager()
 
 export const auth = betterAuth({
+  baseURL: appUrl,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -140,10 +141,10 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    nextCookies(),
     twoFactor({
       otpOptions: { async sendOTP({ user, otp }) { await sendOtpEmail(user.name, user.email, otp) } },
     }),
+    nextCookies(),
   ],
 })
 

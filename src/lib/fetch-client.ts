@@ -1,3 +1,5 @@
+const RETRYABLE_STATUSES = new Set([408, 429, 500, 502, 503, 504])
+
 interface ApiErrorBody {
   code?: string
   error?: string
@@ -18,27 +20,71 @@ export class FetchError extends Error {
   }
 }
 
+function shouldRetry(status: number): boolean {
+  return RETRYABLE_STATUSES.has(status)
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+const BASE_DELAY = 1000
+const MAX_RETRIES = 3
+
 export async function apiFetch(url: string, options?: RequestInit): Promise<Response> {
-  const res = await fetch(url, options)
+  let lastError: unknown
 
-  if (!res.ok) {
-    let errorId: string | undefined
-    let code: string | undefined
-    let message = "Une erreur est survenue. Réessayez ou contactez le support."
-
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const body = (await res.json()) as ApiErrorBody
-      if (body.code) code = body.code
-      if (body.errorId) errorId = body.errorId
-      if (body.error) message = body.error
-    } catch {
-      // réponse non JSON, garder le message par défaut
-    }
+      const res = await fetch(url, options)
 
-    throw new FetchError(message, res.status, errorId, code)
+      if (res.ok) return res
+
+      if (attempt < MAX_RETRIES && shouldRetry(res.status)) {
+        const backoff = BASE_DELAY * Math.pow(2, attempt) + Math.random() * 500
+        await delay(backoff)
+        continue
+      }
+
+      let errorId: string | undefined
+      let code: string | undefined
+      let message = "Une erreur est survenue. Réessayez ou contactez le support."
+
+      try {
+        const body = (await res.json()) as ApiErrorBody
+        if (body.code) code = body.code
+        if (body.errorId) errorId = body.errorId
+        if (body.error) message = body.error
+      } catch {
+        // réponse non JSON, garder le message par défaut
+      }
+
+      throw new FetchError(message, res.status, errorId, code)
+    } catch (err) {
+      if (err instanceof FetchError) throw err
+
+      lastError = err
+
+      if (attempt < MAX_RETRIES) {
+        const backoff = BASE_DELAY * Math.pow(2, attempt) + Math.random() * 500
+        await delay(backoff)
+      }
+    }
   }
 
-  return res
+  // Convertir les erreurs réseau (TypeError) en FetchError lisible
+  if (lastError && !(lastError instanceof FetchError)) {
+    const message = lastError instanceof TypeError
+      ? "Impossible de contacter le serveur. Vérifiez votre connexion."
+      : "Une erreur inattendue est survenue."
+    throw new FetchError(message, 0)
+  }
+
+  throw lastError
+}
+
+export async function apiFetchWithRetry(url: string, options?: RequestInit): Promise<Response> {
+  return apiFetch(url, options)
 }
 
 export function getErrorMessage(err: unknown): string {

@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import Link from "next/link"
 import { TrendingUp, RefreshCw, LayoutDashboard } from "lucide-react"
+import { AutoRetryCountdown } from "@nba/components/auto-retry-countdown"
 export default function DashboardError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   useEffect(() => { if (process.env.NODE_ENV === "development") console.error(error) }, [error])
 
@@ -40,6 +41,7 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
               Tableau de bord
             </Link>
           </div>
+          <AutoRetryCountdown onRetry={reset} label="Nouvelle tentative" />
           <Link
             href="/dashboard/support"
             className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"

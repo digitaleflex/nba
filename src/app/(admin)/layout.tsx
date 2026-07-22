@@ -9,20 +9,26 @@ import { AdminInbox } from "./admin/components/admin-inbox"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
-  if (!session) redirect("/login")
+  if (!session?.user) redirect("/login")
 
-  const userDb = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: { select: { name: true } } },
-  })
+  let userRole: string | undefined
+  try {
+    const userDb = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: { select: { name: true } } },
+    })
+    userRole = userDb?.role?.name
+  } catch {
+    // DB error — fallback without role, will redirect below since role check fails
+  }
 
-  if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+  if (!userRole || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
     redirect("/403")
   }
 
   const user = {
     ...session.user,
-    role: userDb.role.name,
+    role: userRole,
   }
 
   const mobileHeader = (
