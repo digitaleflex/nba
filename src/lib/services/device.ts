@@ -19,32 +19,35 @@ function deviceInfo(req: Request): ParsedUserAgent {
   return parseUserAgent(ua)
 }
 
-export async function detectNewDevice(userId: string, req: Request): Promise<boolean> {
+export async function trackLoginDevice(userId: string, req: Request): Promise<void> {
   const fp = fingerprint(req)
   const parsed = deviceInfo(req)
 
-  const existing = await prisma.device.findUnique({
+  await prisma.device.upsert({
     where: { userId_fingerprint: { userId, fingerprint: fp } },
+    create: {
+      userId,
+      fingerprint: fp,
+      ipAddress: fp.split("|")[0],
+      userAgent: fp.split("|")[1],
+      deviceType: parsed.deviceType,
+      brand: parsed.brand,
+      model: parsed.model,
+      os: parsed.os,
+      browser: parsed.browser,
+      name: `Appareil - ${new Date().toLocaleDateString()}`,
+    },
+    update: {
+      lastSeenAt: new Date(),
+      ipAddress: fp.split("|")[0],
+      userAgent: fp.split("|")[1],
+      deviceType: parsed.deviceType,
+      brand: parsed.brand,
+      model: parsed.model,
+      os: parsed.os,
+      browser: parsed.browser,
+    },
   })
-
-  if (existing) {
-    await prisma.device.update({
-      where: { id: existing.id },
-      data: {
-        lastSeenAt: new Date(),
-        ipAddress: fp.split("|")[0],
-        userAgent: fp.split("|")[1],
-        deviceType: parsed.deviceType,
-        brand: parsed.brand,
-        model: parsed.model,
-        os: parsed.os,
-        browser: parsed.browser,
-      },
-    })
-    return false
-  }
-
-  return true
 }
 
 export async function sendVerificationCode(userId: string, email: string, req: Request) {
