@@ -82,6 +82,19 @@ export async function POST(req: NextRequest) {
             await asyncRiskEngine.evaluateAsync(sessionId, userId, ipAddress, deviceId)
           }
 
+          // Abuse detection
+          if (userId && ipAddress) {
+            const { abuseDetector } = await import("@nba/lib/security/abuse-detector")
+            const abuse = await abuseDetector.checkLogin(userId, ipAddress, deviceId)
+            if (abuse && abuse.action === "suspend") {
+              await securityEventBus.emit({
+                userId, type: "SECURITY_ALERT", severity: "HIGH",
+                details: { abuse: abuse.type, category: abuse.category },
+                ipAddress, sessionId, deviceId,
+              })
+            }
+          }
+
           // Notification nouvel appareil
           if (isNewDevice) {
             const user = await prisma.user.findUnique({
