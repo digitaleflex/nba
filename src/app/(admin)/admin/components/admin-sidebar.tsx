@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
   Mail, Bell, Settings, BarChart3, Activity, Gavel, Radio, ShieldCheck,
-  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen,
+  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 
@@ -99,6 +99,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
       label: "Administration", icon: Settings,
       items: [
         { tab: "settings", label: "Paramètres", icon: Settings },
+        { tab: "api-docs", label: "API Docs", icon: FileJson, href: "/api/docs" },
       ],
     },
   ]
