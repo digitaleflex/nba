@@ -1,136 +1,30 @@
 "use client"
 
-import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { Button, Card, CardContent, Input } from "@nba/design-system"
-import { Video, Upload, ArrowRight, FileText } from "lucide-react"
+import { BrokerVerificationForm } from "../components/broker-verification-form"
 import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 
 export default function BrokerPage() {
   const router = useRouter()
-  const [brokerName, setBrokerName] = useState(() => {
-    const d = getDraft<{ brokerName: string; accountId: string }>("broker")
-    return d?.brokerName ?? ""
-  })
-  const [accountId, setAccountId] = useState(() => {
-    const d = getDraft<{ brokerName: string; accountId: string }>("broker")
-    return d?.accountId ?? ""
-  })
-  const [videoFile, setVideoFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState("")
-
-  const { clear, savedAt } = useFormDraft("broker", { brokerName, accountId })
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (!videoFile) {
-      setError("Veuillez sélectionner une vidéo")
-      return
-    }
-
-    setLoading(true)
-    setError("")
-
-    const form = new FormData()
-    form.append("brokerName", brokerName)
-    form.append("accountId", accountId)
-    form.append("video", videoFile)
-
-    const res = await fetch("/api/onboarding/broker", { method: "POST", body: form })
-
-    if (!res.ok) {
-      const data = await res.json()
-      setError(data.error ?? "Erreur lors de l'envoi")
-      setLoading(false)
-      return
-    }
-
-    clear()
-    router.push("/onboarding")
-    router.refresh()
-  }
+  const saved = getDraft<{ brokerName: string; accountId: string }>("broker")
+  const { clear } = useFormDraft("broker", { brokerName: saved?.brokerName, accountId: saved?.accountId })
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10">
-          <Video className="size-5 text-primary" />
-        </div>
-        <div>
-          <h1 className="text-lg font-semibold">Vérification Broker</h1>
-          <p className="text-sm text-muted-foreground">
-            Fournissez les informations de votre compte de trading
-          </p>
-        </div>
-      </div>
-
-      <Card size="sm" className="relative overflow-hidden">
-        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4 pt-6">
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Nom du broker</label>
-              <select
-                value={brokerName}
-                onChange={(e) => setBrokerName(e.target.value)}
-                required
-                className="h-9 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground transition-all duration-200"
-              >
-                <option value="" disabled className="text-muted-foreground">Sélectionnez votre broker</option>
-                <option value="Deriv">Deriv (Indices)</option>
-                <option value="Exness">Exness</option>
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Numéro de compte</label>
-              <Input
-                placeholder="Votre identifiant de compte"
-                value={accountId}
-                onChange={(e) => setAccountId(e.target.value)}
-                required
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-sm font-medium text-foreground">Vidéo de vérification</label>
-              <label
-                className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed border-border p-6 text-sm text-muted-foreground hover:border-primary/50 transition-colors"
-                tabIndex={0}
-                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.currentTarget.querySelector("input")?.click(); } }}
-              >
-                <Upload className="size-6" />
-                {videoFile ? videoFile.name : "Enregistrez ou téléchargez une courte vidéo"}
-                <input
-                  type="file"
-                  accept="video/mp4,video/webm"
-                  onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            {savedAt && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                <FileText className="size-3" />
-                Brouillon sauvegardé à {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-              </p>
-            )}
-            {error && (
-              <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">
-                <span className="size-1.5 rounded-full bg-destructive shrink-0" />
-                {error}
-              </p>
-            )}
-
-            <Button type="submit" className="w-full h-9" disabled={loading}>
-              {loading ? "Envoi en cours…" : "Envoyer"}
-              <ArrowRight className="size-4" />
-            </Button>
-          </CardContent>
-        </form>
-      </Card>
+    <div className="max-w-lg mx-auto py-8">
+      <BrokerVerificationForm
+        initialBrokerName={saved?.brokerName}
+        initialAccountId={saved?.accountId}
+        onSubmit={async (form) => {
+          const res = await fetch("/api/onboarding/broker", { method: "POST", body: form })
+          const data = res.ok ? {} : await res.json()
+          return { ok: res.ok, error: data.error }
+        }}
+        onSuccess={() => {
+          clear()
+          router.push("/onboarding")
+          router.refresh()
+        }}
+      />
     </div>
   )
 }
