@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
+  ShieldAlert, Ban, Globe, AlertTriangle,
 } from "lucide-react"
 import { Card, CardContent, Badge, cn, Chart } from "@nba/design-system"
 import { AlertsPanel } from "../components/alerts-panel"
@@ -15,6 +17,15 @@ interface DashboardTabProps {
 }
 
 export function DashboardTab({ opsData, loadingOps, errorOps, router }: DashboardTabProps) {
+  const [secData, setSecData] = useState<any>(null)
+
+  useEffect(() => {
+    fetch("/api/admin/security/fraud/abuse")
+      .then(r => r.json())
+      .then(d => setSecData(d.summary))
+      .catch(() => {})
+  }, [])
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between border-b border-border pb-5">
@@ -48,220 +59,109 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                 À traiter maintenant
               </h2>
               <div className="divide-y divide-border">
-                {/* KYC Alert */}
                 {opsData?.attention?.kycPendingCount > 0 ? (
-                  <div
-                    onClick={() => router.push("/admin?tab=kyc")}
-                    className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group"
-                  >
+                  <div onClick={() => router.push("/admin?tab=kyc")} className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group">
                     <div className="flex items-center gap-3">
                       <span className="size-2 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="font-semibold text-xs text-foreground">
-                        {opsData.attention.kycPendingCount} dossiers KYC en attente de vérification
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">{opsData.attention.kycPendingCount} dossiers KYC en attente</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      <span>Traiter</span>
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </div>
+                    <ArrowRight className="size-3 text-muted-foreground group-hover:text-foreground" />
                   </div>
                 ) : null}
-
-                {/* Broker Alert */}
                 {opsData?.attention?.brokerPendingCount > 0 ? (
-                  <div
-                    onClick={() => router.push("/admin?tab=broker")}
-                    className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group"
-                  >
+                  <div onClick={() => router.push("/admin?tab=broker")} className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group">
                     <div className="flex items-center gap-3">
                       <span className="size-2 rounded-full bg-amber-500" />
-                      <span className="font-semibold text-xs text-foreground">
-                        {opsData.attention.brokerPendingCount} vérifications Broker à valider
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">{opsData.attention.brokerPendingCount} vérifications Broker</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      <span>Traiter</span>
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </div>
+                    <ArrowRight className="size-3 text-muted-foreground group-hover:text-foreground" />
                   </div>
                 ) : null}
-
-                {/* Access Requests Alert */}
                 {opsData?.attention?.requestsPendingCount > 0 ? (
-                  <div
-                    onClick={() => router.push("/admin?tab=requests")}
-                    className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group"
-                  >
+                  <div onClick={() => router.push("/admin?tab=requests")} className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group">
                     <div className="flex items-center gap-3">
                       <span className="size-2 rounded-full bg-blue-500" />
-                      <span className="font-semibold text-xs text-foreground">
-                        {opsData.attention.requestsPendingCount} demandes d&apos;accès à examiner
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">{opsData.attention.requestsPendingCount} demandes d&apos;accès</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      <span>Examiner</span>
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </div>
+                    <ArrowRight className="size-3 text-muted-foreground group-hover:text-foreground" />
                   </div>
                 ) : null}
-
-                {/* Scheduled Signal Alert */}
                 {opsData?.attention?.nextScheduledSignal ? (
-                  <div
-                    onClick={() => router.push("/admin?tab=signals")}
-                    className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group"
-                  >
+                  <div onClick={() => router.push("/admin?tab=signals")} className="flex items-center justify-between py-3.5 hover:bg-muted/40 px-2 rounded-xl transition-all cursor-pointer group">
                     <div className="flex items-center gap-3">
                       <span className="size-2 rounded-full bg-emerald-500" />
-                      <span className="font-semibold text-xs text-foreground">
-                        1 signal programmé pour publication le {new Date(opsData.attention.nextScheduledSignal.scheduledAt).toLocaleString("fr-FR")}
-                      </span>
+                      <span className="font-semibold text-xs text-foreground">1 signal programmé le {new Date(opsData.attention.nextScheduledSignal.scheduledAt).toLocaleString("fr-FR")}</span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground group-hover:text-foreground transition-colors">
-                      <span>Voir</span>
-                      <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
-                    </div>
+                    <ArrowRight className="size-3 text-muted-foreground group-hover:text-foreground" />
                   </div>
                 ) : null}
-
-                {/* All Clear state */}
-                {opsData?.attention?.kycPendingCount === 0 &&
-                  opsData?.attention?.brokerPendingCount === 0 &&
-                  opsData?.attention?.requestsPendingCount === 0 && (
-                    <div className="py-6 text-center text-xs text-muted-foreground select-none">
-                      🟢 Aucune intervention urgente requise. Système nominal.
-                    </div>
-                  )}
+                {opsData?.attention?.kycPendingCount === 0 && opsData?.attention?.brokerPendingCount === 0 && opsData?.attention?.requestsPendingCount === 0 && (
+                  <div className="py-6 text-center text-xs text-muted-foreground select-none">🟢 Aucune intervention urgente</div>
+                )}
               </div>
             </CardContent>
           </Card>
 
-          {/* KPIS CARDS ROW */}
+          {/* KPIS CARD ROW */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-border bg-card/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Membres Actifs</p>
-                  <p className="text-xl font-bold text-foreground">{opsData.stats.totalMembers}</p>
-                </div>
-                <Users className="size-5 text-muted-foreground/60" />
-              </CardContent>
-            </Card>
+            <KpiCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
+            <KpiCard icon={ListTodo} label="Demandes en attente" value={opsData.attention.requestsPendingCount} />
+            <KpiCard icon={FileCheck} label="KYC à traiter" value={opsData.attention.kycPendingCount} />
+            <KpiCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
+          </div>
 
-            <Card className="border-border bg-card/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Demandes en attente</p>
-                  <p className="text-xl font-bold text-foreground">{opsData.attention.requestsPendingCount}</p>
-                </div>
-                <ListTodo className="size-5 text-muted-foreground/60" />
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">KYC à traiter</p>
-                  <p className="text-xl font-bold text-foreground">{opsData.attention.kycPendingCount}</p>
-                </div>
-                <FileCheck className="size-5 text-muted-foreground/60" />
-              </CardContent>
-            </Card>
-
-            <Card className="border-border bg-card/30">
-              <CardContent className="p-4 flex items-center justify-between">
-                <div className="space-y-1">
-                  <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Signaux publiés</p>
-                  <p className="text-xl font-bold text-foreground">{opsData.stats.publishedSignalsCount}</p>
-                </div>
-                <Radio className="size-5 text-muted-foreground/60" />
-              </CardContent>
-            </Card>
+          {/* SECURITY FRAUD KPI ROW */}
+          <div>
+            <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 flex items-center gap-2">
+              <ShieldAlert className="size-3.5" />
+              Sécurité & Anti-Fraude
+              <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer">Voir tout →</button>
+            </h3>
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+              <SecCard icon={ShieldAlert} label="Événements HAUT" value={secData?.highEvents ?? 0} color="text-red-500" />
+              <SecCard icon={AlertTriangle} label="Échecs connexion/h" value={secData?.failedLogins ?? 0} color="text-orange-500" />
+              <SecCard icon={Globe} label="IPs bloquées" value={secData?.blockedIps ?? 0} color="text-purple-500" />
+              <SecCard icon={Ban} label="Suspendus aujourd&apos;hui" value={secData?.suspendedAccounts ?? 0} color="text-rose-500" />
+              <SecCard icon={Ban} label="Appareils bloqués" value={secData?.blockedDevices ?? 0} color="text-amber-500" />
+            </div>
           </div>
 
           {/* GRAPH & TIMELINE ROW */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Graph (7 days activity) */}
             <Card className="border-border bg-card/20 lg:col-span-2">
               <CardContent className="p-6">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                  Inscriptions (7 derniers jours)
-                </h3>
-                <Chart
-                  type="bar"
-                  data={(opsData.activityGraph ?? []).map((d: any) => ({ label: d.day, value: d.count }))}
-                  emptyText="Aucune inscription cette semaine"
-                />
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">Inscriptions (7 jours)</h3>
+                <Chart type="bar" data={(opsData.activityGraph ?? []).map((d: any) => ({ label: d.day, value: d.count }))} emptyText="Aucune inscription cette semaine" />
               </CardContent>
             </Card>
-
-            {/* Recent Activity Timeline */}
             <Card className="border-border bg-card/20">
               <CardContent className="p-6">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                  Activités récentes
-                </h3>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">Activités récentes</h3>
                 <div className="pt-4 space-y-4 max-h-48 overflow-y-auto">
-                  {opsData.recentActivities.length > 0 ? (
-                    opsData.recentActivities.map((act: any, idx: number) => (
-                      <div key={idx} className="flex items-start gap-2.5 text-[10px]">
-                        <span className="size-1.5 rounded-full bg-neutral-400 mt-1 shrink-0" />
-                        <div>
-                          <p className="font-semibold text-foreground">
-                            {act.action}
-                          </p>
-                          <p className="text-[9px] text-muted-foreground">
-                            {act.user?.name || "System"} • {new Date(act.createdAt).toLocaleDateString()}
-                          </p>
-                        </div>
+                  {opsData.recentActivities.length > 0 ? opsData.recentActivities.map((act: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-[10px]">
+                      <span className="size-1.5 rounded-full bg-neutral-400 mt-1 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-foreground">{act.action}</p>
+                        <p className="text-[9px] text-muted-foreground">{act.user?.name || "System"} • {new Date(act.createdAt).toLocaleDateString()}</p>
                       </div>
-                    ))
-                  ) : (
-                    <div className="py-6 text-center text-xs text-muted-foreground select-none">
-                      Aucune activité récente.
                     </div>
+                  )) : (
+                    <div className="py-6 text-center text-xs text-muted-foreground">Aucune activité récente.</div>
                   )}
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* ALERTES SANTE INFRASTRUCTURE */}
+          {/* SYSTEM HEALTH */}
           <Card className="border-border bg-card/20">
             <CardContent className="p-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                Santé du Système
-              </h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">Santé du Système</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-4 text-xs">
-                <div className="flex items-center gap-3">
-                  <Server className="size-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-bold text-foreground">Redis Server</p>
-                    <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", opsData.systemStatus.redis === "healthy" ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-rose-600 bg-rose-500/5 border-rose-500/20")}>
-                      {opsData.systemStatus.redis === "healthy" ? "En ligne" : "Échec"}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Activity className="size-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-bold text-foreground">BullMQ Workers</p>
-                    <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", opsData.systemStatus.bullmq === "healthy" ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-amber-600 bg-amber-500/5 border-amber-500/20")}>
-                      {opsData.systemStatus.bullmq === "healthy" ? "Actifs (Concurrence 10)" : "Ralentis"}
-                    </Badge>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <Laptop className="size-4 text-muted-foreground" />
-                  <div>
-                    <p className="font-bold text-foreground">Stockage Disque</p>
-                    <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", opsData.systemStatus.storage === "healthy" ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-amber-600 bg-amber-500/5 border-amber-500/20")}>
-                      {opsData.systemStatus.storage === "healthy" ? "Normal (15% RAM)" : "Presque plein"}
-                    </Badge>
-                  </div>
-                </div>
+                <SysHealth icon={Server} label="Redis" healthy={opsData.systemStatus.redis === "healthy"} />
+                <SysHealth icon={Activity} label="BullMQ Workers" healthy={opsData.systemStatus.bullmq === "healthy"} okText="Actifs" failText="Ralentis" />
+                <SysHealth icon={Laptop} label="Stockage" healthy={opsData.systemStatus.storage === "healthy"} okText="Normal" failText="Presque plein" />
               </div>
             </CardContent>
           </Card>
@@ -272,6 +172,49 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
         <aside className="lg:col-span-1">
           <AlertsPanel />
         </aside>
+      </div>
+    </div>
+  )
+}
+
+function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
+  return (
+    <Card className="border-border bg-card/30">
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="space-y-1">
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
+          <p className="text-xl font-bold text-foreground">{value}</p>
+        </div>
+        <Icon className="size-5 text-muted-foreground/60" />
+      </CardContent>
+    </Card>
+  )
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function SecCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
+  return (
+    <Card className="border-border bg-card/30 cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => window.location.href = "/admin?tab=fraud"}>
+      <CardContent className="p-3 flex items-center gap-3">
+        <div className={`p-2 rounded-lg bg-accent/30 ${color}`}><Icon className="size-4" /></div>
+        <div>
+          <p className="text-[10px] text-muted-foreground">{label}</p>
+          <p className={`text-base font-bold ${color}`}>{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SysHealth({ icon: Icon, label, healthy, okText = "En ligne", failText = "Échec" }: { icon: any; label: string; healthy: boolean; okText?: string; failText?: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <Icon className="size-4 text-muted-foreground" />
+      <div>
+        <p className="font-bold text-foreground">{label}</p>
+        <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", healthy ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-rose-600 bg-rose-500/5 border-rose-500/20")}>
+          {healthy ? okText : failText}
+        </Badge>
       </div>
     </div>
   )
