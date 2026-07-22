@@ -1,17 +1,18 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { dailySecurityDigestEmail } from "@nba/lib/email"
-import { sendEmailSync } from "@nba/lib/services/notifications"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { sendAdminAlert } from "@nba/lib/security/admin-alert"
 
 const rl = rateLimitMiddleware({ window: 3600, max: 2 })
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
     const rlRes = await rl(req, "security:digest")
     if (rlRes) return rlRes
+
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const last24h = new Date(now.getTime() - 86400000)
@@ -29,14 +30,11 @@ export async function POST(req: Request) {
       }),
     ])
 
-    const adminEmail = process.env.ADMIN_ALERT_EMAIL
-    if (!adminEmail) return NextResponse.json({ error: "ADMIN_ALERT_EMAIL non configure" }, { status: 400 })
-
     const template = dailySecurityDigestEmail({
       highEvents, failedLogins, blockedIps, suspendedAccounts, newUsers,
       criticalEventTypes: criticalEvents.map(e => e.type),
     })
-    await sendEmailSync(adminEmail, template.subject, template.html)
+    await sendAdminAlert(template.subject, template.html)
 
     return NextResponse.json({ sent: true })
   } catch (error) {

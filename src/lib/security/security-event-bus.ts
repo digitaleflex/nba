@@ -104,16 +104,13 @@ export class SecurityEventBus {
 
     // Envoyer email admin pour les evenements HIGH/CRITICAL
     try {
-      const adminEmail = process.env.ADMIN_ALERT_EMAIL
-      if (!adminEmail) return
-
       const user = event.userId ? await prisma.user.findUnique({
         where: { id: event.userId },
         select: { name: true, email: true },
       }) : null
 
       const { securityAlertAdminEmail } = await import("../email")
-      const { sendEmailSync } = await import("../services/notifications")
+      const { sendAdminAlert } = await import("./admin-alert")
       const template = securityAlertAdminEmail(
         event.severity,
         event.type,
@@ -125,7 +122,7 @@ export class SecurityEventBus {
           description: (event.details as any)?.reason,
         },
       )
-      await sendEmailSync(adminEmail, template.subject, template.html)
+      await sendAdminAlert(template.subject, template.html)
     } catch (err) {
       log.error({ err, errorCode: "INTEGRATION_ERROR" }, "Admin alert email failed")
     }
