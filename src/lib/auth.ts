@@ -84,6 +84,15 @@ export const auth = betterAuth({
         },
         after: async (user) => {
           await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
+          try {
+            const adminEmail = process.env.ADMIN_ALERT_EMAIL
+            if (adminEmail) {
+              const { newUserRegisteredAdminEmail } = await import("./email")
+              const { sendEmailSync } = await import("./services/notifications")
+              const template = newUserRegisteredAdminEmail({ name: user.name, email: user.email })
+              await sendEmailSync(adminEmail, template.subject, template.html)
+            }
+          } catch {}
         },
       },
     },

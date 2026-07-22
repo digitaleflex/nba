@@ -760,6 +760,22 @@ export function accountSuspendedEmail(user: TemplateUser, reason: string): { sub
   }
 }
 
+export function accountReactivatedEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `✅ Compte reactive — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Votre compte a ete reactive par l'administration. Vous pouvez de nouveau vous connecter.
+      </p>
+      ${ctaButton({ url: `${APP_DOMAIN}/login`, text: "Se connecter" })}
+    `),
+  }
+}
+
 // ══════════════════════════════════════
 //  ACCOUNT DELETION
 // ══════════════════════════════════════
@@ -1002,6 +1018,110 @@ interface DeviceDetails {
   os?: string
   ipAddress?: string
   location?: string
+}
+
+// ══════════════════════════════════════
+//  ADMIN ALERT TEMPLATES
+// ══════════════════════════════════════
+
+export function securityAlertAdminEmail(
+  severity: string,
+  eventType: string,
+  details: { userId?: string; userEmail?: string; ipAddress?: string; riskScore?: number; description?: string },
+): { subject: string; html: string } {
+  const color = severity === "CRITICAL" ? "#DC3545" : "#EAB308"
+  return {
+    subject: `[${severity}] Alerte securite: ${eventType} — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        <span style="color:${color}">●</span> Alerte de securite
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Un evenement <strong style="color:${color}">${severity}</strong> a ete detecte.
+      </p>
+      ${divider()}
+      ${sectionTitle("Evenement")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Type</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${eventType}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Severite</td><td style="padding:4px 0;font-size:14px;color:${color};font-weight:600">${severity}</td></tr>
+        ${details.userEmail ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Utilisateur</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.userEmail}</td></tr>` : ""}
+        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.ipAddress}</td></tr>` : ""}
+        ${details.riskScore !== undefined ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Score risque</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.riskScore}</td></tr>` : ""}
+        ${details.description ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Description</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.description}</td></tr>` : ""}
+      </table>
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=fraud`, text: "Voir dans le dashboard" })}
+    `),
+  }
+}
+
+export function dailySecurityDigestEmail(
+  stats: { highEvents: number; failedLogins: number; blockedIps: number; suspendedAccounts: number; newUsers: number; criticalEventTypes: string[] },
+): { subject: string; html: string } {
+  const alertCount = stats.highEvents + stats.failedLogins
+  return {
+    subject: `📊 Rapport securite quotidien — ${APP_NAME} (${alertCount} alertes)`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Rapport securite quotidien
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Resume des evenements de securite des dernieres 24h.
+      </p>
+      ${divider()}
+      ${sectionTitle("Statistiques du jour")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr><td style="padding:6px 0;font-size:13px;color:#6A758B">Evenements HAUT/CRITIQUE</td><td style="padding:6px 0;font-size:14px;color:#DC3545;font-weight:600">${stats.highEvents}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#6A758B">Echecs de connexion</td><td style="padding:6px 0;font-size:14px;color:#EAB308;font-weight:600">${stats.failedLogins}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#6A758B">IPs bloquees</td><td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600">${stats.blockedIps}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#6A758B">Comptes suspendus</td><td style="padding:6px 0;font-size:14px;color:#1E2024;font-weight:600">${stats.suspendedAccounts}</td></tr>
+        <tr><td style="padding:6px 0;font-size:13px;color:#6A758B">Nouveaux inscrits</td><td style="padding:6px 0;font-size:14px;color:#10AF6E;font-weight:600">${stats.newUsers}</td></tr>
+      </table>
+      ${stats.criticalEventTypes.length > 0 ? `
+        ${sectionTitle("Types d'evenements critiques")}
+        <div style="margin:16px 0">${stats.criticalEventTypes.map(t => `<div style="padding:4px 0;font-size:13px;color:#DC3545">• ${t}</div>`).join("")}</div>
+      ` : `<p style="margin:16px 0;font-size:14px;color:#10AF6E">✅ Aucun evenement critique aujourd'hui.</p>`}
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=fraud`, text: "Voir le tableau de bord securite" })}
+    `),
+  }
+}
+
+export function newUserRegisteredAdminEmail(
+  user: { name: string; email: string },
+): { subject: string; html: string } {
+  return {
+    subject: `👤 Nouvel utilisateur inscrit — ${user.name} — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Nouvel utilisateur
+      </p>
+      ${divider()}
+      ${sectionTitle("Details")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Email</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${user.email}</td></tr>
+      </table>
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=membres`, text: "Voir les membres" })}
+    `),
+  }
+}
+
+export function sessionRevokedByAdminEmail(user: TemplateUser): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `🔒 Session revoquee — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        Une de vos sessions a ete revoquee par l'administration. Si vous etes toujours actif, vous pouvez vous reconnecter.
+      </p>
+      ${ctaButton({ url: `${APP_DOMAIN}/login`, text: "Se reconnecter" })}
+      <p style="margin:16px 0 0 0;font-size:13px;color:#6A758B">
+        Si vous n'etes pas a l'origine de cette action, contactez le support.
+      </p>
+    `),
+  }
 }
 
 export function securityAlertNewDeviceEmail(user: TemplateUser, device: DeviceDetails): { subject: string; html: string } {

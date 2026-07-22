@@ -96,15 +96,39 @@ export class SecurityEventBus {
       await redis.setex(alertKey, 3600, "1")
     }
 
-    // Suppression warning si trop d'alertes
     if (recentAlerts && parseInt(recentAlerts, 10) > 10) return
 
     log.warn({
-      userId: event.userId,
-      type: event.type,
-      severity: event.severity,
-      details: event.details,
+      userId: event.userId, type: event.type, severity: event.severity, details: event.details,
     }, "Alerte securite declenchee")
+
+    // Envoyer email admin pour les evenements HIGH/CRITICAL
+    try {
+      const adminEmail = process.env.ADMIN_ALERT_EMAIL
+      if (!adminEmail) return
+
+      const user = event.userId ? await prisma.user.findUnique({
+        where: { id: event.userId },
+        select: { name: true, email: true },
+      }) : null
+
+      const { securityAlertAdminEmail } = await import("../email")
+      const { sendEmailSync } = await import("../services/notifications")
+      const template = securityAlertAdminEmail(
+        event.severity,
+        event.type,
+        {
+          userId: event.userId,
+          userEmail: user?.email,
+          ipAddress: event.ipAddress,
+          riskScore: event.riskScore,
+          description: (event.details as any)?.reason,
+        },
+      )
+      await sendEmailSync(adminEmail, template.subject, template.html)
+    } catch (err) {
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "Admin alert email failed")
+    }
   }
 
   async getRecentEvents(userId: string, limit = 20): Promise<unknown[]> {
