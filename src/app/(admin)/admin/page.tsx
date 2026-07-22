@@ -15,6 +15,7 @@ import { BrokerTab } from "./features/BrokerTab"
 
 import { AnalyticsTab } from "./features/AnalyticsTab"
 import { SecurityTab } from "./features/SecurityTab"
+import { FraudTab } from "./features/FraudTab"
 import { EmailsTab } from "./features/EmailsTab"
 import { SettingsTab } from "./features/SettingsTab"
 import { AuditTab } from "./features/AuditTab"
@@ -550,6 +551,9 @@ function AdminConsoleContent() {
 
         {activeTab === "security" && (
           <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+        )}
+        {activeTab === "fraud" && (
+          <FraudTab />
         )}
 
         {activeTab === "emails" && (

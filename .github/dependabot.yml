@@ -1,37 +1,40 @@
 version: 2
 updates:
-  # Dependances applicatives (pnpm/npm) a la racine du monorepo
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
     open-pull-requests-limit: 10
-    groups:
-      # Regroupe les mises a jour mineures/patch pour reduire le bruit de PR
-      minor-and-patch:
-        update-types:
-          - "minor"
-          - "patch"
     labels:
       - "dependencies"
+    commit-message:
+      prefix: "chore"
+      prefix-development: "chore"
+      include: "scope"
 
-  # Actions GitHub utilisees dans les workflows
-  - package-ecosystem: "github-actions"
-    directory: "/"
-    schedule:
-      interval: "weekly"
-      day: "monday"
-    labels:
-      - "dependencies"
-      - "ci"
-
-  # Images de base Docker (Dockerfile)
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
       interval: "weekly"
       day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
     labels:
       - "dependencies"
       - "docker"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Paris"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "ci"

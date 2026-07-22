@@ -16,11 +16,13 @@ export async function POST(req: NextRequest) {
     const retention = {
       auditLogsDays: 90,
       kycDays: 30,
+      inactiveAccountDays: 365,
     }
 
     const now = new Date()
     const auditCutoff = new Date(now.getTime() - retention.auditLogsDays * 24 * 60 * 60 * 1000)
     const kycCutoff = new Date(now.getTime() - retention.kycDays * 24 * 60 * 60 * 1000)
+    const inactiveCutoff = new Date(now.getTime() - retention.inactiveAccountDays * 24 * 60 * 60 * 1000)
 
     const results: Record<string, number> = {}
 
@@ -36,6 +38,24 @@ export async function POST(req: NextRequest) {
       })
     }
     results.kycDocuments = kycDocuments.length
+
+    const inactiveUsers = await prisma.user.findMany({
+      where: {
+        deletedAt: null,
+        isActive: false,
+        updatedAt: { lt: inactiveCutoff },
+        sessions: { none: { createdAt: { gte: inactiveCutoff } } },
+      },
+      select: { id: true, email: true },
+    })
+    for (const u of inactiveUsers) {
+      await prisma.session.deleteMany({ where: { userId: u.id } })
+      await prisma.user.update({
+        where: { id: u.id },
+        data: { deletedAt: now, email: `purged-${Date.now()}-${u.id.slice(0, 8)}@deleted.local` },
+      })
+    }
+    results.inactiveAccounts = inactiveUsers.length
 
     return NextResponse.json({ ok: true, cleaned: results })
   } catch (error) {

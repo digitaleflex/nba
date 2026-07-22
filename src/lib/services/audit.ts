@@ -3,15 +3,20 @@ import { headers } from "next/headers"
 import { publishAuditEvent } from "@nba/lib/redis-pubsub"
 import { computeHash } from "@nba/lib/audit/integrity"
 import { logger } from "@nba/lib/logger"
+import { createHash } from "crypto"
 
 const log = logger.child({ module: "audit" })
+
+function emailHash(email: string): string {
+  return createHash("sha256").update(email.toLowerCase().trim()).digest("hex").slice(0, 12)
+}
 
 function buildSearchText(action: string, resourceType: string, details?: Record<string, unknown>): string {
   const parts = [action, resourceType]
   if (details?.resourceLabel) parts.push(String(details.resourceLabel))
   if (details?.userName) parts.push(String(details.userName))
-  if (details?.userEmail) parts.push(String(details.userEmail))
-  if (details?.email) parts.push(String(details.email))
+  if (details?.userEmail) parts.push(emailHash(String(details.userEmail)))
+  if (details?.email) parts.push(emailHash(String(details.email)))
   if (details?.planName) parts.push(String(details.planName))
   if (details?.reason) parts.push(String(details.reason))
   if (details?.notes) parts.push(String(details.notes))
@@ -51,6 +56,12 @@ export async function logAuditEvent(params: {
   }
 
   const details = { ...(params.details ?? {}) } as Record<string, unknown>
+  if (details.userEmail && typeof details.userEmail === "string") {
+    details.userEmail = emailHash(details.userEmail)
+  }
+  if (details.email && typeof details.email === "string") {
+    details.email = emailHash(details.email)
+  }
   if (params.resourceLabel) {
     details.resourceLabel = params.resourceLabel
   }
@@ -70,6 +81,7 @@ export async function logAuditEvent(params: {
         action: params.action,
         resourceType: params.resourceType,
         resourceId: params.resourceId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         details: details as any,
         searchText: buildSearchText(params.action, params.resourceType, details),
         ipAddress,

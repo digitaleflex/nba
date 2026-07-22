@@ -63,6 +63,10 @@ model User {
   messages            Message[]           @relation("SentMessages")
   reactions           MessageReaction[]
   reports             MessageReport[]
+  securityEvents      SecurityEvent[]
+  loginAttempts       LoginAttempt[]
+  twoFactorBackupCodes TwoFactorBackupCode[]
+  securityPolicy      SecurityPolicy?
 
   @@index([roleId])
   @@index([isActive])
@@ -169,10 +173,26 @@ model Session {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  // ── NEW SECURITY FIELDS ──
+  deviceId      String?  @map("device_id") @db.Uuid
+  riskScore     Int      @default(0) @map("risk_score")
+  riskLevel     String   @default("LOW") @map("risk_level")
+  country       String?  @map("country")
+  city          String?  @map("city")
+  latitude      Float?   @map("latitude")
+  longitude     Float?   @map("longitude")
+  isHighRisk    Boolean  @default(false) @map("is_high_risk")
+  riskReason    String?  @map("risk_reason")
+  fingerprint   String?  @map("fingerprint")
+  lastRotation  DateTime? @map("last_rotation")
+
+  user   User    @relation(fields: [userId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
 
   @@index([userId])
   @@index([expiresAt])
+  @@index([deviceId])
+  @@index([riskLevel])
   @@map("sessions")
 }
 
@@ -262,6 +282,11 @@ model SubscriptionPlan {
   updatedAt    DateTime @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
+  // ── NEW SECURITY FIELDS ──
+  maxSessions Int @default(5) @map("max_sessions")
+  maxDevices  Int @default(3) @map("max_devices")
+  require2fa  Boolean @default(false) @map("require_2fa")
+
   accessRequests AccessRequest[]
   audience       SignalAudience[]
   sessions       JournalSession[]
@@ -298,23 +323,39 @@ model Device {
   fingerprint  String   @map("fingerprint")
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
-  deviceType   String?  @map("device_type") // desktop | mobile | tablet
-  brand        String?  @map("brand")       // Apple | Samsung | Google | Xiaomi | ...
-  model        String?  @map("model")       // iPhone | iPad | Galaxy S23 | ...
-  os           String?  @map("os")          // iOS | Android | Windows | macOS | Linux
-  browser      String?  @map("browser")     // Safari | Chrome | Firefox | Edge | ...
+  deviceType   String?  @map("device_type")
+  brand        String?  @map("brand")
+  model        String?  @map("model")
+  os           String?  @map("os")
+  browser      String?  @map("browser")
   lastSeenAt   DateTime @default(now()) @map("last_seen_at")
   trusted      Boolean  @default(true) @map("trusted")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  user User @relation(fields: [userId], references: [id])
+  // ── NEW SECURITY FIELDS ──
+  trustLevel    DeviceTrustLevel @default(UNKNOWN) @map("trust_level")
+  riskScore     Int              @default(0) @map("risk_score")
+  is2faBypassed Boolean          @default(false) @map("is_2fa_bypassed")
+  firstSeenAt   DateTime         @map("first_seen_at")
+  trustedUntil  DateTime?        @map("trusted_until")
+  lastCountry   String?          @map("last_country")
+
+  flagVpn       Boolean @default(false) @map("flag_vpn")
+  flagProxy     Boolean @default(false) @map("flag_proxy")
+  flagTor       Boolean @default(false) @map("flag_tor")
+  flagDatacenter Boolean @default(false) @map("flag_datacenter")
+
+  sessions       Session[]
+  securityEvents SecurityEvent[]
+  loginAttempts  LoginAttempt[]
+  user           User           @relation(fields: [userId], references: [id])
 
   @@unique([userId, fingerprint])
   @@index([userId])
   @@index([fingerprint])
-  @@index([deviceType])
-  @@index([brand])
+  @@index([trustLevel])
+  @@index([trusted])
   @@map("devices")
 }
 
@@ -635,6 +676,171 @@ model Setting {
   updater User? @relation(fields: [updatedBy], references: [id])
 
   @@map("settings")
+}
+
+// ════════════════════════════════════════
+//  Security Models (Phase 2a)
+// ════════════════════════════════════════
+
+model SecurityPolicy {
+  id              String   @id @default(uuid()) @db.Uuid
+  userId          String?  @unique @map("user_id") @db.Uuid
+  maxSessions     Int      @default(5) @map("max_sessions")
+  maxDevices      Int      @default(3) @map("max_devices")
+  require2fa      Boolean  @default(false) @map("require_2fa")
+  enforceEmailOTP Boolean  @default(false) @map("enforce_email_otp")
+  deviceTrustDays Int      @default(30) @map("device_trust_days")
+
+  allowedCountries String[] @default([]) @map("allowed_countries")
+  blockedCountries String[] @default([]) @map("blocked_countries")
+  allowedIps       String[] @default([]) @map("allowed_ips")
+  blockedIps       String[] @default([]) @map("blocked_ips")
+  blockVpn         Boolean  @default(true) @map("block_vpn")
+  blockTor         Boolean  @default(true) @map("block_tor")
+  blockProxy       Boolean  @default(true) @map("block_proxy")
+
+  notifyNewDevice   Boolean @default(true) @map("notify_new_device")
+  notifyNewLocation Boolean @default(true) @map("notify_new_location")
+  notifySuspicious  Boolean @default(true) @map("notify_suspicious")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("security_policies")
+}
+
+enum SecurityEventType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGIN_NEW_DEVICE
+  LOGIN_NEW_LOCATION
+  LOGIN_SUSPICIOUS_IP
+  LOGIN_SESSION_LIMIT
+  LOGIN_BLOCKED
+  LOGOUT
+  SESSION_CREATED
+  SESSION_REVOKED
+  SESSION_EXPIRED
+  SESSION_HIJACK_DETECTED
+  DEVICE_REGISTERED
+  DEVICE_VERIFIED
+  DEVICE_TRUSTED
+  DEVICE_REVOKED
+  DEVICE_BLOCKED
+  DEVICE_SUSPICIOUS
+  TWOFA_ENABLED
+  TWOFA_DISABLED
+  TWOFA_FAILED
+  TWOFA_BYPASSED
+  TWOFA_RECOVERY_USED
+  PASSWORD_CHANGED
+  PASSWORD_RESET
+  PASSWORD_RESET_FAILED
+  EMAIL_VERIFIED
+  EMAIL_CHANGED
+  ACCOUNT_SUSPENDED
+  ACCOUNT_REACTIVATED
+  ACCOUNT_DELETED
+  ACCOUNT_LOCKED
+  RISK_SCORE_CHANGED
+  IMPOSSIBLE_TRAVEL_DETECTED
+  RATE_LIMIT_EXCEEDED
+  API_KEY_CREATED
+  API_KEY_REVOKED
+  ADMIN_ACTION
+  ROLE_CHANGED
+  PERMISSION_CHANGED
+  DATA_EXPORT
+  DATA_DELETION_REQUEST
+  DATA_DELETION_COMPLETED
+  KYC_SUBMITTED
+  KYC_APPROVED
+  KYC_REJECTED
+  BROKER_VERIFIED
+  SUBSCRIPTION_CHANGED
+  SECURITY_ALERT
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  HIGH
+  CRITICAL
+}
+
+model SecurityEvent {
+  id        String            @id @default(uuid()) @db.Uuid
+  userId    String            @map("user_id") @db.Uuid
+  type      SecurityEventType
+  severity  SecuritySeverity
+  details   Json              @db.JsonB
+  ipAddress String?           @map("ip_address")
+  userAgent String?           @map("user_agent")
+  deviceId  String?           @map("device_id") @db.Uuid
+  sessionId String?           @map("session_id") @db.Uuid
+  country   String?
+  city      String?
+  latitude  Float?
+  longitude Float?
+  riskScore Int               @default(0) @map("risk_score")
+  notified  Boolean           @default(false)
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+
+  user   User    @relation(fields: [userId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([type, createdAt])
+  @@index([severity, createdAt])
+  @@index([userId, type])
+  @@index([createdAt])
+  @@map("security_events")
+}
+
+model LoginAttempt {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String?  @map("user_id") @db.Uuid
+  email     String
+  success   Boolean
+  ipAddress String   @map("ip_address")
+  userAgent String?  @map("user_agent")
+  deviceId  String?  @map("device_id") @db.Uuid
+  country   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user   User?   @relation(fields: [userId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([email, createdAt])
+  @@index([ipAddress, createdAt])
+  @@index([createdAt])
+  @@map("login_attempts")
+}
+
+model TwoFactorBackupCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  code      String
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("two_factor_backup_codes")
+}
+
+enum DeviceTrustLevel {
+  UNKNOWN
+  PENDING
+  VERIFIED
+  TRUSTED
+  SUSPICIOUS
+  BLOCKED
 }
 
 // ── Enums ──
