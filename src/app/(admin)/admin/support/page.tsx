@@ -10,10 +10,8 @@ interface SupportTicket {
   title: string
   body: string
   createdAt: string
+  user: { id: string; name: string; email: string } | null
   data: {
-    userId?: string
-    userName?: string
-    userEmail?: string
     subject?: string
     message?: string
     adminResponse?: string
@@ -97,9 +95,21 @@ export default function AdminSupportPage() {
         <div className="space-y-4">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h1 className="text-lg font-bold text-foreground">{d.subject as string || selected.title}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {d.userName as string || "Inconnu"} · {d.userEmail as string || ""} · {formatDate(selected.createdAt)}
+               <h1 className="text-lg font-bold text-foreground">{d.subject as string || selected.title}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
+                <span className="font-semibold text-foreground/80">{selected.user?.name || "Inconnu"}</span>
+                <span className="text-muted-foreground/60">·</span>
+                <a href={`/admin?tab=members&search=${selected.user?.email}`} className="hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted">
+                  {selected.user?.email || ""}
+                </a>
+                {selected.user?.id && (
+                  <>
+                    <span className="text-muted-foreground/60">·</span>
+                    <code className="text-[10px] bg-accent/30 px-1.5 py-0.5 rounded font-mono">{selected.user.id.slice(0, 8)}…</code>
+                  </>
+                )}
+                <span className="text-muted-foreground/60">·</span>
+                <span>{formatDate(selected.createdAt)}</span>
               </p>
             </div>
             <Badge variant="outline" className={cn("text-[10px] shrink-0", sc.color)}>
@@ -107,9 +117,21 @@ export default function AdminSupportPage() {
             </Badge>
           </div>
 
+          <div className="flex items-center justify-between gap-3 px-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">Message du membre</p>
+            {selected.user?.id && (
+              <div className="flex gap-2">
+                <a
+                  href={`/admin?tab=fraud`}
+                  className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  Voir Anti-Fraude
+                </a>
+              </div>
+            )}
+          </div>
           <Card className="border-border bg-card/30">
             <CardContent className="p-5">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">Message du membre</p>
               <p className="text-sm text-foreground/85 whitespace-pre-wrap">{d.message as string || selected.body}</p>
             </CardContent>
           </Card>
@@ -214,8 +236,15 @@ export default function AdminSupportPage() {
                           </p>
                           {hasResponse && <CheckCircle2 className="size-3.5 text-emerald-500 shrink-0" />}
                         </div>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {d.userName as string || "Inconnu"} · {d.userEmail as string || ""}
+                         <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
+                          <span className="font-medium">{ticket.user?.name || "Inconnu"}</span>
+                          <span className="text-muted-foreground/50">·</span>
+                          <span>{ticket.user?.email || ""}</span>
+                          {ticket.user?.id && (
+                            <code className="text-[10px] bg-accent/30 px-1 py-0.5 rounded font-mono text-muted-foreground/70">
+                              #{ticket.user.id.slice(0, 8)}
+                            </code>
+                          )}
                         </p>
                         <p className="text-xs text-foreground/70 mt-1 line-clamp-2">
                           {d.message as string || ticket.body}
