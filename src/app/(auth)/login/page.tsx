@@ -75,9 +75,6 @@ export default function LoginPage() {
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--color-primary)_0%,_transparent_50%)] opacity-[0.03] pointer-events-none" />
-      <div className="fixed inset-0 bg-[radial-gradient(ellipse_at_bottom_left,_var(--color-ring)_0%,_transparent_50%)] opacity-[0.02] pointer-events-none" />
-
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center space-y-3">
           <div className="inline-flex size-14 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/20 animate-float">
@@ -91,8 +88,7 @@ export default function LoginPage() {
           </p>
         </div>
 
-        <Card size="sm" className="relative overflow-hidden">
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
+        <Card size="sm" className="relative overflow-hidden border-t-gradient">
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
               <div className="space-y-1.5">
@@ -144,7 +140,7 @@ export default function LoginPage() {
                   {error}
                 </p>
               )}
-              <Button type="submit" className="w-full h-9" loading={loading}>
+              <Button type="submit" className="w-full h-9 bg-gradient-primary border-0 shadow-primary" loading={loading}>
                 {loading ? "Connexion…" : "Se connecter"}
               </Button>
               <div className="text-center">

@@ -154,7 +154,7 @@ export function StepConfirmation({
           </div>
         )}
 
-        <Button type="submit" className="w-full h-9" loading={loading}>
+        <Button type="submit" className="w-full h-9 bg-gradient-primary border-0 shadow-primary" loading={loading}>
           {loading ? "Inscription en cours…" : "Creer mon compte"}
         </Button>
 
