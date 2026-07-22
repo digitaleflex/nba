@@ -115,23 +115,23 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
 
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-card border-r border-border shrink-0">
-      <div className="p-4 border-b border-border">
-        <a href="/admin" className="flex items-center gap-2">
-          <div className="size-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-black">NBA</span>
+      <div className="p-4 border-b border-border/60">
+        <a href="/admin" className="flex items-center gap-2.5 group">
+          <div className="size-8 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shadow-sm shadow-primary/20 group-hover:shadow-md group-hover:shadow-primary/30 transition-shadow">
+            <span className="text-primary-foreground text-sm font-black tracking-tight">NBA</span>
           </div>
           <div className="leading-tight">
             <p className="text-sm font-bold text-foreground">Admin</p>
-            <p className="text-[9px] text-muted-foreground uppercase tracking-wider">NeverBrokeAgain</p>
+            <p className="text-[9px] text-muted-foreground uppercase tracking-wider font-medium">NeverBrokeAgain</p>
           </div>
         </a>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-3 space-y-4">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-3 scrollbar-thin">
         {groups.map((group) => (
           <div key={group.label}>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60 px-2 pb-1 flex items-center gap-1.5">
-              <group.icon className="size-3" />
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 px-2.5 pb-1 flex items-center gap-1.5">
+              <group.icon className="size-2.5" />
               {group.label}
             </p>
             <div className="space-y-0.5">
@@ -143,22 +143,25 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
                     key={item.tab}
                     onClick={() => router.push(item.href ?? `/admin?tab=${item.tab}`)}
                     className={cn(
-                      "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors text-left cursor-pointer",
+                      "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-xs transition-all text-left cursor-pointer relative",
                       isActive
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground",
+                        ? "bg-primary/10 text-primary font-semibold shadow-sm"
+                        : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
                     )}
                   >
-                    <Icon className="size-4 shrink-0" />
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-primary" />
+                    )}
+                    <Icon className={cn("size-4 shrink-0", isActive && "text-primary")} />
                     <span className="truncate">{item.label}</span>
                     {item.badge === "support" && (
-                      <span className="ml-auto size-4 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center">
+                      <span className="ml-auto size-4 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-card">
                         {supportCount > 9 ? "9+" : supportCount}
                       </span>
                     )}
                     {item.badge === "security" && (
                       <span className={cn(
-                        "ml-auto size-5 rounded-full bg-red-500 text-[9px] font-bold text-white flex items-center justify-center",
+                        "ml-auto size-5 rounded-full bg-rose-500 text-[9px] font-bold text-white flex items-center justify-center ring-2 ring-card",
                         pulse && "animate-pulse",
                       )}>
                         {securityAlerts > 9 ? "9+" : securityAlerts}
