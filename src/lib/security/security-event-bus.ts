@@ -70,7 +70,14 @@ export class SecurityEventBus {
       this.triggerAlert(event)
     }
 
+    this.evaluateRules(event).catch(() => {})
+
     return created.id
+  }
+
+  private async evaluateRules(event: SecurityEventInput): Promise<void> {
+    const { securityEventRules } = await import("./security-event-rules")
+    await securityEventRules.evaluate(event.userId, event.type, event.ipAddress)
   }
 
   private async triggerAlert(event: SecurityEventInput): Promise<void> {
