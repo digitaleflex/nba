@@ -108,6 +108,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 20m
           script: |
             set -e
             cd /home/audest/nba
@@ -139,11 +140,9 @@ jobs:
             # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
             docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker 2>&1 | tail -15 || true
 
-            echo "=== Migrations Prisma (one-shot, avant le boot) ==="
-            # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint
-            # du Dockerfile lance le serveur et ignore l'arg). Non-destructif : applique
-            # uniquement les migrations manquantes. Timeout anti-blocage advisory lock pgbouncer.
-            docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app > /tmp/migrate.log 2>&1 || MIGRATE_EXIT=$?
+            echo "=== Migrations Prisma (connexion directe, sans pooler) ==="
+            DIRECT_URL="$(echo "$DATABASE_URL" | sed 's/-pooler//')"
+            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint "npx prisma migrate deploy" app > /tmp/migrate.log 2>&1 || MIGRATE_EXIT=$?
             cat /tmp/migrate.log
             if [ "${MIGRATE_EXIT:-0}" != "0" ]; then
               echo "::error::prisma migrate deploy a echoue (exit ${MIGRATE_EXIT})."
