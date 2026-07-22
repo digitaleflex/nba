@@ -3,6 +3,21 @@ import { serverError } from "./api-error"
 
 const mockHeadersGet = vi.fn()
 
+const { logErrorSpy } = vi.hoisted(() => ({
+  logErrorSpy: vi.fn(),
+}))
+
+vi.mock("@nba/lib/logger", () => ({
+  logger: {
+    child: vi.fn(() => ({
+      error: logErrorSpy,
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+    })),
+  },
+}))
+
 vi.mock("next/headers", () => ({
   headers: vi.fn(async () => ({
     get: mockHeadersGet,
@@ -24,7 +39,8 @@ describe("serverError", () => {
     const result = await serverError(new Error("db connection failed"), "/api/test") as unknown as { status: number; body: Record<string, unknown> }
 
     expect(result.status).toBe(500)
-    expect(result.body.error).toContain("Une erreur inattendue est survenue")
+    expect(result.body.message).toContain("Une erreur inattendue est survenue")
+    expect(result.body.code).toBe("SYS_001")
     expect(result.body.errorId).toBeDefined()
     expect(typeof result.body.errorId).toBe("string")
     expect((result.body.errorId as string).length).toBeGreaterThanOrEqual(6)
@@ -46,28 +62,26 @@ describe("serverError", () => {
     expect(result.body.correlationId).toBeUndefined()
   })
 
-  it("includes route in console error log", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
-
+  it("includes route in error log", async () => {
     await serverError("test error", "/api/users")
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining("/api/users"),
-      "test error",
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ route: "/api/users" }),
+      "Unhandled error",
     )
-    consoleSpy.mockRestore()
   })
 
   it("logs Error instances with message and stack", async () => {
-    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {})
     const error = new Error("something broke")
 
     await serverError(error, "/api/test")
 
-    expect(consoleSpy).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.objectContaining({ message: "something broke", stack: expect.any(String) }),
+    expect(logErrorSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        route: "/api/test",
+        err: expect.objectContaining({ message: "something broke", stack: expect.any(String) }),
+      }),
+      "Unhandled error",
     )
-    consoleSpy.mockRestore()
   })
 })

@@ -50,6 +50,13 @@ export interface NavSection {
 
 const dashboardMobile: NavItem[] = [
   {
+    id: "dashboard",
+    href: "/dashboard",
+    label: "Tableau",
+    icon: LayoutDashboard,
+    isActive: (pathname) => pathname === "/dashboard",
+  },
+  {
     id: "signals",
     href: "/dashboard/signals",
     label: "Signaux",
@@ -112,6 +119,13 @@ const dashboardMobile: NavItem[] = [
 ]
 
 const dashboardSidebar: NavItem[] = [
+  {
+    id: "dashboard",
+    href: "/dashboard",
+    label: "Tableau de bord",
+    icon: LayoutDashboard,
+    isActive: (pathname) => pathname === "/dashboard",
+  },
   {
     id: "signals",
     href: "/dashboard/signals",
@@ -231,6 +245,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       section: "communiquer",
       badge: "messages",
       isActive: (pathname) => pathname === "/admin/messages",
+    },
+    {
+      id: "support",
+      href: "/admin/support",
+      label: "Support",
+      icon: MessageCircle,
+      section: "communiquer",
+      isActive: (pathname) => pathname === "/admin/support",
     },
   ],
   auditer: [

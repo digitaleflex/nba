@@ -91,7 +91,7 @@ export function StepBroker({ onNext }: StepBrokerProps) {
                 className="h-9 w-full rounded-lg border border-border bg-background px-3 py-1.5 text-sm outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 text-foreground transition-all duration-200"
               >
                 <option value="" disabled className="text-muted-foreground">Sélectionnez votre broker</option>
-                <option value="Deriv">Deriv</option>
+                <option value="Deriv">Deriv (Indices)</option>
                 <option value="Exness">Exness</option>
               </select>
             </div>

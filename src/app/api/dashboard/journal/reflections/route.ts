@@ -44,7 +44,14 @@ export async function POST(request: NextRequest) {
     const parsed = reflectionSchema.parse(body)
     const date = new Date(parsed.date)
 
-    const dayTrades = await prisma.trade.findMany({
+    const existing = await prisma.dailyReflection.findUnique({
+      where: { userId_date: { userId: session.user.id, date } },
+      select: { tradeCount: true },
+    })
+
+    const hasTrades = existing ? (existing.tradeCount ?? 0) > 0 : false
+
+    const dayTrades = hasTrades ? [] : await prisma.trade.findMany({
       where: {
         userId: session.user.id,
         deletedAt: null,
@@ -52,35 +59,35 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    const existing = await prisma.dailyReflection.findUnique({
-      where: { userId_date: { userId: session.user.id, date } },
-      select: { tradeCount: true },
-    })
+    const createData = {
+      userId: session.user.id,
+      date,
+      rating: parsed.rating,
+      mood: parsed.mood,
+      note: parsed.note,
+      tradeCount: dayTrades.length,
+      wins: dayTrades.filter(t => t.result === "WIN").length,
+      losses: dayTrades.filter(t => t.result === "LOSS").length,
+      totalPnl: dayTrades.reduce((s, t) => s + Number(t.pnl), 0),
+    }
 
-    const needsRecalc = !existing || existing.tradeCount === 0
+    const updateData: Record<string, unknown> = {
+      rating: parsed.rating,
+      mood: parsed.mood,
+      note: parsed.note,
+    }
+
+    if (!hasTrades) {
+      updateData.tradeCount = dayTrades.length
+      updateData.wins = dayTrades.filter(t => t.result === "WIN").length
+      updateData.losses = dayTrades.filter(t => t.result === "LOSS").length
+      updateData.totalPnl = dayTrades.reduce((s, t) => s + Number(t.pnl), 0)
+    }
 
     const reflection = await prisma.dailyReflection.upsert({
       where: { userId_date: { userId: session.user.id, date } },
-      create: {
-        userId: session.user.id,
-        date,
-        rating: parsed.rating,
-        mood: parsed.mood,
-        note: parsed.note,
-        tradeCount: needsRecalc ? dayTrades.length : existing.tradeCount,
-        wins: needsRecalc ? dayTrades.filter(t => t.result === "WIN").length : 0,
-        losses: needsRecalc ? dayTrades.filter(t => t.result === "LOSS").length : 0,
-        totalPnl: needsRecalc ? dayTrades.reduce((s, t) => s + Number(t.pnl), 0) : 0,
-      },
-      update: {
-        rating: parsed.rating,
-        mood: parsed.mood,
-        note: parsed.note,
-        tradeCount: needsRecalc ? dayTrades.length : undefined,
-        wins: needsRecalc ? dayTrades.filter(t => t.result === "WIN").length : undefined,
-        losses: needsRecalc ? dayTrades.filter(t => t.result === "LOSS").length : undefined,
-        totalPnl: needsRecalc ? dayTrades.reduce((s, t) => s + Number(t.pnl), 0) : undefined,
-      },
+      create: createData,
+      update: updateData,
     })
 
     updateDisciplineStreak(session.user.id, date).catch((err) => {

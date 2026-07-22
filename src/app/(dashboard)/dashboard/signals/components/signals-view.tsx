@@ -57,7 +57,7 @@ interface ApiResponse {
   summary: Summary
 }
 
-type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv" | "favorite" | "archive"
+type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Tous" },
@@ -67,8 +67,8 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Cette semaine" },
   { key: "forex", label: "Forex" },
-  { key: "deriv", label: "Deriv" },
-  { key: "forex+deriv", label: "Forex + Deriv" },
+  { key: "indices", label: "Indices" },
+  { key: "forex+indices", label: "Forex + Indices" },
 ]
 
 function formatRelativeDate(dateStr: string): string {
@@ -217,11 +217,11 @@ export function SignalsView() {
 
     const groupStr = summary.group.toLowerCase()
     const hasForex = groupStr.includes("forex")
-    const hasDeriv = groupStr.includes("deriv")
+    const hasIndices = groupStr.includes("indices")
 
     return FILTERS.filter((f) => {
       if (f.key === "forex" && !hasForex) return false
-      if (f.key === "deriv" && !hasDeriv) return false
+      if (f.key === "indices" && !hasIndices) return false
       return true
     })
   }, [summary])

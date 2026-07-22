@@ -5,6 +5,7 @@ vi.mock("@nba/lib/db", () => ({
     user: { findUnique: vi.fn(), update: vi.fn(), findFirst: vi.fn() },
     notificationDelivery: { findFirst: vi.fn(), findMany: vi.fn() },
     emailEvent: { count: vi.fn() },
+    session: { deleteMany: vi.fn() },
   },
 }))
 vi.mock("@nba/lib/services/audit", () => ({

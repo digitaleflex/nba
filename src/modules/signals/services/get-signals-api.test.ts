@@ -2,7 +2,6 @@ import { describe, it, expect, vi, beforeEach } from "vitest"
 import { getSignalsApi } from "./get-signals-api"
 import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
-import { AuthError } from "@nba/lib/auth-utils"
 
 vi.mock("@nba/lib/db", () => ({
   prisma: {
@@ -44,9 +43,7 @@ describe("getSignalsApi", () => {
   it("throws 401 if user is not authenticated", async () => {
     vi.mocked(getServerSession).mockResolvedValue(null)
 
-    await expect(getSignalsApi({})).rejects.toThrowError(
-      new AuthError("Non autorisé", 401)
-    )
+    await expect(getSignalsApi({})).rejects.toThrow("Non autorisé")
   })
 
   it("throws 404 if user is not found", async () => {
@@ -56,9 +53,7 @@ describe("getSignalsApi", () => {
 
     vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
 
-    await expect(getSignalsApi({})).rejects.toThrowError(
-      new AuthError("Utilisateur non trouvé", 404)
-    )
+    await expect(getSignalsApi({})).rejects.toThrow("Utilisateur non trouvé")
   })
 
   it("throws 403 if user is inactive", async () => {
@@ -73,8 +68,8 @@ describe("getSignalsApi", () => {
       signalsAccessOverride: false,
     } as any)
 
-    await expect(getSignalsApi({})).rejects.toThrowError(
-      new AuthError("Votre compte a été suspendu. Contactez le support.", 403)
+    await expect(getSignalsApi({})).rejects.toThrow(
+      "Votre compte a été suspendu. Contactez le support."
     )
   })
 

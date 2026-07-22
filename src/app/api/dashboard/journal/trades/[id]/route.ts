@@ -43,6 +43,12 @@ const tradeUpdateSchema = z.object({
     .max(10, "Maximum 10 tags autorises.").optional(),
   tradedAt: z.string({ error: "La date doit etre au format ISO." })
     .datetime("Format de date invalide (ex: 2026-07-20T14:00:00Z).").optional(),
+  strategy: z.enum(["SCALPING","DAY_TRADING","SWING","POSITION"], {
+    error: "La strategie doit etre SCALPING, DAY_TRADING, SWING ou POSITION."
+  }).optional(),
+  setupType: z.enum(["BREAKOUT","PULLBACK","REVERSAL","RANGE","TREND","OTHER"], {
+    error: "Le type de setup est invalide."
+  }).optional(),
 })
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

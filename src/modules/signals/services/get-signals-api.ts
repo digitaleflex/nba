@@ -3,7 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { getServerSession } from "@nba/lib/get-session"
 import { AuthError } from "@nba/lib/auth-utils"
 
-type SignalFilter = "all" | "unread" | "today" | "week" | "forex" | "deriv" | "forex+deriv" | "favorite" | "archive"
+type SignalFilter = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive"
 
 interface GetSignalsParams {
   search?: string
@@ -131,18 +131,18 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
         plan: { name: { contains: "Forex", mode: "insensitive" } },
       },
     }
-  } else if (filter === "deriv") {
+  } else if (filter === "indices") {
     where.audience = {
       some: {
         ...((where.audience as any)?.some ?? {}),
-        plan: { name: { contains: "Deriv", mode: "insensitive" } },
+        plan: { name: { contains: "Indices", mode: "insensitive" } },
       },
     }
-  } else if (filter === "forex+deriv") {
+  } else if (filter === "forex+indices") {
     where.audience = {
       some: {
         ...((where.audience as any)?.some ?? {}),
-        plan: { name: { in: ["Forex", "Deriv"] } },
+        plan: { name: { in: ["Forex", "Indices"] } },
       },
     }
   }
