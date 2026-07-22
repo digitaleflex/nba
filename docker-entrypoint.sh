@@ -70,10 +70,6 @@ echo "Redis is ready."
 # eviter qu'un seed lent/bloquant ne retarde le healthcheck (et donc le
 # basculement Traefik zero-down).
 
-# Ensure storage directory exists and is owned by nextjs user
-mkdir -p /app/storage >/dev/null 2>&1 || true
-chown -R nextjs:nodejs /app/storage >/dev/null 2>&1 || true
-
 echo "=== Setup complete. Starting app... ==="
 
 # Build the PM2 ecosystem dynamically based on WS_ENABLED
@@ -108,12 +104,11 @@ module.exports = {
   ],
 }
 EOF
-  chown nextjs:nodejs "$ECOSYSTEM_FILE"
-  su -s /bin/sh -c 'npx pm2-runtime start /app/ecosystem.config.cjs & wait $!' nextjs &
+  npx pm2-runtime start /app/ecosystem.config.cjs &
   APP_PID=$!
   wait $APP_PID
 else
-  su -s /bin/sh -c 'node server.js & wait $!' nextjs &
+  node server.js &
   APP_PID=$!
   wait $APP_PID
 fi

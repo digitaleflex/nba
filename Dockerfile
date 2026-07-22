@@ -46,6 +46,9 @@ RUN apk add --no-cache postgresql-client ca-certificates
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Pre-create storage directory with correct ownership (avoids runtime chown as root)
+RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
+
 # Copy full node_modules: required because docker-entrypoint.sh runs
 # `pnpm prisma migrate deploy` and `pnpm db:seed` (tsx) at container startup.
 # These are devDependencies not traced/included by the Next.js standalone output.
@@ -75,9 +78,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 COPY --from=builder --chown=nextjs:nodejs /app/packages/design-system/package.json ./packages/design-system/package.json
 
-# USER root is required here: docker-entrypoint.sh runs migrations/seed as root,
-# then drops privileges to the `nextjs` user (via `su`) before starting the server.
-USER root
+# Security: run as non-root (uid 1001). The entrypoint no longer needs root
+# because storage dir creation and chown are done at build time.
+USER nextjs
 
 EXPOSE 3000
 

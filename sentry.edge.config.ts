@@ -8,4 +8,30 @@ Sentry.init({
   tracesSampleRate: 1.0,
 
   debug: false,
+
+  beforeSend(event) {
+    if (process.env.NODE_ENV === "development") {
+      return null;
+    }
+    const scrub = (obj: unknown) => {
+      if (!obj || typeof obj !== "object") return
+      const o = obj as Record<string, unknown>
+      for (const key of ["password", "token", "secret", "authorization", "cookie", "email"]) {
+        if (key in o) o[key] = "[REDACTED]"
+      }
+    }
+    try {
+      const request = event.request
+      if (request) {
+        scrub(request.headers)
+        scrub(request.cookies)
+        if (request.data && typeof request.data === "object") {
+          const data = request.data as Record<string, unknown>
+          if (data.email) data.email = "[REDACTED]"
+          if (data.password) data.password = "[REDACTED]"
+        }
+      }
+    } catch { /* best-effort */ }
+    return event
+  },
 });

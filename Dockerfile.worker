@@ -29,15 +29,22 @@ ENV NODE_ENV=production
 RUN apk add --no-cache postgresql-client python3 py3-pip dcron && \
     pip3 install --break-system-packages b2
 
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
 # Entrypoint script
-COPY docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
+COPY --chown=nextjs:nodejs docker-entrypoint-worker.sh ./docker-entrypoint-worker.sh
 RUN chmod +x ./docker-entrypoint-worker.sh
 
 # Backup script
-COPY scripts/backup.sh ./scripts/backup.sh
+COPY --chown=nextjs:nodejs scripts/backup.sh ./scripts/backup.sh
 RUN chmod +x ./scripts/backup.sh
 
-USER root
+# Pre-create directories with correct ownership
+RUN mkdir -p /app/storage /tmp && chown -R nextjs:nodejs /app/storage /tmp
+
+USER nextjs
 
 # Healthcheck - the worker exposes a BullMQ health endpoint
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
