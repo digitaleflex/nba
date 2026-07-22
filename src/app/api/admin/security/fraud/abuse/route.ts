@@ -1,11 +1,16 @@
-import { NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { getConnection as getRedis } from "@nba/lib/redis-pubsub"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 
-export async function GET() {
+const rl = rateLimitMiddleware({ window: 10, max: 30 })
+
+export async function GET(req: NextRequest) {
   try {
     await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const rlRes = await rl(req, "fraud:abuse")
+    if (rlRes) return rlRes
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const lastHour = new Date(now.getTime() - 3600000)

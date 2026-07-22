@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import {
-  Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle,
+  Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw,
 } from "lucide-react"
 import { Card, CardContent, Button } from "@nba/design-system"
 import { toast } from "sonner"
@@ -35,6 +35,7 @@ export function FraudTab() {
   const [playbooks, setPlaybooks] = useState<Playbook[]>([])
   const [loading, setLoading] = useState(true)
   const [suspendEmail, setSuspendEmail] = useState("")
+  const [reactivateEmail, setReactivateEmail] = useState("")
   const [selectedPlaybook, setSelectedPlaybook] = useState("")
   const [playbookUserId, setPlaybookUserId] = useState("")
   const [searchEmail, setSearchEmail] = useState("")
@@ -61,22 +62,31 @@ export function FraudTab() {
 
   async function suspendUser() {
     if (!suspendEmail) return toast.error("Email requis")
+    if (!confirm("Suspendre ce compte ? L'utilisateur sera deconnecte et ne pourra plus se connecter.")) return
     try {
       const search = await fetch(`/api/admin/members/search?email=${suspendEmail}`)
       if (!search.ok) return toast.error("Utilisateur introuvable")
       const { id } = await search.json()
       const res = await fetch("/api/admin/security/fraud/suspend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: id }) })
-      if (res.ok) { toast.success("Compte suspendu"); setSuspendEmail(""); refresh() } else toast.error("Erreur suspension")
+      if (res.ok) { toast.success("Compte suspendu + email envoye"); setSuspendEmail(""); refresh() } else toast.error("Erreur suspension")
     } catch { toast.error("Erreur suspension") }
   }
 
+  async function reactivateUser(userId: string) {
+    if (!confirm("Reactiver ce compte ? L'utilisateur pourra se reconnecter.")) return
+    const res = await fetch("/api/admin/security/fraud/reactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) })
+    if (res.ok) { toast.success("Compte reactive"); refresh() } else toast.error("Erreur reactivation")
+  }
+
   async function unblockIp(ip: string) {
+    if (!confirm(`Debloquer l'IP ${ip} ?`)) return
     const res = await fetch("/api/admin/security/fraud/unblock-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip }) })
     if (res.ok) { toast.success("IP debloquee"); refresh() } else toast.error("Erreur deblocage")
   }
 
   async function executePlaybook() {
     if (!playbookUserId || !selectedPlaybook) return toast.error("Utilisateur et playbook requis")
+    if (!confirm(`Executer le playbook ${selectedPlaybook} sur cet utilisateur ?`)) return
     const res = await fetch("/api/admin/security/fraud/playbook", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }) })
     if (res.ok) { toast.success("Playbook execute"); refresh() } else toast.error("Erreur execution playbook")
   }
@@ -108,12 +118,27 @@ export function FraudTab() {
         <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card><CardContent className="p-6 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Suspendre un compte</h3>
           <div className="flex gap-2">
             <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={suspendEmail} onChange={e => setSuspendEmail(e.target.value)} />
             <Button size="sm" variant="destructive" onClick={suspendUser}>Suspendre</Button>
+          </div>
+        </CardContent></Card>
+
+        <Card><CardContent className="p-6 space-y-4">
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reactiver un compte</h3>
+          <div className="flex gap-2">
+            <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={reactivateEmail} onChange={e => setReactivateEmail(e.target.value)} />
+            <Button size="sm" variant="default" onClick={async () => {
+              if (!reactivateEmail) return toast.error("Email requis")
+              const search = await fetch(`/api/admin/members/search?email=${reactivateEmail}`)
+              if (!search.ok) return toast.error("Utilisateur introuvable")
+              const { id } = await search.json()
+              await reactivateUser(id)
+              setReactivateEmail("")
+            }}><RefreshCw className="size-3.5 mr-1" /> Reactiver</Button>
           </div>
         </CardContent></Card>
 
