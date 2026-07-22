@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
   Mail, Bell, Settings, BarChart3, Activity, Gavel, Radio, ShieldCheck,
-  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone,
+  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 
@@ -14,6 +14,7 @@ interface NavItem {
   label: string
   icon: LucideIcon
   badge?: "support" | "security"
+  href?: string
 }
 
 interface NavGroup {
@@ -91,6 +92,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
       items: [
         { tab: "support", label: "Tickets", icon: MessageCircle, badge: supportCount > 0 ? "support" : undefined },
         { tab: "formation", label: "Formation", icon: FileText },
+        { tab: "coaching", label: "Coaching", icon: BookOpen, href: "/admin/coaching" },
       ],
     },
     {
@@ -129,7 +131,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
                 return (
                   <button
                     key={item.tab}
-                    onClick={() => router.push(`/admin?tab=${item.tab}`)}
+                    onClick={() => router.push(item.href ?? `/admin?tab=${item.tab}`)}
                     className={cn(
                       "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs transition-colors text-left cursor-pointer",
                       isActive
