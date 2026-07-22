@@ -51,7 +51,7 @@ export async function GET(req: Request) {
           onboarding: onboardingMap[req.userId] ?? null,
         }))
       },
-      15,
+      120,
     )
 
     return NextResponse.json(enriched)

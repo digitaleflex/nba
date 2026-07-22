@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       details: { planId: parsed.planId },
     })
 
-    // Notifier les admins UNIQUEMENT pour une première demande
+    // Notifier les admins en background UNIQUEMENT pour une première demande
     if (result.created) {
       const plan = await prisma.subscriptionPlan.findUnique({
         where: { id: parsed.planId },
@@ -59,16 +59,14 @@ export async function POST(req: NextRequest) {
           where: { role: { name: { in: ["ADMIN", "SUPER_ADMIN"] } } },
           select: { name: true, email: true },
         })
-        await Promise.allSettled(
-          admins.map((admin) => {
-            const template = newAccessRequestAdminEmail(
-              admin,
-              { name: session.user.name ?? "Utilisateur", email: session.user.email },
-              plan.name,
-            )
-            return sendEmail(admin.email, template)
-          }),
-        )
+        admins.forEach((admin) => {
+          const template = newAccessRequestAdminEmail(
+            admin,
+            { name: session.user.name ?? "Utilisateur", email: session.user.email },
+            plan.name,
+          )
+          sendEmail(admin.email, template).catch(() => {})
+        })
       }
     }
 

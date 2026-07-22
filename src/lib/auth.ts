@@ -84,12 +84,12 @@ export const auth = betterAuth({
           await purgeSoftDeletedUser(prisma, user.email)
         },
         after: async (user) => {
-          await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
+          sendWelcomeEmail({ id: user.id, name: user.name, email: user.email }).catch(() => {})
           try {
             const { newUserRegisteredAdminEmail } = await import("./email")
             const { sendAdminAlert } = await import("./security/admin-alert")
             const template = newUserRegisteredAdminEmail({ name: user.name, email: user.email })
-            await sendAdminAlert(template.subject, template.html)
+            sendAdminAlert(template.subject, template.html).catch(() => {})
           } catch {}
         },
       },
