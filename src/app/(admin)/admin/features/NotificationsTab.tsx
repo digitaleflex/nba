@@ -79,7 +79,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Notifications</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -88,7 +88,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         </div>
       </div>
 
-      <Card id="notif-compose" className="border-border bg-card/30 max-w-lg scroll-mt-6">
+      <Card id="notif-compose" className="border-border/60 bg-card shadow-sm max-w-lg scroll-mt-6">
         <CardContent className="p-6 space-y-4">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rédiger une notification système</h3>
           <div className="space-y-3">
@@ -105,7 +105,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
               <label className="text-[10px] text-muted-foreground uppercase font-bold">Contenu</label>
               <textarea
                 placeholder="Votre message..."
-                className="w-full p-3 rounded-lg border bg-background border-border text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24"
+                className="w-full p-3 rounded-lg border bg-background border-border/60 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24"
                 value={notifContent}
                 onChange={(e) => setNotifContent(e.target.value)}
               />
@@ -156,7 +156,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         ) : notifHistory.length > 0 ? (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {notifHistory.map((notif) => (
-              <Card key={notif.id} className="border-border bg-card/20">
+              <Card key={notif.id} className="border-border/60 bg-card shadow-sm">
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold text-foreground">{notif.title}</span>

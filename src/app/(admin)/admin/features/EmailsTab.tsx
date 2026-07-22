@@ -30,7 +30,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Suivi des e-mails</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -40,23 +40,29 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="border-border bg-card/30 p-6 space-y-1">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails envoyés</span>
-          <p className="text-2xl font-bold text-foreground">
-            {opsData?.stats?.totalEmailsSent ?? 0}
-          </p>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <div className="p-5 space-y-1.5">
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">E-mails envoyés</span>
+            <p className="text-2xl font-bold text-foreground">
+              {opsData?.stats?.totalEmailsSent ?? 0}
+            </p>
+          </div>
         </Card>
-        <Card className="border-border bg-card/30 p-6 space-y-1">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails en échec</span>
-          <p className="text-2xl font-bold text-foreground">
-            {opsData?.attention?.failedEmailsCount ?? 0}
-          </p>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <div className="p-5 space-y-1.5">
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">E-mails en échec</span>
+            <p className="text-2xl font-bold text-foreground">
+              {opsData?.attention?.failedEmailsCount ?? 0}
+            </p>
+          </div>
         </Card>
-        <Card className="border-border bg-card/30 p-6 space-y-1">
-          <span className="text-[10px] text-muted-foreground uppercase font-bold">Notifications envoyées</span>
-          <p className="text-2xl font-bold text-foreground">
-            {opsData?.stats?.totalNotificationsSent ?? 0}
-          </p>
+        <Card className="border-border/60 bg-card shadow-sm">
+          <div className="p-5 space-y-1.5">
+            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Notifications envoyées</span>
+            <p className="text-2xl font-bold text-foreground">
+              {opsData?.stats?.totalNotificationsSent ?? 0}
+            </p>
+          </div>
         </Card>
       </div>
 
@@ -65,11 +71,11 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       {loadingEmails ? (
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       ) : emails.length > 0 ? (
-        <Card className="border-border bg-card/10">
+        <Card className="border-border/60 bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                   <th className="px-4 py-3">Utilisateur</th>
                   <th className="px-4 py-3">Notification</th>
                   <th className="px-4 py-3">Statut</th>
@@ -77,7 +83,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                   <th className="px-4 py-3">Erreur</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border">
+              <tbody className="divide-y divide-border/40">
                 {emails.map((em) => (
                   <tr key={em.id} className="hover:bg-card/30 transition-colors">
                     <td className="px-4 py-3">

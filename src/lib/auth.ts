@@ -11,13 +11,14 @@ import { SessionManager } from "./security/session-manager"
 import { securityEventBus } from "./security/security-event-bus"
 import { securityNotificationService } from "./security/security-notification-service"
 
-const trustedOrigins = [
-  process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000",
-].filter(Boolean) as string[]
+const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000").replace(/\/+$/, "")
+
+const trustedOrigins = [appUrl].filter(Boolean) as string[]
 
 const sessionManager = new SessionManager()
 
 export const auth = betterAuth({
+  baseURL: appUrl,
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -83,12 +84,12 @@ export const auth = betterAuth({
           await purgeSoftDeletedUser(prisma, user.email)
         },
         after: async (user) => {
-          await sendWelcomeEmail({ id: user.id, name: user.name, email: user.email })
+          sendWelcomeEmail({ id: user.id, name: user.name, email: user.email }).catch(() => {})
           try {
             const { newUserRegisteredAdminEmail } = await import("./email")
             const { sendAdminAlert } = await import("./security/admin-alert")
             const template = newUserRegisteredAdminEmail({ name: user.name, email: user.email })
-            await sendAdminAlert(template.subject, template.html)
+            sendAdminAlert(template.subject, template.html).catch(() => {})
           } catch {}
         },
       },
@@ -140,10 +141,10 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    nextCookies(),
     twoFactor({
       otpOptions: { async sendOTP({ user, otp }) { await sendOtpEmail(user.name, user.email, otp) } },
     }),
+    nextCookies(),
   ],
 })
 

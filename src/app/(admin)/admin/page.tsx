@@ -426,39 +426,30 @@ function AdminConsoleContent() {
   return (
     <div className="min-h-screen text-foreground font-sans antialiased flex pb-20 md:pb-0">
 
-      {/* ============================================================== */}
-      {/* SIDEBAR (desktop) */}
-      {/* ============================================================== */}
       <AdminSidebar activeTab={activeTab} supportCount={openTickets} />
 
-      {/* ============================================================== */}
-      {/* MAIN CONTENT */}
-      {/* ============================================================== */}
-      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8">
+      <main className="flex-1 min-w-0">
 
-      <div className="space-y-7 animate-in fade-in-50 duration-200">
+      <div className="animate-in fade-in-50 duration-200">
 
-        {/* ============================================================== */}
-        {/* MOBILE SUB-NAVIGATION (horizontal scroll, hidden on md+) */}
-        {/* ============================================================== */}
-        <div className="relative md:hidden">
-          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
+        <div className="relative md:hidden border-b border-border/40 bg-background/60">
+          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 px-4 py-2.5 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
             {ADMIN_CONTEXTS.flatMap((context, gi) => {
               const items: React.ReactNode[] = []
               const isContextActive = getContextForTab(activeTab) === context.id
               if (gi > 0) {
-                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
+                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-4 bg-border/30 mx-1" />)
               }
               items.push(
-                <span key={`gl-${gi}`} className={cn("shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
+                <span key={`gl-${gi}`} className={cn("shrink-0 text-[10px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/50")}>
                   {context.label}
                 </span>
               )
               context.tabs.forEach((tab) => {
                 items.push(
                   <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                    className={cn("text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
+                    className={cn("text-[11px] px-3.5 py-1.5 rounded-lg border transition-colors cursor-pointer shrink-0 snap-start font-medium", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary shadow-sm" : "border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border")}
                   >
                     {tab.label}
                   </button>
@@ -469,9 +460,7 @@ function AdminConsoleContent() {
           </div>
         </div>
 
-        {/* ============================================================== */}
-        {/* OUTILS SUPER-ADMIN (toujours visibles) */}
-        {/* ============================================================== */}
+        <div className="p-4 md:p-6 lg:p-8 space-y-7">
         <AdminTools />
 
         {/* ============================================================== */}
@@ -513,44 +502,19 @@ function AdminConsoleContent() {
 
         {activeTab === "stats" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-5">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground">Statistiques globales</h1>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Compteurs clés consolidés d&apos;activité de la plateforme NBA.
-                </p>
+            <TabPageHeader title="Statistiques globales" description="Compteurs clés consolidés d'activité de la plateforme NBA." />
+            {opsData ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <StatCard label="Membres" value={opsData.stats.totalMembers} />
+                <StatCard label="Signaux émis" value={opsData.stats.publishedSignalsCount} />
+                <StatCard label="Dossiers KYC Validés" value={opsData.stats.approvedKycCount} />
+                <StatCard label="E-mails envoyés" value={opsData.stats.totalEmailsSent ?? 0} />
+                <StatCard label="E-mails en échec" value={opsData.attention.failedEmailsCount ?? 0} trend={opsData.attention.failedEmailsCount > 0 ? "down" : "neutral"} />
+                <StatCard label="Notifications envoyées" value={opsData.stats.totalNotificationsSent ?? 0} />
               </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {opsData && (
-                <>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Membres</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalMembers || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Signaux émis</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.publishedSignalsCount || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Dossiers KYC Validés</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.approvedKycCount || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails envoyés</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalEmailsSent ?? 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails en échec</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.attention?.failedEmailsCount ?? 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Notifications envoyées</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalNotificationsSent ?? 0}</p>
-                  </Card>
-                </>
-              )}
-            </div>
+            ) : (
+              <div className="py-20 text-center text-sm text-muted-foreground">Chargement...</div>
+            )}
           </div>
         )}
 
@@ -593,6 +557,7 @@ function AdminConsoleContent() {
           <CronsTab />
         )}
 
+        </div>{/* fermeture p-4 md:p-6 lg:p-8 */}
       </div>
 
       {/* Admin sliding contextual detail panel */}
@@ -606,6 +571,30 @@ function AdminConsoleContent() {
         onAction={handlePanelAction}
       />
       </main>
+    </div>
+  )
+}
+
+function StatCard({ label, value, trend }: { label: string; value: number; trend?: "up" | "down" | "neutral" }) {
+  return (
+    <Card className="border-border/60 bg-card shadow-sm">
+      <div className="p-5 space-y-1.5">
+        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{label}</span>
+        <div className="flex items-center gap-2">
+          <p className="text-2xl font-bold text-foreground">{value}</p>
+          {trend === "up" && <span className="text-[10px] text-emerald-500">▲</span>}
+          {trend === "down" && <span className="text-[10px] text-rose-500">▼</span>}
+        </div>
+      </div>
+    </Card>
+  )
+}
+
+function TabPageHeader({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="border-b border-border/40 pb-4 mb-6">
+      <h1 className="text-xl font-bold tracking-tight text-foreground">{title}</h1>
+      {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
     </div>
   )
 }

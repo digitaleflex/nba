@@ -2,7 +2,10 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@nba/design-system"
-import { BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2 } from "lucide-react"
+import {
+  BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2,
+  AlertTriangle, Users
+} from "lucide-react"
 
 interface DeviceStats {
   total: number
@@ -21,7 +24,17 @@ interface DeviceStats {
     ipAddress: string | null
     lastSeenAt: Date | string
     trusted: boolean
+    userId: string
+    user: { name: string | null; email: string | null }
   }[]
+}
+
+interface FraudAlert {
+  type: string
+  severity: "high" | "medium" | "low"
+  title: string
+  detail: string
+  users: { name: string; email: string; count: number }[]
 }
 
 const DEVICE_TYPE_LABELS: Record<string, string> = {
@@ -33,6 +46,7 @@ const DEVICE_TYPE_LABELS: Record<string, string> = {
 
 export function DevicesTab() {
   const [data, setData] = useState<DeviceStats | null>(null)
+  const [fraudAlerts, setFraudAlerts] = useState<FraudAlert[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,10 +54,17 @@ export function DevicesTab() {
     let cancelled = false
     async function load() {
       try {
-        const res = await fetch("/api/admin/device-stats")
-        if (!res.ok) throw new Error("Erreur de chargement")
-        const json = await res.json()
+        const [devRes, fraudRes] = await Promise.all([
+          fetch("/api/admin/device-stats"),
+          fetch("/api/admin/device-stats/fraud"),
+        ])
+        if (!devRes.ok) throw new Error("Erreur de chargement")
+        const json = await devRes.json()
         if (!cancelled) setData(json)
+        if (fraudRes.ok && !cancelled) {
+          const fraudJson = await fraudRes.json()
+          setFraudAlerts(fraudJson.alerts ?? [])
+        }
       } catch {
         if (!cancelled) setError("Erreur de chargement des appareils")
       } finally {
@@ -151,6 +172,39 @@ export function DevicesTab() {
         </Card>
       </div>
 
+      {fraudAlerts.length > 0 && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base text-amber-700">
+              <AlertTriangle className="size-4" /> Alertes anti-fraude
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {fraudAlerts.map((alert, i) => (
+              <div key={i} className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className={`text-xs font-bold uppercase px-2 py-0.5 rounded ${
+                    alert.severity === "high" ? "text-red-600 bg-red-100" :
+                    alert.severity === "medium" ? "text-amber-600 bg-amber-100" :
+                    "text-blue-600 bg-blue-100"
+                  }`}>{alert.severity === "high" ? "Critique" : alert.severity === "medium" ? "Moyen" : "Faible"}</span>
+                  <span className="text-sm font-semibold">{alert.title}</span>
+                </div>
+                <p className="text-xs text-muted-foreground mb-2">{alert.detail}</p>
+                <div className="flex flex-wrap gap-1">
+                  {alert.users.map((u, j) => (
+                    <span key={j} className="inline-flex items-center gap-1 text-xs bg-background border border-border rounded px-2 py-0.5">
+                      <Users className="size-3" />
+                      {u.name || u.email} {u.count > 1 && `(${u.count})`}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
@@ -164,9 +218,12 @@ export function DevicesTab() {
             data.recent.map((d) => (
               <div
                 key={d.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 px-3 py-2 text-sm"
               >
-                <div className="min-w-0 flex-1">
+                <div className="min-w-0 flex-[2]">
+                  <p className="truncate font-medium text-primary">
+                    {d.user?.name ?? d.user?.email ?? "Inconnu"}
+                  </p>
                   <p className="truncate font-medium">
                     {d.model ?? d.name ?? "Appareil inconnu"}
                     {d.brand && <span className="ml-1 text-muted-foreground">· {d.brand}</span>}
@@ -177,7 +234,7 @@ export function DevicesTab() {
                     {d.browser && ` · ${d.browser}`}
                   </p>
                 </div>
-                <div className="text-right text-xs text-muted-foreground">
+                <div className="text-right text-xs text-muted-foreground shrink-0">
                   <p className="font-mono">{d.ipAddress ?? "—"}</p>
                   <p>{new Date(d.lastSeenAt).toLocaleString("fr-FR")}</p>
                 </div>

@@ -23,10 +23,10 @@ export function FilterPills({
           key={opt.value}
           onClick={() => onChange(opt.value)}
           className={cn(
-            "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+            "text-[11px] px-3 py-1.5 rounded-lg border transition-colors cursor-pointer",
             active === opt.value
               ? "bg-primary text-primary-foreground border-primary"
-              : "border-border text-muted-foreground hover:bg-muted/50",
+              : "border-border/60 text-muted-foreground hover:bg-muted/50",
           )}
         >
           {opt.label}

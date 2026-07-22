@@ -120,7 +120,7 @@ export default function VerificationPage() {
               <span className="text-muted-foreground">Progression</span>
               <span className="text-foreground">{state.progress}%</span>
             </div>
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={state.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progression : ${state.progress}%`}>
               <div 
                 className="h-full bg-primary rounded-full transition-all duration-500 ease-out" 
                 style={{ width: `${state.progress}%` }}

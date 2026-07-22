@@ -7,16 +7,17 @@ const rl = rateLimitMiddleware({ window: 10, max: 30 })
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const admin = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const rlRes = await rl(req, "security:ack-event")
     if (rlRes) return rlRes
 
+    const { id } = await params
     const { acknowledged } = await req.json()
     const event = await prisma.securityEvent.findUnique({
-      where: { id: params.id },
+      where: { id },
     })
     if (!event) return NextResponse.json({ error: "Evenement introuvable" }, { status: 404 })
 
@@ -32,7 +33,7 @@ export async function PATCH(
     }
 
     await prisma.securityEvent.update({
-      where: { id: params.id },
+      where: { id },
       data: { details: details as any },
     })
 

@@ -154,7 +154,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 border-b border-border pb-5">
+      <div className="flex flex-col gap-4 border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Demandes d&apos;accès</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -186,7 +186,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
           {requests.map((req) => {
             const pending = req.status === "PENDING"
             const card = (
-              <Card key={req.id} className="border-border bg-card/30">
+              <Card key={req.id} className="border-border/60 bg-card shadow-sm">
                 <CardContent className="p-5 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>

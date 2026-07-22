@@ -102,7 +102,7 @@ export function FraudTab() {
 
   return (
     <div className="space-y-6" data-testid="fraud-tab">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Anti-Fraude</h1>
           <p className="text-xs text-muted-foreground mt-1">Lutte contre la fraude et les abus</p>

@@ -53,7 +53,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Vérifications Broker</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -84,7 +84,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {brokerDocs.map((doc) => (
-              <Card key={doc.id} className="border-border bg-card/30">
+              <Card key={doc.id} className="border-border/60 bg-card shadow-sm">
                 <CardContent className="p-5 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
@@ -159,7 +159,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
           )}
         </>
       ) : brokerError ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700" role="alert">
           <span>Impossible de charger les vérifications broker.</span>
           <Button size="sm" variant="outline" onClick={() => fetchBroker()}>Réessayer</Button>
         </div>

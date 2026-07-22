@@ -18,18 +18,23 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
   const [members, setMembers] = useState<Member[]>([])
   const [loadingMembers, setLoadingMembers] = useState(false)
   const [searchUser, setSearchUser] = useState(initialSearch)
+  const [membersError, setMembersError] = useState(false)
   const debouncedSearchUser = useDebouncedValue(searchUser, 300)
 
   const fetchMembers = useCallback(async () => {
     setLoadingMembers(true)
+    setMembersError(false)
     try {
       const url = debouncedSearchUser ? `/api/admin/members?q=${encodeURIComponent(debouncedSearchUser)}` : "/api/admin/members"
       const { ok, data } = await cachedGet(url)
       if (ok) {
         setMembers(Array.isArray(data.members) ? data.members : [])
+      } else {
+        setMembersError(true)
       }
     } catch (err) {
       console.error(err)
+      setMembersError(true)
     } finally {
       setLoadingMembers(false)
     }
@@ -46,7 +51,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Gestion des membres</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -70,11 +75,11 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
         </Button>
       </div>
 
-      <Card className="border-border bg-card/10">
+      <Card className="border-border/60 bg-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                 <th className="px-6 py-3">Utilisateur</th>
                 <th className="px-6 py-3">Rôle</th>
                 <th className="px-6 py-3">WhatsApp</th>
@@ -83,10 +88,14 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                 <th className="px-6 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/40">
               {loadingMembers ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td>
+                </tr>
+              ) : membersError ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-rose-600 text-xs" role="alert">Erreur de chargement. <button className="underline cursor-pointer" onClick={fetchMembers}>Réessayer</button></td>
                 </tr>
               ) : members.length > 0 ? (
                 members.map((member) => (

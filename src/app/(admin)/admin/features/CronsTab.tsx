@@ -88,7 +88,7 @@ export function CronsTab() {
   }
 
   if (error) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">{error}</p>
+    return <p className="py-10 text-center text-sm text-muted-foreground" role="alert">{error}</p>
   }
 
   if (jobs.length === 0) {
@@ -113,7 +113,7 @@ export function CronsTab() {
         </div>
         <button
           onClick={() => { setLoading(true); fetchCrons() }}
-          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border/60 text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
         >
           <RefreshCw className="size-3.5" /> Actualiser
         </button>
@@ -130,7 +130,7 @@ export function CronsTab() {
             : "text-muted-foreground/50"
 
           return (
-            <Card key={idx}>
+            <Card key={idx} className="border-border/60 bg-card shadow-sm">
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex flex-col items-center gap-1 pt-0.5">

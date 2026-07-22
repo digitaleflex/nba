@@ -35,13 +35,13 @@ function StatCard({
   value: React.ReactNode
 }) {
   return (
-    <Card className="border-border bg-card/30">
+    <Card className="border-border/60 bg-card shadow-sm">
       <CardContent className="p-4 flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
+        <div className="space-y-0.5">
+          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
           <p className="text-xl font-bold text-foreground">{value}</p>
         </div>
-        <Icon className="size-5 text-muted-foreground/60" />
+        <Icon className="size-5 text-muted-foreground/40" />
       </CardContent>
     </Card>
   )
@@ -49,7 +49,7 @@ function StatCard({
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
+    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border/40">
       {children}
     </h3>
   )
@@ -96,14 +96,14 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
   }
 
   if (error || !data) {
-    return <div className="py-20 text-center text-rose-600 text-sm">{error}</div>
+    return <div className="py-20 text-center text-rose-600 text-sm" role="alert">{error}</div>
   }
 
   const plansTotal = data.plansBreakdown.reduce((a: number, s: any) => a + s.count, 0) || 1
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Analytics</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -137,7 +137,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
       </div>
 
       {/* RÉPARTITION MEMBRES */}
-      <Card className="border-border bg-card/20">
+      <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-6">
           <SectionTitle>Répartition des membres par statut</SectionTitle>
           <div className="pt-4">
@@ -153,7 +153,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
 
       {/* KYC + PLANS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border bg-card/20">
+        <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
             <SectionTitle>Vérification KYC</SectionTitle>
             <div className="pt-4 grid grid-cols-3 gap-3 text-center">
@@ -181,7 +181,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card/20">
+        <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
             <SectionTitle>Abonnements par plan</SectionTitle>
             <div className="pt-4 space-y-2.5">
@@ -214,7 +214,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
 
       {/* MESSAGERIE + INFRA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card className="border-border bg-card/20">
+        <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
             <SectionTitle>Messagerie</SectionTitle>
             <div className="pt-4 grid grid-cols-3 gap-3 text-center">
@@ -240,7 +240,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card/20">
+        <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
             <SectionTitle>Infrastructure & sessions</SectionTitle>
             <div className="pt-4 grid grid-cols-2 gap-3 text-center">
@@ -264,10 +264,10 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
       </div>
 
       {/* CROISSANCE */}
-      <Card className="border-border bg-card/20">
+      <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-6">
-          <div className="flex items-center justify-between pb-4 border-b border-border">
-            <SectionTitle>Inscriptions ({data.growth.days} derniers jours)</SectionTitle>
+          <div className="flex items-center justify-between pb-3.5 border-b border-border/40">
+            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Inscriptions ({data.growth.days} derniers jours)</h3>
             <div className="flex items-center gap-1.5 text-[11px]">
               <span className="text-muted-foreground">
                 {data.growth.currentPeriodCount} inscrits

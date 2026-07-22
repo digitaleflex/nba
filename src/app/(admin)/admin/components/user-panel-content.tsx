@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail, Bell, UserCog } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
+import { useConfirm } from "@nba/components/confirm-dialog"
 
 interface UserPanelContentProps {
   data: any
@@ -16,6 +17,7 @@ const ROLES = [
 ]
 
 export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
+  const { confirm: confirmAction, node: confirmNode } = useConfirm()
   // States pour la notification individuelle
   const [showNotifForm, setShowNotifForm] = useState(false)
   const [notifTitle, setNotifTitle] = useState("")
@@ -186,7 +188,12 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 variant="outline"
                 size="sm"
                 className="w-full gap-1.5 justify-start"
-                onClick={() => onAction("revoke_sessions", { id: data.id })}
+                onClick={() => confirmAction({
+                  title: "Révoquer toutes les sessions ?",
+                  description: "L'utilisateur sera déconnecté de tous ses appareils et devra se reconnecter.",
+                  confirmLabel: "Tout révoquer",
+                  onConfirm: () => onAction?.("revoke_sessions", { id: data.id }),
+                })}
               >
                 <Ban className="size-3.5" /> Révoquer toutes les sessions
               </Button>
@@ -446,13 +453,12 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               variant="destructive"
               size="sm"
               className="w-full gap-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-500/20"
-              onClick={() => {
-                const reason = prompt("Motif du bannissement (fraude, spam, multi-compte...) :")
-                if (!reason) return
-                if (confirm(`Bannir ${data.email} ?\n\nMotif : ${reason}\n\nLe compte sera supprimé, les sessions révoquées, et l'email blacklisté.`)) {
-                  onAction("ban_user", { id: data.id, email: data.email, reason })
-                }
-              }}
+              onClick={() => confirmAction({
+                title: "Bannir & blacklister",
+                description: `Bannir ${data.email} ? Le compte sera supprimé, les sessions révoquées, et l'email blacklisté. Cette action est irréversible.`,
+                confirmLabel: "Bannir",
+                onConfirm: () => onAction("ban_user", { id: data.id, email: data.email }),
+              })}
             >
               <Ban className="size-3.5" /> Bannir & blacklister
             </Button>
@@ -461,17 +467,19 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               variant="destructive"
               size="sm"
               className="w-full gap-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-500/20"
-              onClick={() => {
-                if (confirm("Voulez-vous vraiment supprimer définitivement cet utilisateur ? Cette action est irréversible (suppression logique).")) {
-                  onAction("delete_user", { id: data.id })
-                }
-              }}
+              onClick={() => confirmAction({
+                title: "Supprimer le compte",
+                description: `Voulez-vous vraiment supprimer définitivement ${data.email} ? Cette action est irréversible (suppression logique).`,
+                confirmLabel: "Supprimer",
+                onConfirm: () => onAction("delete_user", { id: data.id }),
+              })}
             >
               <Trash2 className="size-3.5" /> Supprimer le compte
             </Button>
           </div>
         </div>
       )}
+      {confirmNode}
     </div>
   )
 }

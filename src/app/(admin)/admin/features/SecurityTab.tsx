@@ -5,6 +5,7 @@ import { Loader2, EyeOff, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, Button } from "@nba/design-system"
 import { EmptyState } from "@nba/design-system"
+import { useConfirm } from "@nba/components/confirm-dialog"
 import { CachedGet } from "./types"
 
 interface SecurityTabProps {
@@ -13,6 +14,7 @@ interface SecurityTabProps {
 }
 
 export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
+  const { confirm, node } = useConfirm()
   const [securityData, setSecurityData] = useState<any>(null)
   const [loadingSecurity, setLoadingSecurity] = useState(false)
   const [sessions, setSessions] = useState<any[]>([])
@@ -57,25 +59,30 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
   }, [refresh])
 
   async function handleRevokeSession(id: string) {
-    if (!confirm("Révoquer cette session ? L'utilisateur devra se reconnecter.")) return
-    invalidate()
-    try {
-      const res = await fetch(`/api/admin/security/sessions/${id}`, { method: "DELETE" })
-      if (res.ok) {
-        fetchSessions()
-        toast.success("Session révoquée avec succès.")
-      } else {
-        toast.error("Erreur lors de la révocation de la session.")
-      }
-    } catch (err) {
-      console.error(err)
-      toast.error("Erreur lors de la révocation de la session.")
-    }
+    confirm({
+      title: "Révoquer cette session ?",
+      description: "L'utilisateur devra se reconnecter.",
+      confirmLabel: "Révoquer",
+      onConfirm: async () => {
+        invalidate()
+        try {
+          const res = await fetch(`/api/admin/security/sessions/${id}`, { method: "DELETE" })
+          if (res.ok) {
+            fetchSessions()
+            toast.success("Session révoquée avec succès.")
+          } else {
+            toast.error("Erreur lors de la révocation de la session.")
+          }
+        } catch {
+          toast.error("Erreur lors de la révocation de la session.")
+        }
+      },
+    })
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Centre de sécurité</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -88,7 +95,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       </div>
 
       {securityError && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700" role="alert">
           <span>Impossible de charger le centre de sécurité.</span>
           <Button size="sm" variant="outline" onClick={() => refresh()}>Réessayer</Button>
         </div>
@@ -101,11 +108,11 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Connexions récentes */}
-          <Card className="border-border bg-card/30">
-            <CardContent className="p-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
-                Sessions actives
-              </h3>
+      <Card className="border-border/60 bg-card shadow-sm">
+        <CardContent className="p-5">
+          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
+            Sessions récentes
+          </h3>
               <div className="pt-4 space-y-3">
                 {securityData?.activeSessions > 0 ? (
                   <>
@@ -130,9 +137,9 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
           </Card>
 
           {/* Tentatives de force brute */}
-          <Card className="border-border bg-card/30">
-            <CardContent className="p-6">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
                 Tentatives de connexion échouées
               </h3>
               <div className="pt-4 space-y-3">
@@ -157,9 +164,9 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       )}
 
       {/* Sessions récentes */}
-      <Card className="border-border bg-card/30">
-        <CardContent className="p-6">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border">
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
             Sessions récentes
           </h3>
           {loadingSessions ? (
@@ -168,7 +175,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                     <th className="px-4 py-3">Utilisateur</th>
                     <th className="px-4 py-3">IP</th>
                     <th className="px-4 py-3">User-Agent</th>
@@ -177,7 +184,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     <th className="px-4 py-3 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-border">
+                <tbody className="divide-y divide-border/40">
                   {sessions.map((s) => (
                     <tr key={s.id} className="hover:bg-card/30 transition-colors">
                       <td className="px-4 py-3">
@@ -212,6 +219,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
           )}
         </CardContent>
       </Card>
+      {node}
     </div>
   )
 }

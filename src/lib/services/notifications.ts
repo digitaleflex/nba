@@ -4,8 +4,6 @@ import { getQueue } from "@nba/lib/queue"
 import { logger } from "@nba/lib/logger"
 import { sendPushToUser } from "./push"
 import { publishNotification } from "@nba/lib/redis-pubsub"
-import { sendTelegramMessage } from "./telegram"
-import { sendWhatsAppSignal } from "./whatsapp"
 
 const log = logger.child({ module: "notifications" })
 
@@ -46,65 +44,6 @@ function isInQuietHours(prefs: Record<string, any>): boolean {
   const end = eh * 60 + em
   if (start <= end) return current >= start && current < end
   return current >= start || current < end
-}
-
-async function telegramSend(notificationId: string, userId: string, title: string, body: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { metadata: true },
-  })
-  const meta = (user?.metadata || {}) as Record<string, any>
-  if (!meta.telegram_chat_id || meta.telegram_active === false) return
-
-  const delivery = await prisma.notificationDelivery.create({
-    data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
-  }).catch((err) => {
-    log.warn({ err, notificationId, errorCode: "INTEGRATION_ERROR" }, "Failed to create TELEGRAM delivery record")
-    return null
-  })
-
-  const result = await sendTelegramMessage(
-    meta.telegram_chat_id,
-    `<b>${title}</b>\n\n${body}`,
-    { parseMode: "HTML" },
-  )
-
-  if (delivery) {
-    await prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch((err) => {
-      log.warn({ err, deliveryId: delivery.id, errorCode: "INTEGRATION_ERROR" }, "Failed to update TELEGRAM delivery status")
-    })
-  }
-}
-
-async function whatsappSend(notificationId: string, userId: string, title: string, body: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { whatsapp: true, metadata: true },
-  })
-  const meta = (user?.metadata || {}) as Record<string, any>
-  const phone = user?.whatsapp
-  if (!phone || meta.whatsapp_active === false) return
-
-  const delivery = await prisma.notificationDelivery.create({
-    data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
-  }).catch((err) => {
-    log.warn({ err, notificationId, errorCode: "INTEGRATION_ERROR" }, "Failed to create WHATSAPP delivery record")
-    return null
-  })
-
-  const result = await sendWhatsAppSignal(phone, title, body)
-
-  if (delivery) {
-    await prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch((err) => {
-      log.warn({ err, deliveryId: delivery.id, errorCode: "INTEGRATION_ERROR" }, "Failed to update WHATSAPP delivery status")
-    })
-  }
 }
 
 interface NotifyParams {
@@ -164,91 +103,92 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
   if (typeEnabled) {
-    // Vérifier les heures silencieuses
     if (isInQuietHours(prefs)) return { id: notification.id }
-    // Envoi push web (fire-and-forget, ne bloque pas la réponse)
-    const pushDelivery = await prisma.notificationDelivery
-      .create({
-        data: {
-          notificationId: notification.id,
-          channel: "PUSH",
-          status: "PENDING",
-        },
-      })
-      .catch((err) => {
-        log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
-        return null
-      })
 
-    sendPushToUser(params.userId, {
-      title: params.title,
-      body: params.body,
-      url: params.linkUrl || "/dashboard",
-      tag: notification.id,
-    })
-      .then(async (res) => {
-        if (!pushDelivery) return
-        const failed = !!(res as { failed?: number })?.failed
-        await prisma.notificationDelivery
-          .update({
-            where: { id: pushDelivery.id },
-            data: { status: failed ? "FAILED" : "SENT" },
-          })
-          .catch((err) => {
-            log.warn({ err, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to update PUSH delivery after send")
-          })
-      })
-      .catch(async (err) => {
-        log.error({ err, notificationId: notification.id, errorCode: "INTEGRATION_ERROR" }, "Push send failed")
-        if (pushDelivery) {
-          await prisma.notificationDelivery
-            .update({
-              where: { id: pushDelivery.id },
-              data: { status: "FAILED" },
-            })
-            .catch((innerErr) => {
-              log.warn({ err: innerErr, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to mark PUSH delivery as FAILED")
-            })
-        }
-      })
-
-    if (params.email) {
-      const queue = getQueue("notification-delivery")
-      const { to, subject, html } = params.email
-
-      await withRetryTransaction(async (tx) => {
-        const delivery = await tx.notificationDelivery.create({
+    const pushPromise = (async () => {
+      const pushDelivery = await prisma.notificationDelivery
+        .create({
           data: {
             notificationId: notification.id,
-            channel: "EMAIL",
+            channel: "PUSH",
             status: "PENDING",
           },
         })
+        .catch((err) => {
+          log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
+          return null
+        })
 
-        await queue.add(
-          `email-${notification.id}`,
-          {
-            deliveryId: delivery.id,
-            to,
-            subject,
-            html,
-          },
-          {
-            attempts: 3,
-            backoff: { type: "exponential", delay: 5000 },
-          }
-        )
+      sendPushToUser(params.userId, {
+        title: params.title,
+        body: params.body,
+        url: params.linkUrl || "/dashboard",
+        tag: notification.id,
       })
-    }
+        .then(async (res) => {
+          if (!pushDelivery) return
+          const failed = !!(res as { failed?: number })?.failed
+          await prisma.notificationDelivery
+            .update({
+              where: { id: pushDelivery.id },
+              data: { status: failed ? "FAILED" : "SENT" },
+            })
+            .catch((err) => {
+              log.warn({ err, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to update PUSH delivery after send")
+            })
+        })
+        .catch(async (err) => {
+          log.error({ err, notificationId: notification.id, errorCode: "INTEGRATION_ERROR" }, "Push send failed")
+          if (pushDelivery) {
+            await prisma.notificationDelivery
+              .update({
+                where: { id: pushDelivery.id },
+                data: { status: "FAILED" },
+              })
+              .catch((innerErr) => {
+                log.warn({ err: innerErr, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to mark PUSH delivery as FAILED")
+              })
+          }
+        })
+    })().catch((err) => {
+      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Push delivery failed")
+    })
 
-    // Telegram
-    telegramSend(notification.id, params.userId, params.title, params.body).catch((err) => {
-      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Telegram send failed")
-    })
-    // WhatsApp
-    whatsappSend(notification.id, params.userId, params.title, params.body).catch((err) => {
-      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "WhatsApp send failed")
-    })
+    const emailCfg = params.email
+    const emailPromise = emailCfg
+      ? (async () => {
+          const queue = getQueue("notification-delivery")
+          const { to, subject, html } = emailCfg
+
+          await withRetryTransaction(async (tx) => {
+            const delivery = await tx.notificationDelivery.create({
+              data: {
+                notificationId: notification.id,
+                channel: "EMAIL",
+                status: "PENDING",
+              },
+            })
+
+            await queue.add(
+              `email-${notification.id}`,
+              {
+                deliveryId: delivery.id,
+                to,
+                subject,
+                html,
+              },
+              {
+                attempts: 3,
+                backoff: { type: "exponential", delay: 5000 },
+              }
+            )
+          })
+        })().catch((err) => {
+          log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Email delivery failed")
+        })
+      : Promise.resolve()
+
+    await Promise.allSettled([pushPromise, emailPromise])
   }
 
   // WebSocket temps réel via Redis Pub/Sub

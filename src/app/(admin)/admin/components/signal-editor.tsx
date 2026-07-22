@@ -318,10 +318,14 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
         {footer}
 
         {showConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+            role="dialog" aria-modal="true" aria-labelledby="confirm-title-mobile"
+            onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false) }}
+          >
             <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
-                <h3 className="font-semibold text-base">Confirmation</h3>
+                <h3 id="confirm-title-mobile" className="font-semibold text-base">Confirmation</h3>
                 <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -376,10 +380,14 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       {footer}
 
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          role="dialog" aria-modal="true" aria-labelledby="confirm-title-desktop"
+          onKeyDown={(e) => { if (e.key === "Escape") setShowConfirm(false) }}
+        >
           <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
-              <h3 className="font-semibold text-base">Confirmation de publication</h3>
+              <h3 id="confirm-title-desktop" className="font-semibold text-base">Confirmation de publication</h3>
               <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
             </div>
             <div className="space-y-3">

@@ -9,31 +9,37 @@ import { AdminInbox } from "./admin/components/admin-inbox"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
-  if (!session) redirect("/login")
+  if (!session?.user) redirect("/login")
 
-  const userDb = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: { select: { name: true } } },
-  })
+  let userRole: string | undefined
+  try {
+    const userDb = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: { select: { name: true } } },
+    })
+    userRole = userDb?.role?.name
+  } catch {
+    // DB error — fallback without role, will redirect below since role check fails
+  }
 
-  if (!userDb || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
+  if (!userRole || (userRole !== "ADMIN" && userRole !== "SUPER_ADMIN")) {
     redirect("/403")
   }
 
   const user = {
     ...session.user,
-    role: userDb.role.name,
+    role: userRole,
   }
 
   const mobileHeader = (
-    <header className="md:hidden border-b bg-card/40 backdrop-blur-md sticky top-0 z-40 px-4 py-3 flex items-center justify-between">
+    <header className="md:hidden border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between min-h-[52px]">
       <div className="flex items-center gap-3 min-w-0">
         <MobileMenu space="admin" user={user} />
         <MobilePageTitle />
       </div>
-      <div className="flex items-center gap-1 ml-2">
+      <div className="flex items-center gap-2 ml-2">
         <AdminInbox />
-        <span className="text-xs text-muted-foreground font-medium truncate">{user.name}</span>
+        <span className="text-xs text-muted-foreground font-medium truncate hidden xs:inline">{user.name}</span>
       </div>
     </header>
   )

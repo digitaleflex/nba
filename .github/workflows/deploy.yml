@@ -19,7 +19,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
         with:
           version: "10"
@@ -77,7 +77,7 @@ jobs:
       packages: write
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
 
       - name: Login to GHCR
         uses: docker/login-action@v4
@@ -108,6 +108,7 @@ jobs:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          command_timeout: 25m
           script: |
             set -e
             cd /home/audest/nba
@@ -137,26 +138,31 @@ jobs:
             echo "=== Backup preventive (lecture seule, aucune mutation données) ==="
             # backup.sh = pg_dump (read-only) + upload B2. Non-destructif.
             # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
-            docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker 2>&1 | tail -15 || true
-
-            echo "=== Migrations Prisma (one-shot, avant le boot) ==="
-            # --entrypoint force l'execution reelle de migrate deploy (sinon l'entrypoint
-            # du Dockerfile lance le serveur et ignore l'arg). Non-destructif : applique
-            # uniquement les migrations manquantes. Timeout anti-blocage advisory lock pgbouncer.
-            docker compose -f compose.yml run --rm --entrypoint "npx prisma migrate deploy" app > /tmp/migrate.log 2>&1 || MIGRATE_EXIT=$?
-            cat /tmp/migrate.log
-            if [ "${MIGRATE_EXIT:-0}" != "0" ]; then
-              echo "::error::prisma migrate deploy a echoue (exit ${MIGRATE_EXIT})."
-              echo "Verification manuelle requise sur le VPS."
-              exit 1
+            timeout 300 docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker > /tmp/backup.log 2>&1 || BACKUP_EXIT=$?
+            cat /tmp/backup.log
+            if [ "${BACKUP_EXIT:-0}" != "0" ]; then
+              echo "::warning::backup.sh a echoue (exit ${BACKUP_EXIT}) — non-bloquant."
             fi
 
-            echo "=== Seed (one-shot, idempotent) ==="
-            # --entrypoint force l'execution reelle du seed (upsert, non-destructif).
-            timeout 180 docker compose -f compose.yml run --rm --entrypoint "pnpm db:seed" app > /tmp/seed.log 2>&1 || SEED_EXIT=$?
-            cat /tmp/seed.log
-            if [ "${SEED_EXIT:-0}" != "0" ]; then
-              echo "::warning::pnpm db:seed a echoue (exit ${SEED_EXIT}) — non-bloquant."
+            echo "=== Resolution des migrations echouees (si existantes) ==="
+            DIRECT_URL="$(echo "$DATABASE_URL" | sed 's/-pooler//')"
+            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint "npx prisma migrate resolve --rolled-back 20260722194600_add_session_last_rotation" app > /tmp/resolve.log 2>&1 || true
+            cat /tmp/resolve.log
+
+            echo "=== Migrations Prisma + Seed ==="
+            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint sh app -c "
+              echo '--- Migrations ---'
+              npx prisma migrate deploy 2>&1
+              MIGRATE_EXIT=\$?
+              echo '--- Seed ---'
+              timeout 180 pnpm db:seed 2>&1
+              exit \$MIGRATE_EXIT
+            " > /tmp/migrate-seed.log 2>&1 || MERGE_EXIT=$?
+            cat /tmp/migrate-seed.log
+            if [ "${MERGE_EXIT:-0}" != "0" ]; then
+              echo "::error::prisma migrate deploy a echoue (exit ${MERGE_EXIT})."
+              echo "Verification manuelle requise sur le VPS."
+              exit 1
             fi
 
             echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
@@ -165,23 +171,9 @@ jobs:
             docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
 
             echo "=== Smoke test API (15 routes) ==="
-            # Execute le script de smoke test complet qui verifie :
-            # - Routes publiques (captcha, health)
-            # - Routes admin sans auth (401 attendu)
-            # - Documentation OpenAPI
-            SMOKE_OK=0
-            for i in $(seq 1 12); do
-              # Attendre que l'app soit prete
-              CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "https://access.signauxx.com/api/auth/captcha" || echo 000)"
-              echo "  tentative $i -> HTTP $CODE"
-              case "$CODE" in
-                2*) SMOKE_OK=1; break ;;
-              esac
-              sleep 10
-            done
-
-            if [ "$SMOKE_OK" != "1" ]; then
-              echo "!!! L'APP NE REPOND PAS — rollback immediat."
+            TEST_URL="https://access.signauxx.com" bash scripts/api-smoke-test.sh --wait || SMOKE_EXIT=$?
+            if [ "${SMOKE_EXIT:-0}" != "0" ]; then
+              echo "!!! SMOKE TEST ECHOUE — rollback."
               if [ -n "$PREV_IMAGE" ]; then
                 echo "=== ROLLBACK vers l'image precedente: $PREV_IMAGE ==="
                 docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
@@ -195,21 +187,10 @@ jobs:
               fi
               exit 1
             fi
-
-            # Smoke test detaille via le script bash
-            TEST_URL="https://access.signauxx.com" bash scripts/api-smoke-test.sh || SMOKE_DETAIL=$?
-            if [ "${SMOKE_DETAIL:-0}" != "0" ]; then
-              echo "!!! SMOKE TEST ECHOUE — rollback."
-              if [ -n "$PREV_IMAGE" ]; then
-                docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
-                docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
-              fi
-              exit 1
-            fi
             echo "Smoke test API OK."
 
             echo "=== Nettoyage des images orphelines ==="
-            docker image prune -f
+            docker image prune -f --filter "until=24h"
 
             echo "=== Deploy complete ==="
             docker compose -f compose.yml ps app worker bull-board

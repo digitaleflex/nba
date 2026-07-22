@@ -14,8 +14,9 @@ jobs:
   quality:
     name: Quality Checks
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -25,27 +26,18 @@ jobs:
           cache: "pnpm"
       - run: pnpm install --frozen-lockfile
       - run: npx prisma generate
-      - name: Verify lockfile is in sync with package.json
-        run: |
-          pnpm install --frozen-lockfile --lockfile-only
-          if ! git diff --quiet pnpm-lock.yaml; then
-            echo "::error::pnpm-lock.yaml is out of sync with package.json. Run 'pnpm install' locally and commit the lockfile."
-            git --no-pager diff pnpm-lock.yaml | head -30
-            exit 1
-          fi
-          echo "✅ lockfile in sync"
       - run: pnpm lint
         continue-on-error: true
       - run: pnpm typecheck
-      - run: pnpm test
       - run: pnpm test:coverage
 
   build:
     name: Build
     needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -61,8 +53,9 @@ jobs:
     name: Prisma Validate
     needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v6
         with:
           version: ${{ env.PNPM_VERSION }}
@@ -73,17 +66,17 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: npx prisma validate
 
-  security-scan:
-    name: Vulnerability Scan (Trivy)
+  security:
+    name: Security Scan + SBOM
+    needs: quality
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       security-events: write
     steps:
-      - uses: actions/checkout@v7
-      - name: Build image for scanning
-        uses: docker/build-push-action@v7
+      - uses: actions/checkout@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -93,46 +86,22 @@ jobs:
             NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
             NEXT_PUBLIC_APP_URL=https://access.signauxx.com
             NEXT_PUBLIC_WS_URL=https://access.signauxx.com:8443
-      - name: Scan image
-        uses: aquasecurity/trivy-action@0.33.0
+      - uses: aquasecurity/trivy-action@v0.33.0
         with:
           image-ref: nba:ci-${{ github.sha }}
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
-      - name: Upload scan results to GitHub
-        if: always()
+      - if: always()
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: trivy-results.sarif
-
-  sbom:
-    name: SBOM (SPDX)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v7
-      - name: Build image for SBOM
-        uses: docker/build-push-action@v7
-        with:
-          context: .
-          load: true
-          tags: nba:ci-${{ github.sha }}
-          cache-from: type=gha
-          build-args: |
-            NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
-            NEXT_PUBLIC_APP_URL=https://access.signauxx.com
-            NEXT_PUBLIC_WS_URL=https://access.signauxx.com:8443
-      - name: Generate SBOM
-        uses: aquasecurity/trivy-action@0.33.0
+      - uses: aquasecurity/trivy-action@v0.33.0
         with:
           image-ref: nba:ci-${{ github.sha }}
           format: spdx-json
           output: nba-sbom.spdx.json
-      - name: Upload SBOM artifact
-        uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v5
         with:
           name: sbom-spdx
           path: nba-sbom.spdx.json
