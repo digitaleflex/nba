@@ -104,6 +104,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
     {
       label: "Développeur", icon: Code2,
       items: [
+        { tab: "developer", label: "Console développeur", icon: Terminal, href: "/admin/developer" },
         { tab: "api-docs", label: "API Docs", icon: FileJson, href: "/api/docs" },
         { tab: "queues", label: "Files d'attente", icon: Clock, href: "/admin/queues" },
         { tab: "cache", label: "Cache", icon: Database, href: "/admin/cache" },
