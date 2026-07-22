@@ -44,6 +44,7 @@ export async function GET() {
           ipAddress: true,
           lastSeenAt: true,
           trusted: true,
+          user: { select: { name: true, email: true } },
         },
       }),
     ])
