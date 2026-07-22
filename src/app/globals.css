@@ -100,6 +100,16 @@ body {
   border: 1px solid oklch(1 0 0 / 0.1);
 }
 
+.dark .glass {
+  background-color: oklch(1 0 0 / 0.06);
+  border-color: oklch(1 0 0 / 0.08);
+}
+
+.dark .glass-strong {
+  background-color: oklch(1 0 0 / 0.08);
+  border-color: oklch(1 0 0 / 0.12);
+}
+
 /* ─── Glow Effects ─── */
 .glow-primary {
   box-shadow: 0 0 20px oklch(0.35 0.06 260 / 0.15),
@@ -109,6 +119,16 @@ body {
 .glow-accent {
   box-shadow: 0 0 20px oklch(0.45 0.08 260 / 0.15),
               0 0 40px oklch(0.45 0.08 260 / 0.05);
+}
+
+.dark .glow-primary {
+  box-shadow: 0 0 24px oklch(0.55 0.08 260 / 0.25),
+              0 0 48px oklch(0.55 0.08 260 / 0.1);
+}
+
+.dark .glow-accent {
+  box-shadow: 0 0 24px oklch(0.55 0.08 260 / 0.25),
+              0 0 48px oklch(0.55 0.08 260 / 0.1);
 }
 
 /* ─── Premium Border ─── */
@@ -152,6 +172,40 @@ body {
   }
   .animate-float {
     -webkit-animation: float 3s ease-in-out infinite;
+  }
+
+  @-webkit-keyframes orb-drift-1 {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(-8%, 12%) scale(1.08); }
+    50%  { transform: translate(-4%, -6%) scale(0.94); }
+    75%  { transform: translate(6%, 3%) scale(1.04); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  @-webkit-keyframes orb-drift-2 {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(8%, -10%) scale(1.1); }
+    50%  { transform: translate(-3%, 8%) scale(0.92); }
+    75%  { transform: translate(-6%, -4%) scale(1.06); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  @-webkit-keyframes orb-drift-3 {
+    0%   { transform: translate(0, 0) scale(1); }
+    25%  { transform: translate(-6%, -8%) scale(1.12); }
+    50%  { transform: translate(8%, 4%) scale(0.96); }
+    75%  { transform: translate(-4%, 6%) scale(1.05); }
+    100% { transform: translate(0, 0) scale(1); }
+  }
+
+  .animate-orb-drift-1 {
+    -webkit-animation: orb-drift-1 28s ease-in-out infinite;
+  }
+  .animate-orb-drift-2 {
+    -webkit-animation: orb-drift-2 32s ease-in-out infinite;
+  }
+  .animate-orb-drift-3 {
+    -webkit-animation: orb-drift-3 24s ease-in-out infinite;
   }
 }
 
@@ -235,6 +289,16 @@ body {
   );
   background-size: 200% 100%;
   animation: shimmer 2s ease-in-out infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    oklch(1 0 0 / 0.06) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
 }
 
 .animate-float {
