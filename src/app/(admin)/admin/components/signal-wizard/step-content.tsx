@@ -74,11 +74,11 @@ export function StepContent({
         <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
         <div className="border rounded-xl bg-background overflow-hidden">
           <div className="flex items-center gap-1.5 p-2 bg-muted/40 border-b">
-            <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras"><Bold className="size-3.5" /></Button>
-            <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("*", "*")} title="Italique"><Italic className="size-3.5" /></Button>
-            <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("- ")} title="Liste"><List className="size-3.5" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras"><Bold className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("*", "*")} title="Italique"><Italic className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("- ")} title="Liste"><List className="size-4" /></Button>
             <span className="w-px h-4 bg-border" />
-            <Button type="button" variant="ghost" size="sm" className="size-7 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => fileInputRef.current?.click()} title="Joindre des images"><ImageIcon className="size-3.5" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => fileInputRef.current?.click()} title="Joindre des images"><ImageIcon className="size-4" /></Button>
           </div>
           <textarea
             ref={textareaRef}
