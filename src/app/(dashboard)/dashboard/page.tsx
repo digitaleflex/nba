@@ -21,27 +21,38 @@ export default async function DashboardPage() {
 
   const userId = session.user.id
 
-  const [tradeAgg, streak, lastReflection, recentTrades] = await Promise.all([
-    prisma.trade.aggregate({
-      where: { userId, deletedAt: null },
-      _count: true,
-      _sum: { pnl: true },
-    }),
-    prisma.streak.findUnique({
-      where: { userId_type: { userId, type: "DISCIPLINE_STREAK" } },
-    }),
-    prisma.dailyReflection.findFirst({
-      where: { userId },
-      orderBy: { date: "desc" },
-      select: { date: true, rating: true },
-    }),
-    prisma.trade.count({ where: { userId, deletedAt: null, result: "WIN" } }),
-  ])
+  let totalTrades = 0
+  let totalPnl = 0
+  let winRate = 0
+  let disciplineStreak = 0
+  let lastReflection: { date: Date; rating: number } | null = null
 
-  const totalTrades = tradeAgg._count
-  const totalPnl = Number(tradeAgg._sum.pnl ?? 0)
-  const winRate = totalTrades > 0 ? Math.round((recentTrades / totalTrades) * 100) : 0
-  const disciplineStreak = streak?.count ?? 0
+  try {
+    const [tradeAgg, streak, reflection, recentTrades] = await Promise.all([
+      prisma.trade.aggregate({
+        where: { userId, deletedAt: null },
+        _count: true,
+        _sum: { pnl: true },
+      }),
+      prisma.streak.findUnique({
+        where: { userId_type: { userId, type: "DISCIPLINE_STREAK" } },
+      }),
+      prisma.dailyReflection.findFirst({
+        where: { userId },
+        orderBy: { date: "desc" },
+        select: { date: true, rating: true },
+      }),
+      prisma.trade.count({ where: { userId, deletedAt: null, result: "WIN" } }),
+    ])
+
+    totalTrades = tradeAgg._count
+    totalPnl = Number(tradeAgg._sum.pnl ?? 0)
+    winRate = totalTrades > 0 ? Math.round((recentTrades / totalTrades) * 100) : 0
+    disciplineStreak = streak?.count ?? 0
+    lastReflection = reflection
+  } catch {
+    // DB indisponible — afficher le dashboard avec des valeurs à zéro
+  }
 
   const kpis = [
     {

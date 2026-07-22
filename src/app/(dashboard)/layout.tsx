@@ -11,16 +11,22 @@ import { CoachIA } from "@nba/components/coach-ia"
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
-  if (!session) redirect("/login")
+  if (!session?.user) redirect("/login")
 
-  const userDb = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { role: { select: { name: true } } },
-  })
+  let role: string | undefined
+  try {
+    const userDb = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { role: { select: { name: true } } },
+    })
+    role = userDb?.role?.name
+  } catch {
+    // Non-critical — fallback to undefined
+  }
 
   const user = {
     ...session.user,
-    role: userDb?.role?.name,
+    role,
   }
 
   const desktopHeader = (

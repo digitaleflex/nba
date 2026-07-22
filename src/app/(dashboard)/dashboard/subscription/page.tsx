@@ -5,6 +5,7 @@ import { Card, CardContent, Badge, Button } from "@nba/design-system"
 import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash, ExternalLink, RefreshCw } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
 
 interface Plan {
   id: string
@@ -168,11 +169,11 @@ export default function SubscriptionPage() {
   const DEFAULT_ERROR = "Impossible de charger vos abonnements."
 
   useEffect(() => {
-    fetch("/api/dashboard/subscription")
-      .then((r) => { if (!r.ok) throw new Error("Erreur de chargement"); return r.json() })
+    apiFetch("/api/dashboard/subscription")
+      .then((r) => r.json())
       .then((subData) => setAccessRequests(Array.isArray(subData.requests) ? subData.requests : []))
       .catch((err) => {
-        setError("Erreur de chargement")
+        setError(getErrorMessage(err))
         toast.error(DEFAULT_ERROR)
       })
       .finally(() => setLoading(false))
