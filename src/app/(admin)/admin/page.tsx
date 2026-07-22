@@ -27,6 +27,7 @@ import { FormationTab } from "./features/FormationTab"
 import { DevicesTab } from "./features/DevicesTab"
 import { CronsTab } from "./features/CronsTab"
 import { AdminTools } from "./components/admin-tools"
+import { AdminSidebar } from "./components/admin-sidebar"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
 
@@ -93,6 +94,17 @@ function AdminConsoleContent() {
   const [opsData, setOpsData] = useState<any>(null)
   const [loadingOps, setLoadingOps] = useState(true)
   const [errorOps, setErrorOps] = useState<string | null>(null)
+
+  // Support tickets for sidebar badge
+  const [tickets, setTickets] = useState<any[]>([])
+
+  // Fetch support ticket count for badge
+  useEffect(() => {
+    fetch("/api/admin/support")
+      .then(r => r.json())
+      .then(data => setTickets(Array.isArray(data?.messages) ? data.messages : []))
+      .catch(() => {})
+  }, [])
 
   // Refetch registration from the active tab (used by the shared context panel)
   const activeRefetch = useRef<(() => void) | null>(null)
@@ -406,19 +418,32 @@ function AdminConsoleContent() {
     }
   }
 
+  const openTickets = tickets.filter((t: any) => {
+    const sd = (t.data ?? {}) as Record<string, unknown>
+    return !sd.status || sd.status === "OPEN"
+  }).length
+
   return (
-    <div className="min-h-screen text-foreground font-sans antialiased pb-20 md:pb-0">
-      {/* Dynamic Module views */}
+    <div className="min-h-screen text-foreground font-sans antialiased flex pb-20 md:pb-0">
+
+      {/* ============================================================== */}
+      {/* SIDEBAR (desktop) */}
+      {/* ============================================================== */}
+      <AdminSidebar activeTab={activeTab} supportCount={openTickets} />
+
+      {/* ============================================================== */}
+      {/* MAIN CONTENT */}
+      {/* ============================================================== */}
+      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8">
+
       <div className="space-y-7 animate-in fade-in-50 duration-200">
 
         {/* ============================================================== */}
-        {/* SUB-NAVIGATION (4 contextes mentaux) */}
+        {/* MOBILE SUB-NAVIGATION (horizontal scroll, hidden on md+) */}
         {/* ============================================================== */}
-        <div className="relative">
+        <div className="relative md:hidden">
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
-            {/* Right fade gradient hint (mobile only) */}
-            <div className="pointer-events-none absolute right-0 top-0 bottom-1 w-10 bg-gradient-to-l from-background to-transparent md:hidden" />
             {ADMIN_CONTEXTS.flatMap((context, gi) => {
               const items: React.ReactNode[] = []
               const isContextActive = getContextForTab(activeTab) === context.id
@@ -426,27 +451,14 @@ function AdminConsoleContent() {
                 items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
               }
               items.push(
-                <span
-                  key={`gl-${gi}`}
-                  className={cn(
-                    "shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none",
-                    isContextActive ? "text-primary" : "text-muted-foreground/70"
-                  )}
-                >
+                <span key={`gl-${gi}`} className={cn("shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
                   {context.label}
                 </span>
               )
               context.tabs.forEach((tab) => {
                 items.push(
-                  <button
-                    key={tab.value}
-                    onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                    className={cn(
-                      "text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start",
-                      activeTab === tab.value
-                        ? "bg-primary text-primary-foreground border-primary"
-                        : "border-border text-muted-foreground hover:bg-muted/50"
-                    )}
+                  <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
+                    className={cn("text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
                   >
                     {tab.label}
                   </button>
@@ -455,9 +467,6 @@ function AdminConsoleContent() {
               return items
             })}
           </div>
-          {activeTab === "moderation" && (
-            <ModerationTab />
-          )}
         </div>
 
         {/* ============================================================== */}
@@ -596,6 +605,7 @@ function AdminConsoleContent() {
         breadcrumb={panelBreadcrumb}
         onAction={handlePanelAction}
       />
+      </main>
     </div>
   )
 }
