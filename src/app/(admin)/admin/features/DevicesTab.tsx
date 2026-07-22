@@ -24,7 +24,8 @@ interface DeviceStats {
     ipAddress: string | null
     lastSeenAt: Date | string
     trusted: boolean
-    user: { name: string | null; email: string } | null
+    userId: string
+    user: { name: string | null; email: string | null }
   }[]
 }
 
@@ -217,21 +218,23 @@ export function DevicesTab() {
             data.recent.map((d) => (
               <div
                 key={d.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-sm"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border/60 px-3 py-2 text-sm"
               >
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {d.user?.name ?? d.name ?? "Appareil inconnu"}
-                      {d.brand && <span className="ml-1 text-muted-foreground">· {d.brand}</span>}
-                      {d.user?.email && <span className="ml-1 text-xs text-muted-foreground">({d.user.email})</span>}
-                    </p>
+                <div className="min-w-0 flex-[2]">
+                  <p className="truncate font-medium text-primary">
+                    {d.user?.name ?? d.user?.email ?? "Inconnu"}
+                  </p>
+                  <p className="truncate font-medium">
+                    {d.model ?? d.name ?? "Appareil inconnu"}
+                    {d.brand && <span className="ml-1 text-muted-foreground">· {d.brand}</span>}
+                  </p>
                   <p className="text-xs text-muted-foreground">
                     {DEVICE_TYPE_LABELS[d.deviceType ?? "unknown"]}
                     {d.os && ` · ${d.os}`}
                     {d.browser && ` · ${d.browser}`}
                   </p>
                 </div>
-                <div className="text-right text-xs text-muted-foreground">
+                <div className="text-right text-xs text-muted-foreground shrink-0">
                   <p className="font-mono">{d.ipAddress ?? "—"}</p>
                   <p>{new Date(d.lastSeenAt).toLocaleString("fr-FR")}</p>
                 </div>

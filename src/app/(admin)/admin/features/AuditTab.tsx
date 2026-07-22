@@ -535,7 +535,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Journal d&apos;audit</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -571,7 +571,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
       </div>
 
       {/* View switcher (shareable via ?view=) */}
-      <div className="flex items-center gap-1.5 border-b border-border pb-3">
+      <div className="flex items-center gap-1.5 border-b border-border/40 pb-3">
         {([
           { id: "timeline", label: "Timeline", icon: Layers },
           { id: "user", label: "Par utilisateur", icon: User },
@@ -694,7 +694,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
 
       {/* Erreur de chargement — distinct du résultat vide */}
       {error && !loading && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700" role="alert">
           <span>Impossible de charger les logs. Vérifiez votre connexion et réessayez.</span>
           <Button size="sm" variant="outline" onClick={() => fetchLogs()}>Réessayer</Button>
         </div>
@@ -721,7 +721,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
       ) : view === "user" ? (
         <div className="space-y-4">
           {groupByUser(logs).map((group) => (
-            <Card key={group.key} className="border-border">
+            <Card key={group.key} className="border-border/60 bg-card shadow-sm">
               <CardContent className="p-4 space-y-3">
                 <div className="flex items-center gap-2">
                   <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -757,7 +757,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
             <button
               key={`${group.type}:${group.id}`}
               onClick={() => drillResource(group.type, group.id)}
-              className="w-full text-left flex items-center gap-3 rounded-xl border border-border bg-card/30 p-4 hover:bg-muted/40 transition-colors cursor-pointer"
+              className="w-full text-left flex items-center gap-3 rounded-xl border border-border/60 bg-card/30 p-4 hover:bg-muted/40 transition-colors cursor-pointer"
             >
               <div className="size-8 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <Boxes className="size-4 text-muted-foreground" />
@@ -780,7 +780,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
             const description = getActionDescription(log.action, log.resourceType, log.details, log.user)
 
             return (
-              <Card key={log.id} className="overflow-hidden border-border transition-shadow hover:shadow-sm">
+              <Card key={log.id} className="overflow-hidden border-border/60 bg-card shadow-sm transition-shadow hover:shadow-md">
                 <div
                   className={cn(
                     "h-1 w-full",
@@ -865,7 +865,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 border-t border-border">
+        <div className="flex items-center justify-between pt-2 border-t border-border/40">
           <p className="text-xs text-muted-foreground">
             Page {page} sur {totalPages}
             <span className="hidden sm:inline"> ({total} résultat{total !== 1 ? "s" : ""})</span>

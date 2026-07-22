@@ -110,14 +110,14 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
     <div className="space-y-10 max-w-3xl">
       {/* ── SMTP ── */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between border-b border-border pb-5">
+        <div className="flex items-center justify-between border-b border-border/40 pb-5">
           <div>
             <h1 className="text-xl font-bold tracking-tight text-foreground">Paramètres système</h1>
             <p className="text-xs text-muted-foreground mt-1">Configuration SMTP et gestion des abonnements.</p>
           </div>
         </div>
 
-        <Card className="border-border bg-card/30">
+        <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configuration SMTP</h3>
             {loadingSettings ? (
@@ -156,7 +156,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
         ) : (
           <div className="space-y-2">
             {plans.map((plan) => (
-              <Card key={plan.id} className={cn("border-border bg-card/20", !plan.isActive && "opacity-50")}>
+              <Card key={plan.id} className={cn("border-border/60 bg-card shadow-sm", !plan.isActive && "opacity-50")}>
                 <CardContent className="p-4 flex items-center justify-between">
                   <div className="min-w-0 flex-1 cursor-pointer" onClick={() => setEditingPlan({ ...plan })}>
                     <div className="flex items-center gap-2">
@@ -179,26 +179,26 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
 
       {/* ── Formulaire édition plan ── */}
       {editingPlan && (
-        <Card className="border-primary/30 bg-card/20">
+        <Card className="border-primary/30 bg-card shadow-sm">
           <CardContent className="p-6 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               {editingPlan.id.startsWith("new-") ? "Nouveau plan" : "Modifier le plan"}
             </h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Nom</label><Input className="bg-background border-border text-xs" value={editingPlan.name} onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })} placeholder="Signals X Forex" /></div>
-              <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Devise</label><Input className="bg-background border-border text-xs" value={editingPlan.currency} onChange={(e) => setEditingPlan({ ...editingPlan, currency: e.target.value })} placeholder="XOF" /></div>
-              <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Prix</label><Input className="bg-background border-border text-xs" type="number" value={editingPlan.price} onChange={(e) => setEditingPlan({ ...editingPlan, price: Number(e.target.value) })} /></div>
-              <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Durée (jours)</label><Input className="bg-background border-border text-xs" type="number" value={editingPlan.durationDays} onChange={(e) => setEditingPlan({ ...editingPlan, durationDays: Number(e.target.value) })} /></div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Ordre</label><Input className="bg-background border-border text-xs" type="number" value={editingPlan.sortOrder} onChange={(e) => setEditingPlan({ ...editingPlan, sortOrder: Number(e.target.value) })} /></div>
-              <div className="space-y-1 flex items-end"><label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" checked={editingPlan.isActive} onChange={(e) => setEditingPlan({ ...editingPlan, isActive: e.target.checked })} className="cursor-pointer" />Actif</label></div>
-            </div>
-            <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Description</label><Input className="bg-background border-border text-xs" value={editingPlan.description ?? ""} onChange={(e) => setEditingPlan({ ...editingPlan, description: e.target.value || null })} placeholder="Optionnel" /></div>
-            <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground uppercase font-bold">Features + URL checkout (une par ligne, l'URL en dernier)</label>
-              <textarea
-                className="w-full rounded-lg border border-border bg-background p-3 text-xs text-foreground min-h-24 resize-y focus:outline-none focus:border-primary/50"
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Nom</label><Input className="bg-background border-border/60 text-xs" value={editingPlan.name} onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })} placeholder="Signals X Forex" /></div>
+                  <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Devise</label><Input className="bg-background border-border/60 text-xs" value={editingPlan.currency} onChange={(e) => setEditingPlan({ ...editingPlan, currency: e.target.value })} placeholder="XOF" /></div>
+                  <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Prix</label><Input className="bg-background border-border/60 text-xs" type="number" value={editingPlan.price} onChange={(e) => setEditingPlan({ ...editingPlan, price: Number(e.target.value) })} /></div>
+                  <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Durée (jours)</label><Input className="bg-background border-border/60 text-xs" type="number" value={editingPlan.durationDays} onChange={(e) => setEditingPlan({ ...editingPlan, durationDays: Number(e.target.value) })} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Ordre</label><Input className="bg-background border-border/60 text-xs" type="number" value={editingPlan.sortOrder} onChange={(e) => setEditingPlan({ ...editingPlan, sortOrder: Number(e.target.value) })} /></div>
+                  <div className="space-y-1 flex items-end"><label className="flex items-center gap-2 text-xs cursor-pointer"><input type="checkbox" checked={editingPlan.isActive} onChange={(e) => setEditingPlan({ ...editingPlan, isActive: e.target.checked })} className="cursor-pointer" />Actif</label></div>
+                </div>
+                <div className="space-y-1"><label className="text-[10px] text-muted-foreground uppercase font-bold">Description</label><Input className="bg-background border-border/60 text-xs" value={editingPlan.description ?? ""} onChange={(e) => setEditingPlan({ ...editingPlan, description: e.target.value || null })} placeholder="Optionnel" /></div>
+                <div className="space-y-1">
+                  <label className="text-[10px] text-muted-foreground uppercase font-bold">Features + URL checkout (une par ligne, l'URL en dernier)</label>
+                  <textarea
+                    className="w-full rounded-lg border border-border/60 bg-background p-3 text-xs text-foreground min-h-24 resize-y focus:outline-none focus:border-primary/50"
                 value={editingPlan.features.join("\n")}
                 onChange={(e) => setEditingPlan({ ...editingPlan, features: e.target.value.split("\n") })}
                 placeholder={`Essentiel\nForex\nSignaux trading forex premium\nhttps://signaux.mymaketou.shop/products/signaux-x/checkout`}

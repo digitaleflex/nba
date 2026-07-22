@@ -73,7 +73,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Dossiers KYC</h1>
           <p className="text-xs text-muted-foreground mt-1">
@@ -105,7 +105,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {kycDocs.map((doc) => {
               const card = (
-                <Card key={doc.id} className="border-border bg-card/30 overflow-hidden">
+                <Card key={doc.id} className="border-border/60 bg-card shadow-sm overflow-hidden">
                   <div className="h-40 bg-card border-b border-border flex items-center justify-center text-muted-foreground relative">
                     <ImageIcon className="size-8 text-muted-foreground/30" />
                     <Badge
@@ -198,7 +198,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
           )}
         </>
       ) : kycError ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700" role="alert">
           <span>Impossible de charger les dossiers KYC.</span>
           <Button size="sm" variant="outline" onClick={() => fetchKyc()}>Réessayer</Button>
         </div>

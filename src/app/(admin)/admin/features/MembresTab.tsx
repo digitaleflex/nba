@@ -234,7 +234,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Membres</h1>
           <p className="text-xs text-muted-foreground mt-1">Gestion des membres et de leurs abonnements</p>
@@ -259,7 +259,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
             placeholder="Nom, email ou téléphone..."
-            className="h-9 w-full rounded-lg border border-border bg-background pl-8 pr-3 text-xs outline-none focus:border-primary/50"
+            className="h-9 w-full rounded-lg border border-border/60 bg-background pl-8 pr-3 text-xs outline-none focus:border-primary/50"
           />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer">
@@ -270,7 +270,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
+          className="h-9 rounded-lg border border-border/60 bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
         >
           <option value="">Tous les statuts</option>
           <option value="active">Actif</option>
@@ -279,7 +279,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         <select
           value={onboardingFilter}
           onChange={(e) => { setOnboardingFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
+          className="h-9 rounded-lg border border-border/60 bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
         >
           <option value="">Tout onboarding</option>
           <option value="PENDING">En attente</option>
@@ -289,7 +289,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         <select
           value={planFilter}
           onChange={(e) => { setPlanFilter(e.target.value); setPage(1) }}
-          className="h-9 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
+          className="h-9 rounded-lg border border-border/60 bg-background px-3 text-xs text-foreground outline-none focus:border-primary/50"
         >
           <option value="">Tous les abonnements</option>
           {plans.map((p: any) => (
@@ -304,11 +304,11 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       </div>
 
       {/* Table */}
-      <Card className="border-border bg-card/30">
+      <Card className="border-border/60 bg-card shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b border-border bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
                 <th className="px-4 py-3">Membre</th>
                 <th className="px-4 py-3 hidden md:table-cell">Contact</th>
                 <th className="px-4 py-3 hidden md:table-cell">Email</th>
@@ -320,7 +320,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                 <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-border/40">
               {loading ? (
                 <tr><td colSpan={9} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
               ) : membres.length === 0 && loadError ? (

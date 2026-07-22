@@ -60,7 +60,7 @@ export function ModerationTab() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
+      <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Shield className="size-5 text-amber-500" /> Modération
@@ -70,7 +70,7 @@ export function ModerationTab() {
       </div>
 
       {/* Bannir un utilisateur */}
-      <Card className="border-rose-500/20">
+      <Card className="border-rose-500/20 bg-card shadow-sm">
         <CardContent className="p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Ban className="size-4 text-rose-500" />
@@ -106,7 +106,7 @@ export function ModerationTab() {
       </Card>
 
       {/* Liste des bannis */}
-      <Card className="border-border">
+      <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <AlertTriangle className="size-4 text-muted-foreground" />

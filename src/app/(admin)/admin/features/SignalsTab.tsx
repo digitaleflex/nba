@@ -281,7 +281,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
           <>
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
               {signals.map((sig) => (
-                <Card key={sig.id} className="border-border bg-card/20">
+                <Card key={sig.id} className="border-border/60 bg-card shadow-sm">
                   <CardContent className="p-4 space-y-3">
                     <div className="flex items-center justify-between">
                       <Badge
