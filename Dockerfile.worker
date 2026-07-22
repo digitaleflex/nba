@@ -1,12 +1,3 @@
-# Dockerfile.worker - Standalone image for the BullMQ queue worker
-# Separate from Dockerfile to avoid BuildKit cache confusion between targets.
-#
-# Build:
-#   docker build -f Dockerfile.worker -t ghcr.io/digitaleflex/nba-worker .
-#
-# Run:
-#   docker compose -f compose.yml up -d worker
-
 FROM node:22-alpine AS base
 RUN npm install -g pnpm@10
 WORKDIR /app
@@ -15,7 +6,8 @@ WORKDIR /app
 FROM base AS deps
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/design-system/package.json ./packages/design-system/
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
+  pnpm install --frozen-lockfile
 
 # Source + Prisma client
 FROM base AS prepared

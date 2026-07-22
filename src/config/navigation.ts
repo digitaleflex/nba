@@ -246,6 +246,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       badge: "messages",
       isActive: (pathname) => pathname === "/admin/messages",
     },
+    {
+      id: "support",
+      href: "/admin/support",
+      label: "Support",
+      icon: MessageCircle,
+      section: "communiquer",
+      isActive: (pathname) => pathname === "/admin/support",
+    },
   ],
   auditer: [
     {

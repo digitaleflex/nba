@@ -78,7 +78,12 @@ describe("replayEmailEvent", () => {
       svixId: "evt-bounce",
     })
     expect(r.deliveryStatus).toBe("BOUNCED")
-    expect(markUserBounced).toHaveBeenCalledWith("ext-bounce")
+    expect(prisma.notificationDelivery.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "d1" },
+        data: expect.objectContaining({ status: "BOUNCED" }),
+      }),
+    )
   })
 
   it("email.failed -> FAILED avec reason", async () => {
