@@ -42,6 +42,12 @@ function mockFetchSuccess() {
       if (urlStr.includes("/api/public/select-plan")) {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
       }
+      if (urlStr.includes("/api/auth/captcha/verify")) {
+        return new Response(JSON.stringify({ valid: true }), { status: 200 });
+      }
+      if (urlStr.includes("/api/auth/captcha")) {
+        return new Response(JSON.stringify({ question: "2 + 3 = ?", token: "test-captcha-token" }), { status: 200 });
+      }
       return new Response(null, { status: 404 });
     });
 }
@@ -77,6 +83,12 @@ async function fillWizard(user: ReturnType<typeof userEvent.setup>) {
     "Str0ng!Pass",
   );
   await user.click(screen.getByRole("button", { name: /suivant/i }));
+
+  // Captcha
+  await user.type(
+    screen.getByPlaceholderText("Votre reponse"),
+    "5",
+  );
 }
 
 describe("Register Wizard", () => {
@@ -271,12 +283,12 @@ describe("Register Wizard", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await fillWizard(user);
-    expect(screen.getByText(/Vérifiez vos informations/i)).toBeInTheDocument();
+    expect(screen.getByText(/Verifiez vos informations/i)).toBeInTheDocument();
     expect(screen.getByText("Kofi Mensah")).toBeInTheDocument();
     expect(screen.getByText("kofi@test.com")).toBeInTheDocument();
     expect(screen.getByText("+22901020305")).toBeInTheDocument();
     const reviewSection = screen.getByText(
-      /Vérifiez vos informations/i,
+      /Verifiez vos informations/i,
     ).parentElement!;
     expect(within(reviewSection).getByText("Plan Bronze")).toBeInTheDocument();
   });
@@ -287,7 +299,7 @@ describe("Register Wizard", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await fillWizard(user);
-    await user.click(screen.getByRole("button", { name: /créer mon compte/i }));
+    await user.click(screen.getByRole("button", { name: /Creer mon compte/i }));
     expect(mockSignUpEmail).toHaveBeenCalledWith({
       name: "Kofi Mensah",
       email: "kofi@test.com",
@@ -305,7 +317,7 @@ describe("Register Wizard", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await fillWizard(user);
-    await user.click(screen.getByRole("button", { name: /créer mon compte/i }));
+    await user.click(screen.getByRole("button", { name: /Creer mon compte/i }));
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalled();
     });
@@ -324,7 +336,7 @@ describe("Register Wizard", () => {
     render(<RegisterPage />);
     const user = userEvent.setup();
     await fillWizard(user);
-    await user.click(screen.getByRole("button", { name: /créer mon compte/i }));
+    await user.click(screen.getByRole("button", { name: /Creer mon compte/i }));
     expect(
       await screen.findByText(
         "Ce compte existe déjà. Veuillez vous connecter.",
@@ -340,7 +352,7 @@ describe("Register Wizard", () => {
     const user = userEvent.setup();
     await fillWizard(user);
     sessionStorage.setItem("nba_register_test_before", "should-exist");
-    await user.click(screen.getByRole("button", { name: /créer mon compte/i }));
+    await user.click(screen.getByRole("button", { name: /Creer mon compte/i }));
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalled();
     });
