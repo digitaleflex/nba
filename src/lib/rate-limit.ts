@@ -84,14 +84,14 @@ export async function checkRateLimit(
 ): Promise<RateLimitResult> {
   const redis = getRedis()
   if (!redis) {
+    log.warn({ key: key, errorCode: "RATE_LIMIT_REDIS_UNAVAILABLE" }, "Redis indisponible — rate limit desactive")
     return {
-      allowed: false,
-      remaining: 0,
+      allowed: true,
+      remaining: config.max,
       resetIn: config.window,
       headers: {
-        "Retry-After": config.window.toString(),
         "X-RateLimit-Limit": config.max.toString(),
-        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Remaining": config.max.toString(),
         "X-RateLimit-Reset": config.window.toString(),
       },
     }
@@ -122,16 +122,16 @@ export async function checkRateLimit(
         "X-RateLimit-Reset": config.window.toString(),
       },
     }
-  } catch {
+  } catch (err) {
     markUnavailable()
+    log.warn({ err, key: rkey, errorCode: "RATE_LIMIT_REDIS_ERROR" }, "Erreur Redis — rate limit desactive")
     return {
-      allowed: false,
-      remaining: 0,
+      allowed: true,
+      remaining: config.max,
       resetIn: config.window,
       headers: {
-        "Retry-After": config.window.toString(),
         "X-RateLimit-Limit": config.max.toString(),
-        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Remaining": config.max.toString(),
         "X-RateLimit-Reset": config.window.toString(),
       },
     }

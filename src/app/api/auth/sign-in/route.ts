@@ -88,7 +88,7 @@ export async function POST(req: NextRequest) {
         const sessionCookie = response.headers.getSetCookie?.()
           ?.find(c => c.includes("better-auth.session_token"))
         if (sessionCookie) {
-          const tokenMatch = sessionCookie.match(/better-auth\.session_token=([^;]+)/)
+          const tokenMatch = sessionCookie.match(/(?:__Secure-)?better-auth\.session_token=([^;]+)/)
           if (tokenMatch) {
             const sessionToken = tokenMatch[1]
             const session = await prisma.session.findUnique({
@@ -271,6 +271,6 @@ export async function POST(req: NextRequest) {
       log.warn({ err, email, errorCode: "DATABASE_ERROR" }, "Failed to log audit event for failed sign-in")
     })
 
-    return NextResponse.json({ message }, { status: 401 })
+    return NextResponse.json({ message }, { status: status || 401 })
   }
 }

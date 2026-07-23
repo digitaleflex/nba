@@ -82,6 +82,12 @@ export const auth = betterAuth({
             throw new Error(msg.auth.ACCOUNT_BANNED(banned.reason))
           }
           await purgeSoftDeletedUser(prisma, user.email)
+          if (!user.roleId) {
+            const memberRole = await prisma.role.findUnique({ where: { name: "MEMBER" }, select: { id: true } })
+            if (memberRole) {
+              return { data: { roleId: memberRole.id } }
+            }
+          }
         },
         after: async (user) => {
           sendWelcomeEmail({ id: user.id, name: user.name, email: user.email }).catch(() => {})

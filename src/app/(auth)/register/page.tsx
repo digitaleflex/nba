@@ -79,7 +79,7 @@ export default function RegisterPage() {
 
     const { error: err } = await authClient.signUp.email({
       name: `${firstName} ${lastName}`.trim(),
-      email,
+      email: email.trim(),
       password,
       callbackURL: "/onboarding",
     })
@@ -94,7 +94,7 @@ export default function RegisterPage() {
         setLoading(false)
         return
       } else if (err.status === 400) {
-        setError("Données invalides. Veuillez vérifier vos informations.")
+        setError(safeAuthErrorMessage(err.message) ?? "Données invalides. Veuillez vérifier vos informations.")
       } else {
         setError(safeAuthErrorMessage(err.message ?? err.statusText))
       }

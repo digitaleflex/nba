@@ -24,7 +24,14 @@ export function csrfCheck(req: NextRequest): NextResponse | null {
     return NextResponse.json({ error: msg.security.MISSING_ORIGIN }, { status: 403 })
   }
 
-  const originOk = origin ? ALLOWED_ORIGINS.some((o) => new URL(origin).origin === o) : false
+  let originOk = false
+  if (origin) {
+    try {
+      originOk = ALLOWED_ORIGINS.some((o) => new URL(origin).origin === o)
+    } catch {
+      originOk = false
+    }
+  }
   const refererOk = referer ? ALLOWED_ORIGINS.some((o) => referer.startsWith(o)) : false
 
   if (!originOk && !refererOk) {
