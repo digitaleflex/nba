@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider, ToastProvider, TopLoader, TooltipProvider } from "@nba/design-system";
 import { ImpersonationBanner } from "./components/impersonation-banner";
 import { OfflineBanner } from "./components/offline-banner";
+import { ServiceWorkerRegister } from "./components/service-worker-register";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -111,6 +112,7 @@ export default function RootLayout({
           }}
         />
         <ThemeProvider>
+          <ServiceWorkerRegister />
           <OfflineBanner />
           <Suspense fallback={null}>
             <TopLoader />
