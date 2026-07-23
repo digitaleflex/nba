@@ -20,13 +20,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v6.0.9
-        with:
-          version: "10"
-      - uses: actions/setup-node@v7
-        with:
-          node-version: "22"
-          cache: "pnpm"
+      - run: corepack enable
       - run: pnpm install --frozen-lockfile
       - run: npx prisma generate
       # Lint non-bloquant pour l'instant (dette: ~500 warnings a nettoyer).
