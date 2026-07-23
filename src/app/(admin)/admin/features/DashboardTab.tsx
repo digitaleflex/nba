@@ -4,10 +4,13 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
-  ShieldAlert, Ban, Globe, AlertTriangle,
+  ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2,
 } from "lucide-react"
 import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
 import { AlertsPanel } from "../components/alerts-panel"
+import { ProgressiveDetail } from "../components/ProgressiveDetail"
+import { SummaryList } from "../components/SummaryList"
+import { DetailPanel } from "../components/DetailPanel"
 
 interface DashboardTabProps {
   opsData: any
@@ -106,20 +109,24 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             <KpiCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
           </div>
 
-          <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-              <ShieldAlert className="size-3" />
-              Sécurité & Anti-Fraude
-              <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
-            </h3>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              <SecCard icon={ShieldAlert} label="Événements HAUT" value={secData?.highEvents ?? 0} color="text-red-500" />
-              <SecCard icon={AlertTriangle} label="Échecs connexion/h" value={secData?.failedLogins ?? 0} color="text-orange-500" />
-              <SecCard icon={Globe} label="IPs bloquées" value={secData?.blockedIps ?? 0} color="text-purple-500" />
-              <SecCard icon={Ban} label="Suspendus aujourd&apos;hui" value={secData?.suspendedAccounts ?? 0} color="text-rose-500" />
-              <SecCard icon={Ban} label="Appareils bloqués" value={secData?.blockedDevices ?? 0} color="text-amber-500" />
+          <ProgressiveDetail level={2} expandable>
+            <div>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <ShieldAlert className="size-3" />
+                Sécurité & Anti-Fraude
+                <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
+              </h3>
+              <SummaryList
+                items={[
+                  { id: "high", title: `${secData?.highEvents ?? 0} événements HAUT`, subtitle: "Nécessitent une action immédiate", severity: (secData?.highEvents ?? 0) > 0 ? "critical" : undefined },
+                  { id: "failed", title: `${secData?.failedLogins ?? 0} échecs de connexion/h`, subtitle: "Tentatives échouées cette heure", severity: (secData?.failedLogins ?? 0) > 10 ? "high" : "low" },
+                  { id: "ips", title: `${secData?.blockedIps ?? 0} IPs bloquées`, subtitle: "Adresses en liste noire", severity: (secData?.blockedIps ?? 0) > 0 ? "medium" : undefined },
+                  { id: "suspended", title: `${secData?.suspendedAccounts ?? 0} suspendus aujourd'hui`, subtitle: "Comptes désactivés", severity: (secData?.suspendedAccounts ?? 0) > 0 ? "high" : undefined },
+                  { id: "devices", title: `${secData?.blockedDevices ?? 0} appareils bloqués`, subtitle: "Appareils non autorisés", severity: (secData?.blockedDevices ?? 0) > 0 ? "medium" : undefined },
+                ]}
+              />
             </div>
-          </div>
+          </ProgressiveDetail>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <Card className="border-border/60 bg-card shadow-sm lg:col-span-2">

@@ -478,6 +478,25 @@ textarea,
   }
 }
 
+/* ─── Progression graduelle (UX-Apple #251) ─── */
+
+@keyframes expand {
+  from { max-height: 80px; opacity: 0.8; }
+  to { max-height: 400px; opacity: 1; }
+}
+
+.detail-expand {
+  animation: expand 0.3s ease-out forwards;
+  overflow: hidden;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  @-webkit-keyframes expand {
+    from { max-height: 80px; opacity: 0.8; }
+    to { max-height: 400px; opacity: 1; }
+  }
+}
+
 /* ─── Mouvement significatif (UX-Apple #252) ─── */
 
 @keyframes slideUp {
