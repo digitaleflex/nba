@@ -478,6 +478,13 @@ textarea,
   }
 }
 
+/* ─── Mode compact (UX-Apple #257) ─── */
+
+.compact-mode .glass-card { padding: 12px; }
+.compact-mode .kpi-grid { gap: 8px; }
+.compact-mode .section-title { margin-bottom: 8px; }
+.compact-mode .hero-number-text { font-size: 48px; }
+
 /* ─── Progression graduelle (UX-Apple #251) ─── */
 
 @keyframes expand {

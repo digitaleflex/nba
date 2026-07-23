@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
-  ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2,
+  ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2, Settings,
 } from "lucide-react"
 import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
 import { AlertsPanel } from "../components/alerts-panel"
@@ -13,6 +13,9 @@ import { SummaryList } from "../components/SummaryList"
 import { DetailPanel } from "../components/DetailPanel"
 import { AdminRecents } from "../components/AdminRecents"
 import { FocusMode } from "../components/FocusMode"
+import { SortableCard } from "../components/SortableCard"
+import { DashboardCustomizer } from "../components/DashboardCustomizer"
+import { useDashboardLayout } from "../hooks/useDashboardLayout"
 
 interface DashboardTabProps {
   opsData: any
@@ -24,6 +27,8 @@ interface DashboardTabProps {
 export function DashboardTab({ opsData, loadingOps, errorOps, router }: DashboardTabProps) {
   const [secData, setSecData] = useState<any>(null)
   const [focusAlert, setFocusAlert] = useState<number | null>(null)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+  const { layout, toggleCard, reorderCards, updateLayout, resetLayout } = useDashboardLayout()
 
   useEffect(() => {
     fetch("/api/admin/security/fraud/abuse")
@@ -41,14 +46,32 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             Surveillez l&apos;état opérationnel et traitez les tâches prioritaires.
           </p>
         </div>
-        <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
-          <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-          Live
-        </Badge>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCustomizerOpen(true)}
+            className="p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+            aria-label="Personnaliser le dashboard"
+          >
+            <Settings className="size-4 text-muted-foreground" />
+          </button>
+          <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
+            <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
+            Live
+          </Badge>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-7">
+      <div className={cn("grid grid-cols-1 lg:grid-cols-4 gap-7", layout.compactMode && "compact-mode")}>
         <div className="lg:col-span-3 space-y-7">
+
+          <DashboardCustomizer
+            isOpen={customizerOpen}
+            onClose={() => setCustomizerOpen(false)}
+            layout={layout}
+            onToggleCard={toggleCard}
+            onUpdateLayout={updateLayout}
+            onReset={resetLayout}
+          />
 
       {errorOps ? (
         <div className="py-20 text-center text-rose-600 text-sm" role="alert">{errorOps}</div>
