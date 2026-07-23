@@ -17,6 +17,7 @@ import { SortableCard } from "../components/SortableCard"
 import { DashboardCustomizer } from "../components/DashboardCustomizer"
 import { useDashboardLayout } from "../hooks/useDashboardLayout"
 import { SmartSuggestions } from "../components/SmartSuggestions"
+import { HeroNumber } from "../components/HeroNumber"
 
 interface DashboardTabProps {
   opsData: any
@@ -80,54 +81,23 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       ) : (
         <>
-          <Card className="border-border/60 bg-card shadow-sm">
-            <CardContent className="p-5">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
-                À traiter maintenant
-              </h2>
-              <div className="divide-y divide-border/30">
-                {opsData?.attention?.kycPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=kyc")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.kycPendingCount} dossiers KYC en attente</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.brokerPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=broker")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-amber-500" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.brokerPendingCount} vérifications Broker</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.requestsPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=requests")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-blue-500" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.requestsPendingCount} demandes d&apos;accès</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.nextScheduledSignal ? (
-                  <div onClick={() => router.push("/admin?tab=signals")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span className="font-semibold text-xs text-foreground">1 signal programmé le {new Date(opsData.attention.nextScheduledSignal.scheduledAt).toLocaleString("fr-FR")}</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.kycPendingCount === 0 && opsData?.attention?.brokerPendingCount === 0 && opsData?.attention?.requestsPendingCount === 0 && (
-                  <EmptyState icon={CheckCircle2} title="Tout est en ordre" description="Aucune intervention urgente." />
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <HeroNumber
+            value={(secData?.highEvents ?? 0) + (secData?.blockedIps ?? 0) + (secData?.suspendedAccounts ?? 0) + (secData?.blockedDevices ?? 0)}
+            label="alertes sécurité actives"
+            status={(secData?.highEvents ?? 0) > 0 ? "critical" : (secData?.blockedIps ?? 0) > 0 ? "warning" : "calm"}
+            icon={ShieldAlert}
+            subtitle={
+              (opsData?.attention?.kycPendingCount ?? 0) > 0 || (opsData?.attention?.brokerPendingCount ?? 0) > 0 || (opsData?.attention?.requestsPendingCount ?? 0) > 0
+                ? `${(opsData?.attention?.kycPendingCount ?? 0) + (opsData?.attention?.brokerPendingCount ?? 0) + (opsData?.attention?.requestsPendingCount ?? 0)} tâches administratives en attente`
+                : undefined
+            }
+            details={[
+              { label: "Événements HAUT", value: secData?.highEvents ?? 0, color: (secData?.highEvents ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
+              { label: "IPs bloquées", value: secData?.blockedIps ?? 0, color: (secData?.blockedIps ?? 0) > 0 ? "text-purple-500" : "text-muted-foreground" },
+              { label: "Suspendus", value: secData?.suspendedAccounts ?? 0, color: (secData?.suspendedAccounts ?? 0) > 0 ? "text-rose-500" : "text-muted-foreground" },
+              { label: "Appareils bloqués", value: secData?.blockedDevices ?? 0, color: (secData?.blockedDevices ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground" },
+            ]}
+          />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
@@ -273,21 +243,6 @@ function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value
           <p className="text-xl font-bold text-foreground">{value}</p>
         </div>
         <Icon className="size-5 text-muted-foreground/40" />
-      </CardContent>
-    </Card>
-  )
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function SecCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => window.location.href = "/admin?tab=fraud"}>
-      <CardContent className="p-3 flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-accent/30 ${color}`}><Icon className="size-4" /></div>
-        <div>
-          <p className="text-[10px] text-muted-foreground">{label}</p>
-          <p className={`text-base font-bold ${color}`}>{value}</p>
-        </div>
       </CardContent>
     </Card>
   )
