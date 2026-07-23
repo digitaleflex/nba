@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import {
   Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
-import { Card, CardContent, Button, EmptyState } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
 import { toast } from "sonner"
 interface FraudSummary {
   highEvents: number
@@ -111,11 +111,11 @@ export function FraudTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={ShieldAlert} label="Evenements HAUT" value={summary?.highEvents ?? 0} color="text-red-500" />
-        <StatCard icon={AlertTriangle} label="Echecs/h" value={summary?.failedLogins ?? 0} color="text-orange-500" />
-        <StatCard icon={Globe} label="IPs bloquees" value={summary?.blockedIps ?? 0} color="text-purple-500" />
-        <StatCard icon={Ban} label="Suspendus aujourdhui" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" />
-        <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" />
+        <StatCard icon={ShieldAlert} label="Evenements HAUT" value={summary?.highEvents ?? 0} color="text-red-500" className="stagger-1" />
+        <StatCard icon={AlertTriangle} label="Echecs/h" value={summary?.failedLogins ?? 0} color="text-orange-500" className="stagger-2" />
+        <StatCard icon={Globe} label="IPs bloquees" value={summary?.blockedIps ?? 0} color="text-purple-500" className="stagger-3" />
+        <StatCard icon={Ban} label="Suspendus aujourdhui" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" className="stagger-4" />
+        <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" className="stagger-5" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -169,7 +169,7 @@ export function FraudTab() {
               {events.slice(0, 20).map(e => {
                 const acknowledged = !!(e.details as any)?.acknowledgedAt
                 return (
-                <tr key={e.id} className={`hover:bg-accent/30 ${acknowledged ? "opacity-60" : ""}`}>
+                <tr key={e.id} className={cn("hover:bg-accent/30", acknowledged ? "opacity-60" : "", e.severity === "CRITICAL" && !acknowledged && "alert-pulse")}>
                   <td className="px-3 py-2 text-muted-foreground">{new Date(e.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2 font-medium">{e.type}</td>
                   <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
@@ -220,9 +220,9 @@ export function FraudTab() {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function StatCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
+function StatCard({ icon: Icon, label, value, color, className }: { icon: any; label: string; value: number; color: string; className?: string }) {
   return (
-    <div className="rounded-xl border p-4 flex items-center gap-3">
+    <div className={cn("rounded-xl border p-4 flex items-center gap-3 interactive-card animate-slide-up", className)}>
       <div className={`p-2 rounded-lg bg-accent/30 ${color}`}><Icon className="size-5" /></div>
       <div>
         <p className="text-xs text-muted-foreground">{label}</p>

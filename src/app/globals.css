@@ -478,6 +478,126 @@ textarea,
   }
 }
 
+/* ─── Mouvement significatif (UX-Apple #252) ─── */
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideRight {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideLeft {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-24px); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes borderPulse {
+  0%, 100% { border-color: rgb(239 68 68 / 0.3); }
+  50% { border-color: rgb(239 68 68 / 0.8); }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-right {
+  animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.2s ease-in forwards;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.alert-pulse {
+  animation: borderPulse 2s ease-in-out infinite;
+  border-width: 2px;
+  border-style: solid;
+  border-radius: 12px;
+}
+
+/* Stagger delays for card grids */
+.stagger-1 { animation-delay: 0ms; }
+.stagger-2 { animation-delay: 60ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 180ms; }
+.stagger-5 { animation-delay: 240ms; }
+.stagger-6 { animation-delay: 300ms; }
+.stagger-7 { animation-delay: 360ms; }
+.stagger-8 { animation-delay: 420ms; }
+
+/* Hover subtil */
+.interactive-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.interactive-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+}
+
+.dark .interactive-card:hover {
+  background: rgb(255 255 255 / 0.05);
+}
+
+.interactive-card:active {
+  transform: translateY(0);
+  transition-duration: 0.1s;
+}
+
+/* Safari support for motion animations */
+@media screen and (-webkit-min-device-pixel-ratio: 0) {
+  @-webkit-keyframes slideUp {
+    from { opacity: 0; -webkit-transform: translateY(16px); }
+    to { opacity: 1; -webkit-transform: translateY(0); }
+  }
+  @-webkit-keyframes slideRight {
+    from { opacity: 0; -webkit-transform: translateX(24px); }
+    to { opacity: 1; -webkit-transform: translateX(0); }
+  }
+  @-webkit-keyframes slideLeft {
+    from { opacity: 1; -webkit-transform: translateX(0); }
+    to { opacity: 0; -webkit-transform: translateX(-24px); }
+  }
+  @-webkit-keyframes borderPulse {
+    0%, 100% { border-color: rgb(239 68 68 / 0.3); }
+    50% { border-color: rgb(239 68 68 / 0.8); }
+  }
+  .animate-slide-up {
+    -webkit-animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-slide-right {
+    -webkit-animation: slideRight 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-slide-left {
+    -webkit-animation: slideLeft 0.2s ease-in forwards;
+  }
+  .alert-pulse {
+    -webkit-animation: borderPulse 2s ease-in-out infinite;
+  }
+}
+
 /* ==========================================================================
    Driver.js — guides interactifs, adaptation mobile
    Le popover par défaut déborde sur petit écran et les boutons sont trop

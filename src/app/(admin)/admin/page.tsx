@@ -467,41 +467,55 @@ function AdminConsoleContent() {
         {/* MODULE VIEWS */}
         {/* ============================================================== */}
         {activeTab === "dashboard" && (
-          <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
+          <div key="dashboard" className="animate-slide-right">
+            <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
+          </div>
         )}
 
         {activeTab === "users" && (
-          <UsersTab
-            cachedGet={cachedGet}
-            invalidate={invalidateAdminCache}
-            onOpenPanel={openPanel}
-            registerRefetch={registerRefetch}
-            initialSearch={searchParams.get("search") || ""}
-          />
+          <div key="users" className="animate-slide-right">
+            <UsersTab
+              cachedGet={cachedGet}
+              invalidate={invalidateAdminCache}
+              onOpenPanel={openPanel}
+              registerRefetch={registerRefetch}
+              initialSearch={searchParams.get("search") || ""}
+            />
+          </div>
         )}
 
         {activeTab === "membres" && (
-          <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="membres" className="animate-slide-right">
+            <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "requests" && (
-          <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
+          <div key="requests" className="animate-slide-right">
+            <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
+          </div>
         )}
 
         {activeTab === "signals" && (
-          <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
+          <div key="signals" className="animate-slide-right">
+            <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
+          </div>
         )}
 
         {activeTab === "kyc" && (
-          <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          <div key="kyc" className="animate-slide-right">
+            <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          </div>
         )}
 
         {activeTab === "broker" && (
-          <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          <div key="broker" className="animate-slide-right">
+            <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          </div>
         )}
 
         {activeTab === "stats" && (
-          <div className="space-y-6">
+          <div key="stats" className="animate-slide-right space-y-6">
             <TabPageHeader title="Statistiques globales" description="Compteurs clés consolidés d'activité de la plateforme NBA." />
             {opsData ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -519,42 +533,62 @@ function AdminConsoleContent() {
         )}
 
         {activeTab === "analytics" && (
-          <AnalyticsTab cachedGet={cachedGet} />
+          <div key="analytics" className="animate-slide-right">
+            <AnalyticsTab cachedGet={cachedGet} />
+          </div>
         )}
 
         {activeTab === "security" && (
-          <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="security" className="animate-slide-right">
+            <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
         {activeTab === "fraud" && (
-          <FraudTab />
+          <div key="fraud" className="animate-slide-right">
+            <FraudTab />
+          </div>
         )}
 
         {activeTab === "emails" && (
-          <EmailsTab cachedGet={cachedGet} opsData={opsData} />
+          <div key="emails" className="animate-slide-right">
+            <EmailsTab cachedGet={cachedGet} opsData={opsData} />
+          </div>
         )}
 
         {activeTab === "settings" && (
-          <SettingsTab cachedGet={cachedGet} />
+          <div key="settings" className="animate-slide-right">
+            <SettingsTab cachedGet={cachedGet} />
+          </div>
         )}
 
         {activeTab === "notifications" && (
-          <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="notifications" className="animate-slide-right">
+            <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "audit" && (
-          <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="audit" className="animate-slide-right">
+            <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "formation" && (
-          <FormationTab />
+          <div key="formation" className="animate-slide-right">
+            <FormationTab />
+          </div>
         )}
 
         {activeTab === "devices" && (
-          <DevicesTab />
+          <div key="devices" className="animate-slide-right">
+            <DevicesTab />
+          </div>
         )}
 
         {activeTab === "crons" && (
-          <CronsTab />
+          <div key="crons" className="animate-slide-right">
+            <CronsTab />
+          </div>
         )}
 
         </div>{/* fermeture p-4 md:p-6 lg:p-8 */}
