@@ -23,6 +23,8 @@ import {
   BottomSheetHeader,
   useMediaQuery,
 } from "@nba/design-system"
+import { useSocket } from "@nba/lib/hooks/use-socket"
+import { DataSkeleton } from "./data-skeleton"
 
 interface AlertsData {
   dangerZone: { bannedCount: number; pendingRequests: number; pendingKyc: number }
@@ -87,11 +89,7 @@ function AlertRow({
 
 function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | null; loading: boolean; stale?: boolean; onNavigate: (href: string) => void }) {
   if (loading && !data) {
-    return (
-      <div className="py-10 flex justify-center">
-        <Loader2 className="size-5 animate-spin text-primary" />
-      </div>
-    )
+    return <DataSkeleton variant="single-card" />
   }
   if (!data) return null
 
@@ -210,6 +208,7 @@ export function AlertsPanel() {
   const [open, setOpen] = useState(false)
   const isMobile = useMediaQuery("(max-width: 767px)")
   const router = useRouter()
+  const { status: wsStatus, subscribe: wsSubscribe } = useSocket()
 
   const fetchData = useCallback(async () => {
     try {
@@ -255,11 +254,20 @@ export function AlertsPanel() {
     }
   }, [])
 
+  // WS live pour les alertes du panneau de contrôle (déclenche un rafraîchissement)
+  useEffect(() => {
+    const off = wsSubscribe("admin:alerts", () => {
+      fetchData()
+    })
+    return off
+  }, [wsSubscribe, fetchData])
+
   useEffect(() => {
     fetchData()
+    if (wsStatus === "connected") return
     const id = setInterval(fetchData, REFRESH_MS)
     return () => clearInterval(id)
-  }, [fetchData])
+  }, [fetchData, wsStatus])
 
   const alertCount =
     (data?.dangerZone?.pendingKyc ?? 0) +

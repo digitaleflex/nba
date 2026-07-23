@@ -6,6 +6,7 @@ import dynamic from "next/dynamic"
 import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 
 import { SystemPulse } from "./components/SystemPulse"
 import { SystemAlert } from "./components/SystemAlert"
@@ -111,6 +112,9 @@ function AdminConsoleContent() {
     setSystemAlerts((prev) => prev.filter((a) => a.id !== id))
   }, [])
 
+  // État de connexion WebSocket (fallback polling quand déconnecté)
+  const { status: wsStatus, subscribe: wsSubscribe } = useSocket()
+
   // Fetch support ticket count for badge
   useEffect(() => {
     fetch("/api/admin/support")
@@ -119,36 +123,48 @@ function AdminConsoleContent() {
       .catch(() => {})
   }, [])
 
-  // Pulse polling every 3s
+  // WS live pour la santé système
+  useEffect(() => {
+    const off = wsSubscribe("admin:health", (d: any) => {
+      setHealth(d)
+    })
+    return off
+  }, [wsSubscribe])
+
+  // Système alertes basé sur la santé (déclenché par WS ou polling)
+  useEffect(() => {
+    if (!health) return
+    if (health.status === "degraded" || health.status === "down") {
+      setSystemAlerts((prev) => {
+        const exists = prev.some((a) => a.id === "system-health")
+        if (exists) return prev
+        return [...prev, {
+          id: "system-health",
+          severity: health.status === "down" ? "critical" as const : "warning" as const,
+          title: health.status === "down" ? "Système en panne" : "Mode dégradé",
+          description: `${health.activeAlerts} alerte${health.activeAlerts > 1 ? "s" : ""} active${health.activeAlerts > 1 ? "s" : ""} — ${health.activityRate} action${health.activityRate > 1 ? "s" : ""}/min`,
+          actionLabel: "Voir les logs",
+          onAction: () => { window.location.href = "/admin?tab=audit" },
+        }]
+      })
+    } else {
+      setSystemAlerts((prev) => prev.filter((a) => a.id !== "system-health"))
+    }
+  }, [health])
+
+  // Pulse polling 3s (fallback si WS déconnecté)
   useEffect(() => {
     function poll() {
       fetch("/api/admin/security/fraud/health")
         .then(r => r.json())
-        .then(d => {
-          setHealth(d)
-          if (d.status === "degraded" || d.status === "down") {
-            setSystemAlerts((prev) => {
-              const exists = prev.some((a) => a.id === "system-health")
-              if (exists) return prev
-              return [...prev, {
-                id: "system-health",
-                severity: d.status === "down" ? "critical" as const : "warning" as const,
-                title: d.status === "down" ? "Système en panne" : "Mode dégradé",
-                description: `${d.activeAlerts} alerte${d.activeAlerts > 1 ? "s" : ""} active${d.activeAlerts > 1 ? "s" : ""} — ${d.activityRate} action${d.activityRate > 1 ? "s" : ""}/min`,
-                actionLabel: "Voir les logs",
-                onAction: () => { window.location.href = "/admin?tab=audit" },
-              }]
-            })
-          } else {
-            setSystemAlerts((prev) => prev.filter((a) => a.id !== "system-health"))
-          }
-        })
+        .then(d => setHealth(d))
         .catch(() => {})
     }
     poll()
+    if (wsStatus === "connected") return
     const id = setInterval(poll, 3000)
     return () => clearInterval(id)
-  }, [])
+  }, [wsStatus])
 
   // Refetch registration from the active tab (used by the shared context panel)
   const activeRefetch = useRef<(() => void) | null>(null)
@@ -210,13 +226,22 @@ function AdminConsoleContent() {
     fetchOperations()
   }, [fetchOperations])
 
+  // WS live pour les opérations (déclenche un rafraîchissement)
+  useEffect(() => {
+    const off = wsSubscribe("admin:ops", () => {
+      invalidateAdminCache()
+      fetchOperations()
+    })
+    return off
+  }, [wsSubscribe, fetchOperations])
+
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchOperations()
-    // Dashboard live par défaut : auto-refresh 10s
+    if (wsStatus === "connected") return
     const id = setInterval(fetchOperations, 10_000)
     return () => clearInterval(id)
-  }, [fetchOperations])
+  }, [fetchOperations, wsStatus])
 
   // Context Panel Action Executions
   const handlePanelAction = async (actionType: string, extraData?: any) => {

@@ -307,6 +307,15 @@ if (REDIS_URL) {
     }
   })
 
+  // Canaux admin live (remplacement polling)
+  const ADMIN_CHANNELS = ["nba:admin:health", "nba:admin:ops", "nba:admin:alerts", "nba:admin:badges", "nba:admin:queue", "nba:admin:fraud"]
+  for (const ch of ADMIN_CHANNELS) {
+    sub.subscribe(ch, (err) => {
+      if (err) console.error(`[ws] Redis ${ch} subscribe failed:`, err)
+      else console.log(`[ws] Subscribed to ${ch}`)
+    })
+  }
+
   sub.on("message", (channel, message) => {
     try {
       if (channel === "nba:signal:admin") {
@@ -332,6 +341,19 @@ if (REDIS_URL) {
             console.log(`[ws] ⚡ Forwarded audit event to ${adminRoom.size} admin socket(s)`)
           } catch (err) {
             console.error("[ws] Failed to parse/forward audit event:", err)
+          }
+        }
+        return
+      }
+      if (ADMIN_CHANNELS.includes(channel)) {
+        const adminRoom = io.sockets.adapter.rooms.get("admins")
+        if (adminRoom && adminRoom.size > 0) {
+          try {
+            const payload = JSON.parse(message)
+            const eventName = channel.replace("nba:admin:", "")
+            io.to("admins").emit(`admin:${eventName}`, payload)
+          } catch (err) {
+            console.error(`[ws] Failed to forward admin event ${channel}:`, err)
           }
         }
         return

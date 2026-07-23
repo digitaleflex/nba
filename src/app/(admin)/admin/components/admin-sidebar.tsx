@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useEffect, useState, useRef, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
@@ -8,6 +8,7 @@ import {
   LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson, Code2, Terminal, Eye, ListChecks, MessagesSquare, Search, ChevronDown,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
+import { useSocket } from "@nba/lib/hooks/use-socket"
 
 interface NavItem {
   tab: string
@@ -30,25 +31,37 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
   const [moreOpen, setMoreOpen] = useState(false)
   const prevRef = useRef(0)
 
-  useEffect(() => {
-    const fetchAlerts = async () => {
-      try {
-        const res = await fetch("/api/admin/security/alerts")
-        if (res.ok) {
-          const data = await res.json()
-          setSecurityAlerts(data.alerts)
-          if (data.alerts > prevRef.current && prevRef.current > 0) {
-            setPulse(true)
-            setTimeout(() => setPulse(false), 2000)
-          }
-          prevRef.current = data.alerts
+  const { status: wsStatus, subscribe: wsSubscribe } = useSocket()
+
+  const fetchAlerts = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/security/alerts")
+      if (res.ok) {
+        const data = await res.json()
+        setSecurityAlerts(data.alerts)
+        if (data.alerts > prevRef.current && prevRef.current > 0) {
+          setPulse(true)
+          setTimeout(() => setPulse(false), 2000)
         }
-      } catch {}
-    }
+        prevRef.current = data.alerts
+      }
+    } catch {}
+  }, [])
+
+  // WS live pour les alertes sécurité (déclenche un rafraîchissement)
+  useEffect(() => {
+    const off = wsSubscribe("admin:security", () => {
+      fetchAlerts()
+    })
+    return off
+  }, [wsSubscribe, fetchAlerts])
+
+  useEffect(() => {
     fetchAlerts()
+    if (wsStatus === "connected") return
     const id = setInterval(fetchAlerts, 15000)
     return () => clearInterval(id)
-  }, [])
+  }, [wsStatus, fetchAlerts])
 
   const surveillanceItems: NavItem[] = [
     { tab: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
