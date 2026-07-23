@@ -1,0 +1,13 @@
+#!/bin/bash
+# Exécuté sur le VPS après le boot du conteneur Kamal.
+# Connecte le conteneur au réseau "nba" pour Redis, Minio, etc.
+set -e
+
+CONTAINER=$(docker ps --filter "name=nba-web-" --format '{{.Names}}' | head -1)
+
+if [ -n "$CONTAINER" ] && docker network inspect nba > /dev/null 2>&1; then
+  if ! docker inspect "$CONTAINER" --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' | grep -qw nba; then
+    echo "[kamal post-app-boot] Connecting $CONTAINER to nba network"
+    docker network connect nba "$CONTAINER"
+  fi
+fi

@@ -1,0 +1,13 @@
+#!/bin/bash
+# Exécuté sur le VPS avant le boot du nouveau conteneur Kamal.
+# Arrête l'ancien conteneur docker compose pour éviter conflit Traefik.
+set -e
+
+echo "[kamal pre-app-boot] Version: $KAMAL_VERSION"
+
+OLD=$(docker ps --filter "name=nba-app" --format '{{.Names}}' | head -1)
+if [ -n "$OLD" ]; then
+  echo "[kamal pre-app-boot] Stopping old compose container: $OLD"
+  docker stop "$OLD" 2>/dev/null || true
+  docker rm "$OLD" 2>/dev/null || true
+fi
