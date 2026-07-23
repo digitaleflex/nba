@@ -9,6 +9,8 @@ import { toast } from "sonner"
 
 import { DashboardTab } from "./features/DashboardTab"
 import { SystemPulse } from "./components/SystemPulse"
+import { SystemAlert } from "./components/SystemAlert"
+import { NotificationBadge } from "./components/NotificationBadge"
 import { RequestsTab } from "./features/RequestsTab"
 import { SignalsTab } from "./features/SignalsTab"
 import { KycTab } from "./features/KycTab"
@@ -102,6 +104,12 @@ function AdminConsoleContent() {
   // System Pulse health state
   const [health, setHealth] = useState<{ status: "healthy" | "degraded" | "down"; lastActivity: string; activityRate: number; activeAlerts: number } | null>(null)
 
+  // System alerts state (Notifications subtiles #256)
+  const [systemAlerts, setSystemAlerts] = useState<Array<{ id: string; severity: "critical" | "warning"; title: string; description: string; actionLabel?: string; onAction?: () => void }>>([])
+  const dismissAlert = useCallback((id: string) => {
+    setSystemAlerts((prev) => prev.filter((a) => a.id !== id))
+  }, [])
+
   // Fetch support ticket count for badge
   useEffect(() => {
     fetch("/api/admin/support")
@@ -115,7 +123,25 @@ function AdminConsoleContent() {
     function poll() {
       fetch("/api/admin/security/fraud/health")
         .then(r => r.json())
-        .then(d => setHealth(d))
+        .then(d => {
+          setHealth(d)
+          if (d.status === "degraded" || d.status === "down") {
+            setSystemAlerts((prev) => {
+              const exists = prev.some((a) => a.id === "system-health")
+              if (exists) return prev
+              return [...prev, {
+                id: "system-health",
+                severity: d.status === "down" ? "critical" as const : "warning" as const,
+                title: d.status === "down" ? "Système en panne" : "Mode dégradé",
+                description: `${d.activeAlerts} alerte${d.activeAlerts > 1 ? "s" : ""} active${d.activeAlerts > 1 ? "s" : ""} — ${d.activityRate} action${d.activityRate > 1 ? "s" : ""}/min`,
+                actionLabel: "Voir les logs",
+                onAction: () => { window.location.href = "/admin?tab=audit" },
+              }]
+            })
+          } else {
+            setSystemAlerts((prev) => prev.filter((a) => a.id !== "system-health"))
+          }
+        })
         .catch(() => {})
     }
     poll()
@@ -487,6 +513,14 @@ function AdminConsoleContent() {
             activityRate={health.activityRate}
             activeAlerts={health.activeAlerts}
           />
+        )}
+
+        {systemAlerts.length > 0 && (
+          <div className="space-y-2">
+            {systemAlerts.map((alert) => (
+              <SystemAlert key={alert.id} alert={alert} onDismiss={dismissAlert} />
+            ))}
+          </div>
         )}
 
         {/* ============================================================== */}
