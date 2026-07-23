@@ -31,7 +31,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchAction
         toast.error(data.error || "Erreur lors de l'action")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setLoading(null)
     }
@@ -60,7 +60,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchAction
         toast.error(data.error || "Erreur lors de la suppression")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setLoading(null)
     }

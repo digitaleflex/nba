@@ -206,7 +206,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
       if (draftId) { try { await fetch(`/api/admin/signals/${draftId}`, { method: "DELETE" }) } catch {} }
       setDraftId(null)
       setContent(""); setImageUrls([]); setSelectedPlans([]); setScheduled(false); setScheduledAt("")
-      if (result.queueFailed) toast.warning("Signal publié mais notifications push échouées (Redis/BullMQ).", { duration: 8000 })
+      if (result.queueFailed) toast.warning("Signal publié, mais les notifications n'ont pas pu être envoyées. Les utilisateurs verront le signal dans leur tableau de bord.", { duration: 8000 })
       else toast.success("Signal publié avec succès.")
       if (onSignalCreated) onSignalCreated()
     } catch (err) {

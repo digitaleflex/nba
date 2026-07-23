@@ -40,7 +40,7 @@ export function ModerationTab() {
       } else {
         toast.error("Erreur lors du bannissement")
       }
-    } catch { toast.error("Erreur réseau") }
+    } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") }
     finally { setBanning(false) }
   }
 
@@ -54,8 +54,8 @@ export function ModerationTab() {
         body: JSON.stringify({ email }),
       })
       if (res.ok) { toast.success(`${email} réhabilité`); fetchBans() }
-      else toast.error("Erreur")
-    } catch { toast.error("Erreur réseau") }
+      else toast.error("Échec de l'action. Réessayez.")
+    } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") }
   }
 
   return (

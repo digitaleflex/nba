@@ -108,7 +108,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         toast.error("Erreur lors de la mise à jour")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setUpdating(null)
     }
@@ -133,7 +133,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         toast.error("Erreur lors de la suppression")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setUpdating(null)
     }
@@ -163,7 +163,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         toast.error("Erreur lors du bannissement")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setUpdating(null)
     }
@@ -188,10 +188,10 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       if (res.ok) {
         toast.success("Sessions révoquées")
       } else {
-        toast.error("Erreur")
+        toast.error("Échec de l'action. Réessayez.")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setUpdating(null)
     }

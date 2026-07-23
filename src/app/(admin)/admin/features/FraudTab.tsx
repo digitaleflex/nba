@@ -53,7 +53,7 @@ export function FraudTab() {
       if (eventsRes.ok) { const d = await eventsRes.json(); setEvents(d.events || []) }
       if (ipsRes.ok) { const d = await ipsRes.json(); setIps(d.ips || []) }
       if (playbookRes.ok) { const d = await playbookRes.json(); setPlaybooks(d.playbooks || []) }
-    } catch { toast.error("Erreur chargement donnees fraude") }
+    } catch { toast.error("Erreur de chargement des données de fraude. Réessayez.") }
     finally { setLoading(false) }
   }, [])
 
@@ -61,41 +61,41 @@ export function FraudTab() {
   useEffect(() => { refresh(); const id = setInterval(refresh, 30000); return () => clearInterval(id) }, [refresh])
 
   async function suspendUser() {
-    if (!suspendEmail) return toast.error("Email requis")
-    if (!confirm("Suspendre ce compte ? L'utilisateur sera deconnecte et ne pourra plus se connecter.")) return
+    if (!suspendEmail) return toast.error("Saisissez l'email du compte à suspendre.")
+    if (!confirm("Suspendre ce compte ? L'utilisateur sera déconnecté et ne pourra plus se connecter.")) return
     try {
       const search = await fetch(`/api/admin/members/search?email=${suspendEmail}`)
-      if (!search.ok) return toast.error("Utilisateur introuvable")
+      if (!search.ok) return toast.error("Aucun compte trouvé avec cet email.")
       const { id } = await search.json()
       const res = await fetch("/api/admin/security/fraud/suspend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: id }) })
-      if (res.ok) { toast.success("Compte suspendu + email envoye"); setSuspendEmail(""); refresh() } else toast.error("Erreur suspension")
-    } catch { toast.error("Erreur suspension") }
+      if (res.ok) { toast.success("Compte suspendu. Un email a été envoyé à l'utilisateur."); setSuspendEmail(""); refresh() } else toast.error("Échec de la suspension. Vérifiez que le compte n'est pas déjà suspendu.")
+    } catch { toast.error("Impossible de contacter le serveur. Réessayez.") }
   }
 
   async function reactivateUser(userId: string) {
-    if (!confirm("Reactiver ce compte ? L'utilisateur pourra se reconnecter.")) return
+    if (!confirm("Réactiver ce compte ? L'utilisateur pourra se reconnecter.")) return
     const res = await fetch("/api/admin/security/fraud/reactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) })
-    if (res.ok) { toast.success("Compte reactive"); refresh() } else toast.error("Erreur reactivation")
+    if (res.ok) { toast.success("Compte réactivé. L'utilisateur peut se reconnecter."); refresh() } else toast.error("Échec de la réactivation. Réessayez.")
   }
 
   async function unblockIp(ip: string) {
-    if (!confirm(`Debloquer l'IP ${ip} ?`)) return
+    if (!confirm(`Débloquer l'adresse IP ${ip} ? Elle pourra de nouveau accéder au site.`)) return
     const res = await fetch("/api/admin/security/fraud/unblock-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip }) })
-    if (res.ok) { toast.success("IP debloquee"); refresh() } else toast.error("Erreur deblocage")
+    if (res.ok) { toast.success("IP débloquée. L'accès est rétabli."); refresh() } else toast.error("Échec du déblocage. Réessayez.")
   }
 
   async function executePlaybook() {
-    if (!playbookUserId || !selectedPlaybook) return toast.error("Utilisateur et playbook requis")
-    if (!confirm(`Executer le playbook ${selectedPlaybook} sur cet utilisateur ?`)) return
+    if (!playbookUserId || !selectedPlaybook) return toast.error("Sélectionnez un utilisateur et un protocole de sécurité.")
+    if (!confirm(`Appliquer le protocole « ${selectedPlaybook} » sur cet utilisateur ? Cette action appliquera des restrictions automatiques.`)) return
     const res = await fetch("/api/admin/security/fraud/playbook", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }) })
-    if (res.ok) { toast.success("Playbook execute"); refresh() } else toast.error("Erreur execution playbook")
+    if (res.ok) { toast.success("Protocole appliqué. Les restrictions sont en place."); refresh() } else toast.error("Échec du protocole. Réessayez.")
   }
 
   async function searchUserFn() {
     if (!searchEmail) return
     const res = await fetch(`/api/admin/members/search?email=${searchEmail}`)
-    if (res.ok) { const d = await res.json(); setPlaybookUserId(d.id); toast.success(`Utilisateur: ${d.name}`) }
-    else toast.error("Utilisateur introuvable")
+    if (res.ok) { const d = await res.json(); setPlaybookUserId(d.id); toast.success(`Utilisateur trouvé : ${d.name}`) }
+    else toast.error("Aucun compte trouvé avec cet email.")
   }
 
   if (loading && !summary) return <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin" /></div>
@@ -111,11 +111,11 @@ export function FraudTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={ShieldAlert} label="Evenements HAUT" value={summary?.highEvents ?? 0} color="text-red-500" className="stagger-1" />
-        <StatCard icon={AlertTriangle} label="Echecs/h" value={summary?.failedLogins ?? 0} color="text-orange-500" className="stagger-2" />
-        <StatCard icon={Globe} label="IPs bloquees" value={summary?.blockedIps ?? 0} color="text-purple-500" className="stagger-3" />
-        <StatCard icon={Ban} label="Suspendus aujourdhui" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" className="stagger-4" />
-        <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" className="stagger-5" />
+        <StatCard icon={ShieldAlert} label="Alertes critiques" value={summary?.highEvents ?? 0} color="text-red-500" className="stagger-1" />
+        <StatCard icon={AlertTriangle} label="Connexions échouées" value={summary?.failedLogins ?? 0} color="text-orange-500" className="stagger-2" />
+        <StatCard icon={Globe} label="IPs bloquées" value={summary?.blockedIps ?? 0} color="text-purple-500" className="stagger-3" />
+        <StatCard icon={Ban} label="Comptes suspendus" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" className="stagger-4" />
+        <StatCard icon={Ban} label="Appareils bloqués" value={summary?.blockedDevices ?? 0} color="text-amber-500" className="stagger-5" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -128,7 +128,7 @@ export function FraudTab() {
         </CardContent></Card>
 
         <Card><CardContent className="p-6 space-y-4">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reactiver un compte</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Réactiver un compte</h3>
           <div className="flex gap-2">
             <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={reactivateEmail} onChange={e => setReactivateEmail(e.target.value)} />
             <Button size="sm" variant="default" onClick={async () => {
@@ -143,7 +143,7 @@ export function FraudTab() {
         </CardContent></Card>
 
         <Card><CardContent className="p-6 space-y-3">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Executer un playbook</h3>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Appliquer un protocole de sécurité</h3>
           <div className="flex gap-2">
             <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} />
             <Button size="sm" variant="outline" onClick={searchUserFn} aria-label="Rechercher"><Search className="size-3.5" /></Button>
@@ -203,7 +203,7 @@ export function FraudTab() {
       </CardContent></Card>
 
       <Card><CardContent className="p-6 space-y-4">
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">IPs bloquees ({ips.length})</h3>
+        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">IPs bloquées ({ips.length})</h3>
         {ips.length === 0 ? <EmptyState icon={Globe} title="Aucune IP bloquée" description="Toutes les adresses IP sont autorisées." /> : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {ips.map(({ ip }) => (

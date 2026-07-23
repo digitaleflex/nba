@@ -61,7 +61,7 @@ export default function FraudDashboard() {
       if (eventsRes.ok) { const d = await eventsRes.json(); setEvents(d.events || []) }
       if (ipsRes.ok) { const d = await ipsRes.json(); setIps(d.ips || []) }
       if (playbookRes.ok) { const d = await playbookRes.json(); setPlaybooks(d.playbooks || []) }
-    } catch { toast.error("Erreur chargement donnees fraude") }
+    } catch { toast.error("Erreur de chargement des données de fraude. Réessayez.") }
     finally { setLoading(false) }
   }, [])
 
@@ -80,8 +80,8 @@ export default function FraudDashboard() {
         body: JSON.stringify({ userId: id, reason: "Fraud admin" }),
       })
       if (res.ok) { toast.success("Compte suspendu"); setSuspendEmail(""); refresh() }
-      else toast.error("Erreur suspension")
-    } catch { toast.error("Erreur suspension") }
+      else toast.error("Échec de la suspension. Réessayez.")
+    } catch { toast.error("Échec de la suspension. Réessayez.") }
   }
 
   async function unblockIp(ip: string) {
@@ -90,7 +90,7 @@ export default function FraudDashboard() {
       body: JSON.stringify({ ip }),
     })
     if (res.ok) { toast.success("IP debloquee"); refresh() }
-    else toast.error("Erreur deblocage")
+    else toast.error("Échec du déblocage. Réessayez.")
   }
 
   async function executePlaybook() {
@@ -100,7 +100,7 @@ export default function FraudDashboard() {
       body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }),
     })
     if (res.ok) { toast.success("Playbook execute"); refresh() }
-    else toast.error("Erreur execution playbook")
+    else toast.error("Échec du protocole. Réessayez.")
   }
 
   async function searchUser() {

@@ -284,9 +284,9 @@ function AdminConsoleContent() {
         })
         if (res.ok) {
           setPanelOpen(false)
-          toast.success("Real-time réinitialisé pour l'utilisateur (sockets déconnectés).")
+          toast.success("Utilisateur déconnecté de tous ses appareils. Il devra se reconnecter.")
         } else {
-          toast.error("Erreur lors du reset real-time.")
+          toast.error("Échec de la déconnexion. Réessayez.")
         }
       } else if (actionType === "mark_messages_read") {
         const res = await fetch("/api/admin/members/mark-messages-read", {
@@ -358,7 +358,7 @@ function AdminConsoleContent() {
         if (res.ok) {
           activeRefetch.current?.()
           setPanelOpen(false)
-          toast.success("Statut d'onboarding forcé à ACTIVE avec succès.")
+          toast.success("L'utilisateur a été validé manuellement. Il peut accéder au tableau de bord.")
         } else {
           toast.error("Erreur lors de la validation manuelle.")
         }

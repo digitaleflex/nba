@@ -203,7 +203,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 className="w-full gap-1.5 justify-start"
                 onClick={() => onAction("reset_realtime", { id: data.id })}
               >
-                <Zap className="size-3.5" /> Reset real-time (déconnecter les sockets)
+                <Zap className="size-3.5" /> Forcer la déconnexion (déconnecter l'utilisateur de tous ses appareils)
               </Button>
               <Button
                 variant="outline"
@@ -469,7 +469,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               className="w-full gap-1.5 bg-rose-950/20 hover:bg-rose-950/40 text-rose-600 dark:text-rose-400 border-rose-500/20"
               onClick={() => confirmAction({
                 title: "Supprimer le compte",
-                description: `Voulez-vous vraiment supprimer définitivement ${data.email} ? Cette action est irréversible (suppression logique).`,
+                description: `Supprimer définitivement le compte de ${data.email} ? L'utilisateur ne pourra plus se connecter. Cette action est irréversible.`,
                 confirmLabel: "Supprimer",
                 onConfirm: () => onAction("delete_user", { id: data.id }),
               })}

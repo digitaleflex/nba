@@ -217,7 +217,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
         toast.error("Erreur lors de l'action")
       }
     } catch {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
     } finally {
       setConfirmLoading(false)
       setActingSignalId(null)

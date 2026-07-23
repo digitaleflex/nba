@@ -14,8 +14,8 @@ export function AdminTools() {
 
   async function purgeCache() {
     confirm({
-      title: "Purger le cache Redis ?",
-      description: "Cela peut ralentir temporairement les requêtes le temps que le cache se reconstruise.",
+      title: "Vider la mémoire temporaire ?",
+      description: "Le site peut être momentanément plus lent, le temps que les données se rechargent.",
       confirmLabel: "Purger",
       onConfirm: async () => {
         setBusy("cache")

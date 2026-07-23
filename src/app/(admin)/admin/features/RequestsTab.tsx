@@ -32,11 +32,11 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       if (ok) {
         setRequests(data)
       } else {
-        toast.error("Erreur de chargement des demandes")
+        toast.error("Impossible de charger les demandes. Réessayez.")
       }
     } catch (err) {
       console.error(err)
-      toast.error("Erreur de chargement des demandes")
+      toast.error("Impossible de charger les demandes. Réessayez.")
     } finally {
       setLoadingRequests(false)
     }
@@ -65,9 +65,9 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     })
       .then((res) => {
         if (res.ok) toast.success("Demande approuvée")
-        else toast.error("Erreur lors de l'approbation")
+        else toast.error("Échec de l'approbation. Réessayez.")
       })
-      .catch(() => toast.error("Erreur lors de l'approbation"))
+      .catch(() => toast.error("Échec de l'approbation. Réessayez."))
       .finally(() => {
         setActingRequestId(null)
         fetchRequests(requestStatusFilter)
@@ -88,7 +88,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       const label = status === "APPROVED" ? "approuvée" : status === "REJECTED" ? "refusée" : status === "REVOKED" ? "révoquée" : "suspendue"
       toast.success(`Demande ${label}`)
     } else {
-      toast.error("Erreur lors du réexamen")
+      toast.error("Échec du réexamen. Réessayez.")
     }
     setReexamineOpen(false)
     setReexamineTarget(null)
@@ -109,7 +109,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     if (res.ok) {
       toast.success("Demande approuvée")
     } else {
-      toast.error("Erreur lors de l'approbation")
+      toast.error("Échec de l'approbation. Réessayez.")
     }
     setActingRequestId(null)
     fetchRequests(requestStatusFilter)
@@ -140,7 +140,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     if (res.ok) {
       toast.success("Demande refusée")
     } else {
-      toast.error("Erreur lors du refus")
+      toast.error("Échec du refus. Réessayez.")
     }
     setRejectOpen(false)
     setRejectTarget(null)

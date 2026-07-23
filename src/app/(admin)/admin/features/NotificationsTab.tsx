@@ -47,7 +47,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         toast.error("Erreur lors de la diffusion")
       }
     } catch (err) {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
       console.error(err)
     } finally {
       setSendingNotif(false)
@@ -70,7 +70,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         toast.error("Erreur lors du test")
       }
     } catch (err) {
-      toast.error("Erreur réseau")
+      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
       console.error(err)
     } finally {
       setSendingTest(false)

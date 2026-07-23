@@ -88,7 +88,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
         const err = await res.json()
         toast.error(err.error ?? "Erreur")
       }
-    } catch { toast.error("Erreur réseau") } finally { setSavingPlan(false) }
+    } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") } finally { setSavingPlan(false) }
   }
 
   const handleDeletePlan = async (id: string) => {
@@ -96,8 +96,8 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
     try {
       const res = await fetch(`/api/admin/plans/${id}`, { method: "DELETE" })
       if (res.ok) { toast.success("Plan supprimé"); fetchPlans() }
-      else toast.error("Erreur")
-    } catch { toast.error("Erreur réseau") }
+      else toast.error("Échec de l'action. Réessayez.")
+    } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") }
   }
 
   const newPlan = (): Plan => ({
@@ -130,7 +130,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
                 <div className="space-y-1.5"><label className="text-[10px] text-muted-foreground uppercase font-bold">Utilisateur</label><Input placeholder="user@exemple.com" className="bg-background border-border text-xs text-foreground" value={settings.smtpUser} onChange={(e) => setSettings((s) => ({ ...s, smtpUser: e.target.value }))} /></div>
                 <div className="space-y-1.5"><label className="text-[10px] text-muted-foreground uppercase font-bold">Mot de passe</label><Input type="password" placeholder="Laissé vide = inchangé" className="bg-background border-border text-xs text-foreground" value={settings.smtpPass} onChange={(e) => setSettings((s) => ({ ...s, smtpPass: e.target.value }))} /></div>
                 <div className="space-y-1.5"><label className="text-[10px] text-muted-foreground uppercase font-bold">E-mail expéditeur</label><Input placeholder="noreply@exemple.com" className="bg-background border-border text-xs text-foreground" value={settings.smtpFrom} onChange={(e) => setSettings((s) => ({ ...s, smtpFrom: e.target.value }))} /></div>
-                <Button variant="default" size="sm" className="cursor-pointer" disabled={savingSettings} onClick={async () => { setSavingSettings(true); try { const payload: Record<string, string> = { ...settings }; if (!payload.smtpPass) delete payload.smtpPass; const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); if (res.ok) toast.success("Paramètres SMTP enregistrés."); else toast.error("Erreur.") } catch { toast.error("Erreur réseau") } finally { setSavingSettings(false) } }}>
+                <Button variant="default" size="sm" className="cursor-pointer" disabled={savingSettings} onClick={async () => { setSavingSettings(true); try { const payload: Record<string, string> = { ...settings }; if (!payload.smtpPass) delete payload.smtpPass; const res = await fetch("/api/admin/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) }); if (res.ok) toast.success("Paramètres SMTP enregistrés."); else toast.error("Erreur.") } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") } finally { setSavingSettings(false) } }}>
                   {savingSettings ? <><Loader2 className="size-4 mr-2 animate-spin" />Enregistrement...</> : "Enregistrer"}
                 </Button>
               </>
