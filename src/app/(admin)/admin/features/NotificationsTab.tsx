@@ -106,7 +106,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
               <label className="text-[10px] text-muted-foreground uppercase font-bold">Contenu</label>
               <textarea
                 placeholder="Votre message..."
-                className="w-full p-3 rounded-lg border bg-background border-border/60 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24"
+                className="w-full p-3 rounded-lg border bg-background border-border/60 text-xs text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 min-h-24"
                 value={notifContent}
                 onChange={(e) => setNotifContent(e.target.value)}
               />

@@ -74,11 +74,11 @@ export function StepContent({
         <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
         <div className="border rounded-xl bg-background overflow-hidden">
           <div className="flex items-center gap-1.5 p-2 bg-muted/40 border-b">
-            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras"><Bold className="size-4" /></Button>
-            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("*", "*")} title="Italique"><Italic className="size-4" /></Button>
-            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("- ")} title="Liste"><List className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras" aria-label="Gras"><Bold className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("*", "*")} title="Italique" aria-label="Italique"><Italic className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("- ")} title="Liste" aria-label="Liste"><List className="size-4" /></Button>
             <span className="w-px h-4 bg-border" />
-            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => fileInputRef.current?.click()} title="Joindre des images"><ImageIcon className="size-4" /></Button>
+            <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => fileInputRef.current?.click()} title="Joindre des images" aria-label="Joindre des images"><ImageIcon className="size-4" /></Button>
           </div>
           <textarea
             ref={textareaRef}
@@ -86,7 +86,7 @@ export function StepContent({
             onChange={(e) => setContent(e.target.value)}
             onPaste={handlePaste}
             placeholder="Collez ou rédigez votre signal ici... (ex: BUY EUR/USD, Entry, TP, SL, analyses...)"
-            className="w-full min-h-[180px] max-h-[400px] p-3 text-xs leading-relaxed outline-none border-0 resize-none bg-transparent"
+            className="w-full min-h-[180px] max-h-[400px] p-3 text-xs leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 border-0 resize-none bg-transparent"
           />
           <div className="px-3 py-1 bg-muted/20 text-[9px] text-right text-muted-foreground border-t">
             {content.length} caractères
@@ -105,6 +105,7 @@ export function StepContent({
                 type="button"
                 onClick={() => setImageUrls(imageUrls.filter((_, i) => i !== idx))}
                 className="absolute top-1 right-1 size-4 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black transition-colors"
+                aria-label="Supprimer l'image"
               >
                 <X className="size-2.5" />
               </button>
@@ -116,6 +117,9 @@ export function StepContent({
               onDragOver={(e) => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInputRef.current?.click() } }}
               className={cn(
                 "size-16 rounded-xl border border-dashed flex flex-col items-center justify-center hover:border-primary hover:bg-primary/5 transition-all text-muted-foreground hover:text-primary cursor-pointer shrink-0",
                 isDragging && "border-primary bg-primary/5"

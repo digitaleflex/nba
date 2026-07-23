@@ -230,7 +230,7 @@ export default function AdminMembersPage() {
         <select
           value={statusFilter}
           onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none text-muted-foreground focus:text-foreground"
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 text-muted-foreground focus:text-foreground"
         >
           <option value="">Tous les statuts</option>
           <option value="active">Actif</option>
@@ -239,7 +239,7 @@ export default function AdminMembersPage() {
         <select
           value={onboardingFilter}
           onChange={(e) => { setOnboardingFilter(e.target.value); setPage(1) }}
-          className="rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none text-muted-foreground focus:text-foreground"
+          className="rounded-lg border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 text-muted-foreground focus:text-foreground"
         >
           <option value="">Tous les onboarding</option>
           <option value="PENDING_EMAIL">Email en attente</option>

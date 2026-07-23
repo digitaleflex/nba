@@ -174,7 +174,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
                       {plan.price} {plan.currency} · {plan.durationDays} jours · ordre {plan.sortOrder}
                     </p>
                   </div>
-                  <button onClick={() => handleDeletePlan(plan.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors">
+                  <button onClick={() => handleDeletePlan(plan.id)} className="p-1.5 text-muted-foreground hover:text-destructive transition-colors" aria-label="Supprimer le plan">
                     <Trash2 className="size-4" />
                   </button>
                 </CardContent>
@@ -205,7 +205,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
                 <div className="space-y-1">
                   <label className="text-[10px] text-muted-foreground uppercase font-bold">Features + URL checkout (une par ligne, l'URL en dernier)</label>
                   <textarea
-                    className="w-full rounded-lg border border-border/60 bg-background p-3 text-xs text-foreground min-h-24 resize-y focus:outline-none focus:border-primary/50"
+                    className="w-full rounded-lg border border-border/60 bg-background p-3 text-xs text-foreground min-h-24 resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
                 value={editingPlan.features.join("\n")}
                 onChange={(e) => setEditingPlan({ ...editingPlan, features: e.target.value.split("\n") })}
                 placeholder={`Essentiel\nForex\nSignaux trading forex premium\nhttps://signaux.mymaketou.shop/products/signaux-x/checkout`}

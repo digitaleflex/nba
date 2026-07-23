@@ -197,6 +197,7 @@ export function AdminContextPanel({
             <button
               onClick={() => setZoomedImage(null)}
               className="size-9 rounded-xl bg-neutral-900/80 border border-neutral-800 text-white flex items-center justify-center hover:bg-neutral-850 transition-colors cursor-pointer"
+              aria-label="Fermer"
             >
               <X className="size-5" />
             </button>

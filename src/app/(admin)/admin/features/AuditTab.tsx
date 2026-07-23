@@ -609,7 +609,8 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
             placeholder="Rechercher par action, ressource ou utilisateur..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="flex h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-xs outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
+            className="flex h-9 w-full rounded-lg border border-input bg-background pl-9 pr-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 placeholder:text-muted-foreground/60"
+            aria-label="Rechercher dans les logs"
           />
         </div>
         <select

@@ -37,7 +37,7 @@ export function DashboardCustomizer({
       <div className="w-full max-w-md bg-card border rounded-2xl shadow-xl animate-scale-in">
         <div className="flex items-center justify-between p-5 border-b border-border/40">
           <h2 className="font-semibold text-foreground text-sm">Personnaliser le dashboard</h2>
-          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer">
+          <button onClick={onClose} className="p-1 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer" aria-label="Fermer">
             <X className="size-4" />
           </button>
         </div>

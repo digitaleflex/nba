@@ -287,10 +287,10 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             value={searchQuery}
             onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
             placeholder="Nom, email ou téléphone..."
-            className="h-9 w-full rounded-lg border border-border/60 bg-background pl-8 pr-3 text-xs outline-none focus:border-primary/50"
+            className="h-9 w-full rounded-lg border border-border/60 bg-background pl-8 pr-3 text-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer">
+            <button onClick={() => setSearchQuery("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer" aria-label="Effacer la recherche">
               <X className="size-3.5" />
             </button>
           )}

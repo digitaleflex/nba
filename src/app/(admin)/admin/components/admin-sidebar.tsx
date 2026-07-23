@@ -144,10 +144,10 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
   function NavGroupSection({ label, icon: GroupIcon, children }: { label: string; icon: LucideIcon; children: React.ReactNode }) {
     return (
       <div>
-        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 px-2.5 pb-1 flex items-center gap-1.5">
+        <h2 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 px-2.5 pb-1 flex items-center gap-1.5">
           <GroupIcon className="size-2.5" />
           {label}
-        </p>
+        </h2>
         <div className="space-y-0.5">{children}</div>
       </div>
     )
@@ -167,7 +167,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
         </a>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-2 space-y-3 scrollbar-thin">
+      <nav className="flex-1 overflow-y-auto p-2 space-y-3 scrollbar-thin" aria-label="Navigation admin">
         <NavGroupSection label="Surveiller" icon={Eye}>
           {renderNavItems(surveillanceItems)}
         </NavGroupSection>
@@ -188,6 +188,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/50 hover:text-foreground transition-colors cursor-pointer"
+            aria-expanded={moreOpen}
           >
             <ChevronDown className={cn("size-3 transition-transform", moreOpen && "rotate-180")} />
             Plus ({moreItems.length})

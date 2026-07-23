@@ -381,7 +381,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 onChange={(e) => setRejectNotes(e.target.value)}
                 rows={3}
                 placeholder="Détails supplémentaires..."
-                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
+                className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
               />
             </div>
             <div className="flex justify-end gap-2">

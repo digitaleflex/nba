@@ -127,6 +127,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
             onClick={() => router.push("/admin?tab=dashboard")}
             className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors relative cursor-pointer"
             title="Operations Center"
+            aria-label="Operations Center"
           >
             <CheckSquare className="size-4" />
           </button>
@@ -153,6 +154,9 @@ export function AdminHeader({ user }: AdminHeaderProps) {
       {isOpen && (
         <div
           onClick={handleOverlayClick}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Recherche"
           className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] bg-black/40 backdrop-blur-sm animate-in fade-in duration-150"
         >
           <div
@@ -168,7 +172,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setFocusedIndex(-1) }}
                 onKeyDown={handleInputKeyDown}
-                className="w-full h-12 bg-transparent text-sm border-0 focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/50"
+                className="w-full h-12 bg-transparent text-sm border-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 text-foreground placeholder:text-muted-foreground/50"
                 role="combobox"
                 aria-expanded={!!results}
                 aria-controls="search-results"

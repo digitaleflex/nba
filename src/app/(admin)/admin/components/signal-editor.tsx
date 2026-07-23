@@ -326,7 +326,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
             <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
               <div className="flex items-center justify-between border-b pb-2">
                 <h3 id="confirm-title-mobile" className="font-semibold text-base">Confirmation</h3>
-                <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
+                <button onClick={() => setShowConfirm(false)} className="text-muted-foreground" aria-label="Fermer"><X className="size-4" /></button>
               </div>
               <p className="text-xs text-muted-foreground">
                 {targetStatus === "DRAFT" ? "Enregistrer ce brouillon ?" : `Diffuser à ${estimation?.total ?? selectedPlans.length} membre(s) ?`}
@@ -388,7 +388,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
           <div className="bg-background border rounded-2xl max-w-sm w-full shadow-2xl p-5 space-y-4">
             <div className="flex items-center justify-between border-b pb-2">
               <h3 id="confirm-title-desktop" className="font-semibold text-base">Confirmation de publication</h3>
-              <button onClick={() => setShowConfirm(false)} className="text-muted-foreground"><X className="size-4" /></button>
+              <button onClick={() => setShowConfirm(false)} className="text-muted-foreground" aria-label="Fermer"><X className="size-4" /></button>
             </div>
             <div className="space-y-3">
               <p className="text-xs text-muted-foreground">Ce signal sera envoyé aux membres des groupes sélectionnés.</p>

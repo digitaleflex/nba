@@ -238,7 +238,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                   placeholder="Message à envoyer..."
                   value={notifContent}
                   onChange={(e) => setNotifContent(e.target.value)}
-                  className="w-full p-2 text-xs rounded-lg border bg-background min-h-16 outline-none border-border text-foreground focus:border-primary/50"
+                  className="w-full p-2 text-xs rounded-lg border bg-background min-h-16 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30 border-border text-foreground"
                 />
                 <Button
                   size="sm"

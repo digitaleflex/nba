@@ -57,7 +57,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
               value={scheduledAt}
               min={nowIso}
               onChange={(e) => setScheduledAt(e.target.value)}
-              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary/50"
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
             />
             {scheduledAt && new Date(scheduledAt).getTime() <= Date.now() && (
               <p className="text-[10px] text-amber-600">Choisissez une date future pour la planification.</p>

@@ -71,6 +71,10 @@ export function StepAudience({
               <div
                 key={plan.id}
                 onClick={() => togglePlan(plan.id)}
+                role="checkbox"
+                aria-checked={isSelected}
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); togglePlan(plan.id) } }}
                 className={cn(
                   "cursor-pointer text-xs p-3 rounded-xl border transition-all duration-200 flex items-center justify-between select-none",
                   isSelected

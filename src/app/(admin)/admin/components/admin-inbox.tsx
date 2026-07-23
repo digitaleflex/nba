@@ -220,7 +220,7 @@ export function AdminInbox() {
           <div className="absolute right-0 z-50 mt-2 w-[360px] rounded-xl border border-border bg-card text-card-foreground shadow-2xl">
             <div className="flex items-center justify-between border-b border-border px-3 py-2">
               <span className="text-sm font-semibold text-foreground">Inbox</span>
-              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer">
+              <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground cursor-pointer" aria-label="Fermer">
                 <XIcon className="size-4" />
               </button>
             </div>
