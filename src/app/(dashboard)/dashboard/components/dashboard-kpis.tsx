@@ -3,12 +3,20 @@
 import { useRouter } from "next/navigation"
 import { Tooltip, TooltipTrigger, TooltipContent, Card, CardContent, cn } from "@nba/design-system"
 import { AutoRetryCountdown } from "@nba/components/auto-retry-countdown"
-import { type LucideIcon, RefreshCw, HelpCircle, Database } from "lucide-react"
+import { RefreshCw, HelpCircle, Database, TrendingUp, Trophy, BookOpen, Flame, Tag } from "lucide-react"
+
+const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+  TrendingUp,
+  Trophy,
+  BookOpen,
+  Flame,
+  Tag,
+}
 
 interface KpiDef {
   label: string
   value: string
-  icon: LucideIcon
+  iconName: string
   tone: string
 }
 
@@ -45,7 +53,7 @@ export function DashboardKpis({ kpis, dbUnavailable }: DashboardKpisProps) {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
-                  <kpi.icon className={cn("size-4", kpi.tone)} />
+              {(() => { const Icon = iconMap[kpi.iconName]; return Icon ? <Icon className={cn("size-4", kpi.tone)} /> : null })()}
                 </div>
                 <p className="text-2xl font-bold tabular-nums text-muted-foreground flex items-center gap-2">
                   —
@@ -73,7 +81,7 @@ export function DashboardKpis({ kpis, dbUnavailable }: DashboardKpisProps) {
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
-              <kpi.icon className={cn("size-4", kpi.tone)} />
+              {(() => { const Icon = iconMap[kpi.iconName]; return Icon ? <Icon className={cn("size-4", kpi.tone)} /> : null })()}
             </div>
             <p className={cn("text-2xl font-bold tabular-nums", kpi.tone)}>{kpi.value}</p>
           </CardContent>

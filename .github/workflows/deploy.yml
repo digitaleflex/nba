@@ -16,7 +16,7 @@ jobs:
   # aggravante de l'incident du 19/07). Le job `deploy` en depend (needs).
   quality:
     name: Quality Gate
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
@@ -69,7 +69,7 @@ jobs:
 
   deploy:
     needs: quality
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     timeout-minutes: 30
     permissions:
       contents: read

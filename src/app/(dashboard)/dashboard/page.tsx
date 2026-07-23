@@ -5,10 +5,7 @@ import { prisma } from "@nba/lib/db"
 import { Card, CardContent, Button, cn } from "@nba/design-system"
 import { DashboardKpis } from "./components/dashboard-kpis"
 import {
-  TrendingUp,
   BookOpen,
-  Trophy,
-  Flame,
   Plus,
   PenLine,
   Radio,
@@ -60,25 +57,25 @@ export default async function DashboardPage() {
     {
       label: "PnL total",
       value: `${totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(0)} €`,
-      icon: TrendingUp,
+      iconName: "TrendingUp",
       tone: totalPnl >= 0 ? "text-emerald-500" : "text-rose-500",
     },
     {
       label: "Win rate",
       value: `${winRate} %`,
-      icon: Trophy,
+      iconName: "Trophy",
       tone: "text-primary",
     },
     {
       label: "Trades",
       value: String(totalTrades),
-      icon: BookOpen,
+      iconName: "BookOpen",
       tone: "text-foreground",
     },
     {
       label: "Série discipliné",
       value: `${disciplineStreak} j`,
-      icon: Flame,
+      iconName: "Flame",
       tone: "text-amber-500",
     },
   ]
