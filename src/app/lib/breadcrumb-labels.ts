@@ -1,9 +1,7 @@
 import type { BreadcrumbSegment } from "@nba/design-system"
 
-export type PathPattern = string | RegExp
-
 export interface PathMapping {
-  pattern: PathPattern
+  pattern: RegExp
   segments: (match: RegExpExecArray | null) => BreadcrumbSegment[]
 }
 

@@ -1,0 +1,1406 @@
+# ============================================================================
+# NBA UX/UI AUDIT — Issues de correction
+# Analyse Apple Design + Neuro-Marketing — Juillet 2026
+# ============================================================================
+#
+# Chaque milestone regroupe les issues par domaine cohérent.
+# L'ordre d'implémentation suit la priorité business : ce que l'utilisateur
+# voit en premier → navigation → formulaires → états intermédiaires →
+# onboarding → admin → rétention → accessibilité → polish.
+#
+# Structure d'une issue :
+#   title: Titre GitHub (obligatoire)
+#   milestone: ID du milestone (obligatoire)
+#   labels: Labels GitHub (obligatoire, array)
+#   problem: Problème UX identifié
+#   solution: Solution proposée
+#   implementation: Détails d'implémentation technique
+#   neuroRationale: Justification neuro-marketing / Apple Design
+#   acceptanceCriteria: Critères d'acceptation (array)
+#   effort: "XS" | "S" | "M" | "L" | "XL"
+#   priority: 1-10 (10 = critique)
+#   subIssues: Sous-tâches détaillées (optionnel, array)
+# ============================================================================
+
+milestones:
+  - id: m1-fondations-visuelles
+    title: "M1 – Fondations Visuelles & Première Impression"
+    description: |
+      Tout ce que l'utilisateur voit dans les 5 premières secondes.
+      Logo, page login, couleurs, profondeur visuelle, thème sombre.
+      Impact direct sur la confiance et la perception de qualité premium.
+    due_on: "2026-08-15"
+
+  - id: m2-navigation
+    title: "M2 – Navigation & Architecture de l'Information"
+    description: |
+      Réduction de la charge cognitive. Simplification de la navigation
+      mobile (9→5 items), refonte admin en Hub & Spoke, breadcrumbs.
+    due_on: "2026-08-31"
+
+  - id: m3-formulaires
+    title: "M3 – Formulaires & Interactions Temps Réel"
+    description: |
+      Validation inline onBlur, feedback immédiat, hauteur d'input adaptative,
+      indicateurs de progression, toggle mot de passe intelligent.
+    due_on: "2026-09-15"
+
+  - id: m4-etats-intermediaires
+    title: "M4 – États de Chargement, Vides & Erreurs"
+    description: |
+      Skeletons animés partout, empty states contextualisés,
+      erreurs avec suggestions d'action, fallback DB honnête.
+    due_on: "2026-09-30"
+
+  - id: m5-onboarding
+    title: "M5 – Onboarding & Première Expérience"
+    description: |
+      Flux unifié avec barre de progression persistante,
+      paste OTP depuis presse-papier, email de relance abandon,
+      célébration de complétion.
+    due_on: "2026-10-15"
+
+  - id: m6-admin
+    title: "M6 – Expérience Administrateur"
+    description: |
+      WebSocket au lieu du polling, actions batch, undo toast sur
+      toutes les actions destructives, alerts panel actionnables inline,
+      lazy loading des onglets.
+    due_on: "2026-11-01"
+
+  - id: m7-neuromarketing
+    title: "M7 – Neuro-Marketing & Rétention"
+    description: |
+      Preuve sociale (compteurs live), urgence/rareté, gamification
+      étendue (hall of fame, badges persos), insights hebdo IA,
+      réciprocité mise en avant.
+    due_on: "2026-11-15"
+
+  - id: m8-accessibilite
+    title: "M8 – Accessibilité & Inclusivité"
+    description: |
+      Audit contraste AA/AAA, mode sombre complet, reduced-motion
+      exhaustif, navigation clavier complète, skip-to-content,
+      labels ARIA sur tous les éléments interactifs.
+    due_on: "2026-11-30"
+
+  - id: m9-polish
+    title: "M9 – Performance Perçue & Moments de Délice"
+    description: |
+      Transitions de page fluides, haptique mobile, confetti
+      contextualisé, Service Worker offline, son notifs configurable,
+      animation de fond login visible.
+    due_on: "2026-12-15"
+
+issues:
+  # =========================================================================
+  # M1 – FONDATIONS VISUELLES & PREMIÈRE IMPRESSION
+  # =========================================================================
+
+  - title: "[UX] Refonte de la page login — animation de fond premium"
+    milestone: m1-fondations-visuelles
+    labels: [ux, login, visual, "high priority"]
+    problem: |
+      Deux gradients radiaux à opacité 0.03 et 0.02 sont imperceptibles
+      sur 90% des écrans. La page login est le premier point de contact
+      avec la marque — elle doit respirer la qualité et la confiance.
+    solution: |
+      Remplacer par une animation de fond subtile : blob flou animé
+      lentement (type Apple Pay / iCloud) utilisant les couleurs primaires.
+      Ajouter une transition douce au focus des champs.
+    implementation: |
+      - Supprimer les deux `div` à `opacity-[0.03]` et `[0.02]`
+      - Créer un composant `AnimatedLoginBackground` avec canvas/CSS
+        utilisant `@keyframes` et `filter: blur(80px)` 
+      - 2-3 cercles de couleur `--primary` et `--accent` en mouvements
+        lents non-linéaires (ease-in-out, 20-30s duration)
+      - Ajouter `will-change: transform` pour GPU compositing
+      - En mode sombre : opacité réduite de 50%
+      - Compatible `prefers-reduced-motion` : statique mais visible
+    neuroRationale: |
+      Le cortex visuel juge la crédibilité d'une interface en 50ms
+      (étude Lindgaard, 2006). Un fond statique/invisible signale
+      "amateur". Un fond animé fluide signale "premium" et réduit
+      l'anxiété de connexion (l'utilisateur se sent "attendu").
+    acceptanceCriteria:
+      - Le fond animé est visible sur écran calibré à 50% luminosité
+      - L'animation s'arrête si `prefers-reduced-motion: reduce`
+      - Pas de dropped frames (<30fps mesuré sur mobile milieu de gamme)
+      - Le mode sombre a un fond adapté (pas de flash blanc)
+    effort: M
+    priority: 9
+
+  - title: "[UX] Dark mode — compléter les tokens manquants"
+    milestone: m1-fondations-visuelles
+    labels: [ux, dark-mode, visual, bug]
+    problem: |
+      Le bloc `.dark` dans `tokens.css` n'a pas `--color-secondary` ni
+      d'autres variables, provoquant un fallback vers le light mode.
+      Les composants glassmorphiques sont cassés en dark mode.
+    solution: |
+      Compléter TOUTES les variables CSS dans le bloc `.dark`.
+      Tester chaque composant en mode sombre.
+    implementation: |
+      - Ajouter `--color-secondary`, `--color-secondary-foreground`,
+        `--color-success`, `--color-success-foreground`,
+        `--color-warning`, `--color-warning-foreground` dans `.dark`
+      - Ajuster `.glass` et `.glass-strong` pour le dark mode :
+        fond `oklch(1 0 0 / 0.04)` → `oklch(0 0 0 / 0.30)` en dark
+        bordure `oklch(1 0 0 / 0.08)` → `oklch(1 0 0 / 0.06)` en dark
+      - Utiliser des custom properties qui s'adaptent automatiquement :
+        `--glass-bg: oklch(1 0 0 / 0.04)` (light) / `oklch(0 0 0 / 0.30)` (dark)
+      - Audit visuel de chaque page en dark mode
+    neuroRationale: |
+      43% des utilisateurs préfèrent le mode sombre (Apple WWDC 2023).
+      Un dark mode cassé signale "négligence" et réduit la confiance
+      technique. La constance visuelle est un marqueur de fiabilité.
+    acceptanceCriteria:
+      - Tous les tokens ont une valeur dark (zéro fallback)
+      - Les composants glass sont visibles en dark mode
+      - Pas de texte illisible ou de contraste inversé
+      - Screenshots dark mode de chaque page dans le dossier docs
+    effort: M
+    priority: 8
+
+  - title: "[UX] Identité de marque — remplacer le bleu froid par un gradient signature"
+    milestone: m1-fondations-visuelles
+    labels: [ux, brand, visual]
+    problem: |
+      La couleur primaire `oklch(0.35 0.06 260)` (bleu-violet froid)
+      est générique. Des centaines de SaaS utilisent la même teinte.
+      Aucune différenciation émotionnelle.
+    solution: |
+      Créer un gradient signature `primary → accent` chaud-froid
+      utilisé dans les points d'entrée clés : header, boutons CTA,
+      cards de dashboard. Garder le flat design pour le reste.
+    implementation: |
+      - Ajouter `--gradient-primary: linear-gradient(135deg, var(--color-primary), var(--color-accent))` dans tokens.css
+      - Appliquer ce gradient sur :
+        * Le logo/branding du header
+        * Les boutons CTA primaires (`.bg-gradient` → fallback `bg-primary`)
+        * Les bordures supérieures des cards importantes
+        * L'indicateur de tab actif
+      - Ne pas sur-utiliser : max 3 occurrences par page
+      - Dégradé subtil : 135deg pour aller du froid (primary) au chaud (accent)
+    neuroRationale: |
+      Le cerveau associe les dégradés à la profondeur et à la modernité
+      (Apple iOS 7+). Un dégradé signature crée un "ancrage de marque"
+      dans le système limbique. La chaleur de l'accent compense la
+      froideur du primary, créant l'équilibre émotionnel parfait.
+    acceptanceCriteria:
+      - Le gradient est visible mais pas criard (opacité max 15% dans les bordures)
+      - Le bouton CTA garde un fallback `bg-primary` si `bg-gradient` non supporté
+      - Testé sur Firefox, Chrome, Safari (y compris iOS)
+    effort: S
+    priority: 6
+
+  - title: "[UX] Système de profondeur — refonte de l'échelle d'ombres"
+    milestone: m1-fondations-visuelles
+    labels: [ux, visual, design-system]
+    problem: |
+      6 niveaux d'ombre mais les paliers sont trop proches.
+      Cartes et modales partagent un niveau quasi identique.
+      Confusion dans la hiérarchie spatiale.
+    solution: |
+      Revoir l'échelle pour créer des paliers distincts.
+      Ajouter une ombre colorée primaire pour les éléments élevés.
+    implementation: |
+      - `--shadow-xs`: 0 1px 2px (surface plane — input, badge)
+      - `--shadow-sm`: 0 1px 3px, 0 1px 2px (cartes)
+      - `--shadow-md`: 0 4px 12px, 0 2px 4px (cartes hover, dropdowns)
+      - `--shadow-lg`: 0 8px 30px, 0 4px 8px (modales, panels)
+      - `--shadow-xl`: 0 12px 48px, 0 6px 12px (modales importantes)
+      - `--shadow-2xl`: 0 20px 80px, 0 10px 20px (overlay modale)
+      - Nouveau `--shadow-primary`: 0 4px 20px oklch(0.35 0.06 260 / 0.15)
+        (boutons CTA, cartes sélectionnées)
+    neuroRationale: |
+      La perception de profondeur est traitée par le cortex visuel
+      primaire (V1) en 13ms. Des ombres hiérarchisées correctement
+      permettent une compréhension spatiale inconsciente et immédiate.
+      L'ombre colorée primaire crée une "aura d'importance".
+    acceptanceCriteria:
+      - Différence visuelle claire entre chaque niveau à 50% de luminosité écran
+      - `shadow-primary` appliqué au bouton CTA et aux cartes sélectionnées
+      - Pas de régression sur z-index
+    effort: S
+    priority: 5
+
+  # =========================================================================
+  # M2 – NAVIGATION & ARCHITECTURE DE L'INFORMATION
+  # =========================================================================
+
+  - title: "[UX] Navigation mobile — réduire de 9 à 5 items + menu Plus"
+    milestone: m2-navigation
+    labels: [ux, mobile, navigation, "high priority"]
+    problem: |
+      La bottom nav affiche 9 items. Apple HIG recommande 3-5.
+      Loi de Hick : temps de décision ∝ log₂(n). L'utilisateur scrolle
+      horizontalement sans mémoriser ses options, créant une paralysie
+      décisionnelle à chaque navigation.
+    solution: |
+      Réduire à 5 items essentiels + menu "Plus" (pattern iOS standard).
+    implementation: |
+      - 5 items principaux : Tableau de bord, Signaux, Journal,
+        Notifications, Profil
+      - Menu "Plus" (icône `...` ou `MoreHorizontal`) contenant :
+        Admin, Messages, Abonnement, Vérification/Onboarding
+      - Le menu Plus s'ouvre en bottom sheet (déjà implémenté)
+      - Les items Admin et Messages gardent leurs badges de compteur
+      - Conserver les 5 items comme `NavItem[]` dans navigation.ts
+      - Ajouter `plusItems` config array pour le menu supplémentaire
+    neuroRationale: |
+      La mémoire de travail humaine retient 7±2 éléments (Miller, 1956).
+      9 items dépassent ce seuil. 5 items + 1 menu "Plus" = 6 choix
+      visuels, sous le seuil de surcharge. Le menu "Plus" crée une
+      distinction entre "essentiel" et "secondaire" — exactement ce 
+      que fait l'iPhone (Téléphone, Safari, Messages vs le reste).
+    acceptanceCriteria:
+      - Navigation mobile : exactement 5 icônes + 1 "Plus"
+      - Le menu Plus s'ouvre en bottom sheet avec les 4 items secondaires
+      - Les badges de compteur sont visibles sur le "Plus" si Admin/Messages
+        ont des éléments en attente
+      - Pas de scroll horizontal
+      - Testé sur iPhone SE (375px) et Galaxy S (360px)
+    effort: M
+    priority: 10
+    subIssues:
+      - "Définir la config des 5 items principaux dans navigation.ts"
+      - "Définir la config plusItems dans navigation.ts"
+      - "Adapter MobileBottomNav pour lire les deux configs"
+      - "Implémenter le bottom sheet 'Plus'"
+      - "Adapter MobileMenu (drawer) pour refléter les mêmes regroupements"
+
+  - title: "[UX] Admin — refonte en Hub & Spoke (grille de modules)"
+    milestone: m2-navigation
+    labels: [ux, admin, navigation, "high priority"]
+    problem: |
+      4 contextes mentaux + 18 onglets + 9 liens standalone = 27 points
+      d'entrée. Plus qu'un cockpit d'avion. Les admins contournent la
+      navigation formelle par favoris navigateur et saisie d'URL directe.
+    solution: |
+      Page d'accueil admin avec grille de modules prioritaires + recherche
+      universelle. La sidebar actuelle devient une navigation secondaire.
+    implementation: |
+      - Nouvelle page `admin/page.tsx` (version Hub) avec :
+        * Barre de recherche universelle en haut (Ctrl+K)
+        * Section "À traiter" : badges KYC en attente, Broker, Demandes d'accès
+        * Grille de modules 3x2 (6 modules prioritaires) :
+          - Membres (avec compteur), Signaux, KYC, Broker,
+            Sécurité (avec alertes), Analytics
+        * Section "Accès rapides" : Dernières actions, Raccourcis
+      - La sidebar existante reste en navigation persistante
+        pour les power users (accessible via un toggle)
+      - Chaque module est une card avec icône, titre, métrique clé,
+        et bouton "Ouvrir" → navigation vers l'onglet correspondant
+      - Animation d'entrée staggered (staggerChildren: 0.05) pour
+        les modules
+    neuroRationale: |
+      Le pattern "Hub & Spoke" (Apple Business Manager, Stripe Dashboard)
+      réduit le paradoxe du choix. La page d'accueil montre ce qui est
+      IMPORTANT, pas tout ce qui est DISPONIBLE. Le cerveau traite une
+      grille 3x2 en une seule fixation oculaire (~200ms).
+    acceptanceCriteria:
+      - La page admin principale affiche une grille de modules (pas les onglets)
+      - La recherche universelle fonctionne (Ctrl+K)
+      - Les compteurs de pending sont visibles et en temps réel
+      - La sidebar classique reste accessible (toggle)
+      - Testé avec 3 profils admin différents
+    effort: XL
+    priority: 10
+    subIssues:
+      - "Designer la grille de modules 3x2 + section alertes"
+      - "Implémenter AdminHubPage avec données live (WebSocket)"
+      - "Créer AdminModuleCard composant réutilisable"
+      - "Ajouter toggle sidebar 'Mode avancé'"
+      - "Migration progressive : garder les onglets accessibles"
+
+  - title: "[UX] Breadcrumbs systématiques dans le AppShell"
+    milestone: m2-navigation
+    labels: [ux, navigation, desktop]
+    problem: |
+      Seul le panel admin contextuel a un breadcrumb. Les pages de détail
+      (signal/[id], journal, onboarding, etc.) n'en ont pas. Désorientation
+      spatiale pour l'utilisateur.
+    solution: |
+      Breadcrumb dans le header desktop de l'AppShell. Pattern Apple :
+      `Signaux > EUR/USD - Achat` avec dernier élément non cliquable.
+    implementation: |
+      - Ajouter un composant `Breadcrumbs` dans le design system
+      - Le breadcrumb lit le pathname et génère automatiquement les segments
+        à partir d'un mapping `pathToLabel`
+      - Mapping path → label :
+        * /dashboard → Tableau de bord
+        * /dashboard/signals → Signaux
+        * /dashboard/signals/[id] → {signalTitle}
+        * /dashboard/journal → Journal
+        * /onboarding → Onboarding
+        * /admin → Console Admin
+        * etc.
+      - Chaque segment (sauf le dernier) est un lien
+      - Séparateur `>` ou chevron
+      - Afficher dans le header desktop sous le titre de page
+      - Masquer sur mobile (la bottom nav fait office de repère)
+    neuroRationale: |
+      Le breadcrumb est un "repère de lieu" qui réduit l'anxiété de
+      navigation. Il fournit un modèle mental spatial ("je suis ici")
+      et permet le backtracking en un clic. Sans breadcrumb, l'utilisateur
+      utilise le bouton Back du navigateur (perte de contexte).
+    acceptanceCriteria:
+      - Breadcrumb visible sur toutes les pages de détail (desktop)
+      - Le dernier segment est en texte normal (pas de lien)
+      - Les segments intermédiaires sont cliquables
+      - Le signal title est affiché dynamiquement pour les pages [id]
+      - Masqué sur mobile (pas d'espace)
+    effort: S
+    priority: 7
+
+  # =========================================================================
+  # M3 – FORMULAIRES & INTERACTIONS TEMPS RÉEL
+  # =========================================================================
+
+  - title: "[UX] Validation inline onBlur sur tous les formulaires"
+    milestone: m3-formulaires
+    labels: [ux, forms, validation, "high priority"]
+    problem: |
+      Tous les formulaires valident uniquement au submit. L'utilisateur
+      remplit 5 champs, clique, découvre 3 erreurs, corrige, reclique.
+      Chaque erreur déclenche une micro-frustration (amygdale activée).
+      L'accumulation crée un sentiment d'incompétence.
+    solution: |
+      Validation au blur (onBlur) pour chaque champ avec feedback visuel
+      immédiat : bordure verte + icône checkmark si OK, bordure rouge +
+      message d'aide si erreur.
+    implementation: |
+      - Créer un hook `useFieldValidation(fieldName, rules[])` :
+        * Retourne `{ value, error, isValid, isDirty, onBlur, onChange }`
+        * `rules` supporte : required, email, minLength, maxLength,
+          pattern, custom validator
+      - Chaque Input existant est wrappé avec ce hook
+      - Feedback visuel :
+        * `isValid && isDirty` → bordure `success` + checkmark vert à droite
+        * `error && isDirty` → bordure `destructive` + message d'erreur 
+          sous le champ (taille xs, destructive color)
+        * Ni l'un ni l'autre → apparence normale
+      - Appliquer à : Login, Register, Onboarding (tous les steps),
+        Journal (trade form, reflection), Profil, Admin forms
+      - Ne PAS valider au onChange (trop agressif) mais au onBlur
+    neuroRationale: |
+      La validation immédiate réussie libère de la dopamine (récompense).
+      La correction immédiate d'erreur évite l'accumulation de cortisol.
+      Le pattern "vert = bon" est universel et traité par le système
+      visuel en < 50ms (processing pré-attentif).
+    acceptanceCriteria:
+      - Chaque champ montre un feedback après le premier blur
+      - Checkmark vert pour les champs valides
+      - Message d'erreur pour les champs invalides (avec suggestion)
+      - Pas de validation pendant la frappe (pas d'erreur qui apparaît
+        pendant qu'on tape)
+      - Compatible avec la validation au submit (barrière finale)
+    effort: L
+    priority: 10
+    subIssues:
+      - "Créer le hook useFieldValidation avec rules engine"
+      - "Adapter Input du design system pour afficher états valid/invalid"
+      - "Appliquer au formulaire de login"
+      - "Appliquer au wizard d'inscription (5 steps)"
+      - "Appliquer aux formulaires d'onboarding (email, KYC, broker)"
+      - "Appliquer au formulaire de trade du journal"
+      - "Appliquer aux formulaires admin (settings, notifications, etc.)"
+
+  - title: "[UX] Input adaptatif — hauteur 44px sur mobile/touch"
+    milestone: m3-formulaires
+    labels: [ux, forms, mobile, accessibility]
+    problem: |
+      Hauteur d'input fixe à 32px (h-8). Trop petit pour le mobile
+      (Apple HIG recommande 44px minimum pour les cibles tactiles).
+      L'utilisateur rate le champ au toucher, frustration.
+    solution: |
+      Ajouter une variante `size="lg"` (h-10 = 40px) pour mobile.
+      Détection automatique via media query ou pointer: coarse.
+    implementation: |
+      - Ajouter `size` prop à Input (default, sm, lg)
+      - `size="lg"` → `h-10` (40px), padding adapté
+      - Utiliser `@media (pointer: coarse)` pour auto-détecter le touch
+        et appliquer `size="lg"` par défaut sur mobile
+      - OU : composant `Input` détecte `hover: none and pointer: coarse`
+        via hook `useMediaQuery` et adapte sa hauteur
+      - Appliquer à tous les inputs interactifs (pas les inputs readonly)
+    neuroRationale: |
+      La loi de Fitts dit que le temps pour atteindre une cible est
+      fonction de sa taille et de la distance. À 32px, le taux d'erreur
+      tactile est de ~15%. À 44px, il tombe à ~3%. Chaque erreur tactile
+      est une micro-friction qui érode la satisfaction utilisateur.
+    acceptanceCriteria:
+      - Inputs ≥ 40px de hauteur sur appareils tactiles
+      - Inputs 32px conservés sur desktop (souris)
+      - Détection automatique, pas de flag manuel
+      - Testé sur iPhone, iPad, Android mobile
+    effort: M
+    priority: 8
+
+  - title: "[UX] Wizard d'inscription — ajouter un stepper de progression"
+    milestone: m3-formulaires
+    labels: [ux, forms, onboarding]
+    problem: |
+      Le wizard d'inscription a 5 étapes (Service → Identité → Contact →
+      Sécurité → Confirmation) mais aucun indicateur de progression.
+      L'utilisateur ne sait pas combien d'étapes restent.
+    solution: |
+      Stepper horizontal en haut avec noms des étapes, état actif/complété.
+      Pattern Apple Pay : étapes numérotées avec checkmarks.
+    implementation: |
+      - Créer composant `WizardStepper` :
+        * Props : `steps: {label, icon}[]`, `currentStep: number`
+        * Chaque étape : cercle numéroté (ou checkmark si complétée)
+        * Ligne de connexion entre les cercles
+        * Étape active : cercle rempli en primary
+        * Étape complétée : checkmark vert
+        * Étape future : cercle vide en muted
+      - Intégrer dans `register/page.tsx` entre le titre et le formulaire
+      - Animation de transition entre étapes (slide subtil)
+      - Les cercles sont cliquables pour revenir en arrière
+    neuroRationale: |
+      Le principe de Zeigarnik (1927) : une tâche inachevée crée une
+      tension cognitive. Montrer la progression (3/5 étapes complétées)
+      transforme cette tension en motivation ("je suis presque arrivé").
+      Le checkmark sur les étapes complétées libère de la dopamine.
+    acceptanceCriteria:
+      - Stepper visible en haut du wizard (5 cercles + lignes)
+      - État actif, complété, futur clairement distincts
+      - Checkmarks animés à la complétion d'une étape
+      - Cercles complétés cliquables pour revenir
+      - Responsive : horizontal sur desktop, compact sur mobile
+    effort: M
+    priority: 7
+
+  - title: "[UX] Indicateur de force du mot de passe — feedback textuel"
+    milestone: m3-formulaires
+    labels: [ux, forms, security]
+    problem: |
+      Le `password-utils.ts` calcule un score 0-5 mais le feedback est
+      purement visuel (barre colorée). L'utilisateur ne sait pas quoi
+      améliorer pour augmenter son score.
+    solution: |
+      Ajouter un texte dynamique sous la barre : "Ajoutez un caractère
+      spécial", "Encore 2 caractères", etc. Checklist des règles avec
+      état vert/rouge en temps réel.
+    implementation: |
+      - Étendre `getPasswordStrength` pour retourner un objet détaillé :
+        `{ score, feedback: string, checks: { minLength, hasUpper, hasLower, hasDigit, hasSpecial } }`
+      - Afficher la checklist sous la barre de force :
+        * ✓ 10+ caractères (vert si ok, gris sinon)
+        * ✓ Majuscule
+        * ✓ Minuscule  
+        * ✓ Chiffre
+        * ✓ Caractère spécial
+      - Chaque règle validée passe au vert avec animation
+      - Texte de feedback : "Mot de passe faible — ajoutez un chiffre"
+        → "Mot de passe bon" → "Mot de passe très bon !"
+    neuroRationale: |
+      Le feedback binaire (fort/faible) est frustrant car il ne dit pas
+      POURQUOI. Le feedback granulaire (checklist) donne à l'utilisateur
+      le contrôle — sentiment d'auto-efficacité (Bandura, 1977). Chaque
+      règle cochée libère une micro-dose de dopamine.
+    acceptanceCriteria:
+      - Checklist des 5 règles visible sous la barre de force
+      - Mise à jour en temps réel pendant la frappe
+      - Chaque règle validée s'anime en vert
+      - Texte de feedback contextuel
+      - Barre de force synchronisée avec la checklist
+    effort: S
+    priority: 6
+
+  - title: "[UX] Toggle mot de passe — éviter le doublon avec Safari iOS"
+    milestone: m3-formulaires
+    labels: [ux, forms, mobile, safari]
+    problem: |
+      Safari iOS affiche son propre toggle "Afficher le mot de passe"
+      sur les inputs password. Le bouton personnalisé dans l'input crée
+      un doublon et peut causer des conflits.
+    solution: |
+      Détecter le support natif et masquer le bouton personnalisé si
+      le navigateur gère le toggle nativement.
+    implementation: |
+      - Utiliser `CSS.supports('selector(input[type="password"]::-webkit-textfield-decoration-container))` 
+        pour détecter Safari
+      - OU détecter le user-agent Safari mobile
+      - Si natif supporté : masquer le bouton custom, garder l'espacement
+        normal (pas de `pr-9`)
+      - Si non supporté : afficher le bouton custom comme actuellement
+      - Ajouter `autocomplete="current-password"` / `"new-password"`
+        pour supporter l'autofill et le gestionnaire de mots de passe
+    neuroRationale: |
+      Les doublons créent de la confusion cognitive. L'utilisateur se
+      demande "pourquoi y a-t-il deux boutons ? Lequel est le bon ?"
+      Chaque question sans réponse immédiate est une friction.
+    acceptanceCriteria:
+      - Sur Safari iOS : pas de bouton custom, le bouton natif est utilisé
+      - Sur Chrome/Desktop : le bouton custom est présent
+      - L'autocomplete est correctement configuré
+      - Pas de régression visuelle sur aucun navigateur
+    effort: XS
+    priority: 5
+
+  # =========================================================================
+  # M4 – ÉTATS DE CHARGEMENT, VIDES & ERREURS
+  # =========================================================================
+
+  - title: "[UX] Skeletons animés sur toutes les pages critiques"
+    milestone: m4-etats-intermediaires
+    labels: [ux, loading, performance, "high priority"]
+    problem: |
+      Le composant Skeleton existe mais n'est pas utilisé. À la place,
+      un spinner Loader2 centré. Un spinner signale "attendez, quelque
+      chose ne va pas". Un skeleton signale "le contenu arrive".
+    solution: |
+      Créer des skeletons de page pour chaque vue critique avec
+      animation shimmer. Priorité : Dashboard > Signaux > Admin > Journal.
+    implementation: |
+      - Dashboard skeleton : 4 cartes KPI (h-24), 4 cartes actions (h-20),
+        2 colonnes (h-32)
+      - Signaux skeleton : 3-4 cartes signal (h-48 avec header, contenu, images)
+      - Admin skeleton : grille de stats 2x4 (h-16), tableau 5x4 (h-8)
+      - Journal skeleton : 3 tabs (h-8), contenu (h-64)
+      - Chaque skeleton utilise le composant `Skeleton` existant avec
+        animation shimmer (bg-gradient balayant de gauche à droite)
+      - Remplacer tous les `<Loader2>` dans les pages par ces skeletons
+      - Utiliser React Suspense boundaries pour basculer automatiquement
+    neuroRationale: |
+      Skeletons réduisent la perception d'attente de 30% vs spinners
+      (étude NNGroup, 2020). Le shimmer mime le mouvement naturel de
+      lecture (gauche→droite), donnant l'illusion que le contenu est
+      "en train d'arriver". Le cerveau perçoit le temps différemment
+      quand il voit une structure vs un vide.
+    acceptanceCriteria:
+      - Dashboard, Signaux, Admin, Journal ont des skeletons dédiés
+      - Animation shimmer fluide (60fps)
+      - Le skeleton occupe EXACTEMENT la même place que le contenu final
+        (pas de layout shift)
+      - Respecte `prefers-reduced-motion` (statique si demandé)
+      - Pas de spinner visible dans les pages critiques
+    effort: L
+    priority: 10
+    subIssues:
+      - "Créer DashboardSkeleton"
+      - "Créer SignalsListSkeleton"
+      - "Créer AdminHubSkeleton"
+      - "Créer JournalSkeleton"
+      - "Wrapper chaque page dans Suspense avec skeleton dédié"
+      - "Ajouter animation shimmer au composant Skeleton"
+
+  - title: "[UX] Empty States contextualisés pour toutes les listes"
+    milestone: m4-etats-intermediaires
+    labels: [ux, empty-state, onboarding]
+    problem: |
+      Les listes vides (0 signaux, 0 trades, 0 notifications) affichent
+      du texte gris sans CTA ni contexte. L'utilisateur arrive sur une
+      page blanche sans savoir quoi faire.
+    solution: |
+      Chaque liste vide affiche un EmptyState avec illustration/icône,
+      texte contextuel, et bouton d'action principale.
+    implementation: |
+      - Utiliser le composant `EmptyState` existant du design system
+      - Signaux vides :
+        * Icône : `Radio` ou `Satellite`
+        * Titre : "Aucun signal pour le moment"
+        * Description : "Les signaux apparaîtront ici dès que votre
+          formateur en publiera. Activez les notifications pour être alerté."
+        * Bouton : "Gérer mes notifications"
+      - Trades vides :
+        * Icône : `BookOpen`
+        * Titre : "Votre journal est vide"
+        * Description : "Enregistrez votre premier trade pour suivre
+          vos performances et obtenir des insights personnalisés."
+        * Bouton : "Nouveau trade"
+      - Notifications vides :
+        * Icône : `Bell`
+        * Titre : "Aucune notification"
+        * Description : "Vous serez notifié des signaux, messages et
+          mises à jour importantes."
+      - Chaque empty state a une illustration légère (pas d'image lourde)
+    neuroRationale: |
+      Un écran vide crée de l'anxiété ("je me suis trompé ?"). Un empty
+      state contextualisé transforme le vide en opportunité ("voilà ce
+      que tu peux faire"). Le CTA donne une prochaine action — essentiel
+      pour éviter l'abandon.
+    acceptanceCriteria:
+      - Chaque liste vide (signaux, trades, notifs, messages) a un empty state
+      - Chaque empty state contient : icône, titre, description, CTA
+      - Le CTA mène à une action concrète (pas juste "rafraîchir")
+      - Cohérence visuelle entre tous les empty states
+    effort: M
+    priority: 8
+
+  - title: "[UX] Fallback DB — remplacer zéros par indicateur d'indisponibilité"
+    milestone: m4-etats-intermediaires
+    labels: [ux, error-state, dashboard]
+    problem: |
+      Si la DB est indisponible, le dashboard affiche 0 pour tous les KPIs.
+      Pour un trader, voir PnL=0 et Win rate=0% est anxiogène.
+    solution: |
+      Afficher "—" ou "N/D" avec un tooltip "Données momentanément
+      inaccessibles — réessai automatique dans quelques secondes".
+    implementation: |
+      - Dans le bloc `catch` du dashboard, définir un flag `dbUnavailable = true`
+      - Si `dbUnavailable` :
+        * KPIs affichent "—" au lieu de valeurs
+        * Texte en `text-muted-foreground` (pas de couleur de ton)
+        * Tooltip explicatif au hover
+        * Auto-retry countdown (le composant existe : `auto-retry-countdown.tsx`)
+        * Bouton "Réessayer" manuel
+      - Le reste de la page reste fonctionnel (actions rapides, etc.)
+    neuroRationale: |
+      L'honnêteté réduit l'anxiété plus que des données fausses.
+      Voir 0€ et 0% active la peur de la perte (loss aversion,
+      Kahneman & Tversky). "Indisponible" active la patience.
+      Le bouton "Réessayer" donne du contrôle — réducteur d'impuissance.
+    acceptanceCriteria:
+      - Dashboard affiche "—" au lieu de 0 quand DB indisponible
+      - Tooltip explicatif au hover
+      - Bouton "Réessayer" présent
+      - L'auto-retry countdown est visible
+      - Le comportement normal n'est pas affecté
+    effort: XS
+    priority: 7
+
+  # =========================================================================
+  # M5 – ONBOARDING & PREMIÈRE EXPÉRIENCE
+  # =========================================================================
+
+  - title: "[UX] Flux onboarding unifié avec barre de progression persistante"
+    milestone: m5-onboarding
+    labels: [ux, onboarding, "high priority"]
+    problem: |
+      L'onboarding est fragmenté : vérification email (page unique),
+      puis étapes profile/KYC/broker sur des pages séparées sans flux
+      cohérent. L'utilisateur ne comprend pas le parcours complet.
+    solution: |
+      Flux onboarding unifié en 5 étapes avec barre de progression
+      persistante. Sauvegarde automatique. Relance email si abandon.
+    implementation: |
+      - Créer une page onboarding unifiée : `/onboarding`
+      - 5 étapes : 1) Email vérifié, 2) Profil complété,
+        3) Paiement/Abonnement, 4) KYC vérifié, 5) Broker vérifié
+      - Barre de progression type Apple Pay en haut :
+        * Cercles numérotés 1-5, connectés par une ligne
+        * État : gris (futur), primary (en cours), vert+checkmark (complété)
+        * Visible et persistante (sticky top)
+      - Sauvegarde automatique de chaque étape dans la DB
+      - Si l'utilisateur quitte et revient, il reprend où il était
+      - Si abandon > 24h, envoi d'un email de relance
+      - Célébration (confetti) à la complétion de l'étape 5
+    neuroRationale: |
+      Un parcours fragmenté active l'effet "door-in-the-face" inversé :
+      l'utilisateur pense que ça ne finira jamais. Un flux unifié avec
+      progression visible active l'effet "goal gradient" (Hull, 1932) :
+      plus on approche du but, plus on est motivé. La barre de progression
+      est un "commitment device" psychologique.
+    acceptanceCriteria:
+      - Une seule URL `/onboarding` pour tout le parcours
+      - Barre de progression visible en permanence
+      - Sauvegarde automatique de l'état (reprise après fermeture)
+      - Email de relance si abandon > 24h
+      - Confetti à la complétion finale
+    effort: XL
+    priority: 10
+    subIssues:
+      - "Créer OnboardingLayout avec barre de progression"
+      - "Unifier les étapes profile, paiement, KYC, broker"
+      - "Implémenter la sauvegarde automatique de progression"
+      - "Créer le système de relance email (cron job)"
+      - "Ajouter confetti à la complétion"
+      - "Adapter la redirection dashboard après complétion"
+
+  - title: "[UX] Champ OTP — supporter le paste depuis le presse-papier"
+    milestone: m5-onboarding
+    labels: [ux, onboarding, mobile, ios]
+    problem: |
+      Le champ OTP 6 chiffres ne supporte pas le paste. Sur iOS, le code
+      reçu par SMS est suggéré par le clavier et peut être collé — mais
+      le champ ne le gère pas, causant des erreurs frustrantes.
+    solution: |
+      Ajouter `onPaste` qui extrait automatiquement les 6 chiffres.
+      Ajouter `autocomplete="one-time-code"` pour iOS Safari.
+    implementation: |
+      - Ajouter `autocomplete="one-time-code"` sur l'input OTP
+      - Handler `onPaste` :
+        * Extraire le texte du presse-papier
+        * Filtrer pour ne garder que les chiffres
+        * Prendre les 6 premiers chiffres
+        * Les répartir dans les champs OTP (ou dans le champ unique)
+      - Si le code est complet après paste, auto-submit après 500ms
+    neuroRationale: |
+      Le copier-coller de code est le comportement naturel sur mobile.
+      Forcer la saisie manuelle de 6 chiffres est une friction inutile
+      qui frustre particulièrement les utilisateurs iOS habitués au
+      "code from Messages" keyboard suggestion.
+    acceptanceCriteria:
+      - Paste d'un code à 6 chiffres fonctionne (ex: "123 456")
+      - Le paste nettoie automatiquement les espaces et caractères non-numériques
+      - `autocomplete="one-time-code"` présent sur l'input
+      - Auto-submit après paste réussi
+      - Testé sur Safari iOS et Chrome Android
+    effort: XS
+    priority: 8
+
+  # =========================================================================
+  # M6 – EXPÉRIENCE ADMINISTRATEUR
+  # =========================================================================
+
+  - title: "[UX] Admin — remplacer le polling par WebSocket + cache invalidation live"
+    milestone: m6-admin
+    labels: [ux, admin, real-time, performance]
+    problem: |
+      L'admin dashboard fait du polling toutes les 10s. 10s c'est une
+      éternité pour la surveillance d'alertes fraude. La cache invalidation
+      est manuelle — si un admin approuve un KYC, l'autre admin voit
+      encore l'ancien état.
+    solution: |
+      Remplacer par WebSocket avec événements de mutation.
+      Tout changement par un admin broadcast aux autres sessions admin.
+    implementation: |
+      - Créer un namespace/admin sur le serveur Socket.IO existant
+      - Événements à broadcast :
+        * `kyc:updated` — quand un KYC est approuvé/rejeté
+        * `broker:updated` — quand un broker est vérifié
+        * `member:updated` — quand un membre est modifié
+        * `signal:published` — quand un signal est publié
+        * `access-request:updated` — quand une demande change de statut
+        * `cache:invalidate` — invalidation générale
+      - Hook `useAdminSocket` pour les composants admin
+      - Chaque composant écoute ses événements pertinents et rafraîchit
+      - Fallback polling à 30s si WebSocket déconnecté
+      - Garder le cache client pour les données non-temps-réel
+    neuroRationale: |
+      L'admin qui voit des données périmées perd confiance dans l'outil.
+      Le temps réel crée un sentiment de "contrôle total" — exactement
+      ce que recherche un administrateur. Apple Business Manager met à
+      jour en temps réel toutes les vues admin connectées.
+    acceptanceCriteria:
+      - Les changements d'un admin sont visibles par les autres en < 2s
+      - Pas de polling visible (sauf fallback)
+      - La connexion WebSocket est surveillée (indicateur connecté/déconnecté)
+      - Fallback polling si WS déconnecté
+    effort: L
+    priority: 9
+    subIssues:
+      - "Créer namespace/admin sur Socket.IO server"
+      - "Définir les types d'événements admin"
+      - "Créer useAdminSocket hook"
+      - "Intégrer dans DashboardTab, KycTab, BrokerTab, MembresTab"
+      - "Tests de concurrence multi-admin"
+
+  - title: "[UX] Admin — actions batch sur les listes"
+    milestone: m6-admin
+    labels: [ux, admin, batch]
+    problem: |
+      Impossible d'approuver 10 KYC en une fois, de suspendre plusieurs
+      membres, ou d'archiver plusieurs signaux. L'admin doit répéter
+      l'action N fois — frustration exponentielle.
+    solution: |
+      Checkboxes de sélection sur les listes + barre d'actions batch
+      flottante. Pattern Apple Mail : sélection → action.
+    implementation: |
+      - Ajouter des checkboxes à gauche de chaque ligne dans :
+        * KycTab, BrokerTab, MembresTab, UsersTab, SignalsTab
+      - Checkbox "Tout sélectionner" dans le header de la liste
+      - Barre d'actions batch flottante (sticky bottom ou fixed) :
+        * Apparaît dès qu'au moins 1 élément est sélectionné
+        * Affiche le nombre d'éléments sélectionnés
+        * Boutons d'action contextuels (Approuver, Rejeter, Suspendre, etc.)
+      - Actions batch supportent le undo toast (cf issue dédiée)
+      - Confirmation dialog pour les actions destructives
+    neuroRationale: |
+      La répétition est l'ennemi #1 de la satisfaction admin. Chaque
+      action répétée est perçue comme une perte de temps (coût d'opportunité).
+      Les actions batch transforment 10 clics en 2 clics — effet "super-pouvoir"
+      qui déclenche la dopamine et renforce la loyauté à l'outil.
+    acceptanceCriteria:
+      - Checkboxes sur chaque ligne des listes KYC, Broker, Membres, Signaux
+      - Barre d'action batch visible avec compteur
+      - Les actions batch fonctionnent pour ≥2 éléments
+      - Undo toast disponible pour les actions batch réversibles
+      - Confirmation dialog pour les actions irréversibles
+    effort: L
+    priority: 8
+    subIssues:
+      - "Ajouter composant BatchActionBar"
+      - "Ajouter checkboxes aux listes KYC, Broker, Membres, Signaux"
+      - "Implémenter API batch (endpoints acceptant userId[])"
+      - "Intégrer undo toast pour actions batch"
+
+  - title: "[UX] Admin — Undo Toast sur toutes les actions destructives"
+    milestone: m6-admin
+    labels: [ux, admin, undo]
+    problem: |
+      Le pattern undo toast est excellent mais n'est appliqué qu'aux
+      actions suspend/reactivate. Toutes les actions destructives
+      devraient le supporter.
+    solution: |
+      Étendre le pattern undoableAction à : supprimer signal, bannir
+      utilisateur, rejeter KYC, rejeter broker, supprimer membre,
+      modifier rôle, révoquer accès.
+    implementation: |
+      - Créer une factory `createUndoableAction(execute, undo, successMsg)`
+      - Appliquer à chaque action destructive dans l'admin
+      - Durée du toast : 6s pour les actions standards, 10s pour les
+        actions critiques (bannissement, suppression)
+      - Le undo doit être atomique (restaurer l'état exact d'avant)
+      - Si le undo échoue, afficher une erreur explicative
+    neuroRationale: |
+      La peur de l'erreur irréversible est le frein #1 à l'action admin.
+      Le "filet de sécurité" undo réduit l'anxiété et encourage
+      l'exploration et la prise de décision rapide. C'est l'équivalent
+      numérique du Ctrl+Z — indispensable pour un outil pro.
+    acceptanceCriteria:
+      - Toutes les actions destructives admin ont un undo toast
+      - Le undo restaure l'état exact d'avant l'action
+      - Durée du toast adaptée à la criticité
+      - Message d'erreur clair si le undo échoue
+    effort: M
+    priority: 8
+
+  - title: "[UX] Admin — Alertes actionnables inline depuis le AlertsPanel"
+    milestone: m6-admin
+    labels: [ux, admin, alerts]
+    problem: |
+      Le `AlertsPanel` liste les alertes mais ne permet pas d'action.
+      "3 KYC en attente" → l'admin doit naviguer vers l'onglet KYC.
+    solution: |
+      Chaque alerte a un bouton d'action inline. "3 KYC en attente →
+      [Examiner]" ouvre le premier KYC dans le panel contextuel.
+    implementation: |
+      - Ajouter un bouton d'action à chaque type d'alerte :
+        * KYC en attente → bouton "Examiner" → ouvre KYC le plus ancien
+        * Broker en attente → bouton "Examiner"
+        * Demandes d'accès → bouton "Traiter"
+        * DLQ Webhooks → bouton "Voir DLQ"
+        * Échecs email → bouton "Détails"
+        * Anomalies login → bouton "Investiguer"
+      - Le bouton déclenche `openPanel` ou la navigation appropriée
+      - Compteur "depuis quand" (ex: "depuis 2h") pour créer l'urgence
+    neuroRationale: |
+      Réduire le nombre de clics entre "voir un problème" et "le résoudre"
+      est le principe fondamental de l'UX admin. Chaque clic intermédiaire
+      est une friction qui réduit la probabilité d'action. L'action inline
+      crée un flow "voir → agir" sans rupture de contexte.
+    acceptanceCriteria:
+      - Chaque alerte a un bouton d'action inline
+      - Les boutons ouvrent le panel contextuel ou naviguent directement
+      - Compteur de temps depuis l'alerte
+      - L'action réduit ou supprime l'alerte si résolue
+    effort: S
+    priority: 6
+
+  - title: "[UX] Admin — Lazy loading des onglets"
+    milestone: m6-admin
+    labels: [ux, admin, performance]
+    problem: |
+      La page admin (606 lignes) charge tous les 20 tabs en un seul
+      composant client. Le premier render est lent et le bundle JS
+      est énorme.
+    solution: |
+      Chaque tab est un `dynamic(() => import(...))` avec skeleton
+      comme fallback. Seul le tab actif est chargé.
+    implementation: |
+      - Remplacer les imports statiques par `next/dynamic` :
+        ```tsx
+        const DashboardTab = dynamic(() => import('./features/DashboardTab'), {
+          loading: () => <TabSkeleton />,
+          ssr: false,
+        })
+        ```
+      - Faire de même pour les 19 autres tabs
+      - Le tab est monté/démonté au changement (ou gardé en cache
+        avec `Suspense` pour éviter de re-fetch si on revient)
+      - Mesurer la réduction de bundle size avec `@next/bundle-analyzer`
+    neuroRationale: |
+      Un premier chargement lent (< 3s LCP) crée une première impression
+      négative que le cerveau généralise à toute l'application ("c'est
+      lent"). Le lazy loading perçu (skeleton → contenu) est plus rapide
+      que le chargement bloquant réel (spinner → contenu).
+    acceptanceCriteria:
+      - Tous les tabs sont lazy-loadés
+      - Skeleton visible pendant le chargement du tab
+      - Le temps de premier render admin est réduit de ≥60%
+      - Bundle JS initial réduit de ≥40%
+    effort: L
+    priority: 7
+
+  # =========================================================================
+  # M7 – NEURO-MARKETING & RÉTENTION
+  # =========================================================================
+
+  - title: "[UX] Preuve sociale — compteurs live sur le dashboard"
+    milestone: m7-neuromarketing
+    labels: [ux, neuromarketing, dashboard]
+    problem: |
+      Aucun élément de preuve sociale. Les traders sont particulièrement
+      sensibles à la validation par les pairs (principe de Cialdini #2).
+      L'application semble "vide" socialement.
+    solution: |
+      Ajouter des compteurs live : traders en ligne, signaux délivrés
+      aujourd'hui, trades gagnants de la communauté cette semaine.
+    implementation: |
+      - Widget "Communauté" dans le dashboard (sidebar ou carte) :
+        * "👥 X traders connectés" (WebSocket, mise à jour live)
+        * "📡 Y signaux aujourd'hui" (compteur API)
+        * "✅ Z trades gagnants cette semaine" (agrégation DB)
+      - Sur la page signaux : compteur de vues par signal
+        ("Vu par X traders")
+      - Ne pas inventer de faux chiffres — utiliser les données réelles
+      - Mettre à jour en temps réel via WebSocket
+    neuroRationale: |
+      La preuve sociale est le plus puissant des 6 principes de persuasion
+      de Cialdini. Dans le trading, la validation par les pairs est encore
+      plus forte : "si d'autres traders suivent ces signaux, c'est qu'ils
+      sont bons". Le compteur live crée un effet de "foule" rassurant.
+    acceptanceCriteria:
+      - Compteur de traders en ligne visible sur le dashboard
+      - Mise à jour en temps réel (±30s)
+      - Données réelles (pas de valeurs codées en dur)
+      - Testé avec 0, 10, 100, 1000+ utilisateurs
+    effort: M
+    priority: 7
+
+  - title: "[UX] Gamification étendue — Hall of Fame + Badges persistants"
+    milestone: m7-neuromarketing
+    labels: [ux, gamification, retention]
+    problem: |
+      Le système de streaks et confetti est bon mais sous-exploité.
+      Les accomplissements disparaissent, pas de reconnaissance durable.
+    solution: |
+      Ajouter un Hall of Fame (classement) et des badges persistants
+      visibles sur le profil. Notifications de célébration pour milestones.
+    implementation: |
+      - Page "Classement" (ou section dans le dashboard) :
+        * Top 10 PnL mensuel
+        * Top 10 Win rate (min 20 trades)
+        * Top 10 Discipline streak
+        * Filtre par période (semaine, mois, trimestre, année)
+      - Badges sur le profil utilisateur :
+        * 🏆 Meilleur PnL Janvier 2026
+        * 🔥 30 jours de discipline
+        * 💯 100 trades enregistrés
+        * 🎯 Win rate > 70% (sur 50+ trades)
+        * ⚡ Premier trade gagnant
+      - Notification push/in-app quand l'utilisateur débloque un badge
+      - Les badges sont persistants et visibles par les autres membres
+      - Option "Masquer mes stats" pour la confidentialité
+    neuroRationale: |
+      La gamification exploite 3 moteurs de motivation (Octalysis de Chou) :
+      - Accomplissement (badges, classement)
+      - Rareté (badges limités dans le temps)
+      - Influence sociale (classement public)
+      Les badges persistants créent un "endowment effect" : l'utilisateur
+      valorise plus ce qu'il possède déjà.
+    acceptanceCriteria:
+      - Page de classement avec top 10 par catégorie
+      - Badges visibles sur le profil
+      - Notifications de déblocage de badge
+      - Option de confidentialité
+      - Les classements sont recalculés périodiquement (cron)
+    effort: L
+    priority: 6
+    subIssues:
+      - "Créer la page Classement"
+      - "Système de badges (DB schema + logique d'attribution)"
+      - "Afficher les badges sur le profil"
+      - "Notifications de déblocage"
+      - "Cron job de recalcul des classements"
+
+  - title: "[UX] Insights hebdomadaires IA depuis les données du journal"
+    milestone: m7-neuromarketing
+    labels: [ux, ai, journal, retention]
+    problem: |
+      Le journal collecte des données riches (mood, confiance, stratégie,
+      résultat) mais ne les exploite pas pour donner des insights.
+      L'utilisateur remplit sans recevoir de valeur en retour.
+    solution: |
+      Générer des insights hebdomadaires personnalisés basés sur les
+      patterns détectés dans le journal. Ex: "Tu gagnes plus le lundi
+      (80%) que le vendredi (30%)."
+    implementation: |
+      - Agent IA (ou règles statistiques simples d'abord) qui analyse :
+        * Performance par jour de la semaine
+        * Performance par stratégie (scalping vs swing vs day trading)
+        * Performance par setup (breakout, pullback, etc.)
+        * Corrélation mood → win rate
+        * Corrélation confiance → taille de position
+        * Meilleur et pire moment de la journée
+      - Rapport hebdomadaire envoyé par email ET visible dans le dashboard
+      - Format : cartes d'insight visuelles (chart miniature + texte)
+      - Coach IA (existant) enrichi avec ces insights
+    neuroRationale: |
+      Le "simple feedback" transforme le journal d'une corvée en outil
+      de développement personnel. L'utilisateur reçoit de la VALEUR en
+      retour de son effort de journalisation — principe de réciprocité.
+      Les insights concrets ("mardi = mauvais jour pour toi") créent
+      des "aha moments" très dopaminergiques.
+    acceptanceCriteria:
+      - Rapport d'insights visible dans le dashboard
+      - Minimum 4 types d'insights différents
+      - Email hebdomadaire avec insights (opt-in)
+      - Les insights sont actionnables (pas juste des constats)
+    effort: L
+    priority: 5
+
+  - title: "[UX] Urgence & rareté — badges temporisés et offres limitées"
+    milestone: m7-neuromarketing
+    labels: [ux, neuromarketing, conversion]
+    problem: |
+      Aucun élément d'urgence ou de rareté. Pas de sentiment que l'offre
+      est limitée ou que le temps presse — taux de conversion sous-optimal.
+    solution: |
+      Ajouter des éléments d'urgence éthiques (basés sur des données
+      réelles) : places limitées par plan, signal "Ne ratez pas",
+      offres saisonnières.
+    implementation: |
+      - Badge "Nouveau" sur les signaux (disparaît après 48h)
+      - Compteur "Places restantes" sur les plans d'abonnement
+        (basé sur la config réelle `maxMembers` par plan)
+      - Badge "Dernière chance" sur les offres qui expirent
+      - Compteur "Expire dans X jours" sur les périodes d'essai
+      - NE PAS utiliser de fausses urgences (dark pattern) — tout
+        doit être basé sur des données réelles
+    neuroRationale: |
+      L'urgence et la rareté sont les principes #6 et #6 de Cialdini.
+      "Places limitées" active la peur de manquer (FOMO). "Expire dans"
+      crée un deadline — les humains sont plus motivés par la peur de
+      perdre que par l'espoir de gagner (loss aversion, 2x plus puissant).
+    acceptanceCriteria:
+      - Badge "Nouveau" auto-expirant sur les signaux
+      - Compteur de places basé sur données réelles
+      - Aucun dark pattern (tout est vérifiable)
+      - Cohérent avec la réalité (pas de "plus que 1 place" indéfiniment)
+    effort: S
+    priority: 5
+
+  # =========================================================================
+  # M8 – ACCESSIBILITÉ & INCLUSIVITÉ
+  # =========================================================================
+
+  - title: "[UX] Audit complet contraste AA/AAA + corrections"
+    milestone: m8-accessibilite
+    labels: [ux, accessibility, a11y, "high priority"]
+    problem: |
+      Plusieurs éléments ont un contraste insuffisant : text-muted-foreground
+      sur fond background atteint à peine AA. Badges outline sur fond carte.
+      Liens sans soulignement. Mode sombre incomplet.
+    solution: |
+      Audit systématique avec un outil de contraste (axe-core, Lighthouse).
+      Correction de tous les problèmes < AA. Objectif AAA pour le texte
+      principal, AA minimum pour tout le reste.
+    implementation: |
+      - Lancer un audit Lighthouse/Axe sur chaque page
+      - Assombrir `--color-muted-foreground` de 8-10% en light mode
+      - Ajouter `text-decoration: underline` sur tous les liens dans
+        le contenu textuel (pas dans les menus)
+      - Augmenter le contraste des badges `outline` sur fond `card`
+      - Vérifier contraste en dark mode (tous les tokens)
+      - Ajouter un test CI (workflow GitHub) qui vérifie le contraste
+        avec `@axe-core/playwright` ou similaire
+    neuroRationale: |
+      1 personne sur 12 (hommes) et 1 sur 200 (femmes) a une déficience
+      de vision des couleurs. Un mauvais contraste exclut ces utilisateurs
+      et signale un manque de professionnalisme. L'accessibilité n'est
+      pas optionnelle — c'est un marqueur de qualité premium.
+    acceptanceCriteria:
+      - Tous les textes ont un ratio ≥ 4.5:1 (AA) minimum
+      - Texte principal ≥ 7:1 (AAA)
+      - Liens dans le contenu sont soulignés
+      - Badges outline lisibles sur fond card
+      - Test automatique de contraste dans la CI
+    effort: M
+    priority: 10
+
+  - title: "[UX] Navigation clavier complète + Skip-to-content"
+    milestone: m8-accessibilite
+    labels: [ux, accessibility, keyboard]
+    problem: |
+      Le focus-visible est bien implémenté mais certains éléments
+      interactifs ne sont pas focusables. Les modales ne piègent pas
+      le focus. Pas de skip-to-content. La navigation admin sans souris
+      est impossible.
+    solution: |
+      Audit complet de la navigation au clavier. Ajouter skip-to-content.
+      Piéger le focus dans les modales/panels. Ordre de tabulation logique.
+    implementation: |
+      - `SkipToContent` : premier élément focusable, lien vers `#main-content`
+      - Rendre focusables : icônes d'action, éléments de liste interactifs,
+        boutons sans label visible (ajouter `aria-label`)
+      - Piéger le focus dans Dialog, AdminContextPanel, BottomSheet
+        (utiliser l'API `@base-ui/react` qui le supporte nativement)
+      - Ordre de tabulation : suivre la hiérarchie visuelle
+      - Raccourcis clavier admin documentés (Ctrl+K → search, etc.)
+      - Tester avec VoiceOver / NVDA (screen readers)
+    neuroRationale: |
+      La navigation clavier n'est pas qu'une question d'accessibilité —
+      c'est aussi une question de productivité pour les power users.
+      Les admins qui traitent des centaines d'items par jour gagnent
+      un temps considérable avec des raccourcis clavier.
+    acceptanceCriteria:
+      - Skip-to-content visible au premier tab
+      - Tous les éléments interactifs sont focusables
+      - Focus piégé dans les modales et panels
+      - Ordre de tabulation logique
+      - Testé avec VoiceOver sur macOS
+    effort: M
+    priority: 8
+
+  - title: "[UX] Attributs ARIA systématiques sur les composants interactifs"
+    milestone: m8-accessibilite
+    labels: [ux, accessibility, aria]
+    problem: |
+      Certains composants manquent d'attributs ARIA : pas de `role` sur
+      les éléments custom, pas de `aria-expanded` sur les toggles,
+      pas de `aria-live` pour les mises à jour dynamiques.
+    solution: |
+      Ajouter les attributs ARIA manquants sur tous les composants
+      du design system et les composants applicatifs.
+    implementation: |
+      - Design system components : vérifier que chaque composant
+        `@base-ui/react` expose les bons attributs (c'est souvent
+        automatique avec Base UI)
+      - Composants applicatifs à auditer :
+        * NotificationBell : `aria-label` avec compteur non lu,
+          `aria-expanded` sur le toggle
+        * CommandPalette : `role="dialog"`, `aria-modal`
+        * Sidebar : `role="navigation"`, `aria-label`
+        * Tables : `role="table"`, `aria-sort` sur les headers triables
+        * BottomSheet : `role="dialog"`, `aria-modal`
+        * Toast : `role="alert"`, `aria-live="polite"` (Sonner le fait déjà)
+      - Les notifications live (WebSocket) utilisent `aria-live="polite"`
+        pour annoncer les mises à jour aux lecteurs d'écran
+    neuroRationale: |
+      ARIA n'est pas visible pour l'utilisateur voyant mais transforme
+      l'expérience pour les utilisateurs de lecteurs d'écran. Un produit
+      premium est utilisable par TOUS. L'absence d'ARIA est un signal
+      d'amateurisme pour les utilisateurs avertis.
+    acceptanceCriteria:
+      - Tous les éléments interactifs ont un label accessible
+      - Les mises à jour dynamiques utilisent aria-live
+      - Les rôles sont corrects (pas de div cliquable sans role=button)
+      - Testé avec VoiceOver (macOS) et NVDA (Windows)
+    effort: M
+    priority: 7
+
+  # =========================================================================
+  # M9 – PERFORMANCE PERÇUE & MOMENTS DE DÉLICE
+  # =========================================================================
+
+  - title: "[UX] Transitions de page fluides entre navigations"
+    milestone: m9-polish
+    labels: [ux, animation, polish]
+    problem: |
+      Les navigations entre pages sont instantanées et brusques. Aucune
+      transition. Le cerveau perçoit les changements brusques comme une
+      "rupture" plutôt qu'un "flux".
+    solution: |
+      Ajouter des transitions de page subtiles (200-300ms) utilisant
+      framer-motion ou l'API View Transitions de Next.js.
+    implementation: |
+      - Utiliser `motion/react` avec `AnimatePresence` dans le layout :
+        * Fondu + léger slide vertical (10px) pour les changements de page
+        * Durée : 200ms, easing : ease-out
+        * Exit : fondu sortant + slide inverse
+      - Alternative : View Transitions API (Next.js 16 la supporte)
+        avec `next-view-transitions`
+      - Appliquer uniquement aux changements de route majeurs
+        (pas au changement de tab/onglet)
+      - Respecter `prefers-reduced-motion` (pas de transition si activé)
+    neuroRationale: |
+      Le cerveau traite les animations de transition comme des "ponts"
+      entre deux états. Sans transition, le changement est perçu comme
+      une erreur ou un bug. Une transition de 200ms donne au cerveau
+      le temps de s'adapter — la navigation semble plus fluide et
+      "intentionnelle". C'est le principe du "motion design" Apple.
+    acceptanceCriteria:
+      - Transition visible entre les pages principales
+      - Durée ≤ 300ms (pas de ralentissement perçu)
+      - Pas de transition si `prefers-reduced-motion`
+      - Fonctionne sur tous les navigateurs modernes
+    effort: M
+    priority: 7
+
+  - title: "[UX] Haptique feedback sur mobile pour les actions clés"
+    milestone: m9-polish
+    labels: [ux, mobile, haptic, polish]
+    problem: |
+      Aucune utilisation de l'API Vibration ou haptique. Les confirmations
+      (trade enregistré, signal liké, KYC approuvé) n'ont pas de retour
+      tactile — l'utilisateur doute que l'action a fonctionné.
+    solution: |
+      Ajouter `navigator.vibrate()` pour les actions importantes.
+      Pattern Apple : haptique léger (10ms) pour succès, moyen (20ms)
+      pour warnings, fort (30ms) pour erreurs.
+    implementation: |
+      - Créer `useHapticFeedback()` hook :
+        * Vérifie `'vibrate' in navigator`
+        * `haptic.light()` : vibration 10ms (confirmation douce : trade, like)
+        * `haptic.medium()` : vibration 20ms (warning, undo)
+        * `haptic.heavy()` : vibration [10,50,10] (erreur, action critique)
+      - Appliquer aux :
+        * Enregistrement de trade → light
+        * Ajout favori signal → light
+        * Action destructive → medium
+        * Erreur de validation → heavy
+        * Succès onboarding → light + confetti
+      - Ne pas utiliser si `prefers-reduced-motion`
+    neuroRationale: |
+      Le toucher est le sens le plus rapide (20ms au cerveau vs 100ms
+      pour la vision). Un haptique immédiat confirme l'action avant même
+      que l'utilisateur voie le résultat visuel — sentiment de "réponse
+      instantanée". Apple utilise l'haptique depuis l'iPhone 7 pour
+      créer cette connexion physique avec le digital.
+    acceptanceCriteria:
+      - Haptique sur les actions confirmées (trade, like, submit)
+      - Intensité adaptée au contexte
+      - Désactivé si `prefers-reduced-motion`
+      - Fallback silencieux si vibration non supportée
+    effort: S
+    priority: 5
+
+  - title: "[UX] Confetti contextualisé — déclencheurs documentés et étendus"
+    milestone: m9-polish
+    labels: [ux, delight, gamification]
+    problem: |
+      Le composant confetti existe mais ses déclencheurs ne sont pas
+      documentés. L'utilisateur ne sait pas quand/comment le confetti
+      apparaît et manque des opportunités de célébration.
+    solution: |
+      Déclencheurs clairs et documentés. Étendre le confetti à plus
+      de moments de célébration pertinents.
+    implementation: |
+      - Déclencheurs existants à vérifier/documenter
+      - Nouveaux déclencheurs :
+        * Premier trade enregistré
+        * Premier trade gagnant
+        * Streak de 7 jours atteint
+        * Streak de 30 jours atteint
+        * Complétion onboarding
+        * 50ᵉ trade enregistré
+        * 100ᵉ trade
+        * PnL mensuel positif (>0€)
+        * Record personnel de PnL battu
+      - Le confetti dure 3s max, ne bloque pas l'interface
+      - Son accompagné d'un message de félicitations personnalisé
+      - Ne pas déclencher plus d'une fois par jour
+    neuroRationale: |
+      La célébration visuelle (confetti) crée une "peak experience"
+      dans la courbe de satisfaction (peak-end rule de Kahneman).
+      L'utilisateur ne se souvient pas de la moyenne de son expérience
+      mais des pics émotionnels. Le confetti est un pic positif gratuit.
+    acceptanceCriteria:
+      - Confetti sur tous les déclencheurs listés
+      - Message personnalisé d'accompagnement
+      - Jamais plus d'une fois par jour
+      - Testé : ne bloque pas l'interface, ne ralentit pas
+    effort: S
+    priority: 5
+
+  - title: "[UX] Service Worker — cache offline + fallback réseau"
+    milestone: m9-polish
+    labels: [ux, pwa, offline, performance]
+    problem: |
+      L'app est "PWA-ready" (manifest, apple-mobile-web-app-capable)
+      mais pas de service worker. Perte de connexion = erreur réseau
+      au lieu de contenu en cache. Le composant offline-banner existe
+      mais n'est pas connecté.
+    solution: |
+      Implémenter un service worker avec stratégie cache-first pour
+      les assets et network-first avec fallback cache pour les données.
+    implementation: |
+      - Utiliser `next-pwa` ou `@serwist/next` pour générer le SW
+      - Stratégies de cache :
+        * CSS/JS/fonts : Cache-first (immutable, versionné)
+        * Images : Cache-first, expiration 30 jours
+        * Pages statiques : Stale-while-revalidate
+        * API/data : Network-first avec fallback cache (5 min)
+        * Page hors-ligne custom (pas de dinosaur Chrome)
+      - Connecter le composant `offline-banner.tsx` :
+        * Écouter l'événement `online/offline`
+        * Afficher la bannière "Mode hors-ligne" avec dernier refresh
+        * Masquer automatiquement quand la connexion revient
+    neuroRationale: |
+      Une erreur réseau est perçue comme un échec de l'application
+      (même si c'est la faute du réseau). Le mode offline transforme
+      l'absence de réseau en fonctionnalité ("je peux quand même voir
+      mes données"). L'utilisateur se sent "protégé" par l'app.
+    acceptanceCriteria:
+      - Service worker installé et actif
+      - Les pages déjà visitées sont accessibles hors-ligne
+      - Bannière offline visible quand la connexion est perdue
+      - Bannière disparaît quand la connexion revient
+      - Pas de régression sur le chargement initial
+    effort: L
+    priority: 6
+
+  - title: "[UX] Son des notifications — configurable et indépendant"
+    milestone: m9-polish
+    labels: [ux, notifications, settings]
+    problem: |
+      Le hook useNotificationSound joue un son mais l'utilisateur ne
+      peut pas le changer ou le désactiver indépendamment des notifs
+      visuelles.
+    solution: |
+      Ajouter un toggle "Son" dans les paramètres de notification.
+      Séparer "Push", "In-app", et "Son". Permettre de choisir le son.
+    implementation: |
+      - Dans la page paramètres / profil → section Notifications :
+        * Toggle "Notifications push" (existant via push-notification-toggle)
+        * Toggle "Notifications in-app" (nouveau)
+        * Toggle "Son des notifications" (nouveau)
+        * Sélecteur de son (2-3 options : doux, standard, alerte)
+      - Sauvegarder les préférences dans la DB (User model ou settings)
+      - useNotificationSound lit la préférence avant de jouer le son
+      - Désactiver le son automatiquement si le device est en mode silencieux
+        (détecter via `navigator.userAgent` ou API si disponible)
+    neuroRationale: |
+      Le contrôle perçu est un besoin psychologique fondamental
+      (théorie de l'autodétermination, Deci & Ryan). Donner le choix
+      du son et la possibilité de le désactiver augmente la satisfaction
+      même si l'utilisateur ne change jamais les réglages par défaut.
+    acceptanceCriteria:
+      - Toggle Son indépendant des toggles Push et In-app
+      - 2-3 options de son
+      - Préférences persistées en DB
+      - Respect du mode silencieux du device
+    effort: S
+    priority: 4
+
+  - title: "[UX] Mise en avant de la sécurité comme avantage marketing"
+    milestone: m9-polish
+    labels: [ux, security, trust, marketing]
+    problem: |
+      L'infrastructure de sécurité est techniquement excellente (device
+      fingerprinting, risk engine, hash-chain audit, 50+ event types)
+      mais TOTALEMENT invisible pour l'utilisateur. Un gâchis marketing.
+    solution: |
+      Ajouter des indicateurs de sécurité visibles : shield dans le
+      header, page "Sécurité de mon compte", notification "Connexion
+      inhabituelle détectée" (quand c'est légitime).
+    implementation: |
+      - Badge "Compte protégé" avec shield et tooltip :
+        * "Votre compte est surveillé 24/7. Dernière vérification : il y a X min."
+      - Page "Sécurité" accessible depuis le profil :
+        * Liste des sessions actives
+        * Liste des devices de confiance
+        * Historique des connexions (pays, IP, device)
+        * Score de risque actuel
+        * "Aucune activité suspecte détectée" (message rassurant)
+      - Email "Nouvelle connexion" déjà existant → le mettre en avant
+        dans l'onboarding ("Nous protégeons votre compte")
+    neuroRationale: |
+      La sécurité invisible n'existe pas dans l'esprit de l'utilisateur.
+      Rendre la sécurité visible crée de la confiance — surtout dans le
+      trading où l'argent est en jeu. C'est le principe de "signal
+      coûteux" (costly signaling) : montrer qu'on investit dans la
+      sécurité prouve qu'on est une plateforme sérieuse.
+    acceptanceCriteria:
+      - Badge shield visible dans le header (desktop et mobile)
+      - Page sécurité avec sessions, devices, historique
+      - Message rassurant si tout va bien
+      - Email nouvelle connexion mentionné dans l'onboarding
+    effort: M
+    priority: 6

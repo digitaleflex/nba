@@ -18,6 +18,7 @@ export interface Suggestion {
 }
 
 interface SecurityEvent {
+  id: string
   type: string
   userId: string
   ipAddress: string | null

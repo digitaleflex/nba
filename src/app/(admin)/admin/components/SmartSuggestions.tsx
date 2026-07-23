@@ -8,6 +8,7 @@ import { evaluateSuggestions } from "../lib/suggestion-rules"
 
 interface SmartSuggestionsProps {
   events?: Array<{
+    id: string
     type: string
     userId: string
     ipAddress: string | null

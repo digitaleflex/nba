@@ -221,8 +221,8 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             <CardContent className="p-4">
               <SmartSuggestions
                 events={[
-                  ...(secData?.highEvents > 0 ? [{ type: "LOGIN_FAILED", userId: "1", ipAddress: "192.168.1.1", createdAt: new Date().toISOString(), severity: "HIGH", user: { name: "Jean", email: "jean@email.com" } }] : []),
-                  ...(secData?.blockedIps > 0 ? [{ type: "SHARED_IP", userId: "2", ipAddress: "10.0.0.1", createdAt: new Date().toISOString(), severity: "MEDIUM", user: { name: "Marie", email: "marie@email.com" } }] : []),
+                  ...(secData?.highEvents > 0 ? [{ id: "evt-1", type: "LOGIN_FAILED", userId: "1", ipAddress: "192.168.1.1", createdAt: new Date().toISOString(), severity: "HIGH", user: { name: "Jean", email: "jean@email.com" } }] : []),
+                  ...(secData?.blockedIps > 0 ? [{ id: "evt-2", type: "SHARED_IP", userId: "2", ipAddress: "10.0.0.1", createdAt: new Date().toISOString(), severity: "MEDIUM", user: { name: "Marie", email: "marie@email.com" } }] : []),
                 ]}
               />
             </CardContent>

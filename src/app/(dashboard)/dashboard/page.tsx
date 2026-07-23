@@ -3,7 +3,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent, Button, cn } from "@nba/design-system"
-import { DashboardKpis } from "./dashboard/components/dashboard-kpis"
+import { DashboardKpis } from "./components/dashboard-kpis"
 import {
   TrendingUp,
   BookOpen,

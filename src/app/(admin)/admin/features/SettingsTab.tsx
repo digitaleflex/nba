@@ -155,10 +155,6 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
           <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
         ) : plans.length === 0 ? (
           <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
-        {loadingPlans ? (
-          <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
-        ) : plans.length === 0 ? (
-          <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
         ) : (
           <div className="space-y-2">
             {plans.map((plan) => (

@@ -158,7 +158,7 @@ export function StepEmail({ onNext }: StepEmailProps) {
                 />
               </div>
 
-              <Button onClick={handleVerifyOTP} className="w-full h-9" disabled={loading || code.length !== 6}>
+              <Button onClick={() => handleVerifyOTP()} className="w-full h-9" disabled={loading || code.length !== 6}>
                 {loading ? <Loader2 className="size-4 animate-spin mr-2" /> : null}
                 Valider le code
                 {!loading && <ArrowRight className="size-4 ml-2" />}

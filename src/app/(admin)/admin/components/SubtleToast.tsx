@@ -17,7 +17,7 @@ export function SubtleToast({ message, type, duration = 3000, onClose }: SubtleT
   useEffect(() => {
     const timer = setTimeout(() => {
       setVisible(false)
-      setTimeout(onClose, 300)
+      setTimeout(() => onClose?.(), 300)
     }, duration)
     return () => clearTimeout(timer)
   }, [duration, onClose])

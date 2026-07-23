@@ -4,7 +4,7 @@ import { prisma } from "@nba/lib/db"
 
 const undoHandlers: Record<string, (id: string) => Promise<void>> = {
   "unban": async (email) => {
-    await prisma.ban.deleteMany({ where: { email } })
+    await prisma.user.updateMany({ where: { email }, data: { isActive: true, suspendedAt: null } })
   },
   "restore-member": async (userId) => {
     await prisma.user.update({ where: { id: userId }, data: { isActive: true } })

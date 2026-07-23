@@ -9,7 +9,7 @@ export default async function OnboardingWizardPage() {
 
   const state = await getOnboardingState(session.user.id)
 
-  if (state.status === "ACTIVE" || state.status === "COMPLETED") {
+  if (state.status === "ACTIVE") {
     redirect("/dashboard")
   }
 
