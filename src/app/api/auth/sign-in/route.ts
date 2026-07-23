@@ -4,15 +4,36 @@ import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+import { getConnection as getRedis } from "@nba/lib/redis-pubsub"
 import { msg } from "@nba/lib/messages"
 import { detectNewDevice, sendVerificationCode } from "@nba/lib/services/device"
 import { syncRiskEngine, asyncRiskEngine } from "@nba/lib/security/risk-engine"
 import { SessionManager } from "@nba/lib/security/session-manager"
 import { securityEventBus } from "@nba/lib/security/security-event-bus"
+import { incidentResponder } from "@nba/lib/security/incident-responder"
+import { abuseDetector } from "@nba/lib/security/abuse-detector"
 
 const log = logger.child({ module: "sign-in" })
 const signInRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
 const sessionManager = new SessionManager()
+
+const PLAYBOOK_BY_ABUSE: Record<string, string> = {
+  BRUTE_FORCE: "BRUTE_FORCE",
+  BLOCKED_DEVICE_LOGIN: "ACCOUNT_TAKEOVER",
+  LOGIN_VELOCITY: "CREDENTIAL_STUFFING",
+  LOGIN_FROM_TOR: "DORMANT_ACCOUNT_REUSE",
+  DORMANT_ACCOUNT_REUSE: "DORMANT_ACCOUNT_REUSE",
+}
+
+async function blockLoginAndRespond(
+  userId: string, sessionId: string | undefined,
+  message: string, status: number,
+): Promise<NextResponse> {
+  if (sessionId) {
+    await prisma.session.deleteMany({ where: { id: sessionId } })
+  }
+  return NextResponse.json({ message }, { status })
+}
 
 export async function POST(req: NextRequest) {
   let email = ""
@@ -30,6 +51,20 @@ export async function POST(req: NextRequest) {
     ipAddress = h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? undefined
     userAgent = h.get("user-agent") ?? undefined
 
+    // ── Pre-auth : IP bloquee ? ──
+    if (ipAddress) {
+      const redis = getRedis()
+      if (redis) {
+        const blocked = await redis.get(`blocked:ip:${ipAddress}`)
+        if (blocked) {
+          return NextResponse.json(
+            { message: "Accès temporairement bloqué" },
+            { status: 429 },
+          )
+        }
+      }
+    }
+
     // ── Delegate to better-auth (credentials validated here) ──
     const response = await auth.api.signInEmail({
       body: {
@@ -41,7 +76,7 @@ export async function POST(req: NextRequest) {
       asResponse: true,
     })
 
-    // ── Post-auth : device detection + session binding ──
+    // ── Post-auth : securite + device binding ──
     if (response.ok || response.status === 200) {
       let userId: string | undefined
       let sessionId: string | undefined
@@ -77,31 +112,121 @@ export async function POST(req: NextRequest) {
             await sessionManager.bindSessionToDevice(sessionId, deviceId)
           }
 
-          // Risk scoring async
-          if (sessionId && ipAddress) {
-            await asyncRiskEngine.evaluateAsync(sessionId, userId, ipAddress, deviceId)
+          // ── Sync risk evaluation (avec toutes les donnees) ──
+          const user = await prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+              twoFactorBackupCodes: { take: 1, select: { id: true } },
+              securityPolicy: { select: { require2fa: true } },
+              accessRequests: {
+                where: { status: "APPROVED" },
+                select: { plan: { select: { maxSessions: true } } },
+                take: 1,
+              },
+            },
+          })
+
+          const has2fa = (user?.twoFactorBackupCodes?.length ?? 0) > 0 || user?.securityPolicy?.require2fa === true
+
+          const riskResult = await syncRiskEngine.evaluate({
+            userId,
+            email,
+            ipAddress: ipAddress ?? "",
+            userAgent: userAgent ?? "",
+            deviceId,
+            has2fa,
+            planMaxSessions: user?.accessRequests?.[0]?.plan?.maxSessions ?? 5,
+          })
+
+          if (riskResult.shouldBlock) {
+            await securityEventBus.emit({
+              userId, type: "LOGIN_BLOCKED", severity: "HIGH",
+              details: { reason: "sync_risk", score: riskResult.totalScore, factors: riskResult.factors },
+              ipAddress, sessionId, deviceId,
+              riskScore: riskResult.totalScore,
+            })
+            return blockLoginAndRespond(userId, sessionId, "Connexion bloquée par le système de sécurité", 423)
           }
 
-          // Abuse detection
-          if (userId && ipAddress) {
-            const { abuseDetector } = await import("@nba/lib/security/abuse-detector")
-            const abuse = await abuseDetector.checkLogin(userId, ipAddress, deviceId)
-            if (abuse && abuse.action === "suspend") {
-              await securityEventBus.emit({
-                userId, type: "SECURITY_ALERT", severity: "HIGH",
-                details: { abuse: abuse.type, category: abuse.category },
-                ipAddress, sessionId, deviceId,
-              })
+          if (riskResult.requiresChallenge) {
+            const redis = getRedis()
+            if (redis && sessionId) {
+              await redis.setex(`challenge_2fa:${userId}:${sessionId}`, 600, "1")
             }
           }
 
-          // Notification nouvel appareil
+          // ── Abuse detection + enforcement ──
+          if (ipAddress) {
+            const abuse = await abuseDetector.checkLogin(userId, ipAddress, deviceId)
+            if (abuse) {
+              await securityEventBus.emit({
+                userId, type: "SECURITY_ALERT", severity: "HIGH",
+                details: { abuse: abuse.type, category: abuse.category, action: abuse.action },
+                ipAddress, sessionId, deviceId,
+              })
+
+              switch (abuse.action) {
+                case "suspend": {
+                  await prisma.user.update({
+                    where: { id: userId },
+                    data: { isActive: false, suspendedAt: new Date() },
+                  })
+                  const playbookType = PLAYBOOK_BY_ABUSE[abuse.type]
+                  if (playbookType) {
+                    await incidentResponder.execute(userId, playbookType, { ipAddress, sessionId })
+                  }
+                  return blockLoginAndRespond(userId, sessionId, "Compte suspendu - activité suspecte", 423)
+                }
+
+                case "block_ip": {
+                  const redis = getRedis()
+                  if (redis) {
+                    await redis.setex(`blocked:ip:${ipAddress}`, 86400, "1")
+                  }
+                  return blockLoginAndRespond(userId, sessionId, "Accès refusé", 429)
+                }
+
+                case "challenge_2fa": {
+                  const redis = getRedis()
+                  if (redis && sessionId) {
+                    await redis.setex(`challenge_2fa:${userId}:${sessionId}`, 600, "1")
+                  }
+                  const playbookType = PLAYBOOK_BY_ABUSE[abuse.type]
+                  if (playbookType) {
+                    await incidentResponder.execute(userId, playbookType, { ipAddress, sessionId })
+                  }
+                  break
+                }
+              }
+            }
+          }
+
+          // ── Abuse detection signup si nouveau compte ──
           if (isNewDevice) {
-            const user = await prisma.user.findUnique({
+            const signupAbuse = await abuseDetector.checkSignup(email, ipAddress ?? "", deviceId ?? "")
+            if (signupAbuse && signupAbuse.action !== "log") {
+              await securityEventBus.emit({
+                userId, type: "SECURITY_ALERT", severity: "HIGH",
+                details: { abuse: signupAbuse.type, category: signupAbuse.category },
+                ipAddress, sessionId, deviceId,
+              })
+              if (signupAbuse.action === "block_ip") {
+                const redis = getRedis()
+                if (redis) {
+                  await redis.setex(`blocked:ip:${ipAddress}`, 86400, "1")
+                }
+                await incidentResponder.execute(userId, "MULTIPLE_ACCOUNTS", { ipAddress, sessionId })
+              }
+            }
+          }
+
+          // ── Notification nouvel appareil ──
+          if (isNewDevice) {
+            const notifiedUser = await prisma.user.findUnique({
               where: { id: userId },
               select: { name: true, email: true },
             })
-            if (user) {
+            if (notifiedUser) {
               await securityEventBus.emit({
                 userId,
                 type: "LOGIN_NEW_DEVICE",
@@ -112,8 +237,13 @@ export async function POST(req: NextRequest) {
                 deviceId,
                 sessionId,
               })
-              await sendVerificationCode(userId, user.email, req)
+              await sendVerificationCode(userId, notifiedUser.email, req)
             }
+          }
+
+          // ── Risk scoring async ──
+          if (sessionId && ipAddress) {
+            await asyncRiskEngine.evaluateAsync(sessionId, userId, ipAddress, deviceId)
           }
         }
       } catch (err) {

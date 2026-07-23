@@ -12,14 +12,15 @@ interface AlertRule {
   threshold: number
   action: "notify" | "block_ip" | "suspend_account"
   severity: "WARNING" | "HIGH" | "CRITICAL"
+  playbookType?: string
 }
 
 const RULES: AlertRule[] = [
-  { name: "brute_force", eventType: "LOGIN_FAILED", windowMinutes: 1, threshold: 5, action: "suspend_account", severity: "HIGH" },
-  { name: "impossible_travel_burst", eventType: "IMPOSSIBLE_TRAVEL_DETECTED", windowMinutes: 60, threshold: 3, action: "suspend_account", severity: "CRITICAL" },
-  { name: "session_hijack", eventType: "SESSION_HIJACK_DETECTED", windowMinutes: 5, threshold: 1, action: "notify", severity: "CRITICAL" },
-  { name: "twofa_disabled_suspicious", eventType: "TWOFA_DISABLED", windowMinutes: 5, threshold: 1, action: "notify", severity: "HIGH" },
-  { name: "rate_limit_burst", eventType: "RATE_LIMIT_EXCEEDED", windowMinutes: 60, threshold: 50, action: "block_ip", severity: "WARNING" },
+  { name: "brute_force", eventType: "LOGIN_FAILED", windowMinutes: 1, threshold: 5, action: "suspend_account", severity: "HIGH", playbookType: "BRUTE_FORCE" },
+  { name: "impossible_travel_burst", eventType: "IMPOSSIBLE_TRAVEL_DETECTED", windowMinutes: 60, threshold: 3, action: "suspend_account", severity: "CRITICAL", playbookType: "IMPOSSIBLE_TRAVEL" },
+  { name: "session_hijack", eventType: "SESSION_HIJACK_DETECTED", windowMinutes: 5, threshold: 1, action: "notify", severity: "CRITICAL", playbookType: "SESSION_HIJACK" },
+  { name: "twofa_disabled_suspicious", eventType: "TWOFA_DISABLED", windowMinutes: 5, threshold: 1, action: "notify", severity: "HIGH", playbookType: "ACCOUNT_TAKEOVER" },
+  { name: "rate_limit_burst", eventType: "RATE_LIMIT_EXCEEDED", windowMinutes: 60, threshold: 50, action: "block_ip", severity: "WARNING", playbookType: "API_SCRAPING" },
 ]
 
 export class SecurityEventRules {
@@ -68,6 +69,11 @@ export class SecurityEventRules {
 
           case "notify":
             break
+        }
+
+        if (rule.playbookType) {
+          const { incidentResponder } = await import("./incident-responder")
+          await incidentResponder.execute(userId, rule.playbookType, { ipAddress })
         }
       }
     } catch (err) {

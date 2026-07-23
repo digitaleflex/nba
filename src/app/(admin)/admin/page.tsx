@@ -7,33 +7,29 @@ import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
 
-import { SystemPulse } from "./components/SystemPulse"
-import { SystemAlert } from "./components/SystemAlert"
-import { NotificationBadge } from "./components/NotificationBadge"
+import { DashboardTab } from "./features/DashboardTab"
+import { RequestsTab } from "./features/RequestsTab"
+import { SignalsTab } from "./features/SignalsTab"
+import { KycTab } from "./features/KycTab"
+import { BrokerTab } from "./features/BrokerTab"
+
+import { AnalyticsTab } from "./features/AnalyticsTab"
+import { SecurityTab } from "./features/SecurityTab"
+import { FraudTab } from "./features/FraudTab"
+import { EmailsTab } from "./features/EmailsTab"
+import { SettingsTab } from "./features/SettingsTab"
+import { AuditTab } from "./features/AuditTab"
+import { UsersTab } from "./features/UsersTab"
+import { MembresTab } from "./features/MembresTab"
+import { NotificationsTab } from "./features/NotificationsTab"
+import { ModerationTab } from "./features/ModerationTab"
+import { FormationTab } from "./features/FormationTab"
+import { DevicesTab } from "./features/DevicesTab"
+import { CronsTab } from "./features/CronsTab"
 import { AdminTools } from "./components/admin-tools"
-import { AdminSidebar } from "./components/admin-sidebar"
-import { TabSkeleton } from "./components/tab-skeleton"
+
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
-
-const DashboardTab = dynamic(() => import("./features/DashboardTab"), { loading: () => <TabSkeleton />, ssr: false })
-const UsersTab = dynamic(() => import("./features/UsersTab"), { loading: () => <TabSkeleton />, ssr: false })
-const MembresTab = dynamic(() => import("./features/MembresTab"), { loading: () => <TabSkeleton />, ssr: false })
-const RequestsTab = dynamic(() => import("./features/RequestsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const SignalsTab = dynamic(() => import("./features/SignalsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const KycTab = dynamic(() => import("./features/KycTab"), { loading: () => <TabSkeleton />, ssr: false })
-const BrokerTab = dynamic(() => import("./features/BrokerTab"), { loading: () => <TabSkeleton />, ssr: false })
-const AnalyticsTab = dynamic(() => import("./features/AnalyticsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const SecurityTab = dynamic(() => import("./features/SecurityTab"), { loading: () => <TabSkeleton />, ssr: false })
-const FraudTab = dynamic(() => import("./features/FraudTab"), { loading: () => <TabSkeleton />, ssr: false })
-const EmailsTab = dynamic(() => import("./features/EmailsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const SettingsTab = dynamic(() => import("./features/SettingsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const NotificationsTab = dynamic(() => import("./features/NotificationsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const AuditTab = dynamic(() => import("./features/AuditTab"), { loading: () => <TabSkeleton />, ssr: false })
-const FormationTab = dynamic(() => import("./features/FormationTab"), { loading: () => <TabSkeleton />, ssr: false })
-const DevicesTab = dynamic(() => import("./features/DevicesTab"), { loading: () => <TabSkeleton />, ssr: false })
-const CronsTab = dynamic(() => import("./features/CronsTab"), { loading: () => <TabSkeleton />, ssr: false })
-const RevenueTab = dynamic(() => import("./features/RevenueTab"), { loading: () => <TabSkeleton />, ssr: false })
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
@@ -102,52 +98,12 @@ function AdminConsoleContent() {
   // Support tickets for sidebar badge
   const [tickets, setTickets] = useState<any[]>([])
 
-  // System Pulse health state
-  const [health, setHealth] = useState<{ status: "healthy" | "degraded" | "down"; lastActivity: string; activityRate: number; activeAlerts: number } | null>(null)
-
-  // System alerts state (Notifications subtiles #256)
-  const [systemAlerts, setSystemAlerts] = useState<Array<{ id: string; severity: "critical" | "warning"; title: string; description: string; actionLabel?: string; onAction?: () => void }>>([])
-  const dismissAlert = useCallback((id: string) => {
-    setSystemAlerts((prev) => prev.filter((a) => a.id !== id))
-  }, [])
-
   // Fetch support ticket count for badge
   useEffect(() => {
     fetch("/api/admin/support")
       .then(r => r.json())
       .then(data => setTickets(Array.isArray(data?.messages) ? data.messages : []))
       .catch(() => {})
-  }, [])
-
-  // Pulse polling every 3s
-  useEffect(() => {
-    function poll() {
-      fetch("/api/admin/security/fraud/health")
-        .then(r => r.json())
-        .then(d => {
-          setHealth(d)
-          if (d.status === "degraded" || d.status === "down") {
-            setSystemAlerts((prev) => {
-              const exists = prev.some((a) => a.id === "system-health")
-              if (exists) return prev
-              return [...prev, {
-                id: "system-health",
-                severity: d.status === "down" ? "critical" as const : "warning" as const,
-                title: d.status === "down" ? "Système en panne" : "Mode dégradé",
-                description: `${d.activeAlerts} alerte${d.activeAlerts > 1 ? "s" : ""} active${d.activeAlerts > 1 ? "s" : ""} — ${d.activityRate} action${d.activityRate > 1 ? "s" : ""}/min`,
-                actionLabel: "Voir les logs",
-                onAction: () => { window.location.href = "/admin?tab=audit" },
-              }]
-            })
-          } else {
-            setSystemAlerts((prev) => prev.filter((a) => a.id !== "system-health"))
-          }
-        })
-        .catch(() => {})
-    }
-    poll()
-    const id = setInterval(poll, 3000)
-    return () => clearInterval(id)
   }, [])
 
   // Refetch registration from the active tab (used by the shared context panel)
@@ -470,30 +426,34 @@ function AdminConsoleContent() {
   return (
     <div className="min-h-screen text-foreground font-sans antialiased flex pb-20 md:pb-0">
 
-      <AdminSidebar activeTab={activeTab} supportCount={openTickets} />
+      {/* ============================================================== */}
+      {/* MAIN CONTENT */}
+      {/* ============================================================== */}
+      <main className="flex-1 min-w-0 p-4 md:p-6 lg:p-8">
 
-      <main className="flex-1 min-w-0">
+      <div className="space-y-7 animate-in fade-in-50 duration-200">
 
-      <div className="animate-in fade-in-50 duration-200">
-
-        <div className="relative md:hidden border-b border-border/40 bg-background/60">
-          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 px-4 py-2.5 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
+        {/* ============================================================== */}
+        {/* MOBILE SUB-NAVIGATION (horizontal scroll, hidden on md+) */}
+        {/* ============================================================== */}
+        <div className="relative md:hidden">
+          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
             {ADMIN_CONTEXTS.flatMap((context, gi) => {
               const items: React.ReactNode[] = []
               const isContextActive = getContextForTab(activeTab) === context.id
               if (gi > 0) {
-                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-4 bg-border/30 mx-1" />)
+                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
               }
               items.push(
-                <span key={`gl-${gi}`} className={cn("shrink-0 text-[10px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/50")}>
+                <span key={`gl-${gi}`} className={cn("shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
                   {context.label}
                 </span>
               )
               context.tabs.forEach((tab) => {
                 items.push(
                   <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                    className={cn("text-[11px] px-3.5 py-1.5 rounded-lg border transition-colors cursor-pointer shrink-0 snap-start font-medium", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary shadow-sm" : "border-border/60 text-muted-foreground hover:bg-muted/50 hover:text-foreground hover:border-border")}
+                    className={cn("text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
                   >
                     {tab.label}
                   </button>
@@ -504,161 +464,130 @@ function AdminConsoleContent() {
           </div>
         </div>
 
-        <div className="p-4 md:p-6 lg:p-8 space-y-7">
+        {/* ============================================================== */}
+        {/* OUTILS SUPER-ADMIN (toujours visibles) */}
+        {/* ============================================================== */}
         <AdminTools />
-
-        {health && (
-          <SystemPulse
-            status={health.status}
-            lastActivity={health.lastActivity ? new Date(health.lastActivity) : null}
-            activityRate={health.activityRate}
-            activeAlerts={health.activeAlerts}
-          />
-        )}
-
-        {systemAlerts.length > 0 && (
-          <div className="space-y-2">
-            {systemAlerts.map((alert) => (
-              <SystemAlert key={alert.id} alert={alert} onDismiss={dismissAlert} />
-            ))}
-          </div>
-        )}
 
         {/* ============================================================== */}
         {/* MODULE VIEWS */}
         {/* ============================================================== */}
         {activeTab === "dashboard" && (
-          <div key="dashboard" className="animate-slide-right">
-            <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
-          </div>
+          <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
         )}
 
         {activeTab === "users" && (
-          <div key="users" className="animate-slide-right">
-            <UsersTab
-              cachedGet={cachedGet}
-              invalidate={invalidateAdminCache}
-              onOpenPanel={openPanel}
-              registerRefetch={registerRefetch}
-              initialSearch={searchParams.get("search") || ""}
-            />
-          </div>
+          <UsersTab
+            cachedGet={cachedGet}
+            invalidate={invalidateAdminCache}
+            onOpenPanel={openPanel}
+            registerRefetch={registerRefetch}
+            initialSearch={searchParams.get("search") || ""}
+          />
         )}
 
         {activeTab === "membres" && (
-          <div key="membres" className="animate-slide-right">
-            <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
-          </div>
+          <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
 
         {activeTab === "requests" && (
-          <div key="requests" className="animate-slide-right">
-            <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
-          </div>
+          <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
         )}
 
         {activeTab === "signals" && (
-          <div key="signals" className="animate-slide-right">
-            <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
-          </div>
+          <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
         )}
 
         {activeTab === "kyc" && (
-          <div key="kyc" className="animate-slide-right">
-            <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
-          </div>
+          <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
         )}
 
         {activeTab === "broker" && (
-          <div key="broker" className="animate-slide-right">
-            <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
-          </div>
+          <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
         )}
 
         {activeTab === "stats" && (
-          <div key="stats" className="animate-slide-right space-y-6">
-            <TabPageHeader title="Statistiques globales" description="Compteurs clés consolidés d'activité de la plateforme NBA." />
-            {opsData ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <StatCard label="Membres" value={opsData.stats.totalMembers} />
-                <StatCard label="Signaux émis" value={opsData.stats.publishedSignalsCount} />
-                <StatCard label="Dossiers KYC Validés" value={opsData.stats.approvedKycCount} />
-                <StatCard label="E-mails envoyés" value={opsData.stats.totalEmailsSent ?? 0} />
-                <StatCard label="E-mails en échec" value={opsData.attention.failedEmailsCount ?? 0} trend={opsData.attention.failedEmailsCount > 0 ? "down" : "neutral"} />
-                <StatCard label="Notifications envoyées" value={opsData.stats.totalNotificationsSent ?? 0} />
+          <div className="space-y-6">
+            <div className="flex items-center justify-between border-b border-border pb-5">
+              <div>
+                <h1 className="text-xl font-bold tracking-tight text-foreground">Statistiques globales</h1>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Compteurs clés consolidés d&apos;activité de la plateforme NBA.
+                </p>
               </div>
-            ) : (
-              <div className="py-20 text-center text-sm text-muted-foreground">Chargement...</div>
-            )}
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+              {opsData && (
+                <>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Membres</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalMembers || 0}</p>
+                  </Card>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Signaux émis</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.publishedSignalsCount || 0}</p>
+                  </Card>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Dossiers KYC Validés</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.approvedKycCount || 0}</p>
+                  </Card>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails envoyés</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalEmailsSent ?? 0}</p>
+                  </Card>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails en échec</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.attention?.failedEmailsCount ?? 0}</p>
+                  </Card>
+                  <Card className="border-border bg-card/30 p-6 space-y-1">
+                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Notifications envoyées</span>
+                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalNotificationsSent ?? 0}</p>
+                  </Card>
+                </>
+              )}
+            </div>
           </div>
         )}
 
         {activeTab === "analytics" && (
-          <div key="analytics" className="animate-slide-right">
-            <AnalyticsTab cachedGet={cachedGet} />
-          </div>
-        )}
-
-        {activeTab === "revenue" && (
-          <div key="revenue" className="animate-slide-right">
-            <RevenueTab cachedGet={cachedGet} />
-          </div>
+          <AnalyticsTab cachedGet={cachedGet} />
         )}
 
         {activeTab === "security" && (
-          <div key="security" className="animate-slide-right">
-            <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
-          </div>
+          <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
         {activeTab === "fraud" && (
-          <div key="fraud" className="animate-slide-right">
-            <FraudTab />
-          </div>
+          <FraudTab />
         )}
 
         {activeTab === "emails" && (
-          <div key="emails" className="animate-slide-right">
-            <EmailsTab cachedGet={cachedGet} opsData={opsData} />
-          </div>
+          <EmailsTab cachedGet={cachedGet} opsData={opsData} />
         )}
 
         {activeTab === "settings" && (
-          <div key="settings" className="animate-slide-right">
-            <SettingsTab cachedGet={cachedGet} />
-          </div>
+          <SettingsTab cachedGet={cachedGet} />
         )}
 
         {activeTab === "notifications" && (
-          <div key="notifications" className="animate-slide-right">
-            <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
-          </div>
+          <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
 
         {activeTab === "audit" && (
-          <div key="audit" className="animate-slide-right">
-            <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
-          </div>
+          <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
 
         {activeTab === "formation" && (
-          <div key="formation" className="animate-slide-right">
-            <FormationTab />
-          </div>
+          <FormationTab />
         )}
 
         {activeTab === "devices" && (
-          <div key="devices" className="animate-slide-right">
-            <DevicesTab />
-          </div>
+          <DevicesTab />
         )}
 
         {activeTab === "crons" && (
-          <div key="crons" className="animate-slide-right">
-            <CronsTab />
-          </div>
+          <CronsTab />
         )}
 
-        </div>{/* fermeture p-4 md:p-6 lg:p-8 */}
       </div>
 
       {/* Admin sliding contextual detail panel */}
@@ -672,30 +601,6 @@ function AdminConsoleContent() {
         onAction={handlePanelAction}
       />
       </main>
-    </div>
-  )
-}
-
-function StatCard({ label, value, trend }: { label: string; value: number; trend?: "up" | "down" | "neutral" }) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm">
-      <div className="p-5 space-y-1.5">
-        <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">{label}</span>
-        <div className="flex items-center gap-2">
-          <p className="text-2xl font-bold text-foreground">{value}</p>
-          {trend === "up" && <span className="text-[10px] text-emerald-500">▲</span>}
-          {trend === "down" && <span className="text-[10px] text-rose-500">▼</span>}
-        </div>
-      </div>
-    </Card>
-  )
-}
-
-function TabPageHeader({ title, description }: { title: string; description?: string }) {
-  return (
-    <div className="border-b border-border/40 pb-4 mb-6">
-      <h1 className="text-xl font-bold tracking-tight text-foreground">{title}</h1>
-      {description && <p className="text-xs text-muted-foreground mt-1">{description}</p>}
     </div>
   )
 }

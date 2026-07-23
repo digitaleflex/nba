@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server"
+import { getServerSession } from "@nba/lib/get-session"
+import { prisma } from "@nba/lib/db"
 
 const api = {
   openapi: "3.0.3",
@@ -104,6 +106,19 @@ const api = {
   ],
 }
 
+const ADMIN_ROLES = ["SUPER_ADMIN", "ADMIN"]
+
 export async function GET() {
+  const session = await getServerSession()
+  if (!session?.user) {
+    return NextResponse.json({ code: "UNAUTHORIZED", message: "Authentification requise" }, { status: 401 })
+  }
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { role: { select: { name: true } } },
+  })
+  if (!user || !ADMIN_ROLES.includes(user.role.name)) {
+    return NextResponse.json({ code: "FORBIDDEN", message: "Accès réservé aux administrateurs" }, { status: 403 })
+  }
   return NextResponse.json(api)
 }

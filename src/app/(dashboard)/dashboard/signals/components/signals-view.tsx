@@ -202,7 +202,6 @@ export function SignalsView() {
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
-  const lastFetchRef = useRef(0)
   const [liveArrivals, setLiveArrivals] = useState<Set<string>>(new Set())
   const liveArrivalsRef = useRef<Set<string>>(new Set())
 
@@ -264,7 +263,6 @@ export function SignalsView() {
       }
       setPagination(data.pagination ?? { page: 1, totalPages: 1, totalCount: 0 })
       setSummary(data.summary ?? {})
-      lastFetchRef.current = Date.now()
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
     } finally {
@@ -320,15 +318,7 @@ export function SignalsView() {
     }
   }, [socket, signals])
 
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === "visible" && Date.now() - lastFetchRef.current > 30000) {
-        fetchSignals(1, false)
-      }
-    }
-    document.addEventListener("visibilitychange", onVisible)
-    return () => document.removeEventListener("visibilitychange", onVisible)
-  }, [fetchSignals])
+  // Pas de refresh automatique au retour d'onglet — ça cassait la navigation.
 
   const handleLoadMore = () => {
     if (pagination && pagination.page < pagination.totalPages) {

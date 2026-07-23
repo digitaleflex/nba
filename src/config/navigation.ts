@@ -226,6 +226,22 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       section: "surveiller",
       isActive: (pathname) => pathname === "/admin/tracker",
     },
+    {
+      id: "developer",
+      href: "/admin/developer",
+      label: "Console développeur",
+      icon: Settings,
+      section: "surveiller",
+      isActive: (pathname) => pathname === "/admin/developer",
+    },
+    {
+      id: "cache",
+      href: "/admin/cache",
+      label: "Cache",
+      icon: Activity,
+      section: "surveiller",
+      isActive: (pathname) => pathname === "/admin/cache",
+    },
   ],
   decider: [
     {
@@ -255,6 +271,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       section: "communiquer",
       isActive: (pathname) => pathname === "/admin/support",
     },
+    {
+      id: "coaching",
+      href: "/admin/coaching",
+      label: "Coaching",
+      icon: BookOpen,
+      section: "communiquer",
+      isActive: (pathname) => pathname === "/admin/coaching",
+    },
   ],
   auditer: [
     {
@@ -272,6 +296,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       icon: Activity,
       section: "auditer",
       isActive: (pathname) => pathname.startsWith("/admin/webhooks/dlq"),
+    },
+    {
+      id: "queues",
+      href: "/admin/queues",
+      label: "Files d'attente",
+      icon: ListTodo,
+      section: "auditer",
+      isActive: (pathname) => pathname === "/admin/queues",
     },
   ],
 }
