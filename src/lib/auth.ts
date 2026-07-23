@@ -47,9 +47,9 @@ export const auth = betterAuth({
     minPasswordLength: 10,
   },
   emailVerification: {
-    sendOnSignUp: false,
+    sendOnSignUp: true,
     sendVerificationEmail: async ({ user, url }) => {
-      await sendVerificationEmail(user, url)
+      sendVerificationEmail(user, url).catch(() => {})
     },
   },
   rateLimit: {
