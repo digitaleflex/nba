@@ -8,6 +8,7 @@ import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
 
 import { DashboardTab } from "./features/DashboardTab"
+import { SystemPulse } from "./components/SystemPulse"
 import { RequestsTab } from "./features/RequestsTab"
 import { SignalsTab } from "./features/SignalsTab"
 import { KycTab } from "./features/KycTab"
@@ -98,12 +99,28 @@ function AdminConsoleContent() {
   // Support tickets for sidebar badge
   const [tickets, setTickets] = useState<any[]>([])
 
+  // System Pulse health state
+  const [health, setHealth] = useState<{ status: "healthy" | "degraded" | "down"; lastActivity: string; activityRate: number; activeAlerts: number } | null>(null)
+
   // Fetch support ticket count for badge
   useEffect(() => {
     fetch("/api/admin/support")
       .then(r => r.json())
       .then(data => setTickets(Array.isArray(data?.messages) ? data.messages : []))
       .catch(() => {})
+  }, [])
+
+  // Pulse polling every 3s
+  useEffect(() => {
+    function poll() {
+      fetch("/api/admin/security/fraud/health")
+        .then(r => r.json())
+        .then(d => setHealth(d))
+        .catch(() => {})
+    }
+    poll()
+    const id = setInterval(poll, 3000)
+    return () => clearInterval(id)
   }, [])
 
   // Refetch registration from the active tab (used by the shared context panel)
@@ -462,6 +479,15 @@ function AdminConsoleContent() {
 
         <div className="p-4 md:p-6 lg:p-8 space-y-7">
         <AdminTools />
+
+        {health && (
+          <SystemPulse
+            status={health.status}
+            lastActivity={health.lastActivity ? new Date(health.lastActivity) : null}
+            activityRate={health.activityRate}
+            activeAlerts={health.activeAlerts}
+          />
+        )}
 
         {/* ============================================================== */}
         {/* MODULE VIEWS */}
