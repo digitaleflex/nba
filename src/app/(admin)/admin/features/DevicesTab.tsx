@@ -6,6 +6,7 @@ import {
   BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2,
   AlertTriangle, Users
 } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 
 interface DeviceStats {
   total: number
@@ -80,11 +81,7 @@ export function DevicesTab() {
   }, [])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="size-6 animate-spin text-primary" />
-      </div>
-    )
+    return <DataSkeleton variant="card-grid" count={4} />
   }
 
   if (error || !data) {

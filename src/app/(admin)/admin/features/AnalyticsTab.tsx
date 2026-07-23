@@ -13,6 +13,7 @@ import {
   Radio,
   Loader2,
 } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, cn, Chart, EmptyState } from "@nba/design-system"
 
 interface AnalyticsTabProps {
@@ -88,11 +89,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
   }, [days, cachedGet])
 
   if (loading) {
-    return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-primary" />
-      </div>
-    )
+    return <DataSkeleton variant="card-grid" count={4} />
   }
 
   if (error || !data) {

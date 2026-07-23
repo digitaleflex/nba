@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { toast } from "sonner"
 import { Loader2, MailQuestion } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { authClient } from "@nba/lib/auth-client"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 import { Card, CardContent, Input, Button, EmptyState } from "@nba/design-system"
@@ -152,7 +153,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
       <div className="space-y-3">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Historique des notifications</h3>
         {loadingNotifHistory ? (
-          <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+          <DataSkeleton variant="table" rows={6} />
         ) : notifHistory.length > 0 ? (
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             {notifHistory.map((notif) => (

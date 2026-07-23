@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Loader2, MailQuestion } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, Badge, cn, EmptyState } from "@nba/design-system"
 import { useAdminFetch } from "../components/use-admin-fetch"
 import { FilterPills } from "../components/filter-pills"
@@ -69,7 +70,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       <FilterPills options={EMAIL_FILTERS} active={emailStatusFilter} onChange={setEmailStatusFilter} />
 
       {loadingEmails ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        <DataSkeleton variant="table" rows={6} />
       ) : emails.length > 0 ? (
         <Card className="border-border/60 bg-card shadow-sm">
           <div className="overflow-x-auto">

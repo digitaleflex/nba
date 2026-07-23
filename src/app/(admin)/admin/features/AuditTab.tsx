@@ -9,7 +9,7 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import {
-  Card, CardContent, Button, Badge, Input, cn, EmptyState,
+  Card, CardContent, Button, Badge, Input, cn, EmptyState, Skeleton,
 } from "@nba/design-system"
 import { AuditLog, CachedGet } from "./types"
 
@@ -304,21 +304,19 @@ function DetailsSection({ details }: { details: Record<string, unknown> | null }
 
 function TimelineSkeleton() {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6" role="status" aria-label="Chargement de la timeline">
       {Array.from({ length: 5 }).map((_, i) => (
-        <Card key={i}>
-          <CardContent className="p-4">
-            <div className="flex items-start gap-4">
-              <div className="size-9 rounded-full bg-muted/50 shrink-0" />
-              <div className="flex-1 space-y-2">
-                <div className="h-4 bg-muted/50 rounded w-3/4" />
-                <div className="h-3 bg-muted/30 rounded w-1/3" />
-                <div className="h-3 bg-muted/30 rounded w-1/2" />
-              </div>
-              <div className="h-8 w-16 bg-muted/30 rounded shrink-0" />
-            </div>
-          </CardContent>
-        </Card>
+        <div key={i} className="flex gap-4">
+          <div className="flex flex-col items-center gap-1">
+            <Skeleton variant="shimmer" className="size-9 rounded-full" />
+            <div className="w-px flex-1 bg-muted/30" />
+          </div>
+          <div className="flex-1 space-y-2 pb-6">
+            <Skeleton variant="shimmer" className="h-4 w-3/4" />
+            <Skeleton variant="shimmer" className="h-3 w-1/3" />
+            <Skeleton variant="shimmer" className="h-3 w-1/2" />
+          </div>
+        </div>
       ))}
     </div>
   )

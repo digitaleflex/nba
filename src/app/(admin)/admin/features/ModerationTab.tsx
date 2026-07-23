@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Shield, Trash2, Ban, RefreshCw, UserX, AlertTriangle } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, Button, Input, Badge, cn, EmptyState } from "@nba/design-system"
 
 export function ModerationTab() {
@@ -115,7 +116,7 @@ export function ModerationTab() {
             </h2>
           </div>
           {loading ? (
-            <div className="py-6 text-center"><RefreshCw className="size-5 animate-spin text-muted-foreground mx-auto" /></div>
+            <DataSkeleton variant="table" rows={5} />
           ) : bans.length === 0 ? (
             <EmptyState icon={Shield} title="Aucun email blacklisté" description="Les utilisateurs bannis apparaîtront ici." />
           ) : (

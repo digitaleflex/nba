@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, FileX } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, Badge, Button, cn, EmptyState } from "@nba/design-system"
 import { BrokerVerification, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 
@@ -79,7 +80,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
       </div>
 
       {loadingBroker ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        <DataSkeleton variant="table" rows={6} />
       ) : brokerDocs.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

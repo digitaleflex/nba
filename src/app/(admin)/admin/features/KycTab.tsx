@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
 import { ImageIcon, Loader2, FileX } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, Badge, Button, cn, SwipeableRow, useMediaQuery, EmptyState } from "@nba/design-system"
 import { KYCDoc, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 
@@ -99,7 +100,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
       </div>
 
       {loadingKyc ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        <DataSkeleton variant="table" rows={6} />
       ) : kycDocs.length > 0 ? (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

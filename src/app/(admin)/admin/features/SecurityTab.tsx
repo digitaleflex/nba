@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, EyeOff, ShieldCheck } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { toast } from "sonner"
 import { Card, CardContent, Button } from "@nba/design-system"
 import { EmptyState } from "@nba/design-system"
@@ -102,9 +103,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       )}
 
       {loadingSecurity ? (
-        <div className="py-10 flex justify-center">
-          <Loader2 className="animate-spin text-primary size-6" />
-        </div>
+        <DataSkeleton variant="card-grid" count={4} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Connexions récentes */}
@@ -170,7 +169,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
             Sessions récentes
           </h3>
           {loadingSessions ? (
-            <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+            <DataSkeleton variant="table" rows={5} />
           ) : sessions.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
@@ -364,7 +365,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {loading ? (
-                    <tr><td colSpan={10} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center"><DataSkeleton variant="table" rows={8} /></td></tr>
                   ) : membres.length === 0 && loadError ? (
                     <tr><td colSpan={10} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
                   ) : membres.length === 0 ? (
@@ -560,7 +561,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         mobile={
           <div className="space-y-3 md:hidden">
             {loading ? (
-              <div className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></div>
+              <div className="py-12 text-center"><DataSkeleton variant="single-card" /></div>
             ) : membres.length === 0 && loadError ? (
               <div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div>
             ) : membres.length === 0 ? (

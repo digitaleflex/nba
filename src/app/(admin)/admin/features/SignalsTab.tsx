@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useRef } from "react"
 import dynamic from "next/dynamic"
 import { Play, Copy, Eye, Trash2, Loader2, Inbox, Archive, Search, ChevronLeft, ChevronRight, ArchiveRestore } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { toast } from "sonner"
 import {
   Card, CardContent, Badge, Button, cn, EmptyState,
@@ -276,7 +277,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
 
         {/* Signals list */}
         {loadingSignals ? (
-          <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+          <DataSkeleton variant="table" rows={6} />
         ) : signals.length > 0 ? (
           <>
             <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">

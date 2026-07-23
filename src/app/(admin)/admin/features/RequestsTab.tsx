@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
 import { Loader2, ChevronDown } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, cn, SwipeableRow, useMediaQuery, EmptyState } from "@nba/design-system"
 import { Inbox } from "lucide-react"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
@@ -180,7 +181,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       </div>
 
       {loadingRequests ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        <DataSkeleton variant="table" rows={6} />
       ) : requests.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {requests.map((req) => {

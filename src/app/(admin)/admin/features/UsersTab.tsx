@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Search, Loader2 } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, Badge, Button, Input, cn, EmptyState } from "@nba/design-system"
 import { Member, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
@@ -95,9 +96,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
             </thead>
             <tbody className="divide-y divide-border/40">
               {loadingMembers ? (
-                <tr>
-                  <td colSpan={6} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td>
-                </tr>
+                <tr><td colSpan={6} className="py-12 text-center"><DataSkeleton variant="table" rows={5} /></td></tr>
               ) : membersError ? (
                 <tr>
                   <td colSpan={6} className="py-12 text-center text-rose-600 text-xs" role="alert">Erreur de chargement. <button className="underline cursor-pointer" onClick={fetchMembers}>Réessayer</button></td>

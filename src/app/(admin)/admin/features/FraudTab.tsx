@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import {
   Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
 import { toast } from "sonner"
 interface FraudSummary {
@@ -98,7 +99,7 @@ export function FraudTab() {
     else toast.error("Utilisateur introuvable")
   }
 
-  if (loading && !summary) return <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin" /></div>
+  if (loading && !summary) return <DataSkeleton variant="card-grid" count={4} />
 
   return (
     <div className="space-y-6" data-testid="fraud-tab">

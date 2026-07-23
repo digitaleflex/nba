@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, Plus, Trash2, GripVertical, Package } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { toast } from "sonner"
 import { Card, CardContent, Input, Button, cn, EmptyState } from "@nba/design-system"
 import { CachedGet } from "./types"
@@ -121,7 +122,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
           <CardContent className="p-6 space-y-4">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Configuration SMTP</h3>
             {loadingSettings ? (
-              <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+              <DataSkeleton variant="detail-panel" />
             ) : (
               <>
                 <div className="space-y-1.5"><label className="text-[10px] text-muted-foreground uppercase font-bold">Hôte SMTP</label><Input placeholder="smtp.exemple.com" className="bg-background border-border text-xs text-foreground" value={settings.smtpHost} onChange={(e) => setSettings((s) => ({ ...s, smtpHost: e.target.value }))} /></div>
@@ -152,11 +153,11 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
         </div>
 
         {loadingPlans ? (
-          <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+          <DataSkeleton variant="card-grid" count={3} />
         ) : plans.length === 0 ? (
           <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
         {loadingPlans ? (
-          <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+          <DataSkeleton variant="card-grid" count={3} />
         ) : plans.length === 0 ? (
           <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
         ) : (

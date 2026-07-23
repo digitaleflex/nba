@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Card, CardContent, cn, EmptyState } from "@nba/design-system"
 import { Clock, Play, RefreshCw, Loader2, CheckCircle2, XCircle, HelpCircle, FileText } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { toast } from "sonner"
 
 interface CronJob {
@@ -80,11 +81,7 @@ export function CronsTab() {
   }, [fetchCrons])
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="size-6 animate-spin text-primary" />
-      </div>
-    )
+    return <DataSkeleton variant="table" rows={6} />
   }
 
   if (error) {

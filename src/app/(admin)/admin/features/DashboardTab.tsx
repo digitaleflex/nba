@@ -7,6 +7,7 @@ import {
   ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2, Settings,
 } from "lucide-react"
 import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
+import { DataSkeleton } from "../components/data-skeleton"
 import { AlertsPanel } from "../components/alerts-panel"
 import { ProgressiveDetail } from "../components/ProgressiveDetail"
 import { SummaryList } from "../components/SummaryList"
@@ -78,7 +79,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
       {errorOps ? (
         <div className="py-20 text-center text-rose-600 text-sm" role="alert">{errorOps}</div>
       ) : loadingOps ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        <DataSkeleton variant="card-grid" count={4} />
       ) : (
         <>
           <HeroNumber

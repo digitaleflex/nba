@@ -12,6 +12,7 @@ import {
   DollarSign,
   PoundSterling,
 } from "lucide-react"
+import { DataSkeleton } from "../components/data-skeleton"
 import { Card, CardContent, EmptyState } from "@nba/design-system"
 import type { CachedGet } from "./types"
 
@@ -108,11 +109,7 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
   }, [cachedGet])
 
   if (loading) {
-    return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-primary" />
-      </div>
-    )
+    return <DataSkeleton variant="card-grid" count={3} />
   }
 
   if (error || !data) {
