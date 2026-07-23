@@ -18,7 +18,7 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
   },
   deleted: {
     title: "Compte supprimé",
-    subtitle:
+    message:
       "Votre compte a bien été supprimé. Si vous souhaitez recréer un compte, vous devrez attendre 72h après la suppression.",
   },
 }
