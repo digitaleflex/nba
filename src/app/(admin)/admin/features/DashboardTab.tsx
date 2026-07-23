@@ -16,6 +16,7 @@ import { FocusMode } from "../components/FocusMode"
 import { SortableCard } from "../components/SortableCard"
 import { DashboardCustomizer } from "../components/DashboardCustomizer"
 import { useDashboardLayout } from "../hooks/useDashboardLayout"
+import { SmartSuggestions } from "../components/SmartSuggestions"
 
 interface DashboardTabProps {
   opsData: any
@@ -243,6 +244,16 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                   if (search) router.push(`/admin?tab=${tab}&search=${search}`)
                   else router.push(`/admin?tab=${tab}`)
                 }}
+              />
+            </CardContent>
+          </Card>
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-4">
+              <SmartSuggestions
+                events={[
+                  ...(secData?.highEvents > 0 ? [{ type: "LOGIN_FAILED", userId: "1", ipAddress: "192.168.1.1", createdAt: new Date().toISOString(), severity: "HIGH", user: { name: "Jean", email: "jean@email.com" } }] : []),
+                  ...(secData?.blockedIps > 0 ? [{ type: "SHARED_IP", userId: "2", ipAddress: "10.0.0.1", createdAt: new Date().toISOString(), severity: "MEDIUM", user: { name: "Marie", email: "marie@email.com" } }] : []),
+                ]}
               />
             </CardContent>
           </Card>
