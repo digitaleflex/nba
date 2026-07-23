@@ -26,6 +26,10 @@ export { TopLoader } from "./components/top-loader"
 
 // Hooks
 export { useMediaQuery } from "./hooks/use-media-query"
+export { useIsMobile, useIsTouchDevice } from "./hooks/use-is-mobile"
+
+// Responsive utilities
+export { Responsive } from "./components/responsive"
 
 // Providers
 export { ThemeProvider } from "./providers/theme-provider"

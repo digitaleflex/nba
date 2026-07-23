@@ -32,6 +32,10 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
+        "mobile-tap":
+          "min-h-[var(--touch-target-min)] min-w-[var(--touch-target-min)] gap-1.5 px-3 py-2",
+        "mobile-sm":
+          "min-h-[var(--touch-target-sm)] min-w-[var(--touch-target-sm)] gap-1 px-2.5 py-1.5 text-[0.8rem]",
       },
     },
     defaultVariants: {
