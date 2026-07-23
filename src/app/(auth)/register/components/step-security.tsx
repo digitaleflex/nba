@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useMemo } from "react"
-import { Input, Button, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
-import { ArrowLeft, ArrowRight, Eye, EyeOff, Check, AlertCircle, HelpCircle } from "lucide-react"
+import { Button, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
+import { PasswordField } from "@nba/app/components/password-field"
+import { ArrowLeft, ArrowRight, Check, AlertCircle, HelpCircle } from "lucide-react"
 import { getPasswordStrength, RULES, isPasswordValid, MIN_PASSWORD_LENGTH } from "./password-utils"
 
 interface StepSecurityProps {
@@ -25,9 +26,20 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground text-center">Créez un mot de passe sécurisé</p>
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-1.5">
-          <label htmlFor="password" className="text-sm font-medium text-foreground">Mot de passe</label>
+
+      <PasswordField
+        label="Mot de passe"
+        placeholder={`Min. ${MIN_PASSWORD_LENGTH} caractères`}
+        value={password}
+        onChange={(e) => {
+          onChangePassword(e.target.value)
+          setTouched(true)
+        }}
+        autoComplete="new-password"
+        minLength={MIN_PASSWORD_LENGTH}
+        show={showPassword}
+        onToggle={() => setShowPassword(!showPassword)}
+        tooltip={
           <Tooltip>
             <TooltipTrigger>
               <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground cursor-help" />
@@ -36,50 +48,21 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
               Utilisez au moins {MIN_PASSWORD_LENGTH} caractères avec majuscule, minuscule, chiffre et caractère spécial pour sécuriser votre compte.
             </TooltipContent>
           </Tooltip>
-        </div>
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? "text" : "password"}
-            placeholder={`Min. ${MIN_PASSWORD_LENGTH} caractères`}
-            value={password}
-            onChange={(e) => {
-              onChangePassword(e.target.value)
-              setTouched(true)
-            }}
-            required
-            autoComplete="new-password"
-            minLength={MIN_PASSWORD_LENGTH}
-            className="pr-9"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-1.5 top-1/2 -translate-y-1/2 size-11 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-lg"
-          >
-            {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-          </button>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="space-y-1.5">
-        <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">Confirmer le mot de passe</label>
-        <Input
-          id="confirmPassword"
-          type={showPassword ? "text" : "password"}
-          placeholder="Retapez votre mot de passe"
-          value={confirmPassword}
-          onChange={(e) => onChangeConfirmPassword(e.target.value)}
-          required
-          autoComplete="new-password"
-          minLength={MIN_PASSWORD_LENGTH}
-          aria-invalid={confirmPassword.length > 0 && !passwordsMatch ? true : undefined}
-          className={confirmPassword.length > 0 && !passwordsMatch ? "border-destructive" : ""}
-        />
-        {confirmPassword.length > 0 && !passwordsMatch && (
-          <p className="text-xs text-destructive">Les mots de passe ne correspondent pas</p>
-        )}
-      </div>
+      <PasswordField
+        label="Confirmer le mot de passe"
+        placeholder="Retapez votre mot de passe"
+        value={confirmPassword}
+        onChange={(e) => onChangeConfirmPassword(e.target.value)}
+        autoComplete="new-password"
+        minLength={MIN_PASSWORD_LENGTH}
+        show={showPassword}
+        onToggle={() => setShowPassword(!showPassword)}
+        error={confirmPassword.length > 0 && !passwordsMatch ? "Les mots de passe ne correspondent pas" : undefined}
+        aria-invalid={confirmPassword.length > 0 && !passwordsMatch ? true : undefined}
+      />
 
       {touched && (
         <>
@@ -92,25 +75,33 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div
-                className={`h-full rounded-full transition-all duration-300 ${strength.color}`}
+                className={`h-full rounded-full transition-all duration-500 ease-out ${strength.color}`}
                 style={{ width: `${(strength.score / 5) * 100}%` }}
               />
             </div>
+            <p className="text-xs text-muted-foreground/80 min-h-4 transition-opacity">
+              {strength.feedback}
+            </p>
           </div>
 
           <div className="space-y-1.5">
             {RULES.map((rule) => {
               const valid = rule.test(password)
               return (
-                <div key={rule.label} className="flex items-center gap-2 text-sm">
-                  {valid ? (
-                    <Check className="size-3.5 text-success shrink-0" />
-                  ) : (
-                    <div className="size-3.5 shrink-0 flex items-center justify-center">
-                      <AlertCircle className="size-3 text-muted-foreground" />
-                    </div>
-                  )}
-                  <span className={valid ? "text-success" : "text-muted-foreground"}>
+                <div
+                  key={rule.label}
+                  className="flex items-center gap-2 text-sm transition-all duration-300"
+                >
+                  <span className="size-3.5 shrink-0 flex items-center justify-center">
+                    {valid ? (
+                      <Check className="size-3.5 text-success transition-all duration-300 scale-100" />
+                    ) : (
+                      <AlertCircle className="size-3 text-muted-foreground transition-all duration-300" />
+                    )}
+                  </span>
+                  <span
+                    className={`transition-all duration-300 ${valid ? "text-success font-medium" : "text-muted-foreground"}`}
+                  >
                     {rule.label}
                   </span>
                 </div>
