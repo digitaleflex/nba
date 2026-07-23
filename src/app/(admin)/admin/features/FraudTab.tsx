@@ -6,6 +6,8 @@ import {
 } from "lucide-react"
 import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
 import { SeverityBadge } from "../components/SeverityBadge"
+import { FraudTimelineChart } from "../components/FraudTimelineChart"
+import { FraudMap } from "../components/FraudMap"
 import { toast } from "sonner"
 import { useConfirm } from "@nba/components/confirm-dialog"
 interface FraudSummary {
@@ -16,7 +18,7 @@ interface FraudSummary {
   blockedIps: number
 }
 
-interface FraudEvent {
+export interface FraudEvent {
   id: string
   type: string
   severity: string
@@ -134,6 +136,10 @@ export function FraudTab() {
         <StatCard icon={Ban} label="Suspendus aujourdhui" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" className="stagger-4" />
         <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" className="stagger-5" />
       </div>
+
+      <FraudTimelineChart events={events} />
+
+      <FraudMap />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card><CardContent className="p-6 space-y-4">
