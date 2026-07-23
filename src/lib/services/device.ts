@@ -8,10 +8,20 @@ function generateCode(): string {
   return String(randomInt(100_000, 999_999))
 }
 
+import { createHash } from "crypto"
+
 export function fingerprint(req: Request): string {
   const ua = req.headers.get("user-agent") ?? ""
   const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
-  return `${ip}|${ua}`
+
+  // Priorité au cookie FingerprintJS (navigateur fiable)
+  const cookie = req.headers.get("cookie") || ""
+  const fpMatch = cookie.match(/(?:^|;\s*)nba_fp=([^;]+)/)
+  if (fpMatch) return fpMatch[1]
+
+  // Fallback : hash IP|UA
+  const hash = createHash("sha256").update(`${ip}|${ua}`).digest("hex")
+  return hash
 }
 
 function deviceInfo(req: Request): ParsedUserAgent {

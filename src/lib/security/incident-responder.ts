@@ -140,7 +140,7 @@ export const PLAYBOOKS: IncidentPlaybook[] = [
 ]
 
 export class IncidentResponder {
-  async execute(userId: string, detectType: string, context: { ipAddress?: string; sessionId?: string }): Promise<void> {
+   async execute(userId: string, detectType: string, context: { ipAddress?: string; sessionId?: string }): Promise<void> {
     try {
       const playbook = PLAYBOOKS.find(p => p.detectType === detectType)
       if (!playbook) {
@@ -150,9 +150,11 @@ export class IncidentResponder {
 
       log.info({ playbook: playbook.id, name: playbook.name, userId }, "Execution playbook")
 
+      const ctx = { ...context, playbookName: playbook.name, playbookSeverity: playbook.severity }
+
       for (const step of playbook.steps) {
         try {
-          await this.executeStep(step, userId, context)
+          await this.executeStep(step, userId, ctx)
           log.info({ step: step.action, userId }, "Etape playbook executee")
         } catch (err) {
           log.error({ err, step: step.action, userId, errorCode: "INTEGRATION_ERROR" }, "Echec etape playbook")
@@ -163,7 +165,7 @@ export class IncidentResponder {
     }
   }
 
-  private async executeStep(step: PlaybookStep, userId: string, context: { ipAddress?: string; sessionId?: string }): Promise<void> {
+  private async executeStep(step: PlaybookStep, userId: string, context: { ipAddress?: string; sessionId?: string; playbookName?: string; playbookSeverity?: string }): Promise<void> {
     const redis = getRedis()
 
     switch (step.action) {
@@ -217,7 +219,19 @@ export class IncidentResponder {
         break
 
       case "NOTIFY_ADMIN":
-        log.warn({ userId, playbookStep: step.action }, "Alerte admin requise")
+        const pbName = context.playbookName || step.params?.playbook || "Sécurité"
+        const pbSeverity = context.playbookSeverity || "P1"
+        const { sendAdminAlert } = await import("./admin-alert")
+        await sendAdminAlert(
+          `[${pbSeverity}] Alerte: ${pbName} — NBA`,
+          `Un incident a été déclenché automatiquement.<br/><br/>
+           <b>Playbook :</b> ${pbName}<br/>
+           <b>Sévérité :</b> ${pbSeverity}<br/>
+           <b>Utilisateur :</b> ${userId || "N/A"}<br/>
+           <b>IP :</b> ${context.ipAddress || "N/A"}<br/>
+           <b>Actions exécutées :</b> suspension, révocation sessions, blocage IP, etc.<br/><br/>
+           Connectez-vous au panel admin pour plus de détails.`,
+        ).catch((err) => log.warn({ err, errorCode: "ADMIN_ALERT_FAILED" }, "Échec envoi alerte admin"))
         break
 
       case "LOG_EVENT":

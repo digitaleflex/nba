@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider, ToastProvider, TopLoader, TooltipProvider } from "@nba/design-system";
 import { ImpersonationBanner } from "./components/impersonation-banner";
 import { OfflineBanner } from "./components/offline-banner";
+import { DeviceFingerprintInit } from "@nba/lib/hooks/use-device-fingerprint";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -69,6 +70,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">
+        <DeviceFingerprintInit />
         <a
           href="#main-content"
           className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-primary-foreground"

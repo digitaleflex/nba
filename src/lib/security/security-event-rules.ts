@@ -68,6 +68,16 @@ export class SecurityEventRules {
             break
 
           case "notify":
+            const { sendAdminAlert } = await import("./admin-alert")
+            await sendAdminAlert(
+              `[${rule.severity}] ${rule.name} — NBA`,
+              `Événement détecté : ${eventType}<br/>
+               <b>Règle :</b> ${rule.name}<br/>
+               <b>Sévérité :</b> ${rule.severity}<br/>
+               <b>Utilisateur :</b> ${userId || "N/A"}<br/>
+               <b>IP :</b> ${ipAddress || "N/A"}<br/><br/>
+               Consultez le panel admin pour plus de détails.`,
+            ).catch(() => {})
             break
         }
 

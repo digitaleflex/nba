@@ -79,6 +79,34 @@ export class IpReputationService {
       isp: null, org: null, asn: null, confidence: 50,
     }
 
+    // 1. Essayer IPQualityScore (si configuré)
+    if (process.env.IPQS_API_KEY) {
+      try {
+        const { lookupIpqs } = await import("../services/ipqs")
+        const ipqs = await lookupIpqs(ip)
+        if (ipqs) {
+          result.isVPN = ipqs.vpn || ipqs.active_vpn
+          result.isProxy = ipqs.proxy
+          result.isTor = ipqs.tor || ipqs.active_tor
+          result.isDatacenter = ipqs.connection_type === "datacenter"
+          result.isMobile = ipqs.mobile
+          result.isCrawler = ipqs.bot_status
+          result.country = ipqs.country_code || null
+          result.city = ipqs.city || null
+          result.latitude = ipqs.latitude || null
+          result.longitude = ipqs.longitude || null
+          result.isp = ipqs.isp || null
+          result.org = ipqs.organization || null
+          result.asn = ipqs.ASN || null
+          result.confidence = Math.max(50, 100 - ipqs.fraud_score)
+          return result
+        }
+      } catch {
+        // Fallback vers ipapi.co
+      }
+    }
+
+    // 2. Fallback : ipapi.co
     try {
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), 3000)
