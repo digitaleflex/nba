@@ -5,7 +5,9 @@ import {
   Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
 import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
+import { SeverityBadge } from "../components/SeverityBadge"
 import { toast } from "sonner"
+import { useConfirm } from "@nba/components/confirm-dialog"
 interface FraudSummary {
   highEvents: number
   failedLogins: number
@@ -29,6 +31,7 @@ interface BlockedIp { ip: string; ttl: number }
 interface Playbook { id: string; name: string; severity: string; detectType: string; steps: number }
 
 export function FraudTab() {
+  const { confirm, node } = useConfirm()
   const [summary, setSummary] = useState<FraudSummary | null>(null)
   const [events, setEvents] = useState<FraudEvent[]>([])
   const [ips, setIps] = useState<BlockedIp[]>([])
@@ -62,7 +65,10 @@ export function FraudTab() {
 
   async function suspendUser() {
     if (!suspendEmail) return toast.error("Email requis")
-    if (!confirm("Suspendre ce compte ? L'utilisateur sera deconnecte et ne pourra plus se connecter.")) return
+    const ok = await new Promise<boolean>((resolve) => {
+      confirm({ title: "Suspendre le compte", description: "L'utilisateur sera deconnecte et ne pourra plus se connecter.", confirmLabel: "Suspendre", onConfirm: () => resolve(true) })
+    })
+    if (!ok) return
     try {
       const search = await fetch(`/api/admin/members/search?email=${suspendEmail}`)
       if (!search.ok) return toast.error("Utilisateur introuvable")
@@ -73,20 +79,29 @@ export function FraudTab() {
   }
 
   async function reactivateUser(userId: string) {
-    if (!confirm("Reactiver ce compte ? L'utilisateur pourra se reconnecter.")) return
+    const ok = await new Promise<boolean>((resolve) => {
+      confirm({ title: "Reactivation du compte", description: "L'utilisateur pourra se reconnecter.", confirmLabel: "Reactivter", onConfirm: () => resolve(true) })
+    })
+    if (!ok) return
     const res = await fetch("/api/admin/security/fraud/reactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) })
     if (res.ok) { toast.success("Compte reactive"); refresh() } else toast.error("Erreur reactivation")
   }
 
   async function unblockIp(ip: string) {
-    if (!confirm(`Debloquer l'IP ${ip} ?`)) return
+    const ok = await new Promise<boolean>((resolve) => {
+      confirm({ title: `Debloquer l'IP ${ip} ?`, description: "L'IP sera retirée de la liste noire.", confirmLabel: "Debloquer", onConfirm: () => resolve(true) })
+    })
+    if (!ok) return
     const res = await fetch("/api/admin/security/fraud/unblock-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip }) })
     if (res.ok) { toast.success("IP debloquee"); refresh() } else toast.error("Erreur deblocage")
   }
 
   async function executePlaybook() {
     if (!playbookUserId || !selectedPlaybook) return toast.error("Utilisateur et playbook requis")
-    if (!confirm(`Executer le playbook ${selectedPlaybook} sur cet utilisateur ?`)) return
+    const ok = await new Promise<boolean>((resolve) => {
+      confirm({ title: `Executer ${selectedPlaybook} ?`, description: "Le playbook sera execute sur cet utilisateur.", confirmLabel: "Executer", onConfirm: () => resolve(true) })
+    })
+    if (!ok) return
     const res = await fetch("/api/admin/security/fraud/playbook", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }) })
     if (res.ok) { toast.success("Playbook execute"); refresh() } else toast.error("Erreur execution playbook")
   }
@@ -101,6 +116,8 @@ export function FraudTab() {
   if (loading && !summary) return <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin" /></div>
 
   return (
+    <>
+    {node}
     <div className="space-y-6" data-testid="fraud-tab">
       <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
@@ -172,7 +189,7 @@ export function FraudTab() {
                 <tr key={e.id} className={cn("hover:bg-accent/30", acknowledged ? "opacity-60" : "", e.severity === "CRITICAL" && !acknowledged && "alert-pulse")}>
                   <td className="px-3 py-2 text-muted-foreground">{new Date(e.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2 font-medium">{e.type}</td>
-                  <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
+                  <td className="px-3 py-2"><SeverityBadge severity={e.severity as "CRITICAL" | "HIGH"} /></td>
                   <td className="px-3 py-2">{e.user ? `${e.user.email}` : "—"}</td>
                   <td className="px-3 py-2 text-muted-foreground font-mono text-[10px]">{e.ipAddress || "—"}</td>
                   <td className="px-3 py-2 text-right">
@@ -216,6 +233,7 @@ export function FraudTab() {
         )}
       </CardContent></Card>
     </div>
+    </>
   )
 }
 

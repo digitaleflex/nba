@@ -6,6 +6,7 @@ import {
   BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2,
   AlertTriangle, Users
 } from "lucide-react"
+import { SeverityBadge } from "../components/SeverityBadge"
 
 interface DeviceStats {
   total: number

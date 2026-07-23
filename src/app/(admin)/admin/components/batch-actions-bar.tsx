@@ -3,6 +3,7 @@
 import { useCallback, useState } from "react"
 import { toast } from "sonner"
 import { X, CheckCheck, Ban, RotateCw, Trash2, Loader2 } from "lucide-react"
+import { useConfirm } from "@nba/components/confirm-dialog"
 
 interface BatchActionsBarProps {
   selectedIds: Set<string>
@@ -12,6 +13,7 @@ interface BatchActionsBarProps {
 
 export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchActionsBarProps) {
   const [loading, setLoading] = useState<string | null>(null)
+  const { confirm, node } = useConfirm()
   const count = selectedIds.size
 
   const batchAction = useCallback(async (action: string, body: Record<string, unknown>) => {
@@ -38,11 +40,15 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchAction
   }, [selectedIds, count, onClear, onSuccess])
 
   const batchDelete = useCallback(async () => {
-    const confirmed = confirm(
-      `Supprimer ${count} membre${count > 1 ? "s" : ""} ?\n\n` +
-      `Seuls les membres inactifs seront supprimés. Cette action est irréversible.`
-    )
-    if (!confirmed) return
+    const ok = await new Promise<boolean>((resolve) => {
+      confirm({
+        title: `Supprimer ${count} membre${count > 1 ? "s" : ""} ?`,
+        description: `Seuls les membres inactifs seront supprimés. Cette action est irréversible.`,
+        confirmLabel: "Supprimer",
+        onConfirm: () => resolve(true),
+      })
+    })
+    if (!ok) return
 
     setLoading("delete")
     try {
@@ -69,6 +75,8 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchAction
   if (count === 0) return null
 
   return (
+    <>
+    {node}
     <div className="sticky top-0 z-40 -mx-2 px-2 animate-in slide-in-from-top-2 duration-200">
       <div className="flex items-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-2.5 shadow-lg backdrop-blur-sm">
         <div className="flex items-center gap-2 min-w-0 flex-1">
@@ -134,5 +142,6 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess }: BatchAction
         </div>
       </div>
     </div>
+    </>
   )
 }
