@@ -30,6 +30,8 @@ export { useIsMobile, useIsTouchDevice } from "./hooks/use-is-mobile"
 
 // Responsive utilities
 export { Responsive } from "./components/responsive"
+export { DualRender } from "./components/dual-render"
+export { FilterSheet } from "./components/filter-sheet"
 
 // Providers
 export { ThemeProvider } from "./providers/theme-provider"
