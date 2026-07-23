@@ -37,6 +37,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "dashboard", label: "Tableau de bord" },
       { value: "stats", label: "Statistiques" },
       { value: "analytics", label: "Analytics" },
+      { value: "revenue", label: "Revenus" },
       { value: "devices", label: "Appareils" },
       { value: "crons", label: "Cron Jobs" },
     ],

@@ -33,6 +33,7 @@ const AuditTab = dynamic(() => import("./features/AuditTab"), { loading: () => <
 const FormationTab = dynamic(() => import("./features/FormationTab"), { loading: () => <TabSkeleton />, ssr: false })
 const DevicesTab = dynamic(() => import("./features/DevicesTab"), { loading: () => <TabSkeleton />, ssr: false })
 const CronsTab = dynamic(() => import("./features/CronsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const RevenueTab = dynamic(() => import("./features/RevenueTab"), { loading: () => <TabSkeleton />, ssr: false })
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
@@ -595,6 +596,12 @@ function AdminConsoleContent() {
         {activeTab === "analytics" && (
           <div key="analytics" className="animate-slide-right">
             <AnalyticsTab cachedGet={cachedGet} />
+          </div>
+        )}
+
+        {activeTab === "revenue" && (
+          <div key="revenue" className="animate-slide-right">
+            <RevenueTab cachedGet={cachedGet} />
           </div>
         )}
 
