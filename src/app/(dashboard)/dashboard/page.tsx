@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent, Button, cn } from "@nba/design-system"
+import { DashboardKpis } from "./dashboard/components/dashboard-kpis"
 import {
   TrendingUp,
   BookOpen,
@@ -21,6 +22,7 @@ export default async function DashboardPage() {
 
   const userId = session.user.id
 
+  let dbUnavailable = false
   let totalTrades = 0
   let totalPnl = 0
   let winRate = 0
@@ -51,7 +53,7 @@ export default async function DashboardPage() {
     disciplineStreak = streak?.count ?? 0
     lastReflection = reflection
   } catch {
-    // DB indisponible — afficher le dashboard avec des valeurs à zéro
+    dbUnavailable = true
   }
 
   const kpis = [
@@ -97,20 +99,7 @@ export default async function DashboardPage() {
         </p>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((kpi) => (
-          <Card key={kpi.label} className="border-border">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-medium text-muted-foreground">{kpi.label}</span>
-                <kpi.icon className={cn("size-4", kpi.tone)} />
-              </div>
-              <p className={cn("text-2xl font-bold tabular-nums", kpi.tone)}>{kpi.value}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <DashboardKpis kpis={kpis} dbUnavailable={dbUnavailable} />
 
       {/* Actions rapides */}
       <div>

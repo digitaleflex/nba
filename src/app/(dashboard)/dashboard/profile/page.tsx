@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
+import { PasswordField } from "@nba/app/components/password-field"
 import {
   User, Mail, Phone, Globe, Loader2, Check, AlertCircle,
-  Lock, Trash2, Eye, EyeOff, Shield, MapPin, Languages, Camera
+  Lock, Trash2, Shield, MapPin, Languages, Camera
 } from "lucide-react"
 import countries from "@nba/lib/countries.json"
 import { toast } from "sonner"
@@ -52,7 +53,6 @@ export default function ProfilePage() {
   // Password form
   const [showPasswordSection, setShowPasswordSection] = useState(false)
   const [passwordForm, setPasswordForm] = useState({ current: "", new: "", confirm: "" })
-  const [showPasswords, setShowPasswords] = useState({ current: false, new: false, confirm: false })
   const [changingPassword, setChangingPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
   const [passwordSaved, setPasswordSaved] = useState(false)
@@ -454,86 +454,34 @@ export default function ProfilePage() {
 
           {showPasswordSection && (
             <form onSubmit={handleChangePassword} className="mt-6 space-y-4 border-t border-border/40 pt-4">
-              <div className="space-y-2">
-                <label htmlFor="current-password" className="text-sm font-medium">Mot de passe actuel</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    id="current-password"
-                    type={showPasswords.current ? "text" : "password"}
-                    className="pl-9 pr-10"
-                    value={passwordForm.current}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, current: !showPasswords.current })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPasswords.current ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPasswords.current ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-              </div>
+              <PasswordField
+                label="Mot de passe actuel"
+                value={passwordForm.current}
+                onChange={(e) => setPasswordForm({ ...passwordForm, current: e.target.value })}
+                prefixIcon={<Lock className="size-4" />}
+                autoComplete="current-password"
+              />
 
-              <div className="space-y-2">
-                <label htmlFor="new-password" className="text-sm font-medium">Nouveau mot de passe</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    id="new-password"
-                    type={showPasswords.new ? "text" : "password"}
-                    className="pl-9 pr-10"
-                    value={passwordForm.new}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
-                    onBlur={() => setPasswordTouched((p) => ({ ...p, new: true }))}
-                    required
-                    minLength={10}
-                    aria-invalid={!!passwordErrors.new}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, new: !showPasswords.new })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPasswords.new ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPasswords.new ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {passwordTouched.new && passwordErrors.new && (
-                  <p className="text-[11px] text-destructive" role="alert">{passwordErrors.new}</p>
-                )}
-                <p className="text-[10px] text-muted-foreground">Minimum 10 caractères</p>
-              </div>
+              <PasswordField
+                label="Nouveau mot de passe"
+                value={passwordForm.new}
+                onChange={(e) => setPasswordForm({ ...passwordForm, new: e.target.value })}
+                onBlur={() => setPasswordTouched((p) => ({ ...p, new: true }))}
+                prefixIcon={<Lock className="size-4" />}
+                autoComplete="new-password"
+                minLength={10}
+                error={passwordTouched.new ? passwordErrors.new : undefined}
+              />
 
-              <div className="space-y-2">
-                <label htmlFor="confirm-password" className="text-sm font-medium">Confirmer le mot de passe</label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-                  <Input
-                    id="confirm-password"
-                    type={showPasswords.confirm ? "text" : "password"}
-                    className="pl-9 pr-10"
-                    value={passwordForm.confirm}
-                    onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
-                    onBlur={() => setPasswordTouched((p) => ({ ...p, confirm: true }))}
-                    required
-                    aria-invalid={!!passwordErrors.confirm}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPasswords({ ...showPasswords, confirm: !showPasswords.confirm })}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    aria-label={showPasswords.confirm ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPasswords.confirm ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {passwordTouched.confirm && passwordErrors.confirm && (
-                  <p className="text-[11px] text-destructive" role="alert">{passwordErrors.confirm}</p>
-                )}
-              </div>
+              <PasswordField
+                label="Confirmer le mot de passe"
+                value={passwordForm.confirm}
+                onChange={(e) => setPasswordForm({ ...passwordForm, confirm: e.target.value })}
+                onBlur={() => setPasswordTouched((p) => ({ ...p, confirm: true }))}
+                prefixIcon={<Lock className="size-4" />}
+                autoComplete="new-password"
+                error={passwordTouched.confirm ? passwordErrors.confirm : undefined}
+              />
 
               {passwordError && (
                 <p role="alert" className="text-xs text-destructive font-medium">{passwordError}</p>

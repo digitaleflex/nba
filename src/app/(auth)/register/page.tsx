@@ -6,9 +6,10 @@ import Link from "next/link"
 import { authClient } from "@nba/lib/auth-client"
 import { toast } from "sonner"
 import { Card, CardContent } from "@nba/design-system"
-import { TrendingUp, Check } from "lucide-react"
+import { TrendingUp } from "lucide-react"
 
 // Importation des sous-composants d'étape
+import { WizardStepper } from "@nba/app/components/wizard-stepper"
 import { StepService } from "./components/step-service"
 import { StepIdentity } from "./components/step-identity"
 import { StepContact } from "./components/step-contact"
@@ -144,32 +145,11 @@ export default function RegisterPage() {
           </h1>
         </div>
 
-        {/* Stepper */}
-        <div className="flex items-center justify-center gap-1 sm:gap-2">
-          {STEPS.map((label, i) => (
-            <div key={label} className="flex items-center gap-1 sm:gap-2">
-              <div
-                className={`flex size-7 sm:size-8 shrink-0 items-center justify-center rounded-full text-xs font-medium transition-colors ${
-                  i < step
-                    ? "bg-primary text-primary-foreground"
-                    : i === step
-                      ? "bg-primary/10 text-primary ring-1 ring-primary/30"
-                      : "bg-muted text-muted-foreground"
-                }`}
-              >
-                {i < step ? <Check className="size-3 sm:size-4" /> : i + 1}
-              </div>
-              <span
-                className={`inline text-[10px] sm:text-xs ${i === step ? "font-medium text-foreground" : "text-muted-foreground"} ${i !== step && "hidden sm:inline"}`}
-              >
-                {label}
-              </span>
-              {i < STEPS.length - 1 && (
-                <div className={`mx-0.5 sm:mx-1 h-px w-4 sm:w-8 ${i < step ? "bg-primary" : "bg-border"}`} />
-              )}
-            </div>
-          ))}
-        </div>
+        <WizardStepper
+          steps={STEPS.map((label) => ({ label }))}
+          currentStep={step}
+          onStepClick={(i) => setStep(i)}
+        />
 
         <Card size="sm" className="relative overflow-hidden">
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />

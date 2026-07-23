@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Shield, Trash2, Ban, RefreshCw, UserX, AlertTriangle } from "lucide-react"
-import { Card, CardContent, Button, Input, Badge, cn } from "@nba/design-system"
+import { Card, CardContent, Button, Input, Badge, cn, EmptyState } from "@nba/design-system"
 
 export function ModerationTab() {
   const [bans, setBans] = useState<any[]>([])
@@ -117,7 +117,7 @@ export function ModerationTab() {
           {loading ? (
             <div className="py-6 text-center"><RefreshCw className="size-5 animate-spin text-muted-foreground mx-auto" /></div>
           ) : bans.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-6 text-center">Aucun email blacklisté.</p>
+            <EmptyState icon={Shield} title="Aucun email blacklisté" description="Les utilisateurs bannis apparaîtront ici." />
           ) : (
             <div className="space-y-2">
               {bans.map((b: any, i: number) => (

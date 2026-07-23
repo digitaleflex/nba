@@ -143,7 +143,8 @@ export const deleteAccountSchema = z.object({
 })
 
 export const memberUpdateSchema = z.object({
-  userId: z.string().min(1, "ID utilisateur requis"),
+  userId: z.string().min(1, "ID utilisateur requis").optional(),
+  userIds: z.array(z.string().min(1)).min(1).optional(),
   isActive: z.boolean().optional(),
   roleId: z.string().optional(),
   onboardingStatus: z.string().optional(),

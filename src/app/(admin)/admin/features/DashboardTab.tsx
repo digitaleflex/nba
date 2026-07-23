@@ -4,10 +4,20 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
-  ShieldAlert, Ban, Globe, AlertTriangle,
+  ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2, Settings,
 } from "lucide-react"
-import { Card, CardContent, Badge, cn, Chart } from "@nba/design-system"
+import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
 import { AlertsPanel } from "../components/alerts-panel"
+import { ProgressiveDetail } from "../components/ProgressiveDetail"
+import { SummaryList } from "../components/SummaryList"
+import { DetailPanel } from "../components/DetailPanel"
+import { AdminRecents } from "../components/AdminRecents"
+import { FocusMode } from "../components/FocusMode"
+import { SortableCard } from "../components/SortableCard"
+import { DashboardCustomizer } from "../components/DashboardCustomizer"
+import { useDashboardLayout } from "../hooks/useDashboardLayout"
+import { SmartSuggestions } from "../components/SmartSuggestions"
+import { HeroNumber } from "../components/HeroNumber"
 
 interface DashboardTabProps {
   opsData: any
@@ -18,6 +28,9 @@ interface DashboardTabProps {
 
 export function DashboardTab({ opsData, loadingOps, errorOps, router }: DashboardTabProps) {
   const [secData, setSecData] = useState<any>(null)
+  const [focusAlert, setFocusAlert] = useState<number | null>(null)
+  const [customizerOpen, setCustomizerOpen] = useState(false)
+  const { layout, toggleCard, reorderCards, updateLayout, resetLayout } = useDashboardLayout()
 
   useEffect(() => {
     fetch("/api/admin/security/fraud/abuse")
@@ -35,14 +48,32 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             Surveillez l&apos;état opérationnel et traitez les tâches prioritaires.
           </p>
         </div>
-        <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
-          <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
-          Live
-        </Badge>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCustomizerOpen(true)}
+            className="p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+            aria-label="Personnaliser le dashboard"
+          >
+            <Settings className="size-4 text-muted-foreground" />
+          </button>
+          <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
+            <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
+            Live
+          </Badge>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-7">
+      <div className={cn("grid grid-cols-1 lg:grid-cols-4 gap-7", layout.compactMode && "compact-mode")}>
         <div className="lg:col-span-3 space-y-7">
+
+          <DashboardCustomizer
+            isOpen={customizerOpen}
+            onClose={() => setCustomizerOpen(false)}
+            layout={layout}
+            onToggleCard={toggleCard}
+            onUpdateLayout={updateLayout}
+            onReset={resetLayout}
+          />
 
       {errorOps ? (
         <div className="py-20 text-center text-rose-600 text-sm" role="alert">{errorOps}</div>
@@ -50,54 +81,23 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       ) : (
         <>
-          <Card className="border-border/60 bg-card shadow-sm">
-            <CardContent className="p-5">
-              <h2 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
-                À traiter maintenant
-              </h2>
-              <div className="divide-y divide-border/30">
-                {opsData?.attention?.kycPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=kyc")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-rose-500 animate-pulse" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.kycPendingCount} dossiers KYC en attente</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.brokerPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=broker")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-amber-500" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.brokerPendingCount} vérifications Broker</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.requestsPendingCount > 0 ? (
-                  <div onClick={() => router.push("/admin?tab=requests")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-blue-500" />
-                      <span className="font-semibold text-xs text-foreground">{opsData.attention.requestsPendingCount} demandes d&apos;accès</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.nextScheduledSignal ? (
-                  <div onClick={() => router.push("/admin?tab=signals")} className="flex items-center justify-between py-3 hover:bg-muted/30 px-2 rounded-lg transition-all cursor-pointer group -mx-2">
-                    <div className="flex items-center gap-3">
-                      <span className="size-2 rounded-full bg-emerald-500" />
-                      <span className="font-semibold text-xs text-foreground">1 signal programmé le {new Date(opsData.attention.nextScheduledSignal.scheduledAt).toLocaleString("fr-FR")}</span>
-                    </div>
-                    <ArrowRight className="size-3.5 text-muted-foreground/60 group-hover:text-foreground transition-colors" />
-                  </div>
-                ) : null}
-                {opsData?.attention?.kycPendingCount === 0 && opsData?.attention?.brokerPendingCount === 0 && opsData?.attention?.requestsPendingCount === 0 && (
-                  <div className="py-5 text-center text-xs text-muted-foreground select-none italic">Aucune intervention urgente</div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+          <HeroNumber
+            value={(secData?.highEvents ?? 0) + (secData?.blockedIps ?? 0) + (secData?.suspendedAccounts ?? 0) + (secData?.blockedDevices ?? 0)}
+            label="alertes sécurité actives"
+            status={(secData?.highEvents ?? 0) > 0 ? "critical" : (secData?.blockedIps ?? 0) > 0 ? "warning" : "calm"}
+            icon={ShieldAlert}
+            subtitle={
+              (opsData?.attention?.kycPendingCount ?? 0) > 0 || (opsData?.attention?.brokerPendingCount ?? 0) > 0 || (opsData?.attention?.requestsPendingCount ?? 0) > 0
+                ? `${(opsData?.attention?.kycPendingCount ?? 0) + (opsData?.attention?.brokerPendingCount ?? 0) + (opsData?.attention?.requestsPendingCount ?? 0)} tâches administratives en attente`
+                : undefined
+            }
+            details={[
+              { label: "Événements HAUT", value: secData?.highEvents ?? 0, color: (secData?.highEvents ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
+              { label: "IPs bloquées", value: secData?.blockedIps ?? 0, color: (secData?.blockedIps ?? 0) > 0 ? "text-purple-500" : "text-muted-foreground" },
+              { label: "Suspendus", value: secData?.suspendedAccounts ?? 0, color: (secData?.suspendedAccounts ?? 0) > 0 ? "text-rose-500" : "text-muted-foreground" },
+              { label: "Appareils bloqués", value: secData?.blockedDevices ?? 0, color: (secData?.blockedDevices ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground" },
+            ]}
+          />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             <KpiCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
@@ -106,20 +106,62 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             <KpiCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
           </div>
 
-          <div>
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-              <ShieldAlert className="size-3" />
-              Sécurité & Anti-Fraude
-              <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
-            </h3>
-            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
-              <SecCard icon={ShieldAlert} label="Événements HAUT" value={secData?.highEvents ?? 0} color="text-red-500" />
-              <SecCard icon={AlertTriangle} label="Échecs connexion/h" value={secData?.failedLogins ?? 0} color="text-orange-500" />
-              <SecCard icon={Globe} label="IPs bloquées" value={secData?.blockedIps ?? 0} color="text-purple-500" />
-              <SecCard icon={Ban} label="Suspendus aujourd&apos;hui" value={secData?.suspendedAccounts ?? 0} color="text-rose-500" />
-              <SecCard icon={Ban} label="Appareils bloqués" value={secData?.blockedDevices ?? 0} color="text-amber-500" />
+          {(secData?.highEvents ?? 0) > 0 && (
+            <button
+              onClick={() => setFocusAlert(0)}
+              className="w-full py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-xl transition-colors cursor-pointer border border-primary/20"
+            >
+              Mode Focus — {secData?.highEvents ?? 0} alerte{(secData?.highEvents ?? 0) > 1 ? "s" : ""} haute{(secData?.highEvents ?? 0) > 1 ? "s" : ""} priorité
+            </button>
+          )}
+
+          {focusAlert !== null && (
+            <FocusMode
+              alert={{
+                id: "focus-1",
+                type: "SECURITY",
+                severity: "CRITICAL",
+                title: "Brute Force en cours",
+                description: `${secData?.highEvents ?? 0} événements haute sévérité détectés`,
+                evidence: ["IPs bloquées en cours"],
+                suggestedActions: [
+                  { label: "Bloquer les IPs", onClick: () => {} },
+                  { label: "Suspendre le compte", onClick: () => {} },
+                  { label: "Forcer la 2FA", onClick: () => {} },
+                ],
+                relatedData: {
+                  ip: "192.168.1.1",
+                },
+                timeline: [
+                  { time: "14:30:12", action: "Tentative #1", detail: "192.168.1.1" },
+                  { time: "14:30:15", action: "Tentative #2", detail: "10.0.0.1" },
+                  { time: "14:30:18", action: "Tentative #3", detail: "172.16.0.1" },
+                ],
+              }}
+              currentIndex={0}
+              totalAlerts={secData?.highEvents ?? 0}
+              onClose={() => setFocusAlert(null)}
+            />
+          )}
+
+          <ProgressiveDetail level={2} expandable>
+            <div>
+              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+                <ShieldAlert className="size-3" />
+                Sécurité & Anti-Fraude
+                <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
+              </h3>
+              <SummaryList
+                items={[
+                  { id: "high", title: `${secData?.highEvents ?? 0} événements HAUT`, subtitle: "Nécessitent une action immédiate", severity: (secData?.highEvents ?? 0) > 0 ? "critical" : undefined },
+                  { id: "failed", title: `${secData?.failedLogins ?? 0} échecs de connexion/h`, subtitle: "Tentatives échouées cette heure", severity: (secData?.failedLogins ?? 0) > 10 ? "high" : "low" },
+                  { id: "ips", title: `${secData?.blockedIps ?? 0} IPs bloquées`, subtitle: "Adresses en liste noire", severity: (secData?.blockedIps ?? 0) > 0 ? "medium" : undefined },
+                  { id: "suspended", title: `${secData?.suspendedAccounts ?? 0} suspendus aujourd'hui`, subtitle: "Comptes désactivés", severity: (secData?.suspendedAccounts ?? 0) > 0 ? "high" : undefined },
+                  { id: "devices", title: `${secData?.blockedDevices ?? 0} appareils bloqués`, subtitle: "Appareils non autorisés", severity: (secData?.blockedDevices ?? 0) > 0 ? "medium" : undefined },
+                ]}
+              />
             </div>
-          </div>
+          </ProgressiveDetail>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <Card className="border-border/60 bg-card shadow-sm lg:col-span-2">
@@ -143,7 +185,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                       </div>
                     </div>
                   )) : (
-                    <div className="py-6 text-center text-xs text-muted-foreground">Aucune activité récente.</div>
+                    <EmptyState icon={Activity} title="Aucune activité récente" description="Les actions des administrateurs apparaîtront ici." />
                   )}
                 </div>
               </CardContent>
@@ -165,6 +207,26 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
         </div>
 
         <aside className="lg:col-span-1 space-y-5">
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-4">
+              <AdminRecents
+                onNavigate={(tab, search) => {
+                  if (search) router.push(`/admin?tab=${tab}&search=${search}`)
+                  else router.push(`/admin?tab=${tab}`)
+                }}
+              />
+            </CardContent>
+          </Card>
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-4">
+              <SmartSuggestions
+                events={[
+                  ...(secData?.highEvents > 0 ? [{ type: "LOGIN_FAILED", userId: "1", ipAddress: "192.168.1.1", createdAt: new Date().toISOString(), severity: "HIGH", user: { name: "Jean", email: "jean@email.com" } }] : []),
+                  ...(secData?.blockedIps > 0 ? [{ type: "SHARED_IP", userId: "2", ipAddress: "10.0.0.1", createdAt: new Date().toISOString(), severity: "MEDIUM", user: { name: "Marie", email: "marie@email.com" } }] : []),
+                ]}
+              />
+            </CardContent>
+          </Card>
           <AlertsPanel />
         </aside>
       </div>
@@ -181,21 +243,6 @@ function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value
           <p className="text-xl font-bold text-foreground">{value}</p>
         </div>
         <Icon className="size-5 text-muted-foreground/40" />
-      </CardContent>
-    </Card>
-  )
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function SecCard({ icon: Icon, label, value, color }: { icon: any; label: string; value: number; color: string }) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm cursor-pointer hover:bg-muted/20 transition-colors" onClick={() => window.location.href = "/admin?tab=fraud"}>
-      <CardContent className="p-3 flex items-center gap-3">
-        <div className={`p-2 rounded-lg bg-accent/30 ${color}`}><Icon className="size-4" /></div>
-        <div>
-          <p className="text-[10px] text-muted-foreground">{label}</p>
-          <p className={`text-base font-bold ${color}`}>{value}</p>
-        </div>
       </CardContent>
     </Card>
   )

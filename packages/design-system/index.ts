@@ -10,6 +10,8 @@ export { Checkbox } from "./components/ui/checkbox"
 export { Switch } from "./components/ui/switch"
 export { Badge } from "./components/ui/badge"
 export { Avatar, AvatarImage, AvatarFallback } from "./components/ui/avatar"
+export { Breadcrumbs } from "./components/ui/breadcrumbs"
+export type { BreadcrumbSegment } from "./components/ui/breadcrumbs"
 export { Tabs, TabsList, TabsTrigger, TabsContent } from "./components/ui/tabs"
 export { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "./components/ui/dropdown-menu"
 export { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "./components/ui/tooltip"
@@ -26,6 +28,12 @@ export { TopLoader } from "./components/top-loader"
 
 // Hooks
 export { useMediaQuery } from "./hooks/use-media-query"
+export { useIsMobile, useIsTouchDevice } from "./hooks/use-is-mobile"
+
+// Responsive utilities
+export { Responsive } from "./components/responsive"
+export { DualRender } from "./components/dual-render"
+export { FilterSheet } from "./components/filter-sheet"
 
 // Providers
 export { ThemeProvider } from "./providers/theme-provider"

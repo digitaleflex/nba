@@ -7,29 +7,33 @@ import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
 
-import { DashboardTab } from "./features/DashboardTab"
-import { RequestsTab } from "./features/RequestsTab"
-import { SignalsTab } from "./features/SignalsTab"
-import { KycTab } from "./features/KycTab"
-import { BrokerTab } from "./features/BrokerTab"
-
-import { AnalyticsTab } from "./features/AnalyticsTab"
-import { SecurityTab } from "./features/SecurityTab"
-import { FraudTab } from "./features/FraudTab"
-import { EmailsTab } from "./features/EmailsTab"
-import { SettingsTab } from "./features/SettingsTab"
-import { AuditTab } from "./features/AuditTab"
-import { UsersTab } from "./features/UsersTab"
-import { MembresTab } from "./features/MembresTab"
-import { NotificationsTab } from "./features/NotificationsTab"
-import { ModerationTab } from "./features/ModerationTab"
-import { FormationTab } from "./features/FormationTab"
-import { DevicesTab } from "./features/DevicesTab"
-import { CronsTab } from "./features/CronsTab"
+import { SystemPulse } from "./components/SystemPulse"
+import { SystemAlert } from "./components/SystemAlert"
+import { NotificationBadge } from "./components/NotificationBadge"
 import { AdminTools } from "./components/admin-tools"
 import { AdminSidebar } from "./components/admin-sidebar"
+import { TabSkeleton } from "./components/tab-skeleton"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
+
+const DashboardTab = dynamic(() => import("./features/DashboardTab"), { loading: () => <TabSkeleton />, ssr: false })
+const UsersTab = dynamic(() => import("./features/UsersTab"), { loading: () => <TabSkeleton />, ssr: false })
+const MembresTab = dynamic(() => import("./features/MembresTab"), { loading: () => <TabSkeleton />, ssr: false })
+const RequestsTab = dynamic(() => import("./features/RequestsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SignalsTab = dynamic(() => import("./features/SignalsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const KycTab = dynamic(() => import("./features/KycTab"), { loading: () => <TabSkeleton />, ssr: false })
+const BrokerTab = dynamic(() => import("./features/BrokerTab"), { loading: () => <TabSkeleton />, ssr: false })
+const AnalyticsTab = dynamic(() => import("./features/AnalyticsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SecurityTab = dynamic(() => import("./features/SecurityTab"), { loading: () => <TabSkeleton />, ssr: false })
+const FraudTab = dynamic(() => import("./features/FraudTab"), { loading: () => <TabSkeleton />, ssr: false })
+const EmailsTab = dynamic(() => import("./features/EmailsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SettingsTab = dynamic(() => import("./features/SettingsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const NotificationsTab = dynamic(() => import("./features/NotificationsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const AuditTab = dynamic(() => import("./features/AuditTab"), { loading: () => <TabSkeleton />, ssr: false })
+const FormationTab = dynamic(() => import("./features/FormationTab"), { loading: () => <TabSkeleton />, ssr: false })
+const DevicesTab = dynamic(() => import("./features/DevicesTab"), { loading: () => <TabSkeleton />, ssr: false })
+const CronsTab = dynamic(() => import("./features/CronsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const RevenueTab = dynamic(() => import("./features/RevenueTab"), { loading: () => <TabSkeleton />, ssr: false })
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
@@ -98,12 +102,52 @@ function AdminConsoleContent() {
   // Support tickets for sidebar badge
   const [tickets, setTickets] = useState<any[]>([])
 
+  // System Pulse health state
+  const [health, setHealth] = useState<{ status: "healthy" | "degraded" | "down"; lastActivity: string; activityRate: number; activeAlerts: number } | null>(null)
+
+  // System alerts state (Notifications subtiles #256)
+  const [systemAlerts, setSystemAlerts] = useState<Array<{ id: string; severity: "critical" | "warning"; title: string; description: string; actionLabel?: string; onAction?: () => void }>>([])
+  const dismissAlert = useCallback((id: string) => {
+    setSystemAlerts((prev) => prev.filter((a) => a.id !== id))
+  }, [])
+
   // Fetch support ticket count for badge
   useEffect(() => {
     fetch("/api/admin/support")
       .then(r => r.json())
       .then(data => setTickets(Array.isArray(data?.messages) ? data.messages : []))
       .catch(() => {})
+  }, [])
+
+  // Pulse polling every 3s
+  useEffect(() => {
+    function poll() {
+      fetch("/api/admin/security/fraud/health")
+        .then(r => r.json())
+        .then(d => {
+          setHealth(d)
+          if (d.status === "degraded" || d.status === "down") {
+            setSystemAlerts((prev) => {
+              const exists = prev.some((a) => a.id === "system-health")
+              if (exists) return prev
+              return [...prev, {
+                id: "system-health",
+                severity: d.status === "down" ? "critical" as const : "warning" as const,
+                title: d.status === "down" ? "Système en panne" : "Mode dégradé",
+                description: `${d.activeAlerts} alerte${d.activeAlerts > 1 ? "s" : ""} active${d.activeAlerts > 1 ? "s" : ""} — ${d.activityRate} action${d.activityRate > 1 ? "s" : ""}/min`,
+                actionLabel: "Voir les logs",
+                onAction: () => { window.location.href = "/admin?tab=audit" },
+              }]
+            })
+          } else {
+            setSystemAlerts((prev) => prev.filter((a) => a.id !== "system-health"))
+          }
+        })
+        .catch(() => {})
+    }
+    poll()
+    const id = setInterval(poll, 3000)
+    return () => clearInterval(id)
   }, [])
 
   // Refetch registration from the active tab (used by the shared context panel)
@@ -463,45 +507,76 @@ function AdminConsoleContent() {
         <div className="p-4 md:p-6 lg:p-8 space-y-7">
         <AdminTools />
 
+        {health && (
+          <SystemPulse
+            status={health.status}
+            lastActivity={health.lastActivity ? new Date(health.lastActivity) : null}
+            activityRate={health.activityRate}
+            activeAlerts={health.activeAlerts}
+          />
+        )}
+
+        {systemAlerts.length > 0 && (
+          <div className="space-y-2">
+            {systemAlerts.map((alert) => (
+              <SystemAlert key={alert.id} alert={alert} onDismiss={dismissAlert} />
+            ))}
+          </div>
+        )}
+
         {/* ============================================================== */}
         {/* MODULE VIEWS */}
         {/* ============================================================== */}
         {activeTab === "dashboard" && (
-          <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
+          <div key="dashboard" className="animate-slide-right">
+            <DashboardTab opsData={opsData} loadingOps={loadingOps} errorOps={errorOps} router={router} />
+          </div>
         )}
 
         {activeTab === "users" && (
-          <UsersTab
-            cachedGet={cachedGet}
-            invalidate={invalidateAdminCache}
-            onOpenPanel={openPanel}
-            registerRefetch={registerRefetch}
-            initialSearch={searchParams.get("search") || ""}
-          />
+          <div key="users" className="animate-slide-right">
+            <UsersTab
+              cachedGet={cachedGet}
+              invalidate={invalidateAdminCache}
+              onOpenPanel={openPanel}
+              registerRefetch={registerRefetch}
+              initialSearch={searchParams.get("search") || ""}
+            />
+          </div>
         )}
 
         {activeTab === "membres" && (
-          <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="membres" className="animate-slide-right">
+            <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "requests" && (
-          <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
+          <div key="requests" className="animate-slide-right">
+            <RequestsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} refreshOps={refreshOps} />
+          </div>
         )}
 
         {activeTab === "signals" && (
-          <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
+          <div key="signals" className="animate-slide-right">
+            <SignalsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} />
+          </div>
         )}
 
         {activeTab === "kyc" && (
-          <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          <div key="kyc" className="animate-slide-right">
+            <KycTab cachedGet={cachedGet} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          </div>
         )}
 
         {activeTab === "broker" && (
-          <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          <div key="broker" className="animate-slide-right">
+            <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
+          </div>
         )}
 
         {activeTab === "stats" && (
-          <div className="space-y-6">
+          <div key="stats" className="animate-slide-right space-y-6">
             <TabPageHeader title="Statistiques globales" description="Compteurs clés consolidés d'activité de la plateforme NBA." />
             {opsData ? (
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -519,42 +594,68 @@ function AdminConsoleContent() {
         )}
 
         {activeTab === "analytics" && (
-          <AnalyticsTab cachedGet={cachedGet} />
+          <div key="analytics" className="animate-slide-right">
+            <AnalyticsTab cachedGet={cachedGet} />
+          </div>
+        )}
+
+        {activeTab === "revenue" && (
+          <div key="revenue" className="animate-slide-right">
+            <RevenueTab cachedGet={cachedGet} />
+          </div>
         )}
 
         {activeTab === "security" && (
-          <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="security" className="animate-slide-right">
+            <SecurityTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
         {activeTab === "fraud" && (
-          <FraudTab />
+          <div key="fraud" className="animate-slide-right">
+            <FraudTab />
+          </div>
         )}
 
         {activeTab === "emails" && (
-          <EmailsTab cachedGet={cachedGet} opsData={opsData} />
+          <div key="emails" className="animate-slide-right">
+            <EmailsTab cachedGet={cachedGet} opsData={opsData} />
+          </div>
         )}
 
         {activeTab === "settings" && (
-          <SettingsTab cachedGet={cachedGet} />
+          <div key="settings" className="animate-slide-right">
+            <SettingsTab cachedGet={cachedGet} />
+          </div>
         )}
 
         {activeTab === "notifications" && (
-          <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="notifications" className="animate-slide-right">
+            <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "audit" && (
-          <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          <div key="audit" className="animate-slide-right">
+            <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+          </div>
         )}
 
         {activeTab === "formation" && (
-          <FormationTab />
+          <div key="formation" className="animate-slide-right">
+            <FormationTab />
+          </div>
         )}
 
         {activeTab === "devices" && (
-          <DevicesTab />
+          <div key="devices" className="animate-slide-right">
+            <DevicesTab />
+          </div>
         )}
 
         {activeTab === "crons" && (
-          <CronsTab />
+          <div key="crons" className="animate-slide-right">
+            <CronsTab />
+          </div>
         )}
 
         </div>{/* fermeture p-4 md:p-6 lg:p-8 */}

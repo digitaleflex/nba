@@ -6,7 +6,8 @@ import Link from "next/link"
 import { toast } from "sonner"
 import { authClient } from "@nba/lib/auth-client"
 import { Button, Input, Card, CardContent } from "@nba/design-system"
-import { TrendingUp, Eye, EyeOff, CheckCircle, ArrowLeft } from "lucide-react"
+import { PasswordField } from "@nba/app/components/password-field"
+import { TrendingUp, CheckCircle, ArrowLeft } from "lucide-react"
 
 export default function ResetPasswordPage({
   searchParams,
@@ -118,36 +119,16 @@ export default function ResetPasswordPage({
           <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4 pt-6">
-              <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Nouveau mot de passe
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur("password")}
-                    required
-                    minLength={10}
-                    autoComplete="new-password"
-                    className="pr-9"
-                    aria-invalid={touched.password && !!errors.password}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
-                {touched.password && errors.password && (
-                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.password}</p>
-                )}
-              </div>
+              <PasswordField
+                label="Nouveau mot de passe"
+                placeholder="••••••••"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() => handleBlur("password")}
+                autoComplete="new-password"
+                minLength={10}
+                error={touched.password ? errors.password : undefined}
+              />
               <div className="space-y-1.5">
                 <label htmlFor="confirm" className="text-sm font-medium text-foreground">
                   Confirmer le mot de passe

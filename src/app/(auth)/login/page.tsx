@@ -4,7 +4,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Button, Input, Card, CardContent, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
-import { TrendingUp, Eye, EyeOff, HelpCircle } from "lucide-react"
+import { PasswordField } from "@nba/app/components/password-field"
+import { TrendingUp, HelpCircle } from "lucide-react"
 import { safeAuthErrorMessage } from "@nba/lib/auth-error-messages"
 
 export default function LoginPage() {
@@ -116,38 +117,15 @@ export default function LoginPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <label htmlFor="password" className="text-sm font-medium text-foreground">
-                  Mot de passe
-                </label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onBlur={() => handleBlur("password")}
-                    required
-                    autoComplete="current-password"
-                    className="pr-9"
-                    aria-invalid={touched.password && !!errors.password}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 size-11 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors rounded-lg"
-                    aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
-                  >
-                    {showPassword ? (
-                      <EyeOff className="size-4" />
-                    ) : (
-                      <Eye className="size-4" />
-                    )}
-                  </button>
-                </div>
-                {touched.password && errors.password && (
-                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.password}</p>
-                )}
+                <PasswordField
+                  label="Mot de passe"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onBlur={() => handleBlur("password")}
+                  autoComplete="current-password"
+                  error={touched.password ? errors.password : undefined}
+                />
               </div>
               {error && (
                 <p role="alert" className="text-sm text-destructive flex items-center gap-1.5 bg-destructive/10 rounded-lg px-3 py-2">

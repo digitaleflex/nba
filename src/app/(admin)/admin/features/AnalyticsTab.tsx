@@ -13,7 +13,7 @@ import {
   Radio,
   Loader2,
 } from "lucide-react"
-import { Card, CardContent, cn, Chart } from "@nba/design-system"
+import { Card, CardContent, cn, Chart, EmptyState } from "@nba/design-system"
 
 interface AnalyticsTabProps {
   cachedGet: (url: string, ttlMs?: number) => Promise<{ ok: boolean; data: any }>
@@ -203,9 +203,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
                   </div>
                 ))
               ) : (
-                <p className="text-[11px] text-muted-foreground py-4 text-center">
-                  Aucun abonnement actif.
-                </p>
+                <EmptyState icon={CreditCard} title="Aucun abonnement actif" description="Les répartitions par plan apparaîtront lorsqu'il y aura des abonnés." />
               )}
             </div>
           </CardContent>

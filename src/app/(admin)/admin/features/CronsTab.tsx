@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Card, CardContent, cn } from "@nba/design-system"
+import { Card, CardContent, cn, EmptyState } from "@nba/design-system"
 import { Clock, Play, RefreshCw, Loader2, CheckCircle2, XCircle, HelpCircle, FileText } from "lucide-react"
 import { toast } from "sonner"
 
@@ -96,8 +96,8 @@ export function CronsTab() {
       <div className="space-y-6">
         <div>
           <h2 className="text-xl font-bold tracking-tight">Cron Jobs</h2>
-          <p className="text-sm text-muted-foreground">Aucun cron job configuré.</p>
         </div>
+        <EmptyState icon={Clock} title="Aucun cron job configuré" description="Les tâches planifiées apparaîtront ici une fois configurées." />
       </div>
     )
   }

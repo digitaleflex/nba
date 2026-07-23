@@ -190,6 +190,7 @@ const adminTabIconMap: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   stats: BarChart2,
   analytics: LineChart,
+  revenue: CreditCard,
   requests: ListTodo,
   membres: Users,
   users: Users,

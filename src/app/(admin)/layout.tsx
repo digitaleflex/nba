@@ -6,6 +6,7 @@ import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { MobilePageTitle } from "@nba/app/components/mobile-page-title"
 import { AdminHeader } from "./admin/components/admin-header"
 import { AdminInbox } from "./admin/components/admin-inbox"
+import { PageBreadcrumbs } from "@nba/app/components/breadcrumbs"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession()
@@ -45,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   )
 
   return (
-    <AppShell space="admin" user={user} desktopHeader={<AdminHeader user={user} />} mobileHeader={mobileHeader}>
+    <AppShell space="admin" user={user} desktopHeader={<AdminHeader user={user} />} desktopSubheader={<PageBreadcrumbs />} mobileHeader={mobileHeader}>
       {children}
     </AppShell>
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Button, Card, CardContent } from "@nba/design-system"
 import { Mail, CheckCircle2, Loader2, ArrowRight } from "lucide-react"
 import { useOnboardingPersistence } from "../hooks/use-onboarding-persistence"
@@ -16,6 +16,8 @@ export function StepEmail({ onNext }: StepEmailProps) {
   const [sent, setSent] = useState(false)
   const [verified, setVerified] = useState(false)
   const [code, setCode] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+  const autoSubmitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const saved = restore<{ sent: boolean; verified: boolean }>("email")
@@ -47,8 +49,9 @@ export function StepEmail({ onNext }: StepEmailProps) {
     }
   }
 
-  async function handleVerifyOTP() {
-    if (code.length !== 6) {
+  async function handleVerifyOTP(pastedCode?: string) {
+    const otp = pastedCode ?? code
+    if (otp.length !== 6) {
       setError("Le code doit contenir 6 chiffres")
       return
     }
@@ -60,7 +63,7 @@ export function StepEmail({ onNext }: StepEmailProps) {
       const res = await fetch("/api/onboarding/verify-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
+        body: JSON.stringify({ code: otp })
       })
       const data = await res.json()
       
@@ -128,12 +131,27 @@ export function StepEmail({ onNext }: StepEmailProps) {
               </div>
               
               <div className="space-y-2">
-                <input 
-                  type="text" 
+                <input
+                  ref={inputRef}
+                  type="text"
                   inputMode="numeric"
                   maxLength={6}
+                  autoComplete="one-time-code"
                   value={code}
                   onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  onPaste={(e) => {
+                    e.preventDefault()
+                    const pasted = e.clipboardData.getData("text").replace(/\D/g, "").slice(0, 6)
+                    if (!pasted) return
+                    setCode(pasted)
+                    if (pasted.length === 6) {
+                      if (autoSubmitTimer.current) clearTimeout(autoSubmitTimer.current)
+                      autoSubmitTimer.current = setTimeout(() => {
+                        setCode(pasted)
+                        handleVerifyOTP(pasted)
+                      }, 500)
+                    }
+                  }}
                   placeholder="000000"
                   aria-label="Code de vérification à 6 chiffres"
                   className="flex h-12 w-full rounded-md border border-input bg-transparent px-3 py-1 text-center text-2xl tracking-widest shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
