@@ -3,6 +3,9 @@ import { signalCreateSchema } from "../validators/signal-schema"
 import { requirePermission } from "@nba/lib/auth-utils"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "create-signal" })
 
 export interface CreateSignalInput {
   content: string
@@ -72,7 +75,7 @@ export async function createSignal(input: CreateSignalInput) {
         data: { jobId: job.id || null },
       })
     } catch (err) {
-      console.error("[signal] BullMQ failed during scheduling:", err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] BullMQ failed during scheduling")
       queueFailed = true
     }
   } else if (parsed.status === "PUBLISHED") {
@@ -81,7 +84,7 @@ export async function createSignal(input: CreateSignalInput) {
         signalId: signal.id,
       })
     } catch (err) {
-      console.error(`[signal] BullMQ failed during publication (signalId=${signal.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal] BullMQ failed during publication (signalId=${signal.id})`)
       queueFailed = true
     }
   }

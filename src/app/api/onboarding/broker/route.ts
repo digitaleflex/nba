@@ -8,6 +8,9 @@ import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { sendBrokerSubmittedEmail, sendOnboardingStepEmail } from "@nba/lib/services/notifications"
 import { z } from "zod"
 import { msg } from "@nba/lib/messages"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "broker" })
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -74,14 +77,14 @@ export async function POST(req: NextRequest) {
 
     if (user) {
       await sendBrokerSubmittedEmail(user).catch((err) =>
-        console.error("[broker] email failed:", err)
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[broker] email failed")
       )
       await sendOnboardingStepEmail(
         user,
         "Vérification Broker",
         null,
       ).catch((err) =>
-        console.error("[broker] onboarding email failed:", err)
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[broker] onboarding email failed")
       )
     }
 

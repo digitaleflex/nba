@@ -8,6 +8,9 @@ import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { sendKycSubmittedEmail, sendOnboardingStepEmail } from "@nba/lib/services/notifications"
 import { documentTypeSchema } from "@nba/lib/validations"
 import { msg } from "@nba/lib/messages"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "kyc" })
 
 const uploadRateLimit = rateLimitMiddleware({ window: 3600, max: 5 })
 
@@ -67,14 +70,14 @@ export async function POST(req: NextRequest) {
 
     if (user) {
       await sendKycSubmittedEmail(user).catch((err) =>
-        console.error("[kyc] email failed:", err)
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[kyc] email failed")
       )
       await sendOnboardingStepEmail(
         user,
         "Vérification d'identité",
         "Vérification Broker",
       ).catch((err) =>
-        console.error("[kyc] onboarding email failed:", err)
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[kyc] onboarding email failed")
       )
     }
 

@@ -1,5 +1,8 @@
 import { Queue } from "bullmq";
 import IORedis from "ioredis";
+import { logger } from "./logger";
+
+const log = logger.child({ module: "queue" });
 
 const redisUrl = process.env.REDIS_URL?.trim();
 const queueEnabled = process.env.QUEUE_ENABLED
@@ -62,7 +65,7 @@ function getRedisConnection() {
       commandTimeout: 5000,
       retryStrategy: (times) => {
         if (times > 10) {
-          console.error(`[queue] Redis unavailable after ${times} retries, cooling down for 30s`)
+          log.error(`[queue] Redis unavailable after ${times} retries, cooling down for 30s`)
           queueConnAvailable = false
           queueConnUnavailableUntil = Date.now() + 30000
           return null
@@ -72,7 +75,7 @@ function getRedisConnection() {
     });
 
     globalForRedis.redisConnection.on("error", (err) => {
-      console.error("[queue] Redis connection error:", err.message)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[queue] Redis connection error")
     })
   }
 

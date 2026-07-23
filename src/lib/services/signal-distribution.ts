@@ -6,6 +6,9 @@ import { sendTelegramMessage } from "./telegram"
 import { sendWhatsAppSignal } from "./whatsapp"
 import { readFile } from "fs/promises"
 import { join } from "path"
+import { logger } from "../logger"
+
+const log = logger.child({ module: "signal-distribution" })
 
 const STORAGE_BASE_PATH = process.cwd() + "/storage"
 const imageCache = new Map<string, { promise: Promise<string | null>; expiresAt: number }>()
@@ -49,7 +52,7 @@ async function sendTelegramToMember(notificationId: string, userId: string, titl
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
   }).catch((err) => {
-    console.error(`[signal-distribution] Failed to create TELEGRAM delivery (notificationId=${notificationId}):`, err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to create TELEGRAM delivery (notificationId=${notificationId})`)
     return null
   })
 
@@ -64,7 +67,7 @@ async function sendTelegramToMember(notificationId: string, userId: string, titl
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
     }).catch((err) => {
-      console.error(`[signal-distribution] Failed to update TELEGRAM delivery (id=${delivery.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to update TELEGRAM delivery (id=${delivery.id})`)
     })
   }
 }
@@ -81,7 +84,7 @@ async function sendWhatsAppToMember(notificationId: string, userId: string, titl
   const delivery = await prisma.notificationDelivery.create({
     data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
   }).catch((err) => {
-    console.error(`[signal-distribution] Failed to create WHATSAPP delivery (notificationId=${notificationId}):`, err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to create WHATSAPP delivery (notificationId=${notificationId})`)
     return null
   })
 
@@ -92,7 +95,7 @@ async function sendWhatsAppToMember(notificationId: string, userId: string, titl
       where: { id: delivery.id },
       data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
     }).catch((err) => {
-      console.error(`[signal-distribution] Failed to update WHATSAPP delivery (id=${delivery.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to update WHATSAPP delivery (id=${delivery.id})`)
     })
   }
 }
@@ -105,7 +108,7 @@ async function readImageAsDataUri(path: string): Promise<string | null> {
     const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg"
     return `data:${mime};base64,${buffer.toString("base64")}`
   } catch (err) {
-    console.error(`[signal-distribution] Failed to read image ${path}:`, err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to read image ${path}`)
     return null
   }
 }
@@ -212,7 +215,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
           })
         } catch (err) {
-          console.error(`[signal-distribution] Failed to create notification for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to create notification for user ${member.id}`)
           return
         }
 
@@ -234,7 +237,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             audience: signal.audience.map((a: any) => a.plan.name),
           })
         } catch (err) {
-          console.error(`[signal-distribution] pubsub failed for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] pubsub failed for user ${member.id}`)
         }
 
         const wantsNotifications = memberPrefs.get(member.id) !== false
@@ -243,7 +246,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
         const delivery = await prisma.notificationDelivery.create({
           data: { notificationId: notification.id, channel: "EMAIL", status: "PENDING" },
         }).catch((err) => {
-          console.error(`[signal-distribution] Failed to create EMAIL delivery for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to create EMAIL delivery for user ${member.id}`)
           return null
         })
         if (!delivery) return
@@ -255,7 +258,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           { deliveryId: delivery.id, to: member.email, subject: template.subject, html: template.html },
           { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
         ).catch((err) => {
-          console.error(`[signal-distribution] Failed to enqueue email for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to enqueue email for user ${member.id}`)
         })
 
         const pushResult = await sendPushToUser(member.id, {
@@ -264,14 +267,14 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           url: "/dashboard",
           tag: notification.id,
         }).catch((err) => {
-          console.error(`[signal-distribution] Push failed for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Push failed for user ${member.id}`)
           return { sent: 0, failed: 0 }
         })
 
         await prisma.notificationDelivery.create({
           data: { notificationId: notification.id, channel: "PUSH", status: pushResult.sent > 0 ? "SENT" : "FAILED" },
         }).catch((err) => {
-          console.error(`[signal-distribution] Failed to create PUSH delivery for user ${member.id}:`, err)
+          log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[signal-distribution] Failed to create PUSH delivery for user ${member.id}`)
         })
 
         telegramTasks.push({ notificationId: notification.id, userId: member.id })
@@ -307,7 +310,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
       creatorId: signal.createdBy,
     })
   } catch (err) {
-    console.error("[signal-distribution] admin pubsub failed:", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal-distribution] admin pubsub failed")
   }
 
   await logAuditEvent({

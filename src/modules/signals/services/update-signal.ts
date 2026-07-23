@@ -5,6 +5,9 @@ import { AuthError } from "@nba/lib/auth-utils"
 import { canUpdateSignal } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "update-signal" })
 
 export interface UpdateSignalInput {
   content?: string
@@ -44,7 +47,7 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
         await job.remove()
       }
     } catch (err) {
-      console.error("[signal] Failed to remove previous scheduled job:", err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] Failed to remove previous scheduled job")
     }
   }
 
@@ -116,7 +119,7 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
         data: { jobId: job.id || null },
       })
     } catch (err) {
-      console.error("[signal] BullMQ failed during rescheduling:", err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] BullMQ failed during rescheduling")
       queueFailed = true
     }
   } else if (parsed.status === "PUBLISHED" && signal.status !== "PUBLISHED") {
@@ -125,7 +128,7 @@ export async function updateSignal(id: string, userId: string, input: UpdateSign
         signalId: signal.id,
       })
     } catch (err) {
-      console.error("[signal] BullMQ failed during update publication:", err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] BullMQ failed during update publication")
       queueFailed = true
     }
   }

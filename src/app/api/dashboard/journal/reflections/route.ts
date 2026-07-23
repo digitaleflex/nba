@@ -5,6 +5,9 @@ import { z } from "zod"
 import { handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "journal-reflections" })
 
 const reflectionCreateRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
@@ -91,7 +94,7 @@ export async function POST(request: NextRequest) {
     })
 
     updateDisciplineStreak(session.user.id, date).catch((err) => {
-      console.error(`[journal] updateDisciplineStreak failed (userId=${session.user.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[journal] updateDisciplineStreak failed (userId=${session.user.id})`)
     })
 
     return NextResponse.json({ reflection })

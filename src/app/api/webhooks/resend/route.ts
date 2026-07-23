@@ -5,6 +5,9 @@ import { prisma } from "@nba/lib/db"
 import { sendEmail } from "@nba/lib/email"
 import { markUserBounced, markUserComplained, markUserSuppressed, enqueueDlq } from "@nba/lib/services/email-webhooks"
 import { msg } from "@nba/lib/messages"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "resend-webhook" })
 
 export const runtime = "nodejs"
 
@@ -61,7 +64,7 @@ export async function POST(req: NextRequest) {
   // Structure differente : pas d'email_id. Gere avant le check emailId.
   if (type.startsWith("domain.")) {
     await handleDomainEvent(type, event.data as Record<string, unknown> | undefined).catch(
-      (err) => console.error("[resend-webhook] handleDomainEvent failed:", err),
+      (err) => log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] handleDomainEvent failed:"),
     )
     return NextResponse.json({ ok: true })
   }
@@ -73,7 +76,7 @@ export async function POST(req: NextRequest) {
   // Sprint 2 (#64) : alerte admin throttlede si > 10 email.delivery_delayed sur 1h
   if (type === "email.delivery_delayed") {
     await checkDelayedBurst(emailId).catch((err) =>
-      console.error("[resend-webhook] checkDelayedBurst failed:", err),
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] checkDelayedBurst failed:"),
     )
   }
 
@@ -105,7 +108,7 @@ export async function POST(req: NextRequest) {
   try {
     await processDeliveryEvent({ type: type!, event, emailId, delivery });
   } catch (err: any) {
-    console.error(`[resend-webhook] processDeliveryEvent failed for ${type} ${emailId}:`, err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[resend-webhook] processDeliveryEvent failed for ${type} ${emailId}:`)
     try {
       await enqueueDlq({
         source: "resend",
@@ -117,7 +120,7 @@ export async function POST(req: NextRequest) {
         lastError: err?.message ?? String(err),
       })
     } catch (dlqErr: any) {
-      console.error(`[resend-webhook] DLQ enqueue failed:`, dlqErr)
+      log.error({ err: dlqErr, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] DLQ enqueue failed:")
     }
   }
 
@@ -163,13 +166,13 @@ async function processDeliveryEvent(args: {
     // Sprint 1 (#59) : auto-suppress le user sur bounce (1er = BOUNCED, 2e+ = INVALID)
     if (type === "email.bounced") {
       await markUserBounced(emailId).catch((err) =>
-        console.error("[resend-webhook] markUserBounced failed:", err),
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] markUserBounced failed:"),
       )
     }
     // Sprint 1 (#60) : auto-suspend le user sur complaint (legale + anti-spam)
     if (type === "email.complained") {
       await markUserComplained(emailId).catch((err) =>
-        console.error("[resend-webhook] markUserComplained failed:", err),
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] markUserComplained failed:"),
       )
     }
     await alertAdmin(type, emailId, event.data)
@@ -188,7 +191,7 @@ async function processDeliveryEvent(args: {
       // Bonus #74 : Resend refuse l'envoi (destinataire sur suppression list)
       // On marque le user SUPPRESSED -> skip les futurs envois
       await markUserSuppressed(emailId).catch((err) =>
-        console.error("[resend-webhook] markUserSuppressed failed:", err),
+        log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] markUserSuppressed failed:"),
       )
     } else if (type === "email.delivered" && delivery.status !== "BOUNCED" && !isStale) {
     await prisma.notificationDelivery.update({
@@ -250,7 +253,7 @@ async function notifySignalDeliveryUpdate(deliveryId: string) {
       at: new Date().toISOString(),
     })
   } catch (err) {
-    console.error("[resend-webhook] notifySignalDeliveryUpdate failed:", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[resend-webhook] notifySignalDeliveryUpdate failed:")
   }
 }
 

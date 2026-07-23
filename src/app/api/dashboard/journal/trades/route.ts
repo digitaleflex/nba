@@ -8,6 +8,9 @@ import { checkPsychology } from "@nba/lib/services/journal-psychology"
 import { calculatePnl, calculateRR } from "@nba/lib/services/pnl"
 import { updateDisciplineStreak } from "@nba/lib/services/journal-discipline"
 import { msg } from "@nba/lib/messages"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "journal-trades" })
 
 const tradeCreateRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
@@ -240,11 +243,11 @@ export async function POST(request: NextRequest) {
     })
 
     checkPsychology(session.user.id).catch((err) => {
-      console.error(`[journal] checkPsychology failed (userId=${session.user.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[journal] checkPsychology failed (userId=${session.user.id})`)
     })
 
     updateDisciplineStreak(session.user.id, created.tradedAt).catch((err) => {
-      console.error(`[journal] updateDisciplineStreak failed (userId=${session.user.id}):`, err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, `[journal] updateDisciplineStreak failed (userId=${session.user.id})`)
     })
 
     return NextResponse.json({ trade: created }, { status: 201 })
