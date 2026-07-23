@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { sendTelegramMessage } from "@nba/lib/services/telegram"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "telegram-webhook" })
 
 export async function POST(req: NextRequest) {
   try {
@@ -88,7 +91,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error("[telegram-webhook]", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[telegram-webhook]")
     return NextResponse.json({ ok: false }, { status: 500 })
   }
 }

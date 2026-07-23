@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { getSignalsApi } from "@nba/modules/signals/services/get-signals-api"
 import { handleAuthError, AuthError } from "@nba/lib/auth-utils"
 import { msg } from "@nba/lib/messages"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "signals" })
 
 export async function GET(req: NextRequest) {
   try {
@@ -17,7 +20,7 @@ export async function GET(req: NextRequest) {
     if (error instanceof AuthError) {
       return NextResponse.json({ error: error.message }, { status: error.httpStatus })
     }
-    console.error("Signals API error:", error)
+    log.error({ err: error, errorCode: "INTEGRATION_ERROR" }, "Signals API error")
     return NextResponse.json({ error: msg.signal.INTERNAL_ERROR }, { status: 500 })
   }
 }

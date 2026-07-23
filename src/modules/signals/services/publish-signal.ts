@@ -4,6 +4,9 @@ import { AuthError } from "@nba/lib/auth-utils"
 import { canPublishSignal } from "../policies/signal-policy"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { signalDistributionQueue } from "@nba/lib/queue"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "publish-signal" })
 
 export async function publishSignal(id: string, userId: string) {
   const signal = await prisma.signal.findUnique({
@@ -28,7 +31,7 @@ export async function publishSignal(id: string, userId: string) {
         await job.remove()
       }
     } catch (err) {
-      console.error("[signal] Failed to remove scheduled job on immediate publish:", err)
+      log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] Failed to remove scheduled job on immediate publish")
     }
   }
 
@@ -56,7 +59,7 @@ export async function publishSignal(id: string, userId: string) {
       signalId: signal.id,
     })
   } catch (err) {
-    console.error("[signal] BullMQ failed during manual publication:", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signal] BullMQ failed during manual publication")
     queueFailed = true
   }
 

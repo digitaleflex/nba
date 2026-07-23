@@ -3,6 +3,9 @@ import { getStorage } from "@nba/lib/storage"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { canViewSignal } from "@nba/modules/signals/policies/signal-policy"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "files" })
 
 export async function GET(
   req: NextRequest,
@@ -198,7 +201,7 @@ export async function GET(
       }
     })
   } catch (error) {
-    console.error("Erreur lors de la lecture du fichier :", error)
+    log.error({ err: error, errorCode: "INTEGRATION_ERROR" }, "Erreur lors de la lecture du fichier :")
     return new NextResponse("Erreur lors de la lecture du fichier", { status: 500 })
   }
 }

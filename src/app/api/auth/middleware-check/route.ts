@@ -2,6 +2,9 @@ import { NextResponse } from "next/server"
 import { headers } from "next/headers"
 import { auth } from "@nba/lib/auth"
 import { prisma } from "@nba/lib/db"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "middleware-check" })
 
 // ─── In-Memory Cache (per server instance) ────────────────────────────────────
 interface CachedAuthStatus {
@@ -150,7 +153,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    console.error("[middleware-check] Error:", error)
+    log.error({ err: error, errorCode: "INTEGRATION_ERROR" }, "[middleware-check] Error")
     return NextResponse.json({ 
       session: null, 
       onboardingStatus: null 

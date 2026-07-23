@@ -1,4 +1,7 @@
 import IORedis from "ioredis"
+import { logger } from "./logger"
+
+const log = logger.child({ module: "redis-pubsub" })
 
 const redisUrl = process.env.REDIS_URL?.trim()
 const pubsubEnabled = Boolean(redisUrl)
@@ -52,7 +55,7 @@ async function publish(channel: string, payload: unknown): Promise<void> {
   try {
     await conn.publish(channel, JSON.stringify(payload))
   } catch (err) {
-    console.error("[pubsub] publish failed:", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[pubsub] publish failed")
     markUnavailable()
   }
 }

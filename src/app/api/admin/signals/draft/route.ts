@@ -3,8 +3,11 @@ import { updateSignal } from "@nba/modules/signals/services/update-signal"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
 import { z } from "zod"
+import { logger } from "@nba/lib/logger"
 import { serverError } from "@nba/lib/api-error"
 import { msg } from "@nba/lib/messages"
+
+const log = logger.child({ module: "signals-draft" })
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,7 +55,7 @@ export async function POST(req: NextRequest) {
     if (err?.name === "ZodError") {
       return NextResponse.json({ error: msg.signal.DRAFT_INVALID, details: err.errors }, { status: 400 })
     }
-    console.error("[signals/draft] failed:", err)
+    log.error({ err, errorCode: "INTEGRATION_ERROR" }, "[signals/draft] failed")
     return serverError(err, "POST /api/admin/signals/draft")
   }
 }
