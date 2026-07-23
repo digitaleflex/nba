@@ -7,7 +7,6 @@ import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, 
 import { Inbox } from "lucide-react"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
 import { AccessRequest, CachedGet } from "./types"
-import { authClient } from "@nba/lib/auth-client"
 
 interface RequestsTabProps {
   cachedGet: CachedGet
@@ -55,8 +54,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
 
   const [actingRequestId, setActingRequestId] = useState<string | null>(null)
   const isDesktop = useMediaQuery("(min-width: 768px)")
-  const { data: sessionData } = authClient.useSession()
-  const reviewerId = sessionData?.user?.id
 
   function swipeApprove(id: string) {
     setActingRequestId(id)
@@ -64,7 +61,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "APPROVED", reviewerId: reviewerId ?? undefined, notes: "Demande approuvée (swipe)" }),
+      body: JSON.stringify({ status: "APPROVED", notes: "Demande approuvée (swipe)" }),
     })
       .then((res) => {
         if (res.ok) toast.success("Demande approuvée")
@@ -85,7 +82,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     const res = await fetch(`/api/admin/access-requests/${reexamineTarget}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status, reviewerId: "admin", notes: `Réexaminé → ${status}` }),
+      body: JSON.stringify({ status, notes: `Réexaminé → ${status}` }),
     })
     if (res.ok) {
       const label = status === "APPROVED" ? "approuvée" : status === "REJECTED" ? "refusée" : status === "REVOKED" ? "révoquée" : "suspendue"
@@ -107,7 +104,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     const res = await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "APPROVED", reviewerId: "admin", notes: "Demande approuvée" }),
+      body: JSON.stringify({ status: "APPROVED", notes: "Demande approuvée" }),
     })
     if (res.ok) {
       toast.success("Demande approuvée")
@@ -138,7 +135,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     const res = await fetch(`/api/admin/access-requests/${rejectTarget}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: "REJECTED", reviewerId: "admin", notes }),
+      body: JSON.stringify({ status: "REJECTED", notes }),
     })
     if (res.ok) {
       toast.success("Demande refusée")
