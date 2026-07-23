@@ -41,6 +41,7 @@ function AlertRow({
   count,
   href,
   tone,
+  actionLabel,
   onNavigate,
 }: {
   icon: React.ReactNode
@@ -48,6 +49,7 @@ function AlertRow({
   count: number
   href?: string
   tone: "amber" | "rose" | "blue"
+  actionLabel?: string
   onNavigate: (href: string) => void
 }) {
   const toneCls =
@@ -57,20 +59,29 @@ function AlertRow({
         ? "text-amber-600 bg-amber-500/5 border-amber-500/20"
         : "text-blue-600 bg-blue-500/5 border-blue-500/20"
   return (
-    <button
-      onClick={() => href && onNavigate(href)}
-      className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl border border-border bg-card/40 hover:bg-muted/40 transition-colors text-left cursor-pointer"
-    >
-      <div className="flex items-center gap-2.5 min-w-0">
+    <div className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-border bg-card/40 hover:bg-muted/40 transition-colors">
+      <div className="flex items-center gap-2.5 min-w-0 flex-1">
         <span className={cn("size-7 rounded-lg flex items-center justify-center shrink-0 border", toneCls)}>
           {icon}
         </span>
-        <span className="text-xs font-medium text-foreground truncate">{label}</span>
+        <div className="min-w-0">
+          <span className="text-xs font-medium text-foreground truncate block">{label}</span>
+          {count > 0 && (
+            <span className={cn("text-[10px] font-medium", tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-blue-500")}>
+              {count} à traiter
+            </span>
+          )}
+        </div>
       </div>
-      <span className={cn("shrink-0 text-sm font-bold tabular-nums", tone === "rose" ? "text-rose-600" : tone === "amber" ? "text-amber-600" : "text-blue-600")}>
-        {count}
-      </span>
-    </button>
+      {actionLabel && href && (
+        <button
+          onClick={() => onNavigate(href)}
+          className="shrink-0 text-xs font-medium text-primary hover:text-primary/80 transition-colors px-2 py-1 rounded-md hover:bg-primary/5"
+        >
+          {actionLabel}
+        </button>
+      )}
+    </div>
   )
 }
 
@@ -110,6 +121,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
           count={kyc}
           href="/admin?tab=kyc"
           tone="amber"
+          actionLabel="Examiner"
           onNavigate={onNavigate}
         />
         <AlertRow
@@ -118,6 +130,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
           count={broker}
           href="/admin?tab=broker"
           tone="amber"
+          actionLabel="Examiner"
           onNavigate={onNavigate}
         />
         <AlertRow
@@ -126,6 +139,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
           count={requests}
           href="/admin?tab=requests"
           tone="blue"
+          actionLabel="Traiter"
           onNavigate={onNavigate}
         />
         <AlertRow
@@ -134,6 +148,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
           count={dlq}
           href="/admin/webhooks/dlq"
           tone="rose"
+          actionLabel="Voir DLQ"
           onNavigate={onNavigate}
         />
         <AlertRow
@@ -148,6 +163,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
           label="Anomalies de connexion"
           count={loginAnomalies}
           tone="rose"
+          actionLabel="Investiguer"
           onNavigate={onNavigate}
         />
       </div>
