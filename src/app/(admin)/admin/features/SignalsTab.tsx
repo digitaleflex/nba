@@ -314,6 +314,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                             className="size-11 text-emerald-500 hover:text-emerald-600 cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "publish")}
                             title="Publier"
+                            aria-label="Publier"
                           >
                             <Play className="size-4" />
                           </Button>
@@ -325,6 +326,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                             className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "unarchive")}
                             title="Restaurer"
+                            aria-label="Restaurer"
                           >
                             <ArchiveRestore className="size-4" />
                           </Button>
@@ -335,6 +337,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                             className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                             onClick={() => handleConfirm(sig.id, "archive")}
                             title="Archiver"
+                            aria-label="Archiver"
                           >
                             <Archive className="size-4" />
                           </Button>
@@ -344,27 +347,30 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                           size="icon"
                           className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() => handleConfirm(sig.id, "duplicate")}
-                          title="Dupliquer"
-                        >
-                          <Copy className="size-4" />
+                        title="Dupliquer"
+                            aria-label="Dupliquer"
+                          >
+                            <Copy className="size-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-11 text-muted-foreground hover:text-foreground cursor-pointer"
                           onClick={() => onOpenPanel({ title: "Détails du Signal", type: "signal", data: sig })}
-                          title="Détails"
-                        >
-                          <Eye className="size-4" />
+                        title="Détails"
+                            aria-label="Voir le détail"
+                          >
+                            <Eye className="size-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
                           className="size-11 text-muted-foreground hover:text-destructive cursor-pointer"
                           onClick={() => handleConfirm(sig.id, "delete")}
-                          title="Supprimer"
-                        >
-                          {actingSignalId === sig.id && confirmLoading ? (
+                        title="Supprimer"
+                            aria-label="Supprimer"
+                          >
+                            {actingSignalId === sig.id && confirmLoading ? (
                             <Loader2 className="size-4 animate-spin" />
                           ) : (
                             <Trash2 className="size-4" />
@@ -390,6 +396,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                     className="size-8 cursor-pointer"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-label="Page précédente"
                   >
                     <ChevronLeft className="size-4" />
                   </Button>
@@ -399,6 +406,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                     className="size-8 cursor-pointer"
                     disabled={page >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
+                    aria-label="Page suivante"
                   >
                     <ChevronRight className="size-4" />
                   </Button>

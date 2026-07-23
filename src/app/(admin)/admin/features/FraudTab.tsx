@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import {
   Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
-import { Card, CardContent, Button } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState } from "@nba/design-system"
 import { toast } from "sonner"
 interface FraudSummary {
   highEvents: number
@@ -146,14 +146,14 @@ export function FraudTab() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Executer un playbook</h3>
           <div className="flex gap-2">
             <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} />
-            <Button size="sm" variant="outline" onClick={searchUserFn}><Search className="size-3.5" /></Button>
+            <Button size="sm" variant="outline" onClick={searchUserFn} aria-label="Rechercher"><Search className="size-3.5" /></Button>
           </div>
           <div className="flex gap-2">
             <select className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" value={selectedPlaybook} onChange={e => setSelectedPlaybook(e.target.value)}>
               <option value="">Playbook...</option>
               {playbooks.map(p => <option key={p.id} value={p.detectType}>{p.name} ({p.severity})</option>)}
             </select>
-            <Button size="sm" onClick={executePlaybook}><Play className="size-3.5" /></Button>
+            <Button size="sm" onClick={executePlaybook} aria-label="Exécuter"><Play className="size-3.5" /></Button>
           </div>
         </CardContent></Card>
       </div>
@@ -198,18 +198,18 @@ export function FraudTab() {
               )})}
             </tbody>
           </table>
-          {events.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">Aucun evenement</p>}
+          {events.length === 0 && <EmptyState icon={ShieldAlert} title="Aucun événement récent" description="Aucun événement à haute sévérité détecté." />}
         </div>
       </CardContent></Card>
 
       <Card><CardContent className="p-6 space-y-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">IPs bloquees ({ips.length})</h3>
-        {ips.length === 0 ? <p className="text-sm text-muted-foreground">Aucune IP bloquee</p> : (
+        {ips.length === 0 ? <EmptyState icon={Globe} title="Aucune IP bloquée" description="Toutes les adresses IP sont autorisées." /> : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {ips.map(({ ip }) => (
               <div key={ip} className="flex items-center justify-between p-2 rounded-lg bg-accent/20 text-xs">
                 <span className="font-mono">{ip}</span>
-                <button onClick={() => unblockIp(ip)} className="p-1 rounded-md hover:bg-accent cursor-pointer"><Unlock className="size-3" /></button>
+                <button onClick={() => unblockIp(ip)} className="p-1 rounded-md hover:bg-accent cursor-pointer" aria-label="Débloquer"><Unlock className="size-3" /></button>
               </div>
             ))}
           </div>

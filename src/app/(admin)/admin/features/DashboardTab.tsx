@@ -6,7 +6,7 @@ import {
   ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
   ShieldAlert, Ban, Globe, AlertTriangle,
 } from "lucide-react"
-import { Card, CardContent, Badge, cn, Chart } from "@nba/design-system"
+import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
 import { AlertsPanel } from "../components/alerts-panel"
 
 interface DashboardTabProps {
@@ -93,7 +93,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                   </div>
                 ) : null}
                 {opsData?.attention?.kycPendingCount === 0 && opsData?.attention?.brokerPendingCount === 0 && opsData?.attention?.requestsPendingCount === 0 && (
-                  <div className="py-5 text-center text-xs text-muted-foreground select-none italic">Aucune intervention urgente</div>
+                  <EmptyState icon={CheckCircle2} title="Tout est en ordre" description="Aucune intervention urgente." />
                 )}
               </div>
             </CardContent>
@@ -143,7 +143,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
                       </div>
                     </div>
                   )) : (
-                    <div className="py-6 text-center text-xs text-muted-foreground">Aucune activité récente.</div>
+                    <EmptyState icon={Activity} title="Aucune activité récente" description="Les actions des administrateurs apparaîtront ici." />
                   )}
                 </div>
               </CardContent>

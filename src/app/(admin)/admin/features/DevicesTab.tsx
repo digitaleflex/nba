@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@nba/design-system"
+import { Card, CardContent, CardHeader, CardTitle, EmptyState } from "@nba/design-system"
 import {
   BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2,
   AlertTriangle, Users
@@ -88,7 +88,7 @@ export function DevicesTab() {
   }
 
   if (error || !data) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">{error ?? "Aucune donnée."}</p>
+    return <EmptyState icon={BarChart3} title="Aucune donnée" description="Les statistiques apparaîtront lorsque des appareils seront enregistrés." />
   }
 
   const maxBrand = Math.max(1, ...Object.values(data.byBrand))
@@ -124,7 +124,7 @@ export function DevicesTab() {
           </CardHeader>
           <CardContent className="space-y-3">
             {Object.keys(data.byBrand).length === 0 ? (
-              <p className="text-sm text-muted-foreground">Aucune donnée.</p>
+              <EmptyState icon={BarChart3} title="Aucune donnée" description="Les statistiques apparaîtront lorsque des appareils seront enregistrés." />
             ) : (
               Object.entries(data.byBrand)
                 .sort((a, b) => b[1] - a[1])
@@ -213,7 +213,7 @@ export function DevicesTab() {
         </CardHeader>
         <CardContent className="space-y-2">
           {data.recent.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Aucun appareil.</p>
+            <EmptyState icon={Smartphone} title="Aucun appareil récent" description="Les appareils enregistrés apparaîtront ici." />
           ) : (
             data.recent.map((d) => (
               <div

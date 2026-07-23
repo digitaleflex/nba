@@ -595,6 +595,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
           <button
             onClick={() => { setSelectedResource(null); setPage(1); syncUrl("resource", null) }}
             className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground cursor-pointer"
+            aria-label="Fermer"
           >
             <X className="size-3" />
             {RESOURCE_LABELS[selectedResource.type] || selectedResource.type} #{selectedResource.id.slice(0, 8)}
@@ -662,6 +663,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
               <button
                 onClick={() => { setSearchInput(""); setQuery("") }}
                 className="ml-0.5 hover:text-foreground rounded-full p-0.5 hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Fermer"
               >
                 <X className="size-3" />
               </button>
@@ -673,6 +675,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
               <button
                 onClick={() => setActionFilter("")}
                 className="ml-0.5 hover:text-foreground rounded-full p-0.5 hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Fermer"
               >
                 <X className="size-3" />
               </button>
@@ -684,6 +687,7 @@ export function AuditTab({ cachedGet, invalidate }: AuditTabProps) {
               <button
                 onClick={() => setResourceFilter("")}
                 className="ml-0.5 hover:text-foreground rounded-full p-0.5 hover:bg-muted transition-colors cursor-pointer"
+                aria-label="Fermer"
               >
                 <X className="size-3" />
               </button>

@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Loader2, Plus, Trash2, GripVertical } from "lucide-react"
+import { Loader2, Plus, Trash2, GripVertical, Package } from "lucide-react"
 import { toast } from "sonner"
-import { Card, CardContent, Input, Button, cn } from "@nba/design-system"
+import { Card, CardContent, Input, Button, cn, EmptyState } from "@nba/design-system"
 import { CachedGet } from "./types"
 
 interface Plan {
@@ -153,6 +153,12 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
 
         {loadingPlans ? (
           <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        ) : plans.length === 0 ? (
+          <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
+        {loadingPlans ? (
+          <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+        ) : plans.length === 0 ? (
+          <EmptyState icon={Package} title="Aucun plan d'abonnement" description="Créez votre premier plan pour proposer des abonnements." action={{ label: "Ajouter un plan", onClick: () => setEditingPlan(newPlan()) }} />
         ) : (
           <div className="space-y-2">
             {plans.map((plan) => (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Search, Loader2 } from "lucide-react"
-import { Card, Badge, Button, Input, cn } from "@nba/design-system"
+import { Card, Badge, Button, Input, cn, EmptyState } from "@nba/design-system"
 import { Member, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 
@@ -139,7 +139,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-muted-foreground">Aucun membre trouvé.</td>
+                  <td colSpan={6} className="py-12 text-center"><EmptyState icon={Search} title="Aucun membre trouvé" description="Essayez de modifier votre recherche." /></td>
                 </tr>
               )}
             </tbody>
