@@ -317,7 +317,8 @@ const adminMobile: NavItem[] = ADMIN_CONTEXTS.map((context) => {
     icon: context.icon,
     section: context.id,
     badge: context.id === "decider" ? "pendingRequests" : undefined,
-    isActive: (pathname, searchParams) => {
+    requiredRoles: context.requiredRole ? ([context.requiredRole] as UserRole[]) : undefined,
+    isActive: (pathname: string, searchParams: URLSearchParams) => {
       const activeTab = searchParams.get("tab") || ""
       return pathname.startsWith("/admin") && getContextForTab(activeTab) === context.id
     },

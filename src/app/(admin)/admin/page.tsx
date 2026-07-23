@@ -6,7 +6,7 @@ import dynamic from "next/dynamic"
 import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
-import { authClient } from "@nba/lib/auth-client"
+import { useAdminRole } from "./role-context"
 import { Settings } from "lucide-react"
 
 import { DashboardTab } from "./features/DashboardTab"
@@ -96,8 +96,7 @@ function AdminConsoleContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") || "dashboard"
-  const { data: session } = authClient.useSession()
-  const isSuperAdmin = (session?.user as any)?.role === "SUPER_ADMIN"
+  const { isSuperAdmin } = useAdminRole()
   const SYSTEM_TABS = ["settings", "crons"]
 
   // Context Panel State

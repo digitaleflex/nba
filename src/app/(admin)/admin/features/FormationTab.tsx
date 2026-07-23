@@ -42,7 +42,7 @@ import {
   Shield,
 } from "lucide-react"
 import { Term, InfoTooltip } from "../components/info-tooltip"
-import { authClient } from "@nba/lib/auth-client"
+import { useAdminRole } from "../role-context"
 
 interface Concept {
   icon: React.ReactNode
@@ -61,8 +61,7 @@ interface Section {
 }
 
 export function FormationTab() {
-  const { data: session } = authClient.useSession()
-  const isSuperAdmin = (session?.user as any)?.role === "SUPER_ADMIN"
+  const { isSuperAdmin } = useAdminRole()
 
   const sections: Section[] = [
     {
