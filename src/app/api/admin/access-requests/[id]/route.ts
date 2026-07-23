@@ -7,6 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
 import { invalidatePrefix } from "@nba/lib/cache"
+import { publishAdminEvent, ADMIN_CHANNELS } from "@nba/lib/admin-live"
 import { msg } from "@nba/lib/messages"
 
 const log = logger.child({ module: "admin-access-requests" })
@@ -162,6 +163,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         },
       })
     }
+
+    await publishAdminEvent(ADMIN_CHANNELS.OPS, { type: "access_request", status: parsed.status })
+    await publishAdminEvent(ADMIN_CHANNELS.ALERTS, { type: "access_request", status: parsed.status })
 
     return NextResponse.json(updated)
   } catch (error) {

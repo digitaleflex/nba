@@ -8,6 +8,7 @@ import { kycApprovedEmail, kycRejectedEmail } from "@nba/lib/email";
 import { scheduleFileCleanup } from "@nba/lib/queue";
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding";
 import { invalidatePrefix } from "@nba/lib/cache";
+import { publishAdminEvent, ADMIN_CHANNELS } from "@nba/lib/admin-live";
 
 export async function PUT(
   req: NextRequest,
@@ -83,6 +84,9 @@ export async function PUT(
         },
       });
     }
+
+    await publishAdminEvent(ADMIN_CHANNELS.OPS, { type: "kyc", status: parsed.status });
+    await publishAdminEvent(ADMIN_CHANNELS.ALERTS, { type: "kyc", status: parsed.status });
 
     return NextResponse.json(updated);
   } catch (error) {

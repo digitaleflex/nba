@@ -7,6 +7,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { hardDeleteUser } from "@nba/lib/services/user-deletion"
 import { validateOrThrow, memberUpdateSchema, memberQuerySchema } from "@nba/lib/validations"
 import { getRedisConnection } from "@nba/lib/queue"
+import { publishAdminEvent, ADMIN_CHANNELS } from "@nba/lib/admin-live"
 import { msg } from "@nba/lib/messages"
 import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
@@ -188,6 +189,10 @@ export async function PUT(request: NextRequest) {
 
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
+
+    await publishAdminEvent(ADMIN_CHANNELS.OPS, { type: "members", action: "update" })
+    await publishAdminEvent(ADMIN_CHANNELS.ALERTS, { type: "members", action: "update" })
+
     return NextResponse.json({ count: updated.count })
   } catch (error) {
     return handleAuthError(error)
@@ -227,6 +232,10 @@ export async function DELETE(request: NextRequest) {
 
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
+
+    await publishAdminEvent(ADMIN_CHANNELS.OPS, { type: "members", action: "delete" })
+    await publishAdminEvent(ADMIN_CHANNELS.ALERTS, { type: "members", action: "delete" })
+
     return NextResponse.json({ success: true, message: msg.member.DELETED })
   } catch (error) {
     return handleAuthError(error)
