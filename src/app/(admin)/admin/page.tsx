@@ -7,32 +7,32 @@ import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
 
-import { DashboardTab } from "./features/DashboardTab"
 import { SystemPulse } from "./components/SystemPulse"
 import { SystemAlert } from "./components/SystemAlert"
 import { NotificationBadge } from "./components/NotificationBadge"
-import { RequestsTab } from "./features/RequestsTab"
-import { SignalsTab } from "./features/SignalsTab"
-import { KycTab } from "./features/KycTab"
-import { BrokerTab } from "./features/BrokerTab"
-
-import { AnalyticsTab } from "./features/AnalyticsTab"
-import { SecurityTab } from "./features/SecurityTab"
-import { FraudTab } from "./features/FraudTab"
-import { EmailsTab } from "./features/EmailsTab"
-import { SettingsTab } from "./features/SettingsTab"
-import { AuditTab } from "./features/AuditTab"
-import { UsersTab } from "./features/UsersTab"
-import { MembresTab } from "./features/MembresTab"
-import { NotificationsTab } from "./features/NotificationsTab"
-import { ModerationTab } from "./features/ModerationTab"
-import { FormationTab } from "./features/FormationTab"
-import { DevicesTab } from "./features/DevicesTab"
-import { CronsTab } from "./features/CronsTab"
 import { AdminTools } from "./components/admin-tools"
 import { AdminSidebar } from "./components/admin-sidebar"
+import { TabSkeleton } from "./components/tab-skeleton"
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
+
+const DashboardTab = dynamic(() => import("./features/DashboardTab"), { loading: () => <TabSkeleton />, ssr: false })
+const UsersTab = dynamic(() => import("./features/UsersTab"), { loading: () => <TabSkeleton />, ssr: false })
+const MembresTab = dynamic(() => import("./features/MembresTab"), { loading: () => <TabSkeleton />, ssr: false })
+const RequestsTab = dynamic(() => import("./features/RequestsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SignalsTab = dynamic(() => import("./features/SignalsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const KycTab = dynamic(() => import("./features/KycTab"), { loading: () => <TabSkeleton />, ssr: false })
+const BrokerTab = dynamic(() => import("./features/BrokerTab"), { loading: () => <TabSkeleton />, ssr: false })
+const AnalyticsTab = dynamic(() => import("./features/AnalyticsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SecurityTab = dynamic(() => import("./features/SecurityTab"), { loading: () => <TabSkeleton />, ssr: false })
+const FraudTab = dynamic(() => import("./features/FraudTab"), { loading: () => <TabSkeleton />, ssr: false })
+const EmailsTab = dynamic(() => import("./features/EmailsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const SettingsTab = dynamic(() => import("./features/SettingsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const NotificationsTab = dynamic(() => import("./features/NotificationsTab"), { loading: () => <TabSkeleton />, ssr: false })
+const AuditTab = dynamic(() => import("./features/AuditTab"), { loading: () => <TabSkeleton />, ssr: false })
+const FormationTab = dynamic(() => import("./features/FormationTab"), { loading: () => <TabSkeleton />, ssr: false })
+const DevicesTab = dynamic(() => import("./features/DevicesTab"), { loading: () => <TabSkeleton />, ssr: false })
+const CronsTab = dynamic(() => import("./features/CronsTab"), { loading: () => <TabSkeleton />, ssr: false })
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
