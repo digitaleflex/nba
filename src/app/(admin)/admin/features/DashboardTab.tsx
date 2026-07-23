@@ -11,6 +11,7 @@ import { AlertsPanel } from "../components/alerts-panel"
 import { ProgressiveDetail } from "../components/ProgressiveDetail"
 import { SummaryList } from "../components/SummaryList"
 import { DetailPanel } from "../components/DetailPanel"
+import { AdminRecents } from "../components/AdminRecents"
 
 interface DashboardTabProps {
   opsData: any
@@ -172,6 +173,16 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
         </div>
 
         <aside className="lg:col-span-1 space-y-5">
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-4">
+              <AdminRecents
+                onNavigate={(tab, search) => {
+                  if (search) router.push(`/admin?tab=${tab}&search=${search}`)
+                  else router.push(`/admin?tab=${tab}`)
+                }}
+              />
+            </CardContent>
+          </Card>
           <AlertsPanel />
         </aside>
       </div>
