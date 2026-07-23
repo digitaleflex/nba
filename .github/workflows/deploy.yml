@@ -174,17 +174,7 @@ jobs:
             TEST_URL="https://access.signauxx.com" bash scripts/api-smoke-test.sh --wait || SMOKE_EXIT=$?
             if [ "${SMOKE_EXIT:-0}" != "0" ]; then
               echo "!!! SMOKE TEST ECHOUE — rollback."
-              if [ -n "$PREV_IMAGE" ]; then
-                echo "=== ROLLBACK vers l'image precedente: $PREV_IMAGE ==="
-                docker tag "$PREV_IMAGE" ghcr.io/digitaleflex/nba:latest
-                docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
-                for i in $(seq 1 6); do
-                  CODE="$(curl -s -o /dev/null -w '%{http_code}' -m 10 -L "https://access.signauxx.com/api/auth/captcha" || echo 000)"
-                  echo "  rollback tentative $i -> HTTP $CODE"
-                  case "$CODE" in 2*) echo "Rollback OK."; break ;; esac
-                  sleep 10
-                done
-              fi
+              PREV_IMAGE="$PREV_IMAGE" bash scripts/rollback.sh || true
               exit 1
             fi
             echo "Smoke test API OK."
