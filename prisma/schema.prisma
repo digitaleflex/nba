@@ -1011,6 +1011,7 @@ enum StreakType {
   WIN_STREAK
   LOSS_STREAK
   DISCIPLINE_STREAK
+  LOGIN_STREAK
 }
 
 enum TradeStrategy {

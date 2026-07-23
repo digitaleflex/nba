@@ -4,6 +4,8 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent, Button, cn } from "@nba/design-system"
 import { DashboardKpis } from "./dashboard/components/dashboard-kpis"
+import { StreakBadge } from "@nba/app/components/streak-badge"
+import { ActivityFeed } from "@nba/app/components/activity-feed"
 import {
   TrendingUp,
   BookOpen,
@@ -14,6 +16,7 @@ import {
   Radio,
   ArrowRight,
   CalendarCheck,
+  Star,
 } from "lucide-react"
 
 export default async function DashboardPage() {
@@ -100,6 +103,21 @@ export default async function DashboardPage() {
       </div>
 
       <DashboardKpis kpis={kpis} dbUnavailable={dbUnavailable} />
+
+      {/* Streak + Favoris — Retention */}
+      <div className="flex items-center gap-3">
+        <StreakBadge />
+        <Link
+          href="/dashboard/signals?tab=favorites"
+          className="flex items-center gap-1.5 rounded-lg bg-amber-500/5 border border-amber-500/15 px-2.5 py-1.5 text-xs font-medium text-amber-600 hover:bg-amber-500/10 transition-colors"
+        >
+          <Star className="size-3.5" />
+          Favoris
+        </Link>
+      </div>
+
+      {/* Fil d'activité — Retention */}
+      <ActivityFeed />
 
       {/* Actions rapides */}
       <div>

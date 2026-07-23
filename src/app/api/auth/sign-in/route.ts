@@ -9,6 +9,7 @@ import { detectNewDevice, sendVerificationCode } from "@nba/lib/services/device"
 import { syncRiskEngine, asyncRiskEngine } from "@nba/lib/security/risk-engine"
 import { SessionManager } from "@nba/lib/security/session-manager"
 import { securityEventBus } from "@nba/lib/security/security-event-bus"
+import { recordLogin } from "@nba/lib/services/streak"
 
 const log = logger.child({ module: "sign-in" })
 const signInRateLimit = rateLimitMiddleware({ window: 60, max: 5 })
@@ -93,6 +94,11 @@ export async function POST(req: NextRequest) {
                 ipAddress, sessionId, deviceId,
               })
             }
+          }
+
+          // Login streak (retention)
+          if (userId) {
+            recordLogin(userId).catch(() => {})
           }
 
           // Notification nouvel appareil
