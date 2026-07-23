@@ -6,6 +6,8 @@ import dynamic from "next/dynamic"
 import { Loader2 } from "lucide-react"
 import { Card, cn } from "@nba/design-system"
 import { toast } from "sonner"
+import { authClient } from "@nba/lib/auth-client"
+import { Settings } from "lucide-react"
 
 import { DashboardTab } from "./features/DashboardTab"
 import { RequestsTab } from "./features/RequestsTab"
@@ -78,10 +80,25 @@ export default function AdminPage() {
   )
 }
 
+function LockedMessage({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center py-20 text-center space-y-3">
+      <div className="size-12 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center">
+        <Settings className="size-6 text-amber-400" />
+      </div>
+      <h2 className="text-lg font-bold text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground max-w-sm">{desc}</p>
+    </div>
+  )
+}
+
 function AdminConsoleContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") || "dashboard"
+  const { data: session } = authClient.useSession()
+  const isSuperAdmin = (session?.user as any)?.role === "SUPER_ADMIN"
+  const SYSTEM_TABS = ["settings", "crons"]
 
   // Context Panel State
   const [panelOpen, setPanelOpen] = useState(false)
@@ -565,7 +582,9 @@ function AdminConsoleContent() {
         )}
 
         {activeTab === "settings" && (
-          <SettingsTab cachedGet={cachedGet} />
+          isSuperAdmin
+            ? <SettingsTab cachedGet={cachedGet} />
+            : <LockedMessage title="Paramètres" desc="La configuration système est réservée au SUPER_ADMIN." />
         )}
 
         {activeTab === "notifications" && (
@@ -585,7 +604,9 @@ function AdminConsoleContent() {
         )}
 
         {activeTab === "crons" && (
-          <CronsTab />
+          isSuperAdmin
+            ? <CronsTab />
+            : <LockedMessage title="Cron Jobs" desc="La gestion des tâches planifiées est réservée au SUPER_ADMIN." />
         )}
 
       </div>

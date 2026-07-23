@@ -2,15 +2,18 @@ import {
   Activity,
   Gavel,
   Radio,
+  Settings,
   ShieldCheck,
   type LucideIcon,
 } from "lucide-react"
 
-export type AdminContextId = "surveiller" | "decider" | "communiquer" | "auditer"
+export type AdminContextId = "surveiller" | "decider" | "communiquer" | "auditer" | "systeme"
 
 export interface AdminTabDef {
   value: string
   label: string
+  /** Si défini, seuls ces rôles voient l'onglet. undefined = visible par tous. */
+  requiredRole?: "SUPER_ADMIN"
 }
 
 export interface AdminContextDef {
@@ -18,15 +21,14 @@ export interface AdminContextDef {
   label: string
   icon: LucideIcon
   tabs: AdminTabDef[]
+  /** Si défini, seuls ces rôles voient toute la section. undefined = visible par tous. */
+  requiredRole?: "SUPER_ADMIN"
 }
 
 /**
- * Les 14 sous-onglets admin regroupés en 4 contextes mentaux.
- * Mapping des anciennes URLs :
- *   ?tab=dashboard,stats,analytics           → Surveiller
- *   ?tab=requests,members,kyc,broker,users  → Décider
- *   ?tab=signals,emails,notifications        → Communiquer
- *   ?tab=audit,moderation,security,settings  → Auditer
+ * Les 18 sous-onglets admin regroupés en 5 contextes mentaux.
+ * ── ADMIN voit : Surveiller, Décider, Communiquer, Auditer
+ * ── SUPER_ADMIN voit tout + la section Système
  */
 export const ADMIN_CONTEXTS: AdminContextDef[] = [
   {
@@ -39,7 +41,6 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "analytics", label: "Analytics" },
       { value: "revenue", label: "Revenus" },
       { value: "devices", label: "Appareils" },
-      { value: "crons", label: "Cron Jobs" },
     ],
   },
   {
@@ -73,8 +74,17 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "moderation", label: "Modération" },
       { value: "security", label: "Sécurité" },
       { value: "fraud", label: "Anti-Fraude" },
-      { value: "settings", label: "Paramètres" },
       { value: "formation", label: "Formation" },
+    ],
+  },
+  {
+    id: "systeme",
+    label: "Système",
+    icon: Settings,
+    requiredRole: "SUPER_ADMIN",
+    tabs: [
+      { value: "settings", label: "Paramètres" },
+      { value: "crons", label: "Cron Jobs" },
     ],
   },
 ]

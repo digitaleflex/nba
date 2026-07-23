@@ -8,6 +8,7 @@ import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useLogout } from "@nba/hooks/use-logout"
 import {
   getSidebarSections,
+  getSuperAdminSections,
   isNavItemActive,
   type NavSpace,
   type UserRole,
@@ -70,6 +71,9 @@ export function Sidebar({ space, user }: SidebarProps) {
   }
 
   const sections = getSidebarSections(space, user.role)
+  const superAdminSections = space === "admin" && user.role === "SUPER_ADMIN"
+    ? getSuperAdminSections()
+    : []
   const isMessagesLink = (href: string) =>
     href === "/dashboard/messages" || href === "/admin/messages"
 
@@ -166,6 +170,45 @@ export function Sidebar({ space, user }: SidebarProps) {
                         )}
                       </span>
                     )}
+                  </Link>
+                )
+              })}
+            </div>
+          ))}
+
+          {superAdminSections.map((section) => (
+            <div key={section.id} className={cn("space-y-1", !isCollapsed && "pt-2")}>
+              {!isCollapsed && (
+                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-amber-400/60">
+                  <Shield className="size-3" />
+                  {section.label}
+                </p>
+              )}
+              {section.items.map((link) => {
+                const Icon = link.icon
+                const isActive = isNavItemActive(link, pathname, searchParams)
+                return (
+                  <Link
+                    key={link.id}
+                    href={link.href}
+                    className={cn(
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative",
+                      isCollapsed ? "justify-center" : "gap-3.5",
+                      isActive
+                        ? "bg-amber-500/10 text-amber-600 font-semibold"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    )}
+                    title={isCollapsed ? link.label : undefined}
+                  >
+                    <span className="relative inline-flex shrink-0">
+                      <Icon
+                        className={cn(
+                          "size-5 transition-transform duration-200 group-hover:scale-105",
+                          isActive ? "text-amber-500" : "text-muted-foreground/85"
+                        )}
+                      />
+                    </span>
+                    {!isCollapsed && <span className="truncate">{link.label}</span>}
                   </Link>
                 )
               })}

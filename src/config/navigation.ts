@@ -324,27 +324,53 @@ const adminMobile: NavItem[] = ADMIN_CONTEXTS.map((context) => {
   }
 })
 
-const adminSidebarSections: NavSection[] = ADMIN_CONTEXTS.map((context) => {
-  const isDecider = context.id === "decider"
-  const items: NavItem[] = [
-    ...context.tabs.map((tab) => ({
-      id: tab.value,
-      href: `/admin?tab=${tab.value}`,
-      label: tab.label,
-      icon: adminTabIconMap[tab.value] || context.icon,
-      section: context.id,
-      isActive: (pathname: string, searchParams: URLSearchParams) =>
-        pathname === "/admin" && searchParams.get("tab") === tab.value,
-    })),
-    ...(adminStandaloneLinks[context.id] || []),
-  ]
-  return {
-    id: context.id,
-    label: context.label,
-    items,
-    badge: isDecider ? undefined : undefined, // calculé au runtime
-  }
-})
+const adminSidebarSections: NavSection[] = ADMIN_CONTEXTS
+  .filter((context) => !context.requiredRole) // Sections réservées SUPER_ADMIN filtrées côté composant
+  .map((context) => {
+    const isDecider = context.id === "decider"
+    const items: NavItem[] = [
+      ...context.tabs
+        .filter((tab) => !tab.requiredRole) // Tabs SUPER_ADMIN filtrées
+        .map((tab) => ({
+          id: tab.value,
+          href: `/admin?tab=${tab.value}`,
+          label: tab.label,
+          icon: adminTabIconMap[tab.value] || context.icon,
+          section: context.id,
+          isActive: (pathname: string, searchParams: URLSearchParams) =>
+            pathname === "/admin" && searchParams.get("tab") === tab.value,
+        })),
+      ...(adminStandaloneLinks[context.id] || []),
+    ]
+    return {
+      id: context.id,
+      label: context.label,
+      items,
+      badge: isDecider ? undefined : undefined,
+    }
+  })
+
+/**
+ * Sections réservées SUPER_ADMIN (Systeme).
+ * Injectées séparément dans la sidebar selon le rôle.
+ */
+export function getSuperAdminSections(): NavSection[] {
+  return ADMIN_CONTEXTS
+    .filter((context) => context.requiredRole === "SUPER_ADMIN")
+    .map((context) => ({
+      id: context.id,
+      label: context.label,
+      items: context.tabs.map((tab) => ({
+        id: tab.value,
+        href: `/admin?tab=${tab.value}`,
+        label: tab.label,
+        icon: adminTabIconMap[tab.value] || context.icon,
+        section: context.id,
+        isActive: (pathname: string, searchParams: URLSearchParams) =>
+          pathname === "/admin" && searchParams.get("tab") === tab.value,
+      })),
+    }))
+}
 
 const adminMenu: NavItem[] = adminSidebarSections.flatMap((section) =>
   section.items.map((item) => ({ ...item, section: section.id }))
