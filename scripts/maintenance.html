@@ -13,9 +13,7 @@
     display: flex; align-items: center; justify-content: center;
     min-height: 100dvh; padding: 24px;
   }
-  .card {
-    text-align: center; max-width: 420px; width: 100%;
-  }
+  .card { text-align: center; max-width: 420px; width: 100%; }
   .spinner {
     width: 48px; height: 48px; margin: 0 auto 32px;
     border: 3px solid rgba(40,59,93,0.3);
@@ -27,28 +25,63 @@
   h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 8px; }
   h1 span { color: #3b82f6; }
   p { font-size: 14px; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; }
-  .timer { font-size: 12px; color: #64748b; }
-  .countdown { font-weight: 700; color: #3b82f6; }
+  .status { font-size: 12px; color: #64748b; margin-bottom: 20px; min-height: 20px; }
+  .btn {
+    display: inline-block; padding: 10px 24px; border-radius: 10px; cursor: pointer;
+    border: 1px solid rgba(59,130,246,0.4); background: rgba(59,130,246,0.1);
+    color: #60a5fa; font-size: 14px; font-weight: 600; text-decoration: none;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: rgba(59,130,246,0.2); }
+  .done .spinner { display: none; }
+  .done .status { color: #10b981; }
 </style>
 </head>
 <body>
-<div class="card">
+<div class="card" id="box">
   <div class="spinner"></div>
   <h1><span>Never</span>BrokeAgain</h1>
-  <p>
-    Nous mettons à jour la plateforme pour vous offrir une meilleure expérience.
-    <br/>De retour dans quelques instants.
+  <p>Nous mettons à jour la plateforme. De retour dans quelques instants.</p>
+  <p class="status" id="status">
+    Vérification en cours...
   </p>
-  <p class="timer">
-    Actualisation automatique dans <span class="countdown" id="sec">30</span> secondes
-  </p>
+  <button class="btn" onclick="location.reload()">Réessayer maintenant</button>
 </div>
 <script>
-  let s = 30;
-  setInterval(() => {
-    if (s <= 0) { location.reload(); return; }
-    document.getElementById('sec').textContent = --s;
-  }, 1000);
+  const CHECK_URL = '/api/public/health';
+  const MAX_ATTEMPTS = 60; // 5 minutes max
+  let attempts = 0;
+
+  function check() {
+    fetch(CHECK_URL, { signal: AbortSignal.timeout(5000) })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data && data.status === 'healthy') {
+          document.getElementById('box').classList.add('done');
+          document.getElementById('status').textContent = '✓ La plateforme est prête. Redirection...';
+          setTimeout(() => location.reload(), 800);
+          return;
+        }
+        scheduleNext();
+      })
+      .catch(() => scheduleNext());
+  }
+
+  function scheduleNext() {
+    attempts++;
+    if (attempts > MAX_ATTEMPTS) {
+      document.getElementById('status').textContent =
+        'Cela prend plus de temps que prévu. Réessayez dans quelques minutes.';
+      return;
+    }
+    const wait = attempts <= 10 ? 5 : 10; // 5s les 10 premiers essais, puis 10s
+    document.getElementById('status').textContent =
+      `Vérification automatique dans ${wait}s... (essai ${attempts}/${MAX_ATTEMPTS})`;
+    setTimeout(check, wait * 1000);
+  }
+
+  // Premier check après 3 secondes (le temps que Traefik route)
+  setTimeout(check, 3000);
 </script>
 </body>
 </html>
