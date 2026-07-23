@@ -18,8 +18,8 @@ const STATUS_COPY: Record<string, { title: string; message: string }> = {
   },
   deleted: {
     title: "Compte supprimé",
-    message:
-      "Ce compte a été supprimé. Si vous pensez qu'il s'agit d'une erreur, contactez notre équipe.",
+    subtitle:
+      "Votre compte a bien été supprimé. Si vous souhaitez recréer un compte, vous devrez attendre 72h après la suppression.",
   },
 }
 

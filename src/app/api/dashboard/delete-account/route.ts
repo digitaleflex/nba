@@ -4,7 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
 import { sendAccountDeletionEmail } from "@nba/lib/services/notifications"
 import { logAuditEvent } from "@nba/lib/services/audit"
-import { softDeleteUser } from "@nba/lib/services/user-deletion"
+import { softDeleteUser, setDeleteCooldown } from "@nba/lib/services/user-deletion"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, deleteAccountSchema } from "@nba/lib/validations"
@@ -54,6 +54,7 @@ export async function DELETE(request: Request) {
 
     // Soft delete: anonymise l'email + désactive le compte + supprime les sessions
     await softDeleteUser(prisma, session.user.id)
+    setDeleteCooldown(user.email).catch(() => {}) // 72h avant réinscription avec le même email
 
     // Audit log + cache invalidation (non-blocking)
     Promise.all([

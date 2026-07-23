@@ -1,6 +1,55 @@
 import type { PrismaClient } from "@nba/generated/prisma/client"
 import { withRetryTransactionArray } from "@nba/lib/db"
 
+const COOLDOWN_HOURS = 72
+const COOLDOWN_SECONDS = COOLDOWN_HOURS * 3600
+const COOLDOWN_PREFIX = "cooldown:deleted:"
+
+/**
+ * Retourne un timestamp Unix (secondes) pour un cooldown.
+ */
+function cooldownKey(email: string): string {
+  return `${COOLDOWN_PREFIX}${email.toLowerCase().trim()}`
+}
+
+/**
+ * Enregistre l'email d'un utilisateur qui vient de supprimer son compte.
+ * Cet email ne pourra pas être réutilisé pendant 72h.
+ */
+export async function setDeleteCooldown(email: string): Promise<void> {
+  try {
+    const { getConnection } = await import("@nba/lib/redis-pubsub")
+    const redis = getConnection()
+    if (redis) {
+      const key = cooldownKey(email)
+      await redis.setex(key, COOLDOWN_SECONDS, Date.now().toString())
+    }
+  } catch {
+    // Redis indisponible — le cooldown ne s'applique pas
+  }
+}
+
+/**
+ * Vérifie si un email est en période de cooldown après suppression.
+ * Retourne le nombre d'heures restantes, ou 0 si pas de cooldown.
+ */
+export async function getDeleteCooldown(email: string): Promise<{ blocked: boolean; remainingHours: number }> {
+  try {
+    const { getConnection } = await import("@nba/lib/redis-pubsub")
+    const redis = getConnection()
+    if (redis) {
+      const key = cooldownKey(email)
+      const ttl = await redis.ttl(key)
+      if (ttl > 0) {
+        return { blocked: true, remainingHours: Math.ceil(ttl / 3600) }
+      }
+    }
+  } catch {
+    // Redis indisponible — pas de cooldown
+  }
+  return { blocked: false, remainingHours: 0 }
+}
+
 /**
  * Soft-deletes a user : anonymise l'email pour libérer l'adresse,
  * désactive le compte, supprime les sessions, et conserve les données

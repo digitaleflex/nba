@@ -68,6 +68,7 @@ export const AUTH_MESSAGES = {
   CODE_REQUIRED: "Saisissez le code de vérification.",
   CODE_6_DIGITS: "Le code doit contenir 6 chiffres.",
   CODE_INVALID: "Ce code est incorrect ou a expiré. Redemandez-en un nouveau.",
+  ACCOUNT_DELETED_COOLDOWN: "Vous avez supprimé votre compte récemment. Réessayez dans quelques jours.",
 } as const
 
 // ── Mapping rétrocompatible pour safeAuthErrorMessage ──
@@ -96,6 +97,8 @@ const KNOWN_PATTERNS: [string, string][] = [
   ["désactivé", AUTH_MESSAGES.ACCOUNT_DISABLED],
   ["déjà utilisé", AUTH_MESSAGES.EMAIL_ALREADY_EXISTS],
   ["already exists", AUTH_MESSAGES.EMAIL_ALREADY_EXISTS],
+  // Cooldown 72h après suppression de compte
+  ["supprimé votre compte il y a moins de 72h", AUTH_MESSAGES.ACCOUNT_DELETED_COOLDOWN],
 ]
 
 const GENERIC = AUTH_MESSAGES.GENERIC_ERROR

@@ -6,7 +6,7 @@ import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
 import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail, sendOtpEmail } from "./services/notifications"
 import { isEmailBanned } from "./services/moderation"
-import { purgeSoftDeletedUser } from "./services/user-deletion"
+import { purgeSoftDeletedUser, getDeleteCooldown } from "./services/user-deletion"
 import { SessionManager } from "./security/session-manager"
 import { securityEventBus } from "./security/security-event-bus"
 import { securityNotificationService } from "./security/security-notification-service"
@@ -81,6 +81,15 @@ export const auth = betterAuth({
           if (banned) {
             throw new Error(msg.auth.ACCOUNT_BANNED(banned.reason))
           }
+
+          // Cooldown 72h après suppression de compte
+          const cooldown = await getDeleteCooldown(user.email)
+          if (cooldown.blocked) {
+            throw new Error(
+              `Vous avez supprimé votre compte il y a moins de 72h. Réessayez dans ${cooldown.remainingHours}h (${cooldown.remainingHours > 1 ? "environ " : ""}${cooldown.remainingHours >= 24 ? `${Math.floor(cooldown.remainingHours / 24)} jour${Math.floor(cooldown.remainingHours / 24) > 1 ? "s" : ""}` : `${cooldown.remainingHours}h`}).`
+            )
+          }
+
           await purgeSoftDeletedUser(prisma, user.email)
           if (!user.roleId) {
             const memberRole = await prisma.role.findUnique({ where: { name: "MEMBER" }, select: { id: true } })
