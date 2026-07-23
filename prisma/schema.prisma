@@ -320,7 +320,8 @@ model Device {
   id           String   @id @default(uuid()) @db.Uuid
   userId       String   @map("user_id") @db.Uuid
   name         String?
-  fingerprint  String   @map("fingerprint")
+  fingerprint       String   @map("fingerprint")
+  cryptoFingerprint String? @map("crypto_fingerprint")
   ipAddress    String?  @map("ip_address")
   userAgent    String?  @map("user_agent")
   deviceType   String?  @map("device_type")

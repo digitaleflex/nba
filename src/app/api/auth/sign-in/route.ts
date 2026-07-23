@@ -6,6 +6,9 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { msg } from "@nba/lib/messages"
 import { detectNewDevice, sendVerificationCode } from "@nba/lib/services/device"
+import { deviceFingerprintService } from "@nba/lib/security/device-fingerprint"
+import type { DeviceSignals } from "@nba/lib/security/device-fingerprint"
+import { ipReputationService } from "@nba/lib/security/ip-reputation"
 import { syncRiskEngine, asyncRiskEngine } from "@nba/lib/security/risk-engine"
 import { SessionManager } from "@nba/lib/security/session-manager"
 import { securityEventBus } from "@nba/lib/security/security-event-bus"
@@ -69,13 +72,45 @@ export async function POST(req: NextRequest) {
         }
 
         if (userId) {
+          // Crypto device fingerprint (client-side signals)
+          const deviceSignalsHeader = req.headers.get("x-device-signals")
+          let cryptoFingerprint: string | undefined
+          if (deviceSignalsHeader) {
+            try {
+              const signals = JSON.parse(deviceSignalsHeader) as DeviceSignals
+              cryptoFingerprint = deviceFingerprintService.computeHash(signals)
+            } catch { /* ignore malformed signals */ }
+          }
+
           // Device detection
           const deviceResult = await detectNewDevice(userId, req)
           deviceId = deviceResult.deviceId
           isNewDevice = deviceResult.isNew
 
+          if (deviceId) {
+            if (cryptoFingerprint) {
+              await prisma.device.update({
+                where: { id: deviceId },
+                data: { cryptoFingerprint },
+              }).catch(() => {})
+            }
+          }
+
           if (deviceId && sessionId) {
             await sessionManager.bindSessionToDevice(sessionId, deviceId)
+          }
+
+          // Geo IP lookup synchrone (Redis-cached)
+          if (ipAddress && sessionId) {
+            try {
+              const geo = await ipReputationService.lookup(ipAddress)
+              await sessionManager.updateSessionGeo(sessionId, {
+                country: geo.country ?? undefined,
+                city: geo.city ?? undefined,
+                latitude: geo.latitude ?? undefined,
+                longitude: geo.longitude ?? undefined,
+              })
+            } catch { /* non-critical */ }
           }
 
           // Risk scoring async

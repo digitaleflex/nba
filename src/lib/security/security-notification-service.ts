@@ -188,6 +188,22 @@ export class SecurityNotificationService {
       log.error({ err, userId, errorCode: "INTEGRATION_ERROR" }, "2FA disabled alert failed")
     }
   }
+
+  async sendSessionRevokedAlert(userId: string, email: string, details: { count: number; maxSessions: number; activeCount: number }): Promise<void> {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { name: true } })
+      if (!user) return
+      await notify({
+        userId, type: "SECURITY",
+        title: "Session(s) revoquee(s)",
+        body: `${details.count} session(s) la/les plus ancienne(s) revoquee(s) car ${details.activeCount} sessions depasse la limite de ${details.maxSessions}.`,
+        data: details,
+        email: { to: email, subject: "Session(s) revoquee(s)", html: `<p>Bonjour ${user.name},</p><p>${details.count} session(s) la/les plus ancienne(s) ont ete revoquees car vous avez ${details.activeCount} sessions actives, ce qui depasse la limite de ${details.maxSessions}.</p>` },
+      })
+    } catch (err: unknown) {
+      log.error({ err, userId, errorCode: "INTEGRATION_ERROR" }, "Session revoked alert failed")
+    }
+  }
 }
 
 export const securityNotificationService = new SecurityNotificationService()

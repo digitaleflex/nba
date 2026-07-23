@@ -112,6 +112,15 @@ export const auth = betterAuth({
                   activeCount: limit.activeCount,
                 },
               })
+              const user = await prisma.user.findUnique({
+                where: { id: session.userId },
+                select: { email: true },
+              })
+              if (user) {
+                await securityNotificationService.sendSessionRevokedAlert(session.userId, user.email, {
+                  count: revoked, maxSessions: limit.maxSessions, activeCount: limit.activeCount,
+                }).catch(() => {})
+              }
             }
           }
         },
