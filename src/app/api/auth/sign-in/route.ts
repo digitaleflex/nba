@@ -6,6 +6,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { getConnection as getRedis } from "@nba/lib/redis-pubsub"
 import { msg } from "@nba/lib/messages"
+import { AUTH_MESSAGES } from "@nba/lib/auth-error-messages"
 import { detectNewDevice, sendVerificationCode } from "@nba/lib/services/device"
 import { syncRiskEngine, asyncRiskEngine } from "@nba/lib/security/risk-engine"
 import { SessionManager } from "@nba/lib/security/session-manager"
@@ -58,7 +59,7 @@ export async function POST(req: NextRequest) {
         const blocked = await redis.get(`blocked:ip:${ipAddress}`)
         if (blocked) {
           return NextResponse.json(
-            { message: "Accès temporairement bloqué" },
+            { message: "Trop de tentatives. Réessayez dans 1 minute." },
             { status: 429 },
           )
         }
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
               ipAddress, sessionId, deviceId,
               riskScore: riskResult.totalScore,
             })
-            return blockLoginAndRespond(userId, sessionId, "Connexion bloquée par le système de sécurité", 423)
+            return blockLoginAndRespond(userId, sessionId, "Connexion bloquée pour des raisons de sécurité. Contactez le support si le problème persiste.", 423)
           }
 
           if (riskResult.requiresChallenge) {
@@ -175,7 +176,7 @@ export async function POST(req: NextRequest) {
                   if (playbookType) {
                     await incidentResponder.execute(userId, playbookType, { ipAddress, sessionId })
                   }
-                  return blockLoginAndRespond(userId, sessionId, "Compte suspendu - activité suspecte", 423)
+                  return blockLoginAndRespond(userId, sessionId, "Compte suspendu pour activité suspecte. Contactez le support.", 423)
                 }
 
                 case "block_ip": {
@@ -183,7 +184,7 @@ export async function POST(req: NextRequest) {
                   if (redis) {
                     await redis.setex(`blocked:ip:${ipAddress}`, 86400, "1")
                   }
-                  return blockLoginAndRespond(userId, sessionId, "Accès refusé", 429)
+                  return blockLoginAndRespond(userId, sessionId, "Accès refusé temporairement. Réessayez plus tard.", 429)
                 }
 
                 case "challenge_2fa": {

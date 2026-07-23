@@ -15,7 +15,7 @@ import { StepIdentity } from "./components/step-identity"
 import { StepContact } from "./components/step-contact"
 import { StepSecurity } from "./components/step-security"
 import { StepConfirmation } from "./components/step-confirmation"
-import { safeAuthErrorMessage } from "@nba/lib/auth-error-messages"
+import { safeAuthErrorMessage, AUTH_MESSAGES } from "@nba/lib/auth-error-messages"
 
 interface Plan {
   id: string
@@ -88,8 +88,8 @@ export default function RegisterPage() {
       if (err.message && err.message.toLowerCase().includes("banni")) {
         setError(safeAuthErrorMessage(err.message))
       } else if (err.status === 422 || (err.message && (err.message.toLowerCase().includes("already exists") || err.message.toLowerCase().includes("email taken")))) {
-        setError("Ce compte existe déjà. Veuillez vous connecter.")
-        toast.error("Un compte existe déjà avec cet email.")
+        setError(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS)
+        toast.error(AUTH_MESSAGES.EMAIL_ALREADY_EXISTS)
         setTimeout(() => router.push("/login"), 1800)
         setLoading(false)
         return

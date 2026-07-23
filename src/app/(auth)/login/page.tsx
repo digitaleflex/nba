@@ -6,7 +6,7 @@ import { toast } from "sonner"
 import { Button, Input, Card, CardContent, Tooltip, TooltipTrigger, TooltipContent } from "@nba/design-system"
 import { PasswordField } from "@nba/app/components/password-field"
 import { TrendingUp, HelpCircle } from "lucide-react"
-import { safeAuthErrorMessage } from "@nba/lib/auth-error-messages"
+import { safeAuthErrorMessage, AUTH_MESSAGES } from "@nba/lib/auth-error-messages"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -60,7 +60,7 @@ export default function LoginPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        const message = safeAuthErrorMessage(data.message) ?? "Identifiants invalides"
+        const message = safeAuthErrorMessage(data.message) ?? AUTH_MESSAGES.WRONG_CREDENTIALS
         setError(message)
         toast.error(message)
         setLoading(false)
@@ -74,7 +74,7 @@ export default function LoginPage() {
       // le middleware lit le nouveau cookie.
       window.location.href = "/dashboard"
     } catch (e) {
-      setError("Erreur de connexion. Veuillez réessayer.")
+      setError("Impossible de contacter le serveur. Vérifiez votre connexion internet.")
       setLoading(false)
     }
   }
