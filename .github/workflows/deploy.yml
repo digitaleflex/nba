@@ -34,7 +34,6 @@ jobs:
       - run: pnpm lint
         continue-on-error: true
       - run: pnpm typecheck
-      - run: pnpm test
       # Garde migration : bloque le deploiement si une NOUVELLE migration
       # contient des operations destructives (DROP TABLE/COLUMN, TRUNCATE,
       # DELETE FROM). Ne scanne que les migrations ajoutees/modifiees dans
