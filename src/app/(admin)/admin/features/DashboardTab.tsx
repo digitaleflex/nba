@@ -12,6 +12,7 @@ import { ProgressiveDetail } from "../components/ProgressiveDetail"
 import { SummaryList } from "../components/SummaryList"
 import { DetailPanel } from "../components/DetailPanel"
 import { AdminRecents } from "../components/AdminRecents"
+import { FocusMode } from "../components/FocusMode"
 
 interface DashboardTabProps {
   opsData: any
@@ -22,6 +23,7 @@ interface DashboardTabProps {
 
 export function DashboardTab({ opsData, loadingOps, errorOps, router }: DashboardTabProps) {
   const [secData, setSecData] = useState<any>(null)
+  const [focusAlert, setFocusAlert] = useState<number | null>(null)
 
   useEffect(() => {
     fetch("/api/admin/security/fraud/abuse")
@@ -109,6 +111,44 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             <KpiCard icon={FileCheck} label="KYC à traiter" value={opsData.attention.kycPendingCount} />
             <KpiCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
           </div>
+
+          {(secData?.highEvents ?? 0) > 0 && (
+            <button
+              onClick={() => setFocusAlert(0)}
+              className="w-full py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-xl transition-colors cursor-pointer border border-primary/20"
+            >
+              Mode Focus — {secData?.highEvents ?? 0} alerte{(secData?.highEvents ?? 0) > 1 ? "s" : ""} haute{(secData?.highEvents ?? 0) > 1 ? "s" : ""} priorité
+            </button>
+          )}
+
+          {focusAlert !== null && (
+            <FocusMode
+              alert={{
+                id: "focus-1",
+                type: "SECURITY",
+                severity: "CRITICAL",
+                title: "Brute Force en cours",
+                description: `${secData?.highEvents ?? 0} événements haute sévérité détectés`,
+                evidence: ["IPs bloquées en cours"],
+                suggestedActions: [
+                  { label: "Bloquer les IPs", onClick: () => {} },
+                  { label: "Suspendre le compte", onClick: () => {} },
+                  { label: "Forcer la 2FA", onClick: () => {} },
+                ],
+                relatedData: {
+                  ip: "192.168.1.1",
+                },
+                timeline: [
+                  { time: "14:30:12", action: "Tentative #1", detail: "192.168.1.1" },
+                  { time: "14:30:15", action: "Tentative #2", detail: "10.0.0.1" },
+                  { time: "14:30:18", action: "Tentative #3", detail: "172.16.0.1" },
+                ],
+              }}
+              currentIndex={0}
+              totalAlerts={secData?.highEvents ?? 0}
+              onClose={() => setFocusAlert(null)}
+            />
+          )}
 
           <ProgressiveDetail level={2} expandable>
             <div>
