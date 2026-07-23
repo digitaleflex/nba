@@ -16,11 +16,12 @@ interface AppShellProps {
     role?: UserRole
   }
   desktopHeader: React.ReactNode
+  desktopSubheader?: React.ReactNode
   mobileHeader: React.ReactNode
   children: React.ReactNode
 }
 
-export function AppShell({ space, user, desktopHeader, mobileHeader, children }: AppShellProps) {
+export function AppShell({ space, user, desktopHeader, desktopSubheader, mobileHeader, children }: AppShellProps) {
   return (
     <MessagingUnreadProvider>
       <CommandPaletteProvider>
@@ -29,6 +30,7 @@ export function AppShell({ space, user, desktopHeader, mobileHeader, children }:
 
           <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
             {desktopHeader}
+            {desktopSubheader}
             {mobileHeader}
 
             <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8 md:py-8">
