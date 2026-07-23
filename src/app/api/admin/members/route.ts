@@ -132,16 +132,20 @@ export async function PUT(request: NextRequest) {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
     const rl = await rateLimitOrDeny("ADMIN_MEMBER_MUTATION", session.user.id)
     if (rl) return rl
-    const { userId, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = validateOrThrow(memberUpdateSchema, await request.json())
+    const body = validateOrThrow(memberUpdateSchema, await request.json())
+    const { userId, userIds, isActive, roleId, onboardingStatus, signalsAccessOverride, emailStatus } = body
+
+    const ids = userIds ?? (userId ? [userId] : [])
+    if (ids.length === 0) {
+      return NextResponse.json({ error: "userId ou userIds requis" }, { status: 400 })
+    }
 
     const data: Record<string, any> = {}
     if (typeof isActive === "boolean") {
       data.isActive = isActive
-      // Unifier la suspension : si on désactive, mettre onboardingStatus à SUSPENDED
       if (!isActive && !onboardingStatus) {
         data.onboardingStatus = "SUSPENDED"
       }
-      // Horodatage à la seconde près de la suspension (pour affichage utilisateur).
       data.suspendedAt = !isActive ? new Date() : null
     }
     if (onboardingStatus) data.onboardingStatus = onboardingStatus
@@ -156,65 +160,35 @@ export async function PUT(request: NextRequest) {
       data.roleId = roleId
     }
 
-    const updated = await prisma.user.update({
-      where: { id: userId },
+    const updated = await prisma.user.updateMany({
+      where: { id: { in: ids } },
       data,
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        isActive: true,
-        onboardingStatus: true,
-        signalsAccessOverride: true,
-        role: { select: { id: true, name: true } },
-      },
     })
 
-    // Si le rôle admin est retir, on révoque les sessions pour forcer une
-    // re-connexion (la session better-auth ne porterait plus le rôle admin).
-    if (roleId) {
-      const role = await prisma.role.findUnique({ where: { id: roleId } })
-      if (role && !["ADMIN", "SUPER_ADMIN"].includes(role.name)) {
-        await prisma.session.deleteMany({ where: { userId } })
-        try {
-          const redis = getRedisConnection()
-          if (redis) await redis.publish("nba:ws:control", `reset:${userId}`)
-        } catch {
-          log.warn({ userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on role change")
-        }
-      }
-    }
-
-    // Suspension : révoquer les sessions + déconnecter le WebSocket
+    // Révoquer sessions en masse si suspension
     if (typeof isActive === "boolean" && !isActive) {
-      await prisma.session.deleteMany({ where: { userId } })
+      await prisma.session.deleteMany({ where: { userId: { in: ids } } })
       try {
         const redis = getRedisConnection()
         if (redis) {
-          await redis.publish("nba:ws:control", `reset:${userId}`)
+          await Promise.all(ids.map((id) => redis.publish("nba:ws:control", `reset:${id}`)))
         }
       } catch {
-        log.warn({ userId, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on suspension")
+        log.warn({ count: ids.length, errorCode: "DATABASE_CONNECTION" }, "Failed to publish WS reset on batch suspension")
       }
     }
 
     await logAuditEvent({
       userId: session.user.id,
-      action: "UPDATE",
+      action: "BATCH_UPDATE",
       resourceType: "user",
-      resourceId: userId,
-      details: {
-        changes: Object.keys(data),
-        isActive: data.isActive,
-        onboardingStatus: data.onboardingStatus,
-        suspendedAt: data.suspendedAt ?? null,
-        roleId: data.roleId,
-      },
+      resourceId: ids.join(","),
+      details: { changes: Object.keys(data), count: updated.count, ids },
     })
 
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
-    return NextResponse.json(updated)
+    return NextResponse.json({ count: updated.count })
   } catch (error) {
     return handleAuthError(error)
   }

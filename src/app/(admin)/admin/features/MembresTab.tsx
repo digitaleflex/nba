@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
 import { Card, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
+import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
 
@@ -27,6 +28,32 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   const [page, setPage] = useState(1)
   const [total, setTotal] = useState(0)
   const limit = 20
+
+  // Batch selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback(() => {
+    setSelectedIds((prev) => {
+      const allSelected = membres.every((m: any) => prev.has(m.id))
+      if (allSelected) {
+        return new Set(Array.from(prev).filter((id) => !membres.some((m: any) => m.id === id)))
+      }
+      const next = new Set(prev)
+      membres.forEach((m: any) => next.add(m.id))
+      return next
+    })
+  }, [membres])
+
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), [])
 
   const fetchPlans = useCallback(async () => {
     const { ok, data } = await cachedGet("/api/public/plans")
@@ -304,6 +331,9 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         />
       </div>
 
+      {/* Batch actions bar */}
+      <BatchActionsBar selectedIds={selectedIds} onClear={clearSelection} onSuccess={() => fetchMembres()} />
+
       {/* Table (desktop) / Cards (mobile) */}
       <DualRender
         desktop={
@@ -312,6 +342,15 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                    <th className="px-2 py-3 w-8">
+                      <input
+                        type="checkbox"
+                        checked={membres.length > 0 && membres.every((m: any) => selectedIds.has(m.id))}
+                        onChange={toggleSelectAll}
+                        className="size-3.5 rounded border-border accent-primary cursor-pointer"
+                        aria-label="Sélectionner tous les membres"
+                      />
+                    </th>
                     <th className="px-4 py-3">Membre</th>
                     <th className="px-4 py-3 hidden md:table-cell">Contact</th>
                     <th className="px-4 py-3 hidden md:table-cell">Email</th>
@@ -325,14 +364,23 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {loading ? (
-                    <tr><td colSpan={9} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
                   ) : membres.length === 0 && loadError ? (
-                    <tr><td colSpan={9} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
                   ) : membres.length === 0 ? (
-                    <tr><td colSpan={9} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche. Appuyez sur M pour réinitialiser." shortcut="M" action={{ label: hasFilters ? "Réinitialiser les filtres" : "Actualiser", onClick: resetFilters }} /></td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche. Appuyez sur M pour réinitialiser." shortcut="M" action={{ label: hasFilters ? "Réinitialiser les filtres" : "Actualiser", onClick: resetFilters }} /></td></tr>
                   ) : (
                     membres.map((m: any) => (
                       <tr key={m.id} className="hover:bg-card/30 transition-colors">
+                        <td className="px-2 py-3">
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(m.id)}
+                            onChange={() => toggleSelect(m.id)}
+                            className="size-3.5 rounded border-border accent-primary cursor-pointer"
+                            aria-label={`Sélectionner ${m.name || m.email}`}
+                          />
+                        </td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-foreground text-sm">{m.name}</div>
                           <div className="text-[10px] text-muted-foreground md:hidden">{m.email}{m.phone ? ` · ${m.phone}` : ""}</div>
