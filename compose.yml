@@ -1,6 +1,27 @@
 name: nba
 
 services:
+  # ── Maintenance page (mode maintenance automatique) ──
+  # S'active via le script deploy.sh. Priorité Traefik 999 > app (1).
+  # Ne démarre PAS avec `docker compose up -d` (profil maintenance requis).
+  maintenance:
+    build:
+      context: .
+      dockerfile: Dockerfile.maintenance
+    profiles:
+      - maintenance
+    networks:
+      - proxy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nba-maintenance.rule=Host(`access.signauxx.com`)"
+      - "traefik.http.routers.nba-maintenance.priority=999"
+      - "traefik.http.routers.nba-maintenance.entrypoints=websecure"
+      - "traefik.http.routers.nba-maintenance.tls=true"
+      - "traefik.http.routers.nba-maintenance.tls.certresolver=letsencrypt"
+      - "traefik.http.services.nba-maintenance.loadbalancer.server.port=80"
+    restart: "no"
+
   app:
     image: ghcr.io/digitaleflex/nba
     # Force le pull de la derniere image a chaque `up -d` pour eviter
