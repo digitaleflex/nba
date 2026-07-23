@@ -96,13 +96,11 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
         })}
         <button
           onClick={openPalette}
-          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-primary transition-colors relative"
+          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-primary transition-colors relative shrink-0 min-w-[3.75rem]"
           aria-label="Rechercher (⌘K)"
         >
-          <span className="absolute -top-3 left-1/2 -translate-x-1/2 size-10 rounded-full bg-primary text-primary-foreground shadow-lg flex items-center justify-center ring-4 ring-card">
-            <Search className="size-5" />
-          </span>
-          <span className="text-[10px] font-medium tracking-tight mt-1.5">Recherche</span>
+          <Search className="size-5 shrink-0" />
+          <span className="text-[10px] font-medium tracking-tight">Recherche</span>
         </button>
         <button
           onClick={() =>
