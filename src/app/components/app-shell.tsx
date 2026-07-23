@@ -24,7 +24,7 @@ interface AppShellProps {
 export function AppShell({ space, user, desktopHeader, desktopSubheader, mobileHeader, children }: AppShellProps) {
   return (
     <MessagingUnreadProvider>
-      <CommandPaletteProvider>
+      <CommandPaletteProvider userRole={user.role}>
         <div className="flex min-h-dvh flex-col md:flex-row">
           <Sidebar space={space} user={user} />
 

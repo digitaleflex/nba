@@ -4,6 +4,7 @@ import { useState } from "react"
 import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail, Bell, UserCog } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
 import { useConfirm } from "@nba/components/confirm-dialog"
+import { useAdminRole } from "../role-context"
 
 interface UserPanelContentProps {
   data: any
@@ -17,6 +18,7 @@ const ROLES = [
 ]
 
 export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
+  const { isSuperAdmin } = useAdminRole()
   const { confirm: confirmAction, node: confirmNode } = useConfirm()
   // States pour la notification individuelle
   const [showNotifForm, setShowNotifForm] = useState(false)
@@ -124,7 +126,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                     <Check className="size-3.5" /> Réactiver
                   </Button>
                 )}
-                {data.onboardingStatus !== "ACTIVE" && (
+                {isSuperAdmin && data.onboardingStatus !== "ACTIVE" && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -135,7 +137,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                   </Button>
                 )}
               </div>
-              {(data.emailStatus === "BOUNCED" || data.emailStatus === "INVALID") && (
+              {isSuperAdmin && (data.emailStatus === "BOUNCED" || data.emailStatus === "INVALID") && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -436,7 +438,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             ))}
           </div>
 
-          {/* Danger Zone (Bannissement + Suppression) */}
+          {isSuperAdmin && <>
           <div className="space-y-2 border-t border-destructive/20 pt-4">
             <span className="text-[10px] text-destructive uppercase font-bold block">Zone de danger</span>
 
@@ -477,6 +479,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               <Trash2 className="size-3.5" /> Supprimer le compte
             </Button>
           </div>
+          </>}
         </div>
       )}
       {confirmNode}

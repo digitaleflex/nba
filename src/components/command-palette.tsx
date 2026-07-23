@@ -31,6 +31,7 @@ interface CommandPaletteProps {
   onOpenChange: (open: boolean) => void
 }
 
+
 function normalize(s: string): string {
   return s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 }
@@ -241,7 +242,14 @@ function PaletteContent({
   )
 }
 
-export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
+function canUseAction(action: PaletteAction, role?: string): boolean {
+  if (!action.requiredRole) return true
+  if (!role) return false
+  if (action.requiredRole === "SUPER_ADMIN") return role === "SUPER_ADMIN"
+  return role === "ADMIN" || role === "SUPER_ADMIN"
+}
+
+export function CommandPalette({ open, onOpenChange, userRole }: CommandPaletteProps & { userRole?: string }) {
   const router = useRouter()
   const isMobile = useIsMobile()
   const [query, setQuery] = useState("")
@@ -252,13 +260,14 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLDivElement>(null)
 
-  const filteredActions: PaletteAction[] = query
+  const filteredActions: PaletteAction[] = (query
     ? PALETTE_ACTIONS
         .map((a) => ({ a, s: Math.max(score(query, a.title), score(query, a.subtitle)) }))
         .filter((x) => x.s > 0)
         .sort((x, y) => y.s - x.s)
         .map((x) => x.a)
-    : PALETTE_ACTIONS
+    : PALETTE_ACTIONS)
+    .filter((a) => canUseAction(a, userRole))
 
   useEffect(() => {
     if (!open) {
@@ -385,7 +394,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   )
 }
 
-export function CommandPaletteProvider({ children }: { children: React.ReactNode }) {
+export function CommandPaletteProvider({ children, userRole }: { children: React.ReactNode; userRole?: string }) {
   const [open, setOpen] = useState(false)
   const openPalette = useCallback(() => setOpen(true), [])
 
@@ -402,7 +411,7 @@ export function CommandPaletteProvider({ children }: { children: React.ReactNode
   return (
     <CommandPaletteContext.Provider value={{ openPalette }}>
       {children}
-      <CommandPalette open={open} onOpenChange={setOpen} />
+      <CommandPalette open={open} onOpenChange={setOpen} userRole={userRole} />
     </CommandPaletteContext.Provider>
   )
 }

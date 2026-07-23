@@ -456,6 +456,9 @@ function AdminConsoleContent() {
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
             {ADMIN_CONTEXTS.flatMap((context, gi) => {
+              if (context.requiredRole === "SUPER_ADMIN" && !isSuperAdmin) return []
+              const visibleTabs = context.tabs.filter((t) => !(t.requiredRole === "SUPER_ADMIN" && !isSuperAdmin))
+              if (visibleTabs.length === 0) return []
               const items: React.ReactNode[] = []
               const isContextActive = getContextForTab(activeTab) === context.id
               if (gi > 0) {
@@ -466,7 +469,7 @@ function AdminConsoleContent() {
                   {context.label}
                 </span>
               )
-              context.tabs.forEach((tab) => {
+              visibleTabs.forEach((tab) => {
                 items.push(
                   <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
                     className={cn("text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
