@@ -32,10 +32,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const desktopHeader = (
     <header className="hidden md:flex items-center justify-between border-b bg-card/50 backdrop-blur-xl sticky top-0 z-40 px-6 py-2.5">
-      <div className="flex items-center gap-2">
-        <Bell className="size-4 text-muted-foreground/60" />
-        <span className="text-sm font-medium text-muted-foreground/80">Tableau de bord</span>
-      </div>
+      <div className="flex-1" />
       <div className="flex items-center gap-3">
         <NotificationBell />
         <Link
