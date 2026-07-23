@@ -384,4 +384,20 @@ Une vraie inbox pour les admins, pas un dropdown.
 
 Cette roadmap est exécutée phase par phase, dans l'ordre 0 → 11. Chaque phase est livrée, committée, et demo-able avant de passer à la suivante. Le suivi quotidien se fait via la todo list de session.
 
-**Statut courant** : à démarrer — Phase 0.
+**Statut courant** : Terminé — Phases 0 à 11 implémentées (branche `feat/ui-ux-roadmap-phases`).
+
+| Phase | Statut | Commits |
+|-------|--------|---------|
+| 0 — Fondation tactile | ✅ Terminé | `c472116` |
+| 1 — Palette universelle | ✅ Terminé | `a20d569` |
+| 2 — Dual-render tables | ✅ Terminé | `83999a1` |
+| 3 — Navigation contextuelle | ✅ Terminé | `aae0c1e` |
+| 4 — Detail panel responsive | ✅ Déjà en place | — |
+| 5 — Control Room intégré | ✅ Déjà en place | — |
+| 6 — Undo + swipe | ✅ Terminé | `3a8a426` |
+| 7 — Signal wizard | ✅ Déjà en place | — |
+| 8 — Chart wrapper | ✅ Déjà en place | — |
+| 9 — Empty states | ✅ Terminé | `026835e` |
+| 10 — Audit multi-vues | ✅ Déjà en place | — |
+| 11 — Admin inbox | ✅ Déjà en place | — |
+| Onboarding QWs | ✅ Terminé | `026835e` |
