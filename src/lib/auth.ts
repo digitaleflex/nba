@@ -1,10 +1,9 @@
 import { msg } from "./messages"
 import { betterAuth } from "better-auth"
 import { prismaAdapter } from "better-auth/adapters/prisma"
-import { twoFactor } from "better-auth/plugins"
 import { prisma } from "./db"
 import { nextCookies } from "better-auth/next-js"
-import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail, sendOtpEmail } from "./services/notifications"
+import { sendVerificationEmail, sendResetPasswordEmail, sendWelcomeEmail } from "./services/notifications"
 import { isEmailBanned } from "./services/moderation"
 import { purgeSoftDeletedUser, getDeleteCooldown } from "./services/user-deletion"
 import { SessionManager } from "./security/session-manager"
@@ -156,9 +155,6 @@ export const auth = betterAuth({
     },
   },
   plugins: [
-    twoFactor({
-      otpOptions: { async sendOTP({ user, otp }) { await sendOtpEmail(user.name, user.email, otp) } },
-    }),
     nextCookies(),
   ],
 })
