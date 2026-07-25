@@ -5,7 +5,21 @@ import { createCircuitBreaker, withTimeout } from "./circuit-breaker"
 import { logger } from "./logger"
 
 const log = logger.child({ module: "email" })
-const emailBreaker = createCircuitBreaker("resend", { threshold: 5, cooldownMs: 60_000 })
+const emailBreaker = createCircuitBreaker("resend", {
+  threshold: 5,
+  cooldownMs: 60_000,
+  onOpen: (name) => {
+    import("./security/admin-alert").then(({ sendAdminPanic }) => {
+      sendAdminPanic(
+        "⚠️ Circuit breaker ouvert : Resend",
+        `<h2>Circuit breaker "${name}" ouvert</h2>
+<p>L'envoi d'emails est temporairement désactivé après 5 échecs consécutifs.</p>
+<p>Le circuit se refermera automatiquement après 60 secondes si l'appel suivant réussit.</p>
+<p>Vérifiez le statut de l'API Resend et les logs du worker.</p>`
+      )
+    })
+  },
+})
 const EMAIL_TIMEOUT_MS = 10_000
 
 function getResend(): Resend {

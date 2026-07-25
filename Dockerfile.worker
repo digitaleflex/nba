@@ -2,18 +2,31 @@ FROM node:22-alpine AS base
 RUN npm install -g pnpm@10
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies for build (all deps including devDeps)
 FROM base AS deps
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/design-system/package.json ./packages/design-system/
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
   pnpm install --frozen-lockfile
 
+# Install ONLY production dependencies for runtime image (lean)
+FROM base AS runner-deps
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/design-system/package.json ./packages/design-system/
+RUN --mount=type=cache,target=/root/.local/share/pnpm/store,sharing=locked \
+  pnpm install --frozen-lockfile --prod
+
 # Source + Prisma client
 FROM base AS prepared
-COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+COPY --from=runner-deps /app/node_modules ./node_modules
+
+# Copy prisma schema first (rarely changes) pour garder prisma generate en cache
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN pnpm prisma generate
+
+# Copy all source code (changes often)
+COPY . .
 
 # Final worker image
 FROM prepared
@@ -43,3 +56,4 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
   CMD pgrep -f "tsx workers/queue.ts" > /dev/null || exit 1
 
 ENTRYPOINT ["./docker-entrypoint-worker.sh"]
+CMD ["pnpm", "exec", "tsx", "workers/queue.ts"]

@@ -20,6 +20,8 @@ export interface CircuitBreakerOptions {
   threshold?: number
   /** How long the circuit stays open (ms) before half-open */
   cooldownMs?: number
+  /** Called when the circuit transitions from closed/half-open to open */
+  onOpen?: (name: string, failures: number) => void
 }
 
 interface CircuitState {
@@ -44,6 +46,7 @@ export function getAllCircuitStates(): Record<string, { state: string; failures:
 export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions) {
   const threshold = opts?.threshold ?? 5
   const cooldownMs = opts?.cooldownMs ?? 60_000
+  const onOpen = opts?.onOpen
 
   function get(): CircuitState {
     if (!circuits.has(name)) {
@@ -72,6 +75,7 @@ export function createCircuitBreaker(name: string, opts?: CircuitBreakerOptions)
       s.state = "open"
       s.openedAt = Date.now()
       log.warn({ name, failures: s.failures, errorCode: "SYSTEM_CIRCUIT_OPEN" }, "Circuit OPEN")
+      onOpen?.(name, s.failures)
     }
   }
 

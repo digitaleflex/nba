@@ -57,7 +57,7 @@ else
 fi
 
 info "Processus PM2 (nextjs + websocket)"
-  PM2_LIST=$(docker exec "$APP_CONTAINER" su -s /bin/sh -c "npx pm2 list" nextjs 2>/dev/null || true)
+  PM2_LIST=$(docker exec --user nextjs "$APP_CONTAINER" npx pm2 list 2>/dev/null || true)
   if [ -z "$PM2_LIST" ]; then
     bad "impossible de lire l'état PM2"
   else

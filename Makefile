@@ -40,3 +40,6 @@ build: ## Rebuild image app
 
 restart: ## Redémarre le conteneur app
 	docker compose up -d app
+
+deploy: ## Build + restart + smoke test (une commande)
+	bash scripts/deploy.sh

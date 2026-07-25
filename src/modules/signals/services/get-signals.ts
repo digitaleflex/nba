@@ -218,7 +218,7 @@ export async function getSignalStats(id: string, userId: string) {
   }
 }
 
-export type DeliveryChannel = "EMAIL" | "PUSH" | "TELEGRAM" | "WHATSAPP"
+export type DeliveryChannel = "EMAIL" | "PUSH"
 
 export interface ChannelDeliveryStat {
   channel: DeliveryChannel
@@ -251,8 +251,6 @@ export interface SignalDeliveryReport {
 const DELIVERY_CHANNELS: DeliveryChannel[] = [
   "EMAIL",
   "PUSH",
-  "TELEGRAM",
-  "WHATSAPP",
 ]
 
 export async function getSignalDelivery(
@@ -304,8 +302,6 @@ export async function getSignalDelivery(
   const byChannel: Record<DeliveryChannel, ChannelDeliveryStat> = {
     EMAIL: { channel: "EMAIL", sent: 0, failed: 0, pending: 0, bounced: 0 },
     PUSH: { channel: "PUSH", sent: 0, failed: 0, pending: 0, bounced: 0 },
-    TELEGRAM: { channel: "TELEGRAM", sent: 0, failed: 0, pending: 0, bounced: 0 },
-    WHATSAPP: { channel: "WHATSAPP", sent: 0, failed: 0, pending: 0, bounced: 0 },
   }
 
   let sent = 0

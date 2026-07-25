@@ -1,0 +1,33 @@
+name: Cleanup GHCR
+
+on:
+  schedule:
+    - cron: "0 3 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: cleanup-ghcr
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Cleanup nba images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: nba
+          package-type: container
+          min-versions-to-keep: 30
+          owner: digitaleflex
+
+      - name: Cleanup nba-worker images
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: nba-worker
+          package-type: container
+          min-versions-to-keep: 30
+          owner: digitaleflex

@@ -8,7 +8,7 @@ import { publishNotification } from "@nba/lib/redis-pubsub"
 const log = logger.child({ module: "notifications" })
 
 type NotificationType = "SIGNAL" | "KYC" | "BROKER" | "ACCESS" | "SECURITY" | "SYSTEM" | "ONBOARDING" | "MESSAGE" | "JOURNAL_PSYCHOLOGY"
-type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH" | "TELEGRAM"
+type NotificationChannel = "IN_APP" | "EMAIL" | "PUSH"
 
 const TYPE_TO_PREF_KEY: Record<NotificationType, string> = {
   SIGNAL: "signal",
@@ -106,50 +106,27 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
     if (isInQuietHours(prefs)) return { id: notification.id }
 
     const pushPromise = (async () => {
-      const pushDelivery = await prisma.notificationDelivery
-        .create({
-          data: {
-            notificationId: notification.id,
-            channel: "PUSH",
-            status: "PENDING",
-          },
-        })
-        .catch((err) => {
-          log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
-          return null
-        })
-
-      sendPushToUser(params.userId, {
-        title: params.title,
-        body: params.body,
-        url: params.linkUrl || "/dashboard",
-        tag: notification.id,
+      const queue = getQueue("push-delivery")
+      const delivery = await prisma.notificationDelivery.create({
+        data: { notificationId: notification.id, channel: "PUSH", status: "PENDING" },
+      }).catch((err) => {
+        log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
+        return null
       })
-        .then(async (res) => {
-          if (!pushDelivery) return
-          const failed = !!(res as { failed?: number })?.failed
-          await prisma.notificationDelivery
-            .update({
-              where: { id: pushDelivery.id },
-              data: { status: failed ? "FAILED" : "SENT" },
-            })
-            .catch((err) => {
-              log.warn({ err, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to update PUSH delivery after send")
-            })
-        })
-        .catch(async (err) => {
-          log.error({ err, notificationId: notification.id, errorCode: "INTEGRATION_ERROR" }, "Push send failed")
-          if (pushDelivery) {
-            await prisma.notificationDelivery
-              .update({
-                where: { id: pushDelivery.id },
-                data: { status: "FAILED" },
-              })
-              .catch((innerErr) => {
-                log.warn({ err: innerErr, deliveryId: pushDelivery.id, errorCode: "DATABASE_ERROR" }, "Failed to mark PUSH delivery as FAILED")
-              })
-          }
-        })
+      if (!delivery) return
+
+      await queue.add(
+        `push-${notification.id}`,
+        {
+          deliveryId: delivery.id,
+          userId: params.userId,
+          title: params.title,
+          body: params.body,
+          url: params.linkUrl || "/dashboard",
+          tag: notification.id,
+        },
+        { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+      )
     })().catch((err) => {
       log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Push delivery failed")
     })

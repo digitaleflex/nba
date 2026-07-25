@@ -54,7 +54,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self'",
-              "connect-src 'self' https://api.telegram.org https://api.resend.com https://api.whatsapp.com",
+              "connect-src 'self' https://api.resend.com",
               "frame-src 'none'",
               "object-src 'none'",
               "base-uri 'self'",

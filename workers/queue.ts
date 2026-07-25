@@ -7,6 +7,7 @@ import { sendEmail } from "../src/lib/email"
 import { distributeSignal } from "../src/lib/services/signal-distribution"
 import { processRecovery, enqueueRecovery, type RecoveryJobData } from "../src/lib/services/recovery"
 import { listPendingForRetry, incrementAttempts, escalateDlq, replayEmailEvent } from "../src/lib/services/email-webhooks"
+import { sendPushToUser } from "../src/lib/services/push"
 import { logger } from "../src/lib/logger"
 
 // Initialize Sentry for worker process
@@ -198,6 +199,50 @@ notificationWorker.on("failed", (job: any, err: any) => {
 
 log.info("Notification delivery worker started")
 
+// ── Push Delivery Queue (avec retry automatique) ──
+export const pushDeliveryQueue = new Queue("push-delivery", { connection: connection as any, skipVersionCheck: true })
+
+const pushWorker = new Worker(
+  "push-delivery",
+  async (job: any) => {
+    const { deliveryId, userId, title, body, url, tag } = job.data
+    try {
+      const result = await sendPushToUser(userId, { title, body, url, tag })
+      await prisma.notificationDelivery.update({
+        where: { id: deliveryId },
+        data: { status: result.sent > 0 ? "SENT" : "FAILED" },
+      })
+    } catch (err: any) {
+      log.error({ err, userId }, "Failed to send push")
+      await prisma.notificationDelivery.update({
+        where: { id: deliveryId },
+        data: { status: "FAILED", errorMessage: err.message || "Push error" },
+      })
+      throw err
+    }
+  },
+  {
+    connection: connection as any,
+    concurrency: 10,
+    stalledInterval: 30000,
+    lockDuration: 60000,
+  }
+)
+
+pushWorker.on("completed", (job: any) => {
+  log.info({ jobId: job.id, queue: "push-delivery" }, "Job completed")
+})
+
+pushWorker.on("failed", (job: any, err: any) => {
+  log.error({ jobId: job?.id, queue: "push-delivery", err }, "Job failed")
+  Sentry.captureException(err, { extra: { queue: "push-delivery", jobId: job?.id } })
+  if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
+    sendToDeadLetter("push-delivery", job, err)
+  }
+})
+
+log.info("Push delivery worker started")
+
 // ── Signal Distribution Queue ──
 export const signalDistributionQueue = new Queue("signal-distribution", { connection: connection as any, skipVersionCheck: true })
 
@@ -209,6 +254,7 @@ const signalWorker = new Worker(
         await connection.publish(channel, JSON.stringify(payload))
       },
       enqueueEmail: (name, data, opts) => notificationDeliveryQueue.add(name, data, opts),
+      enqueuePush: (name, data, opts) => pushDeliveryQueue.add(name, data, opts),
     })
   },
   {
@@ -323,8 +369,8 @@ dlqTimer = setInterval(processDlqRetry, DLQ_RETRY_INTERVAL_MS)
 log.info({ intervalMs: DLQ_RETRY_INTERVAL_MS }, "DLQ auto-retry cron started")
 
 // ── Graceful shutdown ──
-const workers = [worker, notificationWorker, signalWorker, recoveryWorker]
-const queues = [cleanupQueue, notificationDeliveryQueue, signalDistributionQueue, deadLetterQueue, recoveryQueue]
+const workers = [worker, notificationWorker, pushWorker, signalWorker, recoveryWorker]
+const queues = [cleanupQueue, notificationDeliveryQueue, pushDeliveryQueue, signalDistributionQueue, deadLetterQueue, recoveryQueue]
 let shuttingDown = false
 
 async function gracefulShutdown(signal: string) {

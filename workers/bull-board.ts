@@ -17,22 +17,12 @@ if (!REDIS_URL || !BETTER_AUTH_SECRET) {
   process.exit(1)
 }
 
-const redis = new IORedis(REDIS_URL, { maxRetriesPerRequest: null, connectTimeout: 5000 })
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
 })
 
 const serverAdapter = new ExpressAdapter()
 serverAdapter.setBasePath("/admin/queues")
-
-createBullBoard({
-  queues: [
-    new BullMQAdapter(new Queue("file-cleanup", { connection: redis as any, skipVersionCheck: true })),
-    new BullMQAdapter(new Queue("signal-distribution", { connection: redis as any, skipVersionCheck: true })),
-    new BullMQAdapter(new Queue("notification-delivery", { connection: redis as any, skipVersionCheck: true })),
-  ],
-  serverAdapter,
-})
 
 function extractSessionToken(cookieHeader: string | undefined): string | null {
   if (!cookieHeader) return null
@@ -41,6 +31,10 @@ function extractSessionToken(cookieHeader: string | undefined): string | null {
 }
 
 const app = express()
+
+app.get("/health", (_req: Request, res: Response) => {
+  res.status(200).json({ status: "ok" })
+})
 
 app.use(async (req: Request, res: Response, next: NextFunction) => {
   if (req.path === "/health") return next()
@@ -72,9 +66,47 @@ app.use(async (req: Request, res: Response, next: NextFunction) => {
 
 app.use("/admin/queues", serverAdapter.getRouter())
 
-app.listen(PORT, () => {
-  console.log(`[bull-board] Listening on :${PORT}`)
-})
+async function main() {
+  const redis = new IORedis(REDIS_URL!, {
+    maxRetriesPerRequest: null,
+    connectTimeout: 10_000,
+    retryStrategy: (times: number) => {
+      if (times > 10) {
+        console.error("[bull-board] Redis unavailable after max retries, starting without queues")
+        return null
+      }
+      return Math.min(times * 200, 2000)
+    },
+  } as any)
 
-process.on("SIGTERM", () => { redis.disconnect(); prisma.$disconnect(); process.exit(0) })
-process.on("SIGINT", () => { redis.disconnect(); prisma.$disconnect(); process.exit(0) })
+  redis.on("error", (err: Error) => {
+    console.error("[bull-board] Redis error:", err.message)
+  })
+
+  await redis.ping().catch(() => {
+    console.warn("[bull-board] Redis not reachable, Bull Board will be empty")
+  })
+
+  try {
+    createBullBoard({
+      queues: [
+        new BullMQAdapter(new Queue("file-cleanup", { connection: redis as any, skipVersionCheck: true })),
+        new BullMQAdapter(new Queue("signal-distribution", { connection: redis as any, skipVersionCheck: true })),
+        new BullMQAdapter(new Queue("notification-delivery", { connection: redis as any, skipVersionCheck: true })),
+        new BullMQAdapter(new Queue("push-delivery", { connection: redis as any, skipVersionCheck: true })),
+      ],
+      serverAdapter,
+    })
+  } catch (err) {
+    console.error("[bull-board] Failed to initialize Bull Board queues:", err)
+  }
+
+  app.listen(PORT, () => {
+    console.log(`[bull-board] Listening on :${PORT}`)
+  })
+
+  process.on("SIGTERM", () => { redis.disconnect(); prisma.$disconnect(); process.exit(0) })
+  process.on("SIGINT", () => { redis.disconnect(); prisma.$disconnect(); process.exit(0) })
+}
+
+main()

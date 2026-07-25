@@ -5,7 +5,20 @@ import { createCircuitBreaker, withTimeout } from "@nba/lib/circuit-breaker";
 
 const log = logger.child({ module: "push" })
 
-const pushBreaker = createCircuitBreaker("push", { threshold: 5, cooldownMs: 60_000 })
+const pushBreaker = createCircuitBreaker("push", {
+  threshold: 5,
+  cooldownMs: 60_000,
+  onOpen: (name) => {
+    import("../security/admin-alert").then(({ sendAdminPanic }) => {
+      sendAdminPanic(
+        "⚠️ Circuit breaker ouvert : Push",
+        `<h2>Circuit breaker "${name}" ouvert</h2>
+<p>L'envoi de notifications push est temporairement désactivé après 5 échecs consécutifs.</p>
+<p>Le circuit se refermera automatiquement après 60 secondes si l'appel suivant réussit.</p>`
+      )
+    })
+  },
+})
 
 let configured = false;
 

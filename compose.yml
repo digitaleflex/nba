@@ -23,10 +23,10 @@ services:
     restart: "no"
 
   app:
-    image: ghcr.io/digitaleflex/nba
-    # Force le pull de la derniere image a chaque `up -d` pour eviter
-    # d'utiliser une image locale obsolete (incident 2026-07-13).
-    pull_policy: never
+    # Image immutable par SHA pour reproductibilite ; latest pour compat local/dev.
+    image: ghcr.io/digitaleflex/nba:${NBA_IMAGE_TAG:-latest}
+    pull_policy: always
+    restart: unless-stopped
     build:
       context: .
       dockerfile: Dockerfile
@@ -66,10 +66,10 @@ services:
           memory: 1024M
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:3000/api/public/health', (r) => { r.on('data', () => {}); r.on('end', () => { process.exit(r.statusCode < 400 ? 0 : 1) }) }).on('error', () => process.exit(1))"]
-      interval: 5s
-      timeout: 5s
-      retries: 3
-      start_period: 30s
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
     stop_grace_period: 30s
     volumes:
       - nba-storage:/app/storage
@@ -130,6 +130,8 @@ services:
       - nba
 
   worker:
+    image: ghcr.io/digitaleflex/nba-worker:${NBA_IMAGE_TAG:-latest}
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile.worker
@@ -162,10 +164,12 @@ services:
       start_period: 30s
 
   bull-board:
+    image: ghcr.io/digitaleflex/nba-worker:${NBA_IMAGE_TAG:-latest}
+    pull_policy: always
     build:
       context: .
       dockerfile: Dockerfile.worker
-    command: ["node", "/app/workers/bull-board.js"]
+    command: ["pnpm", "exec", "tsx", "workers/bull-board.ts"]
     networks:
       - nba
       - proxy

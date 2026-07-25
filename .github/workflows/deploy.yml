@@ -12,22 +12,32 @@ concurrency:
 
 jobs:
   # Gate qualite : bloque tout deploiement si lint/typecheck/tests echouent.
-  # Sans ce job, un push direct sur main deployait du code non teste (cause
-  # aggravante de l'incident du 19/07). Le job `deploy` en depend (needs).
+  # Tourne sur GitHub-hosted (ubuntu) pour ne pas consommer le VPS de production.
   quality:
     name: Quality Gate
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: corepack enable
+
+      - uses: pnpm/action-setup@v6.0.9
+        with:
+          version: "10"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
       - run: pnpm install --frozen-lockfile
       - run: npx prisma generate
+
       # Lint non-bloquant pour l'instant (dette: ~500 warnings a nettoyer).
-      # Visible dans les logs mais ne bloque pas le deploiement.
       - run: pnpm lint
         continue-on-error: true
+
       - run: pnpm typecheck
+      - run: pnpm test:coverage
+
       # Garde migration : bloque le deploiement si une NOUVELLE migration
       # contient des operations destructives (DROP TABLE/COLUMN, TRUNCATE,
       # DELETE FROM). Ne scanne que les migrations ajoutees/modifiees dans
@@ -37,8 +47,6 @@ jobs:
           echo "Verification des nouvelles migrations pour operations destructives..."
           BEFORE_SHA="${{ github.event.before }}"
           DESTRUCTIVE_FOUND=0
-          # --diff-filter=A : uniquement les fichiers AJOUTES (nouvelles migrations).
-          # Les migrations existantes deja deployeees ne sont pas scannees.
           if [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null; then
             NEW_FILES=$(git diff --diff-filter=A --name-only "$BEFORE_SHA" HEAD -- 'prisma/migrations/*/migration.sql' || true)
           else
@@ -55,20 +63,22 @@ jobs:
             done
             if [ "$DESTRUCTIVE_FOUND" = "1" ]; then
               echo "!!! DEPLOIEMENT BLOQUE : nouvelle migration destructive."
-              echo "Si c'est intentionnel, supprimez cette garde avec revue manuelle obligatoire."
               exit 1
             fi
             echo "Aucune migration destructive detectee."
           fi
 
-  deploy:
+  # Build + push des images app + worker sur GHCR.
+  # Un seul build par deploiement : l'image est ensuite pullee sur le VPS.
+  build-push:
+    name: Build + Push Docker images
     needs: quality
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
-
+      security-events: write
     steps:
       - uses: actions/checkout@v4
 
@@ -82,17 +92,104 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push Docker image
+      - name: Build app image
         uses: docker/build-push-action@v7
         with:
           context: .
-          push: true
-          tags: ghcr.io/digitaleflex/nba:latest,ghcr.io/digitaleflex/nba:${{ github.sha }}
+          file: ./Dockerfile
+          target: runner
+          load: true
+          tags: nba-app:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             NEXT_PUBLIC_VAPID_PUBLIC_KEY=${{ secrets.VAPID_PUBLIC_KEY }}
             NEXT_PUBLIC_APP_URL=https://access.signauxx.com
             NEXT_PUBLIC_WS_URL=https://access.signauxx.com:8443
 
+      - name: Build worker image
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          load: true
+          tags: nba-worker:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan app image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: nba-app:${{ github.sha }}
+          format: sarif
+          output: trivy-app-results.sarif
+          severity: HIGH,CRITICAL
+
+      - name: Scan worker image with Trivy
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: nba-worker:${{ github.sha }}
+          format: sarif
+          output: trivy-worker-results.sarif
+          severity: HIGH,CRITICAL
+
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-app-results.sarif
+
+      - if: always()
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-worker-results.sarif
+
+      - name: Push images to GHCR
+        run: |
+          docker tag nba-app:${{ github.sha }} ghcr.io/digitaleflex/nba:${{ github.sha }}
+          docker tag nba-app:${{ github.sha }} ghcr.io/digitaleflex/nba:latest
+          docker tag nba-worker:${{ github.sha }} ghcr.io/digitaleflex/nba-worker:${{ github.sha }}
+          docker tag nba-worker:${{ github.sha }} ghcr.io/digitaleflex/nba-worker:latest
+          docker push ghcr.io/digitaleflex/nba:${{ github.sha }}
+          docker push ghcr.io/digitaleflex/nba:latest
+          docker push ghcr.io/digitaleflex/nba-worker:${{ github.sha }}
+          docker push ghcr.io/digitaleflex/nba-worker:latest
+
+      - name: Generate SBOM for app
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/digitaleflex/nba:${{ github.sha }}
+          format: spdx-json
+          output: nba-app-sbom.spdx.json
+
+      - name: Generate SBOM for worker
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ghcr.io/digitaleflex/nba-worker:${{ github.sha }}
+          format: spdx-json
+          output: nba-worker-sbom.spdx.json
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-spdx
+          path: |
+            nba-app-sbom.spdx.json
+            nba-worker-sbom.spdx.json
+          retention-days: 90
+
+  # Deploiement sur le VPS depuis GitHub-hosted runner (ubuntu-latest).
+  # Aucun self-hosted runner n'est requis sur le VPS : on utilise SSH + docker.
+  deploy:
+    name: Deploy to VPS
+    needs: build-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: read
+    environment:
+      name: production
+      url: https://access.signauxx.com
+    steps:
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1
         with:
@@ -103,10 +200,12 @@ jobs:
           script: |
             set -e
             cd /home/audest/nba
+            SHA="${{ github.sha }}"
 
-            echo "=== Capture de l'image actuelle (pour rollback) ==="
-            # Digest de l'image du service app en cours d'execution, avant le pull.
-            # Sert de cible de rollback si le smoke test post-deploiement echoue.
+            echo "=== Auth GHCR sur le VPS ==="
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+            echo "=== Capture des images actuelles (pour rollback) ==="
             APP_CID="$(docker compose -f compose.yml ps -q app 2>/dev/null | head -1 || true)"
             PREV_IMAGE=""
             if [ -n "$APP_CID" ]; then
@@ -115,29 +214,47 @@ jobs:
             if [ -z "$PREV_IMAGE" ]; then
               PREV_IMAGE="$(docker images --no-trunc -q ghcr.io/digitaleflex/nba:latest 2>/dev/null | head -1 || true)"
             fi
-            echo "Image precedente: ${PREV_IMAGE:-<aucune>}"
 
-            echo "=== Nettoyage conteneurs 'run' orphelins (evite 2 builds servis en meme temps) ==="
-            # Les 'docker compose run --rm' interrompus (timeout) peuvent laisser des
-            # conteneurs 'nba-app-run-*' vivants qui servent un ancien build => Traefik
-            # load-balance entre 2 builds => ChunkLoadError / MIME text/plain.
+            WORKER_CID="$(docker compose -f compose.yml ps -q worker 2>/dev/null | head -1 || true)"
+            PREV_WORKER_IMAGE=""
+            if [ -n "$WORKER_CID" ]; then
+              PREV_WORKER_IMAGE="$(docker inspect --format '{{.Image}}' "$WORKER_CID" 2>/dev/null || true)"
+            fi
+            if [ -z "$PREV_WORKER_IMAGE" ]; then
+              PREV_WORKER_IMAGE="$(docker images --no-trunc -q ghcr.io/digitaleflex/nba-worker:latest 2>/dev/null | head -1 || true)"
+            fi
+
+            echo "Image app precedente: ${PREV_IMAGE:-<aucune>}"
+            echo "Image worker precedente: ${PREV_WORKER_IMAGE:-<aucune>}"
+
+            echo "=== Nettoyage conteneurs 'run' orphelins ==="
             docker ps -a --filter "name=nba-app-run-" --filter "name=nba-worker-run-" -q | xargs -r docker rm -f 2>&1 | tail -5 || true
 
-            echo "=== Pull nouvelles images ==="
+            echo "=== Pull nouvelles images (SHA $SHA) ==="
+            export NBA_IMAGE_TAG="$SHA"
             docker compose -f compose.yml pull app worker bull-board 2>&1 | tail -5
 
-            echo "=== Backup preventive (lecture seule, aucune mutation données) ==="
-            # backup.sh = pg_dump (read-only) + upload B2. Non-destructif.
-            # On le lance sur le worker (possede b2 + pg_dump), entrypoint neutralise.
+            echo "=== Backup preventive ==="
             timeout 300 docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker > /tmp/backup.log 2>&1 || BACKUP_EXIT=$?
             cat /tmp/backup.log
             if [ "${BACKUP_EXIT:-0}" != "0" ]; then
               echo "::warning::backup.sh a echoue (exit ${BACKUP_EXIT}) — non-bloquant."
             fi
 
-            echo "=== Resolution des migrations echouees (si existantes) ==="
+            echo "=== Resolution des migrations echouees (si applicable) ==="
             DIRECT_URL="$(echo "$DATABASE_URL" | sed 's/-pooler//')"
-            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint "npx prisma migrate resolve --rolled-back 20260722194600_add_session_last_rotation" app > /tmp/resolve.log 2>&1 || true
+            docker compose -f compose.yml run --rm -e DIRECT_URL="$DIRECT_URL" --entrypoint sh app -c '
+              set -e
+              # Detecte les migrations en statut failed puis resolve --rolled-back uniquement
+              # si la migration 20260722194600_add_session_last_rotation est en failed.
+              FAILED=$(npx prisma migrate status 2>&1 || true)
+              if echo "$FAILED" | grep -q "20260722194600_add_session_last_rotation"; then
+                echo "Migration 20260722194600_add_session_last_rotation en failed -> resolve rolled-back"
+                npx prisma migrate resolve --rolled-back 20260722194600_add_session_last_rotation
+              else
+                echo "Aucune migration stuck detectee -> skip"
+              fi
+            ' > /tmp/resolve.log 2>&1 || true
             cat /tmp/resolve.log
 
             echo "=== Migrations Prisma + Seed ==="
@@ -152,20 +269,17 @@ jobs:
             cat /tmp/migrate-seed.log
             if [ "${MERGE_EXIT:-0}" != "0" ]; then
               echo "::error::prisma migrate deploy a echoue (exit ${MERGE_EXIT})."
-              echo "Verification manuelle requise sur le VPS."
               exit 1
             fi
 
-            echo "=== Rolling deploy zero-down via compose + Traefik healthcheck ==="
-            # compose demarre le nouveau container, attend son healthcheck (Traefik
-            # ne le route qu'une fois healthy), puis stop l'ancien. Aucune coupure.
+            echo "=== Rolling deploy zero-down ==="
             docker compose -f compose.yml up -d --no-deps app worker bull-board 2>&1 | tail -10
 
-            echo "=== Smoke test API (15 routes) ==="
+            echo "=== Smoke test API ==="
             TEST_URL="https://access.signauxx.com" bash scripts/api-smoke-test.sh --wait || SMOKE_EXIT=$?
             if [ "${SMOKE_EXIT:-0}" != "0" ]; then
               echo "!!! SMOKE TEST ECHOUE — rollback."
-              PREV_IMAGE="$PREV_IMAGE" bash scripts/rollback.sh || true
+              PREV_IMAGE="$PREV_IMAGE" PREV_WORKER_IMAGE="$PREV_WORKER_IMAGE" bash scripts/rollback.sh || true
               exit 1
             fi
             echo "Smoke test API OK."

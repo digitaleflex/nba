@@ -8,8 +8,6 @@ const log = logger.child({ module: "recovery" })
 export type RecoveryJobType =
   | "EMAIL_SEND"
   | "PUSH_SEND"
-  | "TELEGRAM_SEND"
-  | "WHATSAPP_SEND"
   | "SIGNAL_DISTRIBUTION"
   | "FILE_CLEANUP"
 
@@ -47,12 +45,6 @@ export async function processRecovery(job: RecoveryJobData): Promise<void> {
     case "PUSH_SEND":
       await handlePushRecovery(payload)
       break
-    case "TELEGRAM_SEND":
-      await handleTelegramRecovery(payload)
-      break
-    case "WHATSAPP_SEND":
-      await handleWhatsAppRecovery(payload)
-      break
     default:
       log.warn({ type }, "Unhandled recovery job type")
   }
@@ -83,10 +75,4 @@ async function handlePushRecovery(_payload: Record<string, unknown>): Promise<vo
   log.warn({}, "Push recovery not implemented")
 }
 
-async function handleTelegramRecovery(_payload: Record<string, unknown>): Promise<void> {
-  log.warn({}, "Telegram recovery not implemented")
-}
 
-async function handleWhatsAppRecovery(_payload: Record<string, unknown>): Promise<void> {
-  log.warn({}, "WhatsApp recovery not implemented")
-}

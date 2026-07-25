@@ -16,9 +16,9 @@ function getConnection(): IORedis | null {
   }
   if (!globalForPubSub.redisPub) {
     globalForPubSub.redisPub = new IORedis(redisUrl, {
-      maxRetriesPerRequest: 1,
-      connectTimeout: 3000,
-      commandTimeout: 1500,
+      maxRetriesPerRequest: 3,
+      connectTimeout: 10000,
+      commandTimeout: 5000,
       lazyConnect: true,
     })
   }

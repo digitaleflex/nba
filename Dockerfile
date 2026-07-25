@@ -3,19 +3,35 @@ FROM node:22-alpine AS base
 RUN npm install -g pnpm@10
 WORKDIR /app
 
-# Step 1: Install all dependencies (including devDependencies for build)
+# Step 1a: Install all dependencies (including devDependencies for build)
 FROM base AS deps
 COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY packages/design-system/package.json ./packages/design-system/
 RUN pnpm install --frozen-lockfile
+
+# Step 1b: Install ONLY production dependencies for runtime image (lean).
+# tsx, pm2, prisma sont en dependencies, donc inclus.
+# eslint, vitest, @types/*, etc. (devDependencies) ne sont PAS installes.
+FROM base AS runner-deps
+COPY .npmrc pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY packages/design-system/package.json ./packages/design-system/
+RUN pnpm install --frozen-lockfile --prod
 
 # Step 2: Shared base for app and worker - source code + generated Prisma client.
 # Both the Next.js build and the worker need this; keeping it as its own stage
 # avoids running `COPY . .` and `prisma generate` twice.
 FROM base AS prepared
 COPY --from=deps /app/node_modules ./node_modules
-COPY . .
+
+# Copy prisma schema + config FIRST (rarely changes).
+# prisma generate est en cache tant que prisma/ n'est pas modifié,
+# même si le code source change => gain sur les builds frequents.
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 RUN pnpm prisma generate
+
+# Copy all source code (changes often, invalidates build layer only)
+COPY . .
 
 # Step 3: Build the Next.js application
 FROM prepared AS builder
@@ -30,7 +46,7 @@ ENV NEXT_PUBLIC_VAPID_PUBLIC_KEY=$NEXT_PUBLIC_VAPID_PUBLIC_KEY
 # `next build` échoue déjà si le middleware ne compile pas ; aucune garde
 # maison n'est nécessaire (les chemins internes de Next changent entre versions,
 # ex. middleware -> proxy en Next 16, ce qui cassait le déploiement à tort).
-RUN pnpm build
+RUN --mount=type=cache,target=/app/.next/cache pnpm build
 
 # Step 4: Production runner for Next.js Web App
 FROM base AS runner
@@ -49,10 +65,9 @@ RUN adduser --system --uid 1001 nextjs
 # Pre-create storage directory with correct ownership (avoids runtime chown as root)
 RUN mkdir -p /app/storage && chown -R nextjs:nodejs /app/storage
 
-# Copy full node_modules: required because docker-entrypoint.sh runs
-# `pnpm prisma migrate deploy` and `pnpm db:seed` (tsx) at container startup.
-# These are devDependencies not traced/included by the Next.js standalone output.
-COPY --from=deps /app/node_modules ./node_modules
+# Copy production-only node_modules (tsx, pm2, prisma inclus ; eslint, vitest,
+# @types/*, etc. exclus). Environ 200-300MB de gagnes par rapport a --from=deps.
+COPY --from=runner-deps /app/node_modules ./node_modules
 
 # Copy standalone build outputs
 COPY --from=builder /app/public ./public

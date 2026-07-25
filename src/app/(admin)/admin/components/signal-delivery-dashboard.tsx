@@ -36,15 +36,11 @@ interface DeliveryReport {
 const CHANNEL_LABELS: Record<string, string> = {
   EMAIL: "Email",
   PUSH: "Push",
-  TELEGRAM: "Telegram",
-  WHATSAPP: "WhatsApp",
 }
 
 const CHANNEL_COLORS: Record<string, string> = {
   EMAIL: "bg-blue-500",
   PUSH: "bg-violet-500",
-  TELEGRAM: "bg-sky-500",
-  WHATSAPP: "bg-emerald-500",
 }
 
 export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
@@ -115,7 +111,7 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
       <div className="flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
           Diffusion en temps réel
-          <InfoTooltip content="Tableau de bord live de l'envoi du signal vers chaque membre (email, push, telegram, whatsapp). Il se met à jour automatiquement à chaque accusé de réception ou d'échec renvoyé par les prestataires." />
+          <InfoTooltip content="Tableau de bord live de l'envoi du signal vers chaque membre (email, push). Il se met à jour automatiquement à chaque accusé de réception ou d'échec renvoyé par les prestataires." />
         </span>
         <span className="flex items-center gap-1.5 text-[10px]">
           <span
@@ -166,14 +162,12 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
                   {CHANNEL_LABELS[c.channel] || c.channel}
                   <InfoTooltip
                     side="left"
-                    content={
-                      {
-                        EMAIL: "Email envoyé via Resend. Le statut passe en 'délivré' quand le serveur du membre accepte le message.",
-                        PUSH: "Notification push navigateur/web (webhook interne). Échoue si le membre n'a pas autorisé les notifications.",
-                        TELEGRAM: "Message envoyé sur le chat Telegram du membre. Nécessite une liaison Telegram active dans son profil.",
-                        WHATSAPP: "Message envoyé sur WhatsApp du membre via l'API. Nécessite une liaison WhatsApp active.",
-                      }[c.channel] || "Canal de notification."
-                    }
+                  content={
+                    {
+                      EMAIL: "Email envoyé via Resend. Le statut passe en 'délivré' quand le serveur du membre accepte le message.",
+                      PUSH: "Notification push navigateur/web (webhook interne). Échoue si le membre n'a pas autorisé les notifications.",
+                    }[c.channel] || "Canal de notification."
+                  }
                   />
                 </span>
                 <span className="text-muted-foreground">
@@ -227,8 +221,6 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
                     "shrink-0",
                     f.channel === "EMAIL" && "bg-blue-500/10 text-blue-400 border-blue-500/20",
                     f.channel === "PUSH" && "bg-violet-500/10 text-violet-400 border-violet-500/20",
-                    f.channel === "TELEGRAM" && "bg-sky-500/10 text-sky-400 border-sky-500/20",
-                    f.channel === "WHATSAPP" && "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
                   )}
                 >
                   {CHANNEL_LABELS[f.channel] || f.channel}

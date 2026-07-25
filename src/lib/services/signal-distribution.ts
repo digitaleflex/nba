@@ -1,9 +1,6 @@
 import { prisma } from "../db"
 import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
-import { sendPushToUser } from "./push"
-import { sendTelegramMessage } from "./telegram"
-import { sendWhatsAppSignal } from "./whatsapp"
 import { readFile } from "fs/promises"
 import { join } from "path"
 
@@ -38,65 +35,6 @@ async function runWithThrottle<T>(items: T[], fn: (item: T) => Promise<void>, de
   }
 }
 
-async function sendTelegramToMember(notificationId: string, userId: string, title: string, body: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { metadata: true },
-  })
-  const meta = (user?.metadata || {}) as Record<string, any>
-  if (!meta.telegram_chat_id || meta.telegram_active === false) return
-
-  const delivery = await prisma.notificationDelivery.create({
-    data: { notificationId, channel: "TELEGRAM", status: "PENDING" },
-  }).catch((err) => {
-    console.error(`[signal-distribution] Failed to create TELEGRAM delivery (notificationId=${notificationId}):`, err)
-    return null
-  })
-
-  const result = await sendTelegramMessage(
-    meta.telegram_chat_id,
-    `<b>${title}</b>\n\n${body}`,
-    { parseMode: "HTML" },
-  )
-
-  if (delivery) {
-    await prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch((err) => {
-      console.error(`[signal-distribution] Failed to update TELEGRAM delivery (id=${delivery.id}):`, err)
-    })
-  }
-}
-
-async function sendWhatsAppToMember(notificationId: string, userId: string, title: string, body: string) {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { whatsapp: true, metadata: true },
-  })
-  const meta = (user?.metadata || {}) as Record<string, any>
-  const phone = user?.whatsapp
-  if (!phone || meta.whatsapp_active === false) return
-
-  const delivery = await prisma.notificationDelivery.create({
-    data: { notificationId, channel: "WHATSAPP", status: "PENDING" },
-  }).catch((err) => {
-    console.error(`[signal-distribution] Failed to create WHATSAPP delivery (notificationId=${notificationId}):`, err)
-    return null
-  })
-
-  const result = await sendWhatsAppSignal(phone, title, body)
-
-  if (delivery) {
-    await prisma.notificationDelivery.update({
-      where: { id: delivery.id },
-      data: { status: result.ok ? "SENT" : "FAILED", errorMessage: result.error || null },
-    }).catch((err) => {
-      console.error(`[signal-distribution] Failed to update WHATSAPP delivery (id=${delivery.id}):`, err)
-    })
-  }
-}
-
 async function readImageAsDataUri(path: string): Promise<string | null> {
   try {
     const fullPath = join(STORAGE_BASE_PATH, path)
@@ -122,6 +60,7 @@ function getImageDataUri(imageUrl: string | null): Promise<string | null> {
 export interface DistributeDeps {
   publish?: (channel: string, payload: unknown) => Promise<void> | void
   enqueueEmail?: (name: string, data: any, opts?: any) => Promise<unknown>
+  enqueuePush?: (name: string, data: any, opts?: any) => Promise<unknown>
 }
 
 /**
@@ -195,9 +134,6 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
   const BATCH_SIZE = 50
   for (let i = 0; i < members.length; i += BATCH_SIZE) {
     const batch = members.slice(i, i + BATCH_SIZE)
-    const telegramTasks: Array<{ notificationId: string; userId: string }> = []
-    const whatsappTasks: Array<{ notificationId: string; userId: string }> = []
-
     await Promise.all(
       batch.map(async (member) => {
         let notification: { id: string; createdAt: Date } | null = null
@@ -258,42 +194,34 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           console.error(`[signal-distribution] Failed to enqueue email for user ${member.id}:`, err)
         })
 
-        const pushResult = await sendPushToUser(member.id, {
-          title: "Nouveau signal de trading",
-          body: "Un nouveau signal a été publié pour vos groupes.",
-          url: "/dashboard",
-          tag: notification.id,
-        }).catch((err) => {
-          console.error(`[signal-distribution] Push failed for user ${member.id}:`, err)
-          return { sent: 0, failed: 0 }
-        })
-
-        await prisma.notificationDelivery.create({
-          data: { notificationId: notification.id, channel: "PUSH", status: pushResult.sent > 0 ? "SENT" : "FAILED" },
+        const notifId = notification.id
+        const pushDelivery = await prisma.notificationDelivery.create({
+          data: { notificationId: notifId, channel: "PUSH", status: "PENDING" },
         }).catch((err) => {
           console.error(`[signal-distribution] Failed to create PUSH delivery for user ${member.id}:`, err)
+          return null
         })
 
-        telegramTasks.push({ notificationId: notification.id, userId: member.id })
-        whatsappTasks.push({ notificationId: notification.id, userId: member.id })
+        if (pushDelivery) {
+          deps.enqueuePush?.(
+            `push-${notifId}`,
+            {
+              deliveryId: pushDelivery.id,
+              userId: member.id,
+              title: "Nouveau signal de trading",
+              body: "Un nouveau signal a été publié pour vos groupes.",
+              url: "/dashboard",
+              tag: notifId,
+            },
+            { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+          ).catch((err) => {
+            console.error(`[signal-distribution] Failed to enqueue push for user ${member.id}:`, err)
+          })
+        }
+
       }),
     )
 
-    // Throttle les canaux externes pour éviter les blocages providers
-    // Telegram: 30 msg/s max -> 34ms entre chaque
-    // WhatsApp: 50 msg/min max -> 1200ms entre chaque
-    await Promise.all([
-      runWithThrottle(
-        telegramTasks,
-        (t) => sendTelegramToMember(t.notificationId, t.userId, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes."),
-        34,
-      ),
-      runWithThrottle(
-        whatsappTasks,
-        (t) => sendWhatsAppToMember(t.notificationId, t.userId, "Nouveau signal de trading", "Un nouveau signal a été publié pour vos groupes."),
-        1200,
-      ),
-    ])
   }
 
   try {

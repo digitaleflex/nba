@@ -38,13 +38,15 @@ export async function detectNewDevice(userId: string, req: Request): Promise<{ i
     where: { userId_fingerprint: { userId, fingerprint: fp } },
   })
 
+  const ua = req.headers.get("user-agent") ?? ""
+
   if (existing) {
     await prisma.device.update({
       where: { id: existing.id },
       data: {
         lastSeenAt: new Date(),
         ipAddress: ip,
-        userAgent: fp.split("|")[1],
+        userAgent: ua,
         deviceType: parsed.deviceType,
         brand: parsed.brand,
         model: parsed.model,
@@ -60,7 +62,7 @@ export async function detectNewDevice(userId: string, req: Request): Promise<{ i
       userId,
       fingerprint: fp,
       ipAddress: ip,
-      userAgent: fp.split("|")[1],
+      userAgent: ua,
       deviceType: parsed.deviceType,
       brand: parsed.brand,
       model: parsed.model,
@@ -80,13 +82,15 @@ export async function sendVerificationCode(userId: string, email: string, req: R
   const parsed = deviceInfo(req)
   const code = generateCode()
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
+  const ua = req.headers.get("user-agent") ?? ""
 
   await prisma.deviceVerification.create({
     data: {
       userId,
       deviceFingerprint: fp,
-      ipAddress: fp.split("|")[0],
-      userAgent: fp.split("|")[1],
+      ipAddress: ip,
+      userAgent: ua,
       deviceType: parsed.deviceType,
       brand: parsed.brand,
       model: parsed.model,
@@ -110,6 +114,8 @@ export async function sendVerificationCode(userId: string, email: string, req: R
 export async function verifyDeviceCode(userId: string, code: string, req: Request) {
   const fp = fingerprint(req)
   const parsed = deviceInfo(req)
+  const ip = req.headers.get("x-forwarded-for") ?? req.headers.get("x-real-ip") ?? "unknown"
+  const ua = req.headers.get("user-agent") ?? ""
 
   const verification = await prisma.deviceVerification.findFirst({
     where: {
@@ -139,8 +145,8 @@ export async function verifyDeviceCode(userId: string, code: string, req: Reques
       data: {
         userId,
         fingerprint: fp,
-        ipAddress: fp.split("|")[0],
-        userAgent: fp.split("|")[1],
+        ipAddress: ip,
+        userAgent: ua,
         deviceType: parsed.deviceType,
         brand: parsed.brand,
         model: parsed.model,
