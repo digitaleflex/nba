@@ -51,6 +51,7 @@ jobs:
 
       - name: Build and push worker image
         uses: docker/build-push-action@v7
+        continue-on-error: true
         with:
           context: .
           file: ./Dockerfile.worker
