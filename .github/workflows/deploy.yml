@@ -74,17 +74,13 @@ jobs:
 
             echo "=== Pull image SHA $SHA ==="
             docker pull ghcr.io/digitaleflex/nba:$SHA
-            docker pull ghcr.io/digitaleflex/nba-worker:$SHA || echo "Worker image skipped (package not created yet)"
 
             echo "=== Backup ==="
             timeout 300 docker compose -f compose.yml run --rm --entrypoint "sh /app/scripts/backup.sh" worker > /tmp/backup.log 2>&1 || true
 
             echo "=== Deploy ==="
             sed -i 's/pull_policy: always/pull_policy: never/' compose.yml
-            # App: utilise le SHA (image fraichement buildée)
             NBA_IMAGE_TAG="$SHA" docker compose up -d --no-deps app 2>&1 | tail -3
-            # Worker + Bull-board: garde latest (pas de nouveau build pour l'instant)
-            NBA_IMAGE_TAG="latest" docker compose up -d --no-deps worker bull-board 2>&1 | tail -3
             git checkout compose.yml
 
             echo "=== Migrations ==="
