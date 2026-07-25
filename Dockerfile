@@ -26,6 +26,7 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy prisma schema + config FIRST (rarely changes).
 # prisma generate est en cache tant que prisma/ n'est pas modifié,
 # même si le code source change => gain sur les builds frequents.
+COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 RUN pnpm prisma generate
