@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
     if (rateLimitRes) return rateLimitRes
 
     const body = await req.json().catch(() => ({}))
-    email = typeof body.email === "string" ? body.email : ""
+    email = typeof body.email === "string" ? body.email.trim().toLowerCase() : ""
 
     const h = req.headers
     ipAddress = h.get("x-forwarded-for") ?? h.get("x-real-ip") ?? undefined
