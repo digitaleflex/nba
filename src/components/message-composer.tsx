@@ -241,7 +241,8 @@ export function MessageComposer({
           onClick={() => wrapSelection(textareaRef.current, "**", "**", "gras")}
           disabled={!!pending}
           title="Gras"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          className="flex size-10 md:size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          aria-label="Gras"
         >
           <Bold className="size-4" />
         </button>
@@ -249,8 +250,8 @@ export function MessageComposer({
           type="button"
           onClick={() => wrapSelection(textareaRef.current, "*", "*", "italique")}
           disabled={!!pending}
-          title="Italique"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          aria-label="Italique"
+          className="flex size-10 md:size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
           <Italic className="size-4" />
         </button>
@@ -258,8 +259,8 @@ export function MessageComposer({
           type="button"
           onClick={() => prefixLines(textareaRef.current, "- ")}
           disabled={!!pending}
-          title="Liste"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          aria-label="Liste"
+          className="flex size-10 md:size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
           <List className="size-4" />
         </button>
@@ -268,7 +269,7 @@ export function MessageComposer({
           onClick={() => insertLink(textareaRef.current)}
           disabled={!!pending}
           title="Lien"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          className="flex size-10 md:size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
           <Link2 className="size-4" />
         </button>
@@ -277,7 +278,7 @@ export function MessageComposer({
           onClick={() => fileRef.current?.click()}
           disabled={uploading || !!pending}
           title="Joindre une image ou vidéo"
-          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
+          className="flex size-10 md:size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-40"
         >
           {uploading ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
         </button>
@@ -285,7 +286,7 @@ export function MessageComposer({
           type="button"
           onClick={() => setEmojiOpen((v) => !v)}
           title="Emojis"
-          className={`flex size-8 items-center justify-center rounded-lg transition-colors disabled:opacity-40 ${
+          className={`flex size-10 md:size-8 items-center justify-center rounded-lg transition-colors disabled:opacity-40 ${
             emojiOpen ? "bg-primary/15 text-primary" : "text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >

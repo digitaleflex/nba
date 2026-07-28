@@ -279,7 +279,7 @@ export function ChatMessage({
             <button
               onClick={() => setShowEmoji((s) => !s)}
               title="Réagir"
-              className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+              className="flex size-9 md:size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
             >
               <Smile className="size-3.5" />
             </button>
@@ -300,7 +300,7 @@ export function ChatMessage({
           <button
             onClick={() => onQuote(message)}
             title="Citer"
-            className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+            className="flex size-9 md:size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
           >
             <Quote className="size-3.5" />
           </button>
@@ -308,7 +308,7 @@ export function ChatMessage({
             <button
               onClick={() => setReporting(true)}
               title="Signaler"
-              className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
+              className="flex size-9 md:size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
             >
               <Flag className="size-3.5" />
             </button>
@@ -320,7 +320,7 @@ export function ChatMessage({
                 setEditing(true)
               }}
               title="Modifier"
-              className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
+              className="flex size-9 md:size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-foreground"
             >
               <Pencil className="size-3.5" />
             </button>
@@ -328,7 +328,7 @@ export function ChatMessage({
           <button
             onClick={() => setConfirmDelete(true)}
             title="Supprimer"
-            className="flex size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
+            className="flex size-9 md:size-7 items-center justify-center rounded-full border border-border bg-background text-muted-foreground hover:text-destructive"
           >
             <Trash2 className="size-3.5" />
           </button>
