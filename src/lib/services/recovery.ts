@@ -71,8 +71,37 @@ async function handleEmailRecovery(payload: EmailPayload): Promise<void> {
   }
 }
 
-async function handlePushRecovery(_payload: Record<string, unknown>): Promise<void> {
-  log.warn({}, "Push recovery not implemented")
+async function handlePushRecovery(payload: Record<string, unknown>): Promise<void> {
+  const deliveryId = payload.deliveryId as string | undefined
+  if (!deliveryId) {
+    log.warn({}, "Push recovery skipped: missing deliveryId")
+    return
+  }
+
+  const delivery = await prisma.notificationDelivery.findUnique({
+    where: { id: deliveryId },
+  })
+  if (!delivery || delivery.status !== "PENDING") {
+    log.warn({ deliveryId, status: delivery?.status }, "Push recovery skipped: delivery not PENDING")
+    return
+  }
+
+  const { getQueue } = await import("@nba/lib/queue")
+  const queue = getQueue("push-delivery")
+  await queue.add(
+    `push-recovery-${deliveryId}`,
+    {
+      deliveryId: payload.deliveryId,
+      userId: payload.userId,
+      title: payload.title,
+      body: payload.body,
+      url: payload.url || "/dashboard",
+      tag: payload.tag || deliveryId,
+    },
+    { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+  )
+
+  log.info({ deliveryId }, "Push recovery job re-enqueued")
 }
 
 

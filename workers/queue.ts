@@ -170,7 +170,7 @@ const notificationWorker = new Worker(
   },
   {
     connection: connection as any,
-    concurrency: 10,
+    concurrency: 5,
     stalledInterval: 30000,
     lockDuration: 60000,
   }
@@ -238,6 +238,15 @@ pushWorker.on("failed", (job: any, err: any) => {
   Sentry.captureException(err, { extra: { queue: "push-delivery", jobId: job?.id } })
   if (job && job.attemptsMade >= (job.opts.attempts ?? 1)) {
     sendToDeadLetter("push-delivery", job, err)
+    enqueueRecovery({
+      type: "PUSH_SEND",
+      originalQueue: "push-delivery",
+      originalJobId: job.id,
+      originalJobName: job.name,
+      payload: job.data,
+      errorMessage: err.message,
+      failedAt: new Date().toISOString(),
+    })
   }
 })
 
