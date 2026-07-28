@@ -108,6 +108,18 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
 
       setCounts((prev) => ({ ...prev, [conversationId]: (prev[conversationId] ?? 0) + 1 }))
 
+      // Notification bureau (si autorisée et page en arrière-plan)
+      if (typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted" && document.hidden) {
+        try {
+          const name = message.senderName || "L'équipe"
+          new Notification(`💬 Nouveau message de ${name}`, {
+            body: message.content.length > 100 ? `${message.content.slice(0, 100)}…` : message.content,
+            icon: "/favicon.ico",
+            tag: conversationId,
+          })
+        } catch {}
+      }
+
       // On ne toast que si l'utilisateur n'est pas déjà sur la page Messages
       // (la liste des conversations y est visible, le badge suffit).
       const isOnMessagesPage =
