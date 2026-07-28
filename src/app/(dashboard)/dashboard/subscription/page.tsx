@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, Badge, Button } from "@nba/design-system"
-import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash, ExternalLink, RefreshCw } from "lucide-react"
+import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash, ExternalLink, RefreshCw, MessageCircle } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
@@ -152,10 +152,20 @@ function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurr
 
         {/* Notes admin (si refusée) */}
         {notes && status === "REJECTED" && (
-          <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-            <p className="text-[10px] uppercase tracking-wider font-bold mb-1">Raison du refus</p>
-            <p className="italic">"{notes}"</p>
-          </div>
+          <>
+            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
+              <p className="text-[10px] uppercase tracking-wider font-bold mb-1">Raison du refus</p>
+              <p className="italic">"{notes}"</p>
+            </div>
+            <div className="pt-1">
+              <Link href="/dashboard/messages">
+                <Button variant="outline" size="sm" className="w-full gap-1.5 text-muted-foreground">
+                  <MessageCircle className="size-3.5" />
+                  Contacter l'admin
+                </Button>
+              </Link>
+            </div>
+          </>
         )}
       </CardContent>
     </Card>
@@ -226,17 +236,37 @@ export default function SubscriptionPage() {
               </p>
               <p className="text-sm text-muted-foreground max-w-md">
                 {rejected.length > 0
-                  ? "Votre demande précédente a été refusée."
+                  ? "Votre demande précédente a été refusée. Contactez le support pour plus d'informations."
                   : pending.length > 0
                     ? "Votre demande est en cours de traitement."
-                    : "Votre accès aux signaux n'est pas encore actif."}
+                    : !hasAny
+                      ? "Vous n'avez pas encore souscrit à un groupe. Contactez l'admin ou le support pour activer votre accès."
+                      : "Votre accès aux signaux n'est pas encore actif."}
               </p>
             </div>
-            <Link href="/dashboard/signals">
-              <Button variant="default" size="sm">
-                Voir les signaux
-              </Button>
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard/signals">
+                <Button variant="outline" size="sm">
+                  Voir les signaux
+                </Button>
+              </Link>
+              {rejected.length > 0 && (
+                <Link href="/dashboard/messages">
+                  <Button variant="default" size="sm" className="gap-1.5">
+                    <MessageCircle className="size-3.5" />
+                    Contacter l'admin
+                  </Button>
+                </Link>
+              )}
+              {!hasAny && (
+                <Link href="/dashboard/messages">
+                  <Button variant="default" size="sm" className="gap-1.5">
+                    <MessageCircle className="size-3.5" />
+                    Contacter l'admin
+                  </Button>
+                </Link>
+              )}
+            </div>
           </CardContent>
         </Card>
       )}

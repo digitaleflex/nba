@@ -88,6 +88,18 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
 
   const unreadTotal = Object.values(counts).reduce((a, b) => a + b, 0)
 
+  // Tab title badge : "(3) 📬" dans le titre du navigateur
+  const originalTitle = useRef<string>("")
+  useEffect(() => {
+    if (typeof document === "undefined") return
+    if (!originalTitle.current) originalTitle.current = document.title
+    if (unreadTotal > 0) {
+      document.title = `(${unreadTotal}) ${originalTitle.current}`
+    } else {
+      document.title = originalTitle.current
+    }
+  }, [unreadTotal])
+
   useEffect(() => {
     const off = subscribe<IncomingMessage>("message", (payload) => {
       const { conversationId, message } = payload

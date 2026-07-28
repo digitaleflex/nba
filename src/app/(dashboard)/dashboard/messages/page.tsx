@@ -499,6 +499,10 @@ export default function MessagesPage() {
                     description={conversations.length === 0
                       ? "Contacte le support ou un admin pour démarrer une conversation."
                       : "Aucune conversation ne correspond à ta recherche."}
+                    action={conversations.length === 0 ? {
+                      label: "Démarrer",
+                      onClick: () => setPickerOpen(true),
+                    } : undefined}
                   />
                 ) : (
                   filteredConversations.map((c) => (
