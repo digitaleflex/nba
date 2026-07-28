@@ -107,26 +107,24 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
 
     const pushPromise = (async () => {
       const queue = getQueue("push-delivery")
-      const delivery = await prisma.notificationDelivery.create({
-        data: { notificationId: notification.id, channel: "PUSH", status: "PENDING" },
-      }).catch((err) => {
-        log.warn({ err, notificationId: notification.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery record")
-        return null
-      })
-      if (!delivery) return
+      await withRetryTransaction(async (tx) => {
+        const delivery = await tx.notificationDelivery.create({
+          data: { notificationId: notification.id, channel: "PUSH", status: "PENDING" },
+        })
 
-      await queue.add(
-        `push-${notification.id}`,
-        {
-          deliveryId: delivery.id,
-          userId: params.userId,
-          title: params.title,
-          body: params.body,
-          url: params.linkUrl || "/dashboard",
-          tag: notification.id,
-        },
-        { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
-      )
+        await queue.add(
+          `push-${notification.id}`,
+          {
+            deliveryId: delivery.id,
+            userId: params.userId,
+            title: params.title,
+            body: params.body,
+            url: params.linkUrl || "/dashboard",
+            tag: notification.id,
+          },
+          { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+        )
+      })
     })().catch((err) => {
       log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Push delivery failed")
     })
