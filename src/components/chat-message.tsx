@@ -46,6 +46,7 @@ export interface ChatMessageData {
   quoted?: QuotedRef | null
   reactions: Reaction[]
   createdAt: string
+  sendFailed?: boolean
 }
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🎉"]
@@ -65,6 +66,7 @@ interface ChatMessageProps {
   onDelete: (messageId: string, forEveryone: boolean) => Promise<void>
   onReport?: (messageId: string, reason: string) => void
   onScrollTo: (messageId: string) => void
+  onRetrySend?: (message: ChatMessageData) => void
 }
 
 export function ChatMessage({
@@ -78,6 +80,7 @@ export function ChatMessage({
   onDelete,
   onReport,
   onScrollTo,
+  onRetrySend,
 }: ChatMessageProps) {
   const [showEmoji, setShowEmoji] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -100,6 +103,24 @@ export function ChatMessage({
     return (
       <div className="flex justify-center my-1">
         <p className="text-xs italic text-muted-foreground">Message supprimé</p>
+      </div>
+    )
+  }
+
+  if (message.sendFailed) {
+    return (
+      <div className={`flex ${isMine ? "justify-end" : "justify-start"} my-1`}>
+        <div className="max-w-[75%] rounded-2xl px-3.5 py-2 text-sm bg-destructive/10 border border-destructive/30 rounded-br-sm">
+          <p className="text-xs text-destructive font-medium">Échec de l&apos;envoi</p>
+          {onRetrySend && (
+            <button
+              onClick={() => onRetrySend(message)}
+              className="mt-1 text-xs text-primary hover:underline font-medium"
+            >
+              Réessayer
+            </button>
+          )}
+        </div>
       </div>
     )
   }
@@ -245,12 +266,14 @@ export function ChatMessage({
         </div>
       )}
 
-      {/* Barre d'actions au survol (desktop) / au tap (mobile) */}
+      {/* Barre d'actions au survol (desktop) / toujours visible (mobile) */}
       {!editing && (
         <div
-          className={`absolute top-0 ${
-            isMine ? "left-0 -translate-x-full pl-1" : "right-0 translate-x-full pr-1"
-          } opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex items-center gap-0.5`}
+          className={`absolute -top-8 ${
+            isMine ? "right-1" : "left-1"
+          } opacity-100 md:opacity-0 md:group-hover:opacity-100 md:top-0 ${
+            isMine ? "md:left-0 md:-translate-x-full md:pl-1" : "md:right-0 md:translate-x-full md:pr-1"
+          } transition-opacity flex items-center gap-0.5`}
         >
           <div className="relative" ref={emojiRef}>
             <button

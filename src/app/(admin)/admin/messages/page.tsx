@@ -203,11 +203,34 @@ export default function AdminMessagesPage() {
         setComposerQuoted(null)
         loadConversations()
       } else {
-        setMessages((prev) => prev.filter((m) => m.id !== tempId))
+        setMessages((prev) => prev.map((m) => (m.id === tempId ? { ...m, sendFailed: true } : m)))
+        toast.error("Échec de l'envoi du message. Cliquez sur Réessayer.")
       }
     },
     // eslint-disable-next-line react-hooks/preserve-manual-memoization
     [selectedId, sending, myId, emit, appendMessage, loadConversations, quoted],
+  )
+
+  const handleRetry = useCallback(
+    async (msg: ChatMessageData) => {
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, sendFailed: false } : m)))
+      setSending(true)
+      const res = await fetch(`/api/admin/messages/${msg.conversationId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type: msg.type, content: msg.content, attachment: msg.attachmentUrl ? { url: msg.attachmentUrl, mime: msg.attachmentMime, name: msg.attachmentName, size: msg.attachmentSize } : undefined, quotedMessageId: msg.quotedMessageId ?? undefined }),
+      })
+      setSending(false)
+      if (res.ok) {
+        const data = await res.json()
+        setMessages((prev) => prev.map((m) => (m.id === msg.id && data.message ? data.message : m)))
+        loadConversations()
+      } else {
+        setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, sendFailed: true } : m)))
+        toast.error("Échec de l'envoi. Veuillez réessayer.")
+      }
+    },
+    [setSending, loadConversations],
   )
 
   const handleTyping = useCallback(
@@ -605,6 +628,7 @@ export default function AdminMessagesPage() {
                               onDelete={handleDelete}
                               onReport={handleReport}
                               onScrollTo={scrollToMessage}
+                              onRetrySend={handleRetry}
                             />
                           </Fragment>
                         )
