@@ -29,7 +29,7 @@ function configure() {
   const subject = process.env.VAPID_SUBJECT || "mailto:admin@signauxx.com";
 
   if (!publicKey || !privateKey) {
-    console.warn("[push] VAPID keys not configured, push notifications disabled");
+    log.warn("Clés VAPID non configurées, notifications push désactivées");
     return;
   }
 

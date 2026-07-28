@@ -326,7 +326,7 @@ export async function sendMessage(
   }
   for (const p of others) {
     publishMessage(p.userId, payload).catch((err) =>
-      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "send message failed")
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "Échec envoi message")
     )
   }
 
@@ -353,7 +353,7 @@ export async function sendMessage(
       body: preview,
       data: { conversationId, messageId: message.id },
       linkUrl: url,
-    }).catch((err) => log.error({ err, errorCode: "INTEGRATION_ERROR" }, "message notification failed"))
+    }).catch((err) => log.error({ err, errorCode: "INTEGRATION_ERROR" }, "Échec notification message"))
   }
 
   // Bust le cache des listes de conversations (les deux participants)
@@ -438,7 +438,7 @@ export async function reactToMessage(
   }
   for (const p of message.conversation.participants) {
     publishMessage(p.userId, payload).catch((err) =>
-      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "reaction failed")
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "Échec réaction")
     )
   }
 
@@ -479,7 +479,7 @@ export async function editMessage(
   for (const p of message.conversation.participants) {
     if (p.userId === userId) continue
     publishMessage(p.userId, payload).catch((err) =>
-      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "edit message failed")
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "Échec modification message")
     )
   }
 
@@ -540,7 +540,7 @@ export async function deleteMessage(
     for (const p of message.conversation.participants) {
       if (p.userId === userId) continue
       publishMessage(p.userId, payload).catch((err) =>
-        log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "delete message failed")
+        log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "Échec suppression message")
       )
     }
   }

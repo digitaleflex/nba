@@ -103,12 +103,12 @@ export const msg = {
   },
 
   push: {
-    VAPID_NOT_CONFIGURED: "VAPID key not configured",
+    VAPID_NOT_CONFIGURED: "Clé VAPID non configurée",
   },
 
   webhook: {
-    NOT_CONFIGURED: "webhook not configured",
-    INVALID_SIGNATURE: "invalid signature",
+    NOT_CONFIGURED: "Webhook non configuré",
+    INVALID_SIGNATURE: "Signature webhook invalide",
   },
 
   validation: {

@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         sent++
       } catch (err) {
         failed++
-        log.error({ err, userId, errorCode: "INTEGRATION_ERROR" }, "Failed to send bulk message")
+        log.error({ err, userId, errorCode: "INTEGRATION_ERROR" }, "Échec envoi message groupé")
       }
     }
 

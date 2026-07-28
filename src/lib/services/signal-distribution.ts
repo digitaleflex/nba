@@ -46,7 +46,7 @@ async function readImageAsDataUri(path: string): Promise<string | null> {
     const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg"
     return `data:${mime};base64,${buffer.toString("base64")}`
   } catch (err) {
-    log.error({ err, path }, "Failed to read image")
+    log.error({ err, path }, "Échec lecture image")
     return null
   }
 }
@@ -176,7 +176,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
           })
         } catch (err) {
-          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to create notification")
+          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec création notification")
           return
         }
 
@@ -198,7 +198,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             audience: signal.audience.map((a: any) => a.plan.name),
           })
         } catch (err) {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
+          log.error({ err, userId: member.id, errorCode: "DATABASE_CONNECTION" }, "Échec Redis pubsub")
         }
 
         const wantsNotifications = pagePrefs.get(member.id) !== false
@@ -207,7 +207,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
         const delivery = await prisma.notificationDelivery.create({
           data: { notificationId: notification.id, channel: "EMAIL", status: "PENDING" },
         }).catch((err) => {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Failed to create EMAIL delivery")
+          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Échec création livraison EMAIL")
           return null
         })
         if (!delivery) return
@@ -219,14 +219,14 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           { deliveryId: delivery.id, to: member.email, subject: template.subject, html: template.html },
           { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
         ).catch((err) => {
-          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to enqueue email")
+          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file email")
         })
 
         const notifId = notification.id
         const pushDelivery = await prisma.notificationDelivery.create({
           data: { notificationId: notifId, channel: "PUSH", status: "PENDING" },
         }).catch((err) => {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery")
+          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Échec création livraison PUSH")
           return null
         })
 
@@ -243,7 +243,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
             { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
           ).catch((err) => {
-            log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to enqueue push")
+            log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file push")
           })
         }
       }),
@@ -264,7 +264,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
       creatorId: signal.createdBy,
     })
   } catch (err) {
-    log.error({ err, errorCode: "DATABASE_CONNECTION" }, "Admin pubsub failed")
+    log.error({ err, errorCode: "DATABASE_CONNECTION" }, "Échec pubsub admin")
   }
 
   await logAuditEvent({

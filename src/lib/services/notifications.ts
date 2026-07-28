@@ -179,7 +179,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
       linkUrl: params.linkUrl,
       createdAt: notification.createdAt,
     }).catch((err) => {
-      log.error({ err, userId: params.userId, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
+      log.error({ err, userId: params.userId, errorCode: "DATABASE_CONNECTION" }, "Échec Redis pubsub")
     })
   }
 
