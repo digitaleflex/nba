@@ -1,73 +1,73 @@
 import { NextResponse } from "next/server"
-import { getServerSession } from "@nba/lib/get-session"
+import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 import { prisma } from "@nba/lib/db"
-import { getCached } from "@nba/lib/cache"
-import { serverError } from "@nba/lib/api-error"
-import { msg } from "@nba/lib/messages"
 
 export async function GET() {
   try {
-    const session = await getServerSession()
-    if (!session) {
-      return NextResponse.json({ error: msg.auth.NOT_AUTHENTICATED }, { status: 401 })
-    }
+    await requireRole(["ADMIN", "SUPER_ADMIN"])
 
-    const userDb = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { role: { select: { name: true } } },
+    const approved = await prisma.accessRequest.findMany({
+      where: { status: "APPROVED" },
+      select: {
+        userId: true,
+        plan: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            currency: true,
+            durationDays: true,
+          },
+        },
+      },
     })
 
-    if (!userDb?.role || (userDb.role.name !== "ADMIN" && userDb.role.name !== "SUPER_ADMIN")) {
-      return NextResponse.json({ error: msg.auth.UNAUTHORIZED }, { status: 403 })
+    const uniqueMembers = new Set<string>()
+    const planMap = new Map<string, {
+      planId: string
+      planName: string
+      price: number
+      currency: string
+      durationDays: number
+      members: number
+      monthlyRevenue: number
+    }>()
+
+    for (const a of approved) {
+      uniqueMembers.add(a.userId)
+      const key = a.plan.id
+      const price = Number(a.plan.price)
+      const durationMonths = Math.max(a.plan.durationDays, 1) / 30
+
+      if (!planMap.has(key)) {
+        planMap.set(key, {
+          planId: a.plan.id,
+          planName: a.plan.name,
+          price,
+          currency: a.plan.currency,
+          durationDays: a.plan.durationDays,
+          members: 0,
+          monthlyRevenue: 0,
+        })
+      }
+
+      const entry = planMap.get(key)!
+      entry.members++
+      entry.monthlyRevenue = Number((entry.monthlyRevenue + price / durationMonths).toFixed(2))
     }
 
-    const data = await getCached("revenue", async () => {
-      const [plans, accessByPlan] = await Promise.all([
-        prisma.subscriptionPlan.findMany({
-          where: { deletedAt: null },
-          select: { id: true, name: true, price: true, currency: true, durationDays: true },
-        }),
-        prisma.accessRequest.groupBy({
-          by: ["planId"],
-          where: { status: "APPROVED" },
-          _count: { _all: true },
-        }),
-      ])
+    const breakdown = Array.from(planMap.values())
+    const totalRevenue = Number(breakdown.reduce((sum, p) => sum + p.monthlyRevenue, 0).toFixed(2))
+    const currency = breakdown.length > 0 ? breakdown[0].currency : "XOF"
 
-      const planCount = new Map(accessByPlan.map((a) => [a.planId, a._count._all]))
-
-      let totalRevenue = 0
-
-      const breakdown = plans.map((plan) => {
-        const members = planCount.get(plan.id) ?? 0
-        const price = Number(plan.price)
-        const monthlyValue = price / Math.max(1, plan.durationDays) * 30
-        const planRevenue = monthlyValue * members
-        totalRevenue += planRevenue
-        return {
-          planId: plan.id,
-          planName: plan.name,
-          price,
-          currency: plan.currency,
-          durationDays: plan.durationDays,
-          members,
-          monthlyRevenue: Math.round(planRevenue * 100) / 100,
-        }
-      })
-
-      const totalMembers = accessByPlan.reduce((sum, a) => sum + a._count._all, 0)
-
-      return {
-        currency: plans[0]?.currency ?? "EUR",
-        totalMembers,
-        totalPlans: plans.length,
-        totalRevenue: Math.round(totalRevenue * 100) / 100,
-        breakdown,
-      }
-    }, 120)
-
-    return NextResponse.json(data)
-  } catch (error: unknown) {
-    return serverError(error, "GET /api/admin/revenue")
+    return NextResponse.json({
+      currency,
+      totalMembers: uniqueMembers.size,
+      totalPlans: planMap.size,
+      totalRevenue,
+      breakdown,
+    })
+  } catch (error) {
+    return handleAuthError(error)
   }
 }
