@@ -160,10 +160,10 @@ const notificationWorker = new Worker(
         data: { status: "SENT", sentAt: new Date(), externalId: externalId ?? undefined },
       })
     } catch (err: any) {
-      log.error({ err, to }, "Failed to send email")
+      log.error({ err, to }, "Échec envoi email")
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
-        data: { status: "FAILED", errorMessage: err.message || "Email error" },
+        data: { status: "FAILED", errorMessage: err.message || "Erreur email" },
       })
       throw err
     }
@@ -208,15 +208,22 @@ const pushWorker = new Worker(
     const { deliveryId, userId, title, body, url, tag } = job.data
     try {
       const result = await sendPushToUser(userId, { title, body, url, tag })
-      await prisma.notificationDelivery.update({
-        where: { id: deliveryId },
-        data: { status: result.sent > 0 ? "SENT" : "FAILED" },
-      })
+      if (result.sent > 0 || result.failed === 0) {
+        await prisma.notificationDelivery.update({
+          where: { id: deliveryId },
+          data: { status: "SENT", sentAt: new Date() },
+        })
+      } else {
+        await prisma.notificationDelivery.update({
+          where: { id: deliveryId },
+          data: { status: "FAILED", errorMessage: "Aucune souscription push active" },
+        })
+      }
     } catch (err: any) {
-      log.error({ err, userId }, "Failed to send push")
+      log.error({ err, userId }, "Échec envoi push")
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
-        data: { status: "FAILED", errorMessage: err.message || "Push error" },
+        data: { status: "FAILED", errorMessage: err.message || "Erreur push" },
       })
       throw err
     }

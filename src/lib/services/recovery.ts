@@ -45,6 +45,15 @@ export async function processRecovery(job: RecoveryJobData): Promise<void> {
     case "PUSH_SEND":
       await handlePushRecovery(payload)
       break
+    case "SIGNAL_DISTRIBUTION":
+      await handleSignalDistributionRecovery(payload)
+      break
+    case "FILE_CLEANUP":
+      log.info({ payload }, "File cleanup retry — re-enqueued")
+      const { getQueue } = await import("@nba/lib/queue")
+      const cleanupQueue = getQueue("file-cleanup")
+      await cleanupQueue.add(payload.originalJobName as string, payload.payload || {}, { delay: 60_000 })
+      break
     default:
       log.warn({ type }, "Unhandled recovery job type")
   }
@@ -102,6 +111,24 @@ async function handlePushRecovery(payload: Record<string, unknown>): Promise<voi
   )
 
   log.info({ deliveryId }, "Push recovery job re-enqueued")
+}
+
+async function handleSignalDistributionRecovery(payload: Record<string, unknown>): Promise<void> {
+  const signalId = payload.signalId as string | undefined
+  if (!signalId) {
+    log.warn({}, "Signal distribution recovery skipped: missing signalId")
+    return
+  }
+
+  const { getQueue } = await import("@nba/lib/queue")
+  const queue = getQueue("signal-distribution")
+  await queue.add(
+    `distribute-recovery-${signalId}`,
+    { signalId },
+    { attempts: 1, backoff: { type: "exponential", delay: 5000 } },
+  )
+
+  log.info({ signalId }, "Signal distribution recovery job re-enqueued")
 }
 
 
