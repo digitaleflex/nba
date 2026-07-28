@@ -298,25 +298,29 @@ export function SignalsView() {
   // Replay au (re)connect : comblé la fenêtre de perte d'event (worker WS
   // indisponible au moment d'un PUBLISH Redis). On demande les signaux
   // publiés depuis le plus récent déjà affiché.
+  // On garde le timestamp du signal le plus récent dans une ref pour éviter
+  // de remettre signals dans les deps (sinon boucle infinie avec fetchSignals).
+  const latestSignalTs = useRef<string>(new Date(Date.now() - 60_000).toISOString())
+  const latest = signals
+    .map((s) => new Date(s.publishedAt || s.createdAt).getTime())
+    .filter((t) => !isNaN(t))
+  latestSignalTs.current = latest.length
+    ? new Date(Math.max(...latest)).toISOString()
+    : new Date(Date.now() - 60_000).toISOString()
+
   useEffect(() => {
     const sock = socket.current
     if (!sock) return
     const onConnect = () => {
-      const latest = signals
-        .map((s) => new Date(s.publishedAt || s.createdAt).getTime())
-        .filter((t) => !isNaN(t))
       sock.emit("signal:resync", {
-        since: latest.length
-          ? new Date(Math.max(...latest)).toISOString()
-          : new Date(Date.now() - 60_000).toISOString(),
+        since: latestSignalTs.current,
       })
     }
-    if (sock.connected) onConnect()
     sock.on("connect", onConnect)
     return () => {
       sock.off("connect", onConnect)
     }
-  }, [socket, signals])
+  }, [socket])
 
   // Pas de refresh automatique au retour d'onglet — ça cassait la navigation.
 

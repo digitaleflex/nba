@@ -114,28 +114,32 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
 
   // Au (re)connect, demande le replay des signaux publiés pendant une éventuelle
   // fenêtre de perte (worker WS indisponible au moment du PUBLISH Redis).
+  // On garde le timestamp du signal le plus récent dans une ref pour éviter
+  // de remettre signals dans les deps (sinon boucle infinie avec fetchSignals).
+  const latestSignalTs = useRef<string>(new Date(Date.now() - 60_000).toISOString())
+  latestSignalTs.current = signals.length
+    ? new Date(
+        Math.max(
+          ...signals
+            .map((s) => new Date(s.publishedAt ?? s.createdAt).getTime())
+            .filter((t) => !isNaN(t)),
+        ),
+      ).toISOString()
+    : new Date(Date.now() - 60_000).toISOString()
+
   useEffect(() => {
     const sock = socket.current
     if (!sock) return
     const onConnect = () => {
       sock.emit("signal:resync", {
-        since: signals.length
-          ? new Date(
-              Math.max(
-                ...signals
-                  .map((s) => new Date(s.publishedAt ?? s.createdAt).getTime())
-                  .filter((t) => !isNaN(t)),
-              ),
-            ).toISOString()
-          : new Date(Date.now() - 60_000).toISOString(),
+        since: latestSignalTs.current,
       })
     }
-    if (sock.connected) onConnect()
     sock.on("connect", onConnect)
     return () => {
       sock.off("connect", onConnect)
     }
-  }, [socket, signals])
+  }, [socket])
 
   function handleConfirm(id: string, type: "delete" | "publish" | "duplicate" | "archive" | "unarchive") {
     const labels: Record<string, { title: string; description: string; confirmLabel: string }> = {
