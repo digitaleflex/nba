@@ -149,6 +149,8 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
     cursor = page[page.length - 1].id
     totalRecipients += page.length
 
+    log.info({ signalId, processed: totalRecipients }, "Progression distribution")
+
     const pagePrefs = new Map<string, boolean>()
     const prefUsers = await prisma.user.findMany({
       where: { id: { in: page.map((m) => m.id) } },
@@ -175,7 +177,11 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
               data: { signalId: signal.id, imageUrl: signal.imageUrl, imageUrls: signal.imageUrls },
             },
           })
-        } catch (err) {
+        } catch (err: any) {
+          if (err?.code === "P2002") {
+            existingNotificationIds.add(member.id)
+            return
+          }
           log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec création notification")
           return
         }
@@ -218,8 +224,12 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           `delivery-${delivery.id}`,
           { deliveryId: delivery.id, to: member.email, subject: template.subject, html: template.html },
           { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
-        ).catch((err) => {
+        ).catch(async (err) => {
           log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file email")
+          await prisma.notificationDelivery.update({
+            where: { id: delivery.id },
+            data: { status: "FAILED", errorMessage: (err as Error).message || "Échec enqueuement email" },
+          }).catch(() => {})
         })
 
         const notifId = notification.id
@@ -242,8 +252,12 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
               tag: notifId,
             },
             { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
-          ).catch((err) => {
+          ).catch(async (err) => {
             log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file push")
+            await prisma.notificationDelivery.update({
+              where: { id: pushDelivery.id },
+              data: { status: "FAILED", errorMessage: (err as Error).message || "Échec enqueuement push" },
+            }).catch(() => {})
           })
         }
       }),
