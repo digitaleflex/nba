@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
+import { motion, useReducedMotion } from "motion/react"
 import { cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useCommandPalette } from "@nba/components/command-palette"
@@ -32,6 +33,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { openPalette } = useCommandPalette()
   const { logout } = useLogout()
   const { unreadTotal } = useMessagingUnread()
+  const reduce = useReducedMotion()
   const [pendingRequests, setPendingRequests] = useState(0)
   useEffect(() => {
     if (space !== "admin") return
@@ -83,9 +85,15 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
               <span className="relative inline-flex">
                 <Icon className={cn("size-5 shrink-0 transition-transform", isActive && "scale-110")} />
                 {badge && (
-                  <span className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card">
+                  <motion.span
+                    key={badge}
+                    initial={{ scale: reduce ? 1 : 1.5 }}
+                    animate={{ scale: 1 }}
+                    transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
+                    className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card"
+                  >
                     {badge}
-                  </span>
+                  </motion.span>
                 )}
               </span>
               <span className={cn("text-[10px] font-medium tracking-tight", isActive ? "font-bold text-primary" : "")}>

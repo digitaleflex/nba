@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       if (existingApproved) return { created: false, requestId: existingApproved.id }
 
       const newRequest = await tx.accessRequest.create({
-        data: { userId: session.user.id, planId: parsed.planId, status: "APPROVED" },
+        data: { userId: session.user.id, planId: parsed.planId, status: "PENDING" },
       })
       return { created: true, requestId: newRequest.id }
     })

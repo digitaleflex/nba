@@ -103,31 +103,35 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
   if (typeEnabled) {
-    if (isInQuietHours(prefs)) return { id: notification.id }
+    const inQuietHours = isInQuietHours(prefs)
 
-    const pushPromise = (async () => {
-      const queue = getQueue("push-delivery")
-      await withRetryTransaction(async (tx) => {
-        const delivery = await tx.notificationDelivery.create({
-          data: { notificationId: notification.id, channel: "PUSH", status: "PENDING" },
+    if (!inQuietHours) {
+      const pushPromise = (async () => {
+        const queue = getQueue("push-delivery")
+        await withRetryTransaction(async (tx) => {
+          const delivery = await tx.notificationDelivery.create({
+            data: { notificationId: notification.id, channel: "PUSH", status: "PENDING" },
+          })
+
+          await queue.add(
+            `push-${notification.id}`,
+            {
+              deliveryId: delivery.id,
+              userId: params.userId,
+              title: params.title,
+              body: params.body,
+              url: params.linkUrl || "/dashboard",
+              tag: notification.id,
+            },
+            { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
+          )
         })
-
-        await queue.add(
-          `push-${notification.id}`,
-          {
-            deliveryId: delivery.id,
-            userId: params.userId,
-            title: params.title,
-            body: params.body,
-            url: params.linkUrl || "/dashboard",
-            tag: notification.id,
-          },
-          { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
-        )
+      })().catch((err) => {
+        log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Push delivery failed")
       })
-    })().catch((err) => {
-      log.warn({ err, userId: params.userId, errorCode: "INTEGRATION_ERROR" }, "Push delivery failed")
-    })
+
+      await pushPromise
+    }
 
     const emailCfg = params.email
     const emailPromise = emailCfg
@@ -163,21 +167,21 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
         })
       : Promise.resolve()
 
-    await Promise.allSettled([pushPromise, emailPromise])
-  }
+    await emailPromise
 
-  // WebSocket temps réel via Redis Pub/Sub
-  publishNotification(params.userId, {
-    id: notification.id,
-    type: notification.type,
-    title: notification.title,
-    body: notification.body,
-    data: notification.data,
-    linkUrl: params.linkUrl,
-    createdAt: notification.createdAt,
-  }).catch((err) => {
-    log.error({ err, userId: params.userId, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
-  })
+    // WebSocket temps réel via Redis Pub/Sub (seulement si le type est activé)
+    publishNotification(params.userId, {
+      id: notification.id,
+      type: notification.type,
+      title: notification.title,
+      body: notification.body,
+      data: notification.data,
+      linkUrl: params.linkUrl,
+      createdAt: notification.createdAt,
+    }).catch((err) => {
+      log.error({ err, userId: params.userId, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
+    })
+  }
 
   return { id: notification.id }
 }

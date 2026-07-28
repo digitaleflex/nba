@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
+import { motion, useReducedMotion } from "motion/react"
 import { Button, Badge, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useLogout } from "@nba/hooks/use-logout"
@@ -38,6 +39,7 @@ export function Sidebar({ space, user }: SidebarProps) {
   const searchParams = useSearchParams()
   const { logout } = useLogout({ confirm: false })
   const { unreadTotal } = useMessagingUnread()
+  const reduce = useReducedMotion()
   const [pendingKyc, setPendingKyc] = useState(0)
   useEffect(() => {
     if (space !== "admin") return
@@ -164,9 +166,15 @@ export function Sidebar({ space, user }: SidebarProps) {
                       <span className="truncate flex items-center gap-2">
                         {link.label}
                         {showBadge && (
-                          <Badge className="shrink-0 bg-primary text-primary-foreground tabular-nums">
+                          <motion.span
+                            key={messagesBadge}
+                            initial={{ scale: reduce ? 1 : 1.5 }}
+                            animate={{ scale: 1 }}
+                            transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
+                            className="inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold tabular-nums"
+                          >
                             {messagesBadge}
-                          </Badge>
+                          </motion.span>
                         )}
                       </span>
                     )}

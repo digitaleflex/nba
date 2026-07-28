@@ -3,6 +3,9 @@ import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
 import { readFile } from "fs/promises"
 import { join } from "path"
+import { logger } from "../logger"
+
+const log = logger.child({ module: "signal-distribution" })
 
 const STORAGE_BASE_PATH = process.cwd() + "/storage"
 const imageCache = new Map<string, { promise: Promise<string | null>; expiresAt: number }>()
@@ -43,7 +46,7 @@ async function readImageAsDataUri(path: string): Promise<string | null> {
     const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg"
     return `data:${mime};base64,${buffer.toString("base64")}`
   } catch (err) {
-    console.error(`[signal-distribution] Failed to read image ${path}:`, err)
+    log.error({ err, path }, "Failed to read image")
     return null
   }
 }
@@ -103,39 +106,64 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
     })).map((n) => n.userId)
   )
 
-  const members = await prisma.user.findMany({
-    where: {
-      isActive: true,
-      deletedAt: null,
-      id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
-      OR: [
-        { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
-        { signalsAccessOverride: true },
-      ],
-    },
-  })
-
-  console.log(`[signal-distribution] Distributing signal ${signalId} to ${members.length} new member(s)`)
-
-  const memberIds = members.map((m) => m.id)
-  const memberPrefs = new Map<string, boolean>()
-  const prefUsers = await prisma.user.findMany({
-    where: { id: { in: memberIds } },
-    select: { id: true, metadata: true },
-  })
-  prefUsers.forEach((u) => {
-    const meta = (u.metadata || {}) as Record<string, any>
-    const prefs = meta.notificationPrefs || {}
-    memberPrefs.set(u.id, prefs.signal !== false)
-  })
-
   const imageDataUri = await getImageDataUri(signal.imageUrl)
 
   const BATCH_SIZE = 50
-  for (let i = 0; i < members.length; i += BATCH_SIZE) {
-    const batch = members.slice(i, i + BATCH_SIZE)
-    await Promise.all(
-      batch.map(async (member) => {
+  const PAGE_SIZE = 100
+  let cursor: string | null = null
+  let totalRecipients = 0
+
+  while (true) {
+    const page: { id: string; name: string | null; email: string }[] = await (cursor
+      ? prisma.user.findMany({
+          take: PAGE_SIZE,
+          skip: 1,
+          cursor: { id: cursor },
+          where: {
+            isActive: true,
+            deletedAt: null,
+            id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
+            OR: [
+              { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
+              { signalsAccessOverride: true },
+            ],
+          },
+          orderBy: { id: "asc" },
+        })
+      : prisma.user.findMany({
+          take: PAGE_SIZE,
+          where: {
+            isActive: true,
+            deletedAt: null,
+            id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
+            OR: [
+              { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
+              { signalsAccessOverride: true },
+            ],
+          },
+          orderBy: { id: "asc" },
+        })
+    )
+
+    if (page.length === 0) break
+    cursor = page[page.length - 1].id
+    totalRecipients += page.length
+
+    const pagePrefs = new Map<string, boolean>()
+    const prefUsers = await prisma.user.findMany({
+      where: { id: { in: page.map((m) => m.id) } },
+      select: { id: true, metadata: true },
+    })
+    prefUsers.forEach((u) => {
+      const meta = (u.metadata || {}) as Record<string, any>
+      const prefs = meta.notificationPrefs || {}
+      pagePrefs.set(u.id, prefs.signal !== false)
+    })
+
+    for (let i = 0; i < page.length; i += BATCH_SIZE) {
+      const batch = page.slice(i, i + BATCH_SIZE)
+      await Promise.all(
+        batch.map(async (member) => {
         let notification: { id: string; createdAt: Date } | null = null
         try {
           notification = await prisma.notification.create({
@@ -148,7 +176,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
           })
         } catch (err) {
-          console.error(`[signal-distribution] Failed to create notification for user ${member.id}:`, err)
+          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to create notification")
           return
         }
 
@@ -170,35 +198,35 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             audience: signal.audience.map((a: any) => a.plan.name),
           })
         } catch (err) {
-          console.error(`[signal-distribution] pubsub failed for user ${member.id}:`, err)
+          log.error({ err, userId: member.id, errorCode: "DATABASE_CONNECTION" }, "Redis pubsub failed")
         }
 
-        const wantsNotifications = memberPrefs.get(member.id) !== false
+        const wantsNotifications = pagePrefs.get(member.id) !== false
         if (!wantsNotifications) return
 
         const delivery = await prisma.notificationDelivery.create({
           data: { notificationId: notification.id, channel: "EMAIL", status: "PENDING" },
         }).catch((err) => {
-          console.error(`[signal-distribution] Failed to create EMAIL delivery for user ${member.id}:`, err)
+          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Failed to create EMAIL delivery")
           return null
         })
         if (!delivery) return
 
-        const template = tradingSignalEmail(member, signal.content, imageDataUri)
+        const template = tradingSignalEmail({ ...member, name: member.name ?? "" }, signal.content, imageDataUri)
 
         await enqueueEmail(
           `delivery-${delivery.id}`,
           { deliveryId: delivery.id, to: member.email, subject: template.subject, html: template.html },
           { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
         ).catch((err) => {
-          console.error(`[signal-distribution] Failed to enqueue email for user ${member.id}:`, err)
+          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to enqueue email")
         })
 
         const notifId = notification.id
         const pushDelivery = await prisma.notificationDelivery.create({
           data: { notificationId: notifId, channel: "PUSH", status: "PENDING" },
         }).catch((err) => {
-          console.error(`[signal-distribution] Failed to create PUSH delivery for user ${member.id}:`, err)
+          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Failed to create PUSH delivery")
           return null
         })
 
@@ -215,14 +243,15 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
             },
             { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
           ).catch((err) => {
-            console.error(`[signal-distribution] Failed to enqueue push for user ${member.id}:`, err)
+            log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Failed to enqueue push")
           })
         }
-
       }),
     )
-
+    }
   }
+
+  log.info({ signalId, recipientCount: totalRecipients, skippedCount: existingNotificationIds.size }, "Signal distribution complete")
 
   try {
     await publish(`nba:signal:admin`, {
@@ -235,7 +264,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
       creatorId: signal.createdBy,
     })
   } catch (err) {
-    console.error("[signal-distribution] admin pubsub failed:", err)
+    log.error({ err, errorCode: "DATABASE_CONNECTION" }, "Admin pubsub failed")
   }
 
   await logAuditEvent({
@@ -244,11 +273,11 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
     resourceType: "signal",
     resourceId: signal.id,
     details: {
-      recipientCount: members.length,
+      recipientCount: totalRecipients,
       skippedCount: existingNotificationIds.size,
       plans: signal.audience.map((a: any) => a.plan.name),
     },
   })
 
-  return { skipped: null, recipientCount: members.length, skippedCount: existingNotificationIds.size }
+  return { skipped: null, recipientCount: totalRecipients, skippedCount: existingNotificationIds.size }
 }

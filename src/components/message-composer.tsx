@@ -143,10 +143,16 @@ export function MessageComposer({
     })
   }
 
+  const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif", "video/mp4", "video/webm", "video/quicktime"]
+
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     e.target.value = ""
     if (!file) return
+    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+      setError("Format non supporté. Utilisez JPEG, PNG, WebP, GIF, MP4 ou WebM.")
+      return
+    }
     setError(null)
     setUploading(true)
     try {

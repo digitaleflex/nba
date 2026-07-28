@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma, withRetryTransactionArray } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function GET(req: NextRequest) {
   try {
     const session = await requireActiveUser()
+    const rl = await rateLimitOrDeny("NOTIFICATION_LIST", session.user.id)
+    if (rl) return rl
 
     const { searchParams } = new URL(req.url)
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))

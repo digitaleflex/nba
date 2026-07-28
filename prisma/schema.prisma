@@ -129,6 +129,7 @@ model Message {
   @@index([conversationId])
   @@index([senderId])
   @@index([deletedAt])
+  @@index([conversationId, createdAt])
   @@map("messages")
 }
 
@@ -313,6 +314,7 @@ model AccessRequest {
   @@index([planId])
   @@index([status])
   @@index([userId, planId, status]) // Composite for access check
+  @@index([status, createdAt])
   @@map("access_requests")
 }
 
@@ -513,6 +515,7 @@ model NotificationDelivery {
   @@index([notificationId])
   @@index([status])
   @@index([externalId])
+  @@index([channel, status])
   @@map("notification_deliveries")
 }
 

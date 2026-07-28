@@ -50,3 +50,7 @@ next-env.d.ts
 __pycache__/
 *.pyc
 /.kamal/secrets
+
+# agent skills
+/.agents/
+skills-lock.json

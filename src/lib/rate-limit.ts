@@ -60,6 +60,7 @@ export const rateLimits = {
   ADMIN_MEMBER_MUTATION: { window: 60, max: 10 },
   ADMIN_SETTINGS: { window: 60, max: 10 },
   DEVICE_MUTATION: { window: 60, max: 10 },
+  NOTIFICATION_LIST: { window: 60, max: 60 },
   NOTIFICATION_MUTATION: { window: 60, max: 30 },
   SELECT_PLAN: { window: 60, max: 5 },
 } as const

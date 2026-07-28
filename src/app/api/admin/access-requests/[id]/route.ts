@@ -5,6 +5,7 @@ import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { reviewAccessSchema, validateOrThrow } from "@nba/lib/validations"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { notify } from "@nba/lib/services/notifications"
+import { startOrReplyAsAdmin } from "@nba/lib/services/messaging"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail } from "@nba/lib/email"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { msg } from "@nba/lib/messages"
@@ -161,6 +162,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
           html: template.html,
         },
       })
+
+      // Envoyer un message privé via la messagerie (compte admin)
+      try {
+        const adminName = session.user.name ?? "Admin"
+        const msgContent = parsed.status === "APPROVED"
+          ? `Bonjour ${user.name},\n\nVotre demande d'accès au groupe « ${planName} » a été **approuvée** ✅. Vous pouvez dès maintenant consulter les signaux et recevoir les notifications.\n\nBienvenue dans le groupe, et bons trades ! 📈`
+          : `Bonjour ${user.name},\n\nVotre demande d'accès au groupe « ${planName} » a été **refusée** ❌.\n\nMotif : ${parsed.notes || "Non précisé"}\n\nSi vous avez des questions, n'hésitez pas à répondre à ce message.`
+        await startOrReplyAsAdmin(session.user.id, request.userId, msgContent)
+      } catch (msgErr) {
+        log.warn({ userId: request.userId, error: msgErr }, "Failed to send approval message to user")
+      }
     }
 
     return NextResponse.json(updated)

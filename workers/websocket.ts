@@ -36,7 +36,7 @@ const io = new SocketIOServer(httpServer, {
     credentials: true,
   },
   path: "/socket.io/",
-  transports: ["polling"],
+  transports: ["websocket", "polling"],
   // Heartbeat serré : keep-alive < 60s pour survivre aux proxies/CDN
   // (Cloudflare coupe les connexions inactives > 100s).
   pingTimeout: 20000,
@@ -50,10 +50,18 @@ const io = new SocketIOServer(httpServer, {
 // sont partagés via Redis. En mono-instance (config actuelle) l'adapter est
 // quand même actif (idempotent) et prépare le scale-out sans rupture.
 if (REDIS_URL) {
-  const pub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null, connectTimeout: 5000, commandTimeout: 5000 })
-  const sub = new IORedis(REDIS_URL, { maxRetriesPerRequest: null, connectTimeout: 5000, commandTimeout: 5000 })
+  const redisOpts = {
+    maxRetriesPerRequest: null,
+    connectTimeout: 5000,
+    commandTimeout: 5000,
+    retryStrategy: (t: number) => Math.min(t * 200, 2000),
+  }
+  const pub = new IORedis(REDIS_URL, { ...redisOpts })
+  const sub = new IORedis(REDIS_URL, { ...redisOpts })
   pub.on("error", (err) => console.error("[ws] Redis adapter pub error:", err.message))
   sub.on("error", (err) => console.error("[ws] Redis adapter sub error:", err.message))
+  pub.on("end", () => console.warn("[ws] Redis adapter pub disconnected — will retry"))
+  sub.on("end", () => console.warn("[ws] Redis adapter sub disconnected — will retry"))
   io.adapter(createAdapter(pub, sub))
   console.log("[ws] Redis adapter enabled (multi-instance ready)")
 }

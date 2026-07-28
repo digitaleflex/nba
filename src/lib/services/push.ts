@@ -45,7 +45,19 @@ interface PushPayload {
   tag?: string;
 }
 
-const errorCounters = new Map<string, number>()
+interface ErrorCounter {
+  count: number
+  expiresAt: number
+}
+const errorCounters = new Map<string, ErrorCounter>()
+const ERROR_COUNTER_TTL = 60 * 60 * 1000 // 1h
+
+function cleanupErrorCounters(): void {
+  const now = Date.now()
+  for (const [key, val] of errorCounters) {
+    if (now > val.expiresAt) errorCounters.delete(key)
+  }
+}
 
 function shouldDeleteSub(statusCode: number): boolean {
   return [400, 403, 404, 410, 413].includes(statusCode)
@@ -98,8 +110,11 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           });
         } else if (code >= 500 || code === 0) {
           const key = `${sub.endpoint.slice(0, 40)}:${code}`
-          errorCounters.set(key, (errorCounters.get(key) || 0) + 1)
-          if ((errorCounters.get(key) || 0) >= 3) {
+          cleanupErrorCounters()
+          const prev = errorCounters.get(key)
+          const nextCount = (prev?.count ?? 0) + 1
+          errorCounters.set(key, { count: nextCount, expiresAt: Date.now() + ERROR_COUNTER_TTL })
+          if (nextCount >= 3) {
             await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
               log.warn({ err, subscriptionId: sub.id, errorCode: "DATABASE_ERROR" }, "Failed to delete unreliable push subscription")
             });

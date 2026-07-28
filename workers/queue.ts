@@ -268,6 +268,7 @@ const signalWorker = new Worker(
   },
   {
     connection: connection as any,
+    concurrency: 1,
     stalledInterval: 60000,
     lockDuration: 120000,
   }
@@ -327,6 +328,30 @@ recoveryWorker.on("failed", (job: any, err: any) => {
 })
 
 log.info("Recovery worker started")
+
+// ── Stale Delivery Cleanup (every hour) ──
+// Nettoie les records PENDING orphelins de plus de 24h.
+const STALE_DELIVERY_CLEANUP_MS = 60 * 60 * 1000
+
+let staleDeliveryTimer: ReturnType<typeof setInterval> | null = null
+
+async function cleanupStaleDeliveries() {
+  const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000)
+  try {
+    const result = await prisma.notificationDelivery.updateMany({
+      where: { status: "PENDING", createdAt: { lt: cutoff } },
+      data: { status: "FAILED", errorMessage: "Stale: no delivery after 24h" },
+    })
+    if (result.count > 0) {
+      log.info({ count: result.count }, "Stale PENDING deliveries marked as FAILED")
+    }
+  } catch (err) {
+    log.error({ err, errorCode: "DATABASE_ERROR" }, "Failed to cleanup stale deliveries")
+  }
+}
+
+staleDeliveryTimer = setInterval(cleanupStaleDeliveries, STALE_DELIVERY_CLEANUP_MS)
+log.info({ intervalMs: STALE_DELIVERY_CLEANUP_MS }, "Stale delivery cleanup cron started")
 
 // ── DLQ Auto-Retry Cron (every 5 minutes) ──
 const DLQ_RETRY_INTERVAL_MS = 5 * 60 * 1000
@@ -394,9 +419,10 @@ async function gracefulShutdown(signal: string) {
   }, 30_000)
 
   try {
-    // Stop DLQ cron timer
+    // Stop cron timers
+    if (staleDeliveryTimer) clearInterval(staleDeliveryTimer)
     if (dlqTimer) clearInterval(dlqTimer)
-    log.info("DLQ auto-retry cron stopped")
+    log.info("Cron timers stopped")
 
     // Close all workers (stop accepting new jobs, wait for running jobs)
     await Promise.all(workers.map((w) => w.close()))

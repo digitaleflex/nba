@@ -5,6 +5,9 @@ import { getStorage } from "@nba/lib/storage"
 import { AuthError } from "@nba/lib/auth-utils"
 import { notify } from "@nba/lib/services/notifications"
 import { invalidatePrefix } from "@nba/lib/cache"
+import { logger } from "@nba/lib/logger"
+
+const log = logger.child({ module: "messaging" })
 
 export const MESSAGE_VIDEO_MIME = ["video/mp4", "video/webm", "video/quicktime"]
 export const MESSAGE_IMAGE_MIME = ["image/jpeg", "image/png", "image/webp", "image/gif"]
@@ -108,6 +111,7 @@ export async function listConversations(userId: string): Promise<ConversationSum
   const conversations = await prisma.conversation.findMany({
     where: { participants: { some: { userId } } },
     orderBy: { updatedAt: "desc" },
+    take: 100,
     include: {
       participants: {
         include: { user: { select: { id: true, name: true, email: true } } },
@@ -322,7 +326,7 @@ export async function sendMessage(
   }
   for (const p of others) {
     publishMessage(p.userId, payload).catch((err) =>
-      console.warn("[publishMessage] send message failed for", p.userId, err)
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "send message failed")
     )
   }
 
@@ -349,7 +353,7 @@ export async function sendMessage(
       body: preview,
       data: { conversationId, messageId: message.id },
       linkUrl: url,
-    }).catch((err) => console.error("[notify] message notification failed:", err))
+    }).catch((err) => log.error({ err, errorCode: "INTEGRATION_ERROR" }, "message notification failed"))
   }
 
   // Bust le cache des listes de conversations (les deux participants)
@@ -434,7 +438,7 @@ export async function reactToMessage(
   }
   for (const p of message.conversation.participants) {
     publishMessage(p.userId, payload).catch((err) =>
-      console.warn("[publishMessage] reaction failed for", p.userId, err)
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "reaction failed")
     )
   }
 
@@ -475,7 +479,7 @@ export async function editMessage(
   for (const p of message.conversation.participants) {
     if (p.userId === userId) continue
     publishMessage(p.userId, payload).catch((err) =>
-      console.warn("[publishMessage] edit message failed for", p.userId, err)
+      log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "edit message failed")
     )
   }
 
@@ -536,7 +540,7 @@ export async function deleteMessage(
     for (const p of message.conversation.participants) {
       if (p.userId === userId) continue
       publishMessage(p.userId, payload).catch((err) =>
-        console.warn("[publishMessage] delete message failed for", p.userId, err)
+        log.warn({ err, userId: p.userId, errorCode: "INTEGRATION_ERROR" }, "delete message failed")
       )
     }
   }

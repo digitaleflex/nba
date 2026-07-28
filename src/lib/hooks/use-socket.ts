@@ -65,7 +65,7 @@ function acquireSocket(options: UseSocketOptions): SocketSingleton {
   const socket = io(getWsUrl(options), {
   path: options.path ?? "/socket.io/",
   withCredentials: true,
-  transports: ["polling"],
+  transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
@@ -93,10 +93,6 @@ function acquireSocket(options: UseSocketOptions): SocketSingleton {
     if (reason !== "io client disconnect") {
       // Socket.IO tente une reconnexion automatique
     }
-  })
-
-  socket.on("connect_error", (err) => {
-    console.warn("[useSocket] connect_error:", err.message)
   })
 
   socket.io.on("reconnect_attempt", () => {
@@ -182,17 +178,20 @@ export function useSocket(options: UseSocketOptions = {}): UseSocketReturn {
         onDisconnectRef.current?.(reason)
       }
     }
+    const onConnectError = () => setStatus("error")
     const onReconnectAttempt = () => setStatus("connecting")
     const onReconnectFailed = () => setStatus("error")
 
     sock.on("connect", onConnect)
     sock.on("disconnect", onDisconnect)
+    sock.on("connect_error", onConnectError)
     sock.io.on("reconnect_attempt", onReconnectAttempt)
     sock.io.on("reconnect_failed", onReconnectFailed)
 
     return () => {
       sock.off("connect", onConnect)
       sock.off("disconnect", onDisconnect)
+      sock.off("connect_error", onConnectError)
       sock.io.off("reconnect_attempt", onReconnectAttempt)
       sock.io.off("reconnect_failed", onReconnectFailed)
       releaseSocket()

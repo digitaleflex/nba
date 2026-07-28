@@ -4,6 +4,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { Card, CardContent, Button, cn } from "@nba/design-system"
 import { DashboardKpis } from "./components/dashboard-kpis"
+import { PushNotificationPrompt } from "@nba/components/push-notification-prompt"
 import {
   BookOpen,
   Plus,
@@ -95,6 +96,8 @@ export default async function DashboardPage() {
           Vue d&apos;ensemble de ton activité de trading.
         </p>
       </div>
+
+      <PushNotificationPrompt />
 
       <DashboardKpis kpis={kpis} dbUnavailable={dbUnavailable} />
 
