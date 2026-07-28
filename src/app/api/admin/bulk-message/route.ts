@@ -80,12 +80,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Aucun membre approuvé trouvé pour ces groupes." }, { status: 404 })
     }
 
+    // Utiliser le compte admin dédié (admin@signauxx.com) comme expéditeur
+    const systemAdmin = await prisma.user.findUnique({
+      where: { email: "admin@signauxx.com" },
+      select: { id: true },
+    })
+    const senderId = systemAdmin?.id ?? session.user.id
+
     let sent = 0
     let failed = 0
 
     for (const [userId] of members) {
       try {
-        await startOrReplyAsAdmin(session.user.id, userId, content)
+        await startOrReplyAsAdmin(senderId, userId, content)
         sent++
       } catch (err) {
         failed++
