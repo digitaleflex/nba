@@ -321,7 +321,9 @@ export async function sendMessage(
     },
   }
   for (const p of others) {
-    await publishMessage(p.userId, payload)
+    publishMessage(p.userId, payload).catch((err) =>
+      console.warn("[publishMessage] send message failed for", p.userId, err)
+    )
   }
 
   // Notification centrale (in-app + push + email + telegram/whatsapp)
@@ -431,7 +433,9 @@ export async function reactToMessage(
     reactions,
   }
   for (const p of message.conversation.participants) {
-    await publishMessage(p.userId, payload)
+    publishMessage(p.userId, payload).catch((err) =>
+      console.warn("[publishMessage] reaction failed for", p.userId, err)
+    )
   }
 
   return reactions
@@ -470,7 +474,9 @@ export async function editMessage(
   }
   for (const p of message.conversation.participants) {
     if (p.userId === userId) continue
-    await publishMessage(p.userId, payload)
+    publishMessage(p.userId, payload).catch((err) =>
+      console.warn("[publishMessage] edit message failed for", p.userId, err)
+    )
   }
 
   return {
@@ -529,7 +535,9 @@ export async function deleteMessage(
     }
     for (const p of message.conversation.participants) {
       if (p.userId === userId) continue
-      await publishMessage(p.userId, payload)
+      publishMessage(p.userId, payload).catch((err) =>
+        console.warn("[publishMessage] delete message failed for", p.userId, err)
+      )
     }
   }
 
