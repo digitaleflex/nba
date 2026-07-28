@@ -632,22 +632,28 @@ export async function resolveReport(reportId: string): Promise<void> {
  * utilisateurs. Réutilise la conversation existante si elle existe déjà.
  */
 async function findOrCreateDirectConversation(userA: string, userB: string): Promise<string> {
-  const convos = await prisma.conversation.findMany({
-    where: { participants: { some: { userId: userA } } },
-    include: { participants: true },
-  })
-  const existing = convos.find(
-    (c) => c.participants.length === 2 && c.participants.some((p) => p.userId === userB),
-  )
-  if (existing) return existing.id
+  return prisma.$transaction(async (tx) => {
+    const existing = await tx.conversation.findFirst({
+      where: {
+        type: "DIRECT",
+        AND: [
+          { participants: { some: { userId: userA } } },
+          { participants: { some: { userId: userB } } },
+        ],
+      },
+      include: { participants: true },
+    })
 
-  const created = await prisma.conversation.create({
-    data: {
-      type: "DIRECT",
-      participants: { create: [{ userId: userA }, { userId: userB }] },
-    },
-  })
-  return created.id
+    if (existing) return existing.id
+
+    const created = await tx.conversation.create({
+      data: {
+        type: "DIRECT",
+        participants: { create: [{ userId: userA }, { userId: userB }] },
+      },
+    })
+    return created.id
+  }, { isolationLevel: "Serializable" })
 }
 
 /**
