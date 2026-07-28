@@ -62,6 +62,7 @@ export const rateLimits = {
   DEVICE_MUTATION: { window: 60, max: 10 },
   NOTIFICATION_LIST: { window: 60, max: 60 },
   NOTIFICATION_MUTATION: { window: 60, max: 30 },
+  BULK_MESSAGE: { window: 3600, max: 3 },
   SELECT_PLAN: { window: 60, max: 5 },
 } as const
 

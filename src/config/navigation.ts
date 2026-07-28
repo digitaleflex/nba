@@ -264,6 +264,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       isActive: (pathname) => pathname === "/admin/messages",
     },
     {
+      id: "bulk-message",
+      href: "/admin/bulk-message",
+      label: "Message groupé",
+      icon: Mail,
+      section: "communiquer",
+      isActive: (pathname) => pathname === "/admin/bulk-message",
+    },
+    {
       id: "support",
       href: "/admin/support",
       label: "Support",
