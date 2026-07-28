@@ -25,7 +25,7 @@ export function AppShell({ space, user, desktopHeader, desktopSubheader, mobileH
   return (
     <MessagingUnreadProvider>
       <CommandPaletteProvider userRole={user.role}>
-        <div className="flex min-h-dvh flex-col md:flex-row">
+        <div className="flex min-h-dvh flex-col md:flex-row overflow-x-hidden">
           <Sidebar space={space} user={user} />
 
           <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">

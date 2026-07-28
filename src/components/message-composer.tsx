@@ -235,7 +235,7 @@ export function MessageComposer({
         </div>
       )}
 
-      <div className="relative flex items-center gap-1 mb-2">
+      <div className="relative flex items-center gap-0.5 md:gap-1 mb-2 flex-wrap">
         <button
           type="button"
           onClick={() => wrapSelection(textareaRef.current, "**", "**", "gras")}

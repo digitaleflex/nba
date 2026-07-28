@@ -273,7 +273,7 @@ export function ChatMessage({
             isMine ? "right-1" : "left-1"
           } opacity-100 md:opacity-0 md:group-hover:opacity-100 md:top-0 ${
             isMine ? "md:left-0 md:-translate-x-full md:pl-1" : "md:right-0 md:translate-x-full md:pr-1"
-          } transition-opacity flex items-center gap-0.5`}
+          } transition-opacity flex items-center gap-0 md:gap-0.5`}
         >
           <div className="relative" ref={emojiRef}>
             <button
