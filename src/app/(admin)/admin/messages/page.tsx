@@ -1,7 +1,7 @@
 "use client"
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react"
-import { useSocket } from "@nba/lib/hooks/use-socket"
+import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { authClient } from "@nba/lib/auth-client"
 import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
@@ -72,12 +72,7 @@ export default function AdminMessagesPage() {
   const { data: sessionData } = authClient.useSession()
   const myId = sessionData?.user?.id ?? ""
 
-  const { subscribe, emit, status } = useSocket({
-    onConnect: () => {
-      loadConversations()
-      if (selectedIdRef.current) openConversation(selectedIdRef.current)
-    },
-  })
+  const { subscribe, emit, status, setActiveConversation, clearConversation, syncFromServer, setOnConnect } = useMessagingUnread()
 
   const selectedIdRef = useRef<string | null>(null)
   const selectedOtherRef = useRef<Other | null>(null)
@@ -99,9 +94,11 @@ export default function AdminMessagesPage() {
     const res = await fetch("/api/admin/messages")
     if (res.ok) {
       const data = await res.json()
-      setConversations(Array.isArray(data.conversations) ? data.conversations : [])
+      const convs = Array.isArray(data.conversations) ? data.conversations : []
+      setConversations(convs)
+      syncFromServer(convs)
     }
-  }, [])
+  }, [syncFromServer])
 
   const openConversation = useCallback(async (id: string) => {
     setSelectedId(id)
@@ -110,6 +107,8 @@ export default function AdminMessagesPage() {
     setHiddenForMe(new Set())
     setQuoted(null)
     setComposerQuoted(null)
+    setActiveConversation(id)
+    clearConversation(id)
     const res = await fetch(`/api/admin/messages/${id}`)
     if (res.ok) {
       const data = await res.json()
@@ -118,7 +117,15 @@ export default function AdminMessagesPage() {
       scrollIntentRef.current = "bottom"
       setConversations((prev) => prev.map((c) => (c.id === id ? { ...c, unreadCount: 0 } : c)))
     }
-  }, [])
+  }, [setActiveConversation, clearConversation])
+
+  useEffect(() => {
+    setOnConnect(() => {
+      loadConversations()
+      if (selectedIdRef.current) openConversation(selectedIdRef.current)
+    })
+    return () => setOnConnect(null)
+  }, [loadConversations, openConversation, setOnConnect])
 
   const loadOlder = useCallback(async () => {
     const id = selectedIdRef.current
@@ -320,7 +327,7 @@ export default function AdminMessagesPage() {
   const handleReport = useCallback(async (messageId: string, reason: string) => {
     const id = selectedIdRef.current
     if (!id) return
-    const res = await fetch(`/api/dashboard/messages/${id}/${messageId}/report`, {
+    const res = await fetch(`/api/admin/messages/${id}/${messageId}/report`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ reason }),

@@ -98,7 +98,12 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
 
       // On ne toast que si l'utilisateur n'est pas déjà sur la page Messages
       // (la liste des conversations y est visible, le badge suffit).
-      if (pathname?.startsWith("/dashboard/messages")) return
+      const isOnMessagesPage =
+        pathname?.startsWith("/dashboard/messages") || pathname?.startsWith("/admin/messages")
+      if (isOnMessagesPage) return
+
+      const isAdmin = pathname?.startsWith("/admin")
+      const baseUrl = isAdmin ? "/admin/messages" : "/dashboard/messages"
 
       const name = message.senderName || "L'équipe"
       toast(`💬 Nouveau message de ${name}`, {
@@ -106,7 +111,7 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
           message.content.length > 80 ? `${message.content.slice(0, 80)}…` : message.content,
         action: {
           label: "Voir",
-          onClick: () => router.push(`/dashboard/messages?conv=${conversationId}`),
+          onClick: () => router.push(`${baseUrl}?conv=${conversationId}`),
         },
         duration: 6000,
       })
@@ -118,7 +123,9 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
   // On récupère les compteurs serveur pour afficher le badge dès le premier rendu.
   useEffect(() => {
     let cancelled = false
-    fetch("/api/dashboard/messages")
+    const isAdmin = pathname?.startsWith("/admin")
+    const url = isAdmin ? "/api/admin/messages" : "/api/dashboard/messages"
+    fetch(url)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!cancelled && data?.conversations) syncFromServer(data.conversations)
@@ -127,7 +134,7 @@ export function MessagingUnreadProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
-  }, [syncFromServer])
+  }, [syncFromServer, pathname])
 
   const value: MessagingUnreadContextValue = {
     unreadTotal,

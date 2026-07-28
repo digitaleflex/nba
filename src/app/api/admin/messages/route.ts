@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, startMessageSchema, messageSendSchema, ValidationError } from "@nba/lib/validations"
 import { listConversations, startOrReplyAsAdmin } from "@nba/lib/services/messaging"
 import { getCached } from "@nba/lib/cache"
+
+const messageRateLimit = rateLimitMiddleware({ window: 60, max: 30 })
 
 export async function GET() {
   try {
@@ -21,6 +24,8 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const limited = await messageRateLimit(req, session.user.id)
+    if (limited) return limited
     const body = await req.json().catch(() => ({}))
     const { memberId } = validateOrThrow(startMessageSchema, body)
     const { content, attachment } = validateOrThrow(messageSendSchema, body)
