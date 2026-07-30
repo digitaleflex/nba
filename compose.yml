@@ -99,7 +99,7 @@ services:
     image: valkey/valkey:8-alpine
     networks:
       - nba
-    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0", "--dir", "/data", "--save", "60", "1", "--appendonly", "yes"]
+    command: ["valkey-server", "--requirepass", "${REDIS_PASSWORD}", "--bind", "0.0.0.0", "--dir", "/data", "--save", "60", "1", "--appendonly", "yes", "--timeout", "300"]
     # Redis accessible uniquement sur le réseau Docker interne.
     # Pour l'accès externe (VPS2), utiliser Tailscale/WireGuard, pas d'exposition directe.
     expose:

@@ -12,12 +12,16 @@ export async function GET(req: NextRequest) {
     if (rlRes) return rlRes
     const redis = getRedis()
     if (!redis) return NextResponse.json({ ips: [] })
-    const keys = await redis.keys("blocked:ip:*")
     const ips: { ip: string; ttl: number }[] = []
-    for (const key of keys) {
-      const ttl = await redis.ttl(key)
-      ips.push({ ip: key.replace("blocked:ip:", ""), ttl })
-    }
+    let cursor = "0"
+    do {
+      const [nextCursor, keys] = await redis.scan(cursor, { match: "blocked:ip:*", count: 100 })
+      cursor = nextCursor
+      for (const key of keys) {
+        const ttl = await redis.ttl(key)
+        ips.push({ ip: key.replace("blocked:ip:", ""), ttl })
+      }
+    } while (cursor !== "0")
     return NextResponse.json({ ips })
   } catch (error) {
     return handleAuthError(error)

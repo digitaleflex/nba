@@ -108,161 +108,140 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
   const imageDataUri = await getImageDataUri(signal.imageUrl)
 
-  const BATCH_SIZE = 50
-  const PAGE_SIZE = 100
+  const BATCH_SIZE = 200
+  const PAGE_SIZE = 500
   let cursor: string | null = null
   let totalRecipients = 0
 
-  while (true) {
-    const page: { id: string; name: string | null; email: string }[] = await (cursor
-      ? prisma.user.findMany({
-          take: PAGE_SIZE,
-          skip: 1,
-          cursor: { id: cursor },
-          where: {
-            isActive: true,
-            deletedAt: null,
-            id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
-            OR: [
-              { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
-              { signalsAccessOverride: true },
-            ],
-          },
-          orderBy: { id: "asc" },
-        })
-      : prisma.user.findMany({
-          take: PAGE_SIZE,
-          where: {
-            isActive: true,
-            deletedAt: null,
-            id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
-            OR: [
-              { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
-              { signalsAccessOverride: true },
-            ],
-          },
-          orderBy: { id: "asc" },
-        })
-    )
+  const userQueryBase = {
+    take: PAGE_SIZE,
+    where: {
+      isActive: true,
+      deletedAt: null,
+      id: { not: signal.createdBy, notIn: Array.from(existingNotificationIds) },
+      OR: [
+        { accessRequests: { some: { planId: { in: planIds }, status: "APPROVED" } } },
+        { signalsAccessOverride: true },
+      ],
+    },
+    orderBy: { id: "asc" as const },
+  }
 
-    if (page.length === 0) break
+  let nextPagePromise: Promise<{ id: string; name: string | null; email: string }[]> | null = prisma.user.findMany(userQueryBase as any)
+
+  while (true) {
+    const page = await nextPagePromise
+    if (!page || page.length === 0) break
+
     cursor = page[page.length - 1].id
+
+    nextPagePromise = prisma.user.findMany({
+      ...userQueryBase,
+      skip: 1,
+      cursor: { id: cursor },
+    } as any)
+
     totalRecipients += page.length
 
-    log.info({ signalId, processed: totalRecipients }, "Progression distribution")
-
-    const pagePrefs = new Map<string, boolean>()
     const prefUsers = await prisma.user.findMany({
       where: { id: { in: page.map((m) => m.id) } },
       select: { id: true, metadata: true },
     })
-    prefUsers.forEach((u) => {
+    const pagePrefs = new Map(prefUsers.map((u) => {
       const meta = (u.metadata || {}) as Record<string, any>
-      const prefs = meta.notificationPrefs || {}
-      pagePrefs.set(u.id, prefs.signal !== false)
-    })
+      return [u.id, (meta.notificationPrefs || {}).signal !== false] as [string, boolean]
+    }))
+
+    const notifyBatch = page.filter((m) => pagePrefs.get(m.id) !== false)
 
     for (let i = 0; i < page.length; i += BATCH_SIZE) {
       const batch = page.slice(i, i + BATCH_SIZE)
-      await Promise.all(
-        batch.map(async (member) => {
-        let notification: { id: string; createdAt: Date } | null = null
-        try {
-          notification = await prisma.notification.create({
-            data: {
-              userId: member.id,
-              type: "SIGNAL",
-              title: "Nouveau signal de trading",
-              body: `Un nouveau signal a été publié pour vos groupes.`,
-              data: { signalId: signal.id, imageUrl: signal.imageUrl, imageUrls: signal.imageUrls },
-            },
-          })
-        } catch (err: any) {
-          if (err?.code === "P2002") {
-            existingNotificationIds.add(member.id)
-            return
-          }
-          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec création notification")
-          return
-        }
+      const notifyIds = new Set(batch.filter((m) => pagePrefs.get(m.id) !== false).map((m) => m.id))
 
-        try {
-          await publish(`nba:notif:user:${member.id}`, {
-            id: notification.id,
-            type: "SIGNAL",
+      const created = await prisma.notification.createManyAndReturn({
+        data: batch
+          .filter((m) => !existingNotificationIds.has(m.id))
+          .map((m) => ({
+            userId: m.id,
+            type: "SIGNAL" as const,
             title: "Nouveau signal de trading",
-            body: `Un nouveau signal a été publié pour vos groupes.`,
+            body: "Un nouveau signal a été publié pour vos groupes.",
             data: { signalId: signal.id, imageUrl: signal.imageUrl, imageUrls: signal.imageUrls },
-            createdAt: notification.createdAt,
+          })),
+        select: { id: true, userId: true, createdAt: true },
+      })
+
+      for (const n of created) existingNotificationIds.add(n.userId)
+
+      const pubSubOps = created.flatMap((n) => {
+        const audienceNames = signal.audience.map((a: any) => a.plan.name)
+        return [
+          publish(`nba:notif:user:${n.userId}`, {
+            id: n.id, type: "SIGNAL", title: "Nouveau signal de trading",
+            body: "Un nouveau signal a été publié pour vos groupes.",
+            data: { signalId: signal.id, imageUrl: signal.imageUrl, imageUrls: signal.imageUrls },
+            createdAt: n.createdAt,
+          }),
+          publish(`nba:signal:user:${n.userId}`, {
+            type: "signal.created", signalId: signal.id, publishedAt: signal.publishedAt,
+            imageUrl: signal.imageUrl, imageUrls: signal.imageUrls, audience: audienceNames,
+          }),
+        ]
+      })
+      await Promise.all(pubSubOps)
+
+      const notifyUsers = created.filter((n) => notifyIds.has(n.userId))
+
+      const [emailDeliveries, pushDeliveries] = await Promise.all([
+        prisma.notificationDelivery.createManyAndReturn({
+          data: notifyUsers.map((n) => ({
+            notificationId: n.id, channel: "EMAIL" as const, status: "PENDING" as const,
+          })),
+          select: { id: true, notificationId: true },
+        }),
+        prisma.notificationDelivery.createManyAndReturn({
+          data: notifyUsers.map((n) => ({
+            notificationId: n.id, channel: "PUSH" as const, status: "PENDING" as const,
+          })),
+          select: { id: true, notificationId: true },
+        }),
+      ])
+
+      const emailDeliveriesMap = new Map(emailDeliveries.map((d) => [d.notificationId, d.id]))
+      const pushDeliveriesMap = new Map(pushDeliveries.map((d) => [d.notificationId, d.id]))
+
+      const queueOps = notifyUsers.map(async (n) => {
+        const user = batch.find((m) => m.id === n.userId)
+        if (!user) return
+
+        const emailDeliveryId = emailDeliveriesMap.get(n.id)
+        if (emailDeliveryId) {
+          const template = tradingSignalEmail({ ...user, name: user.name ?? "" }, signal.content, imageDataUri)
+          await enqueueEmail(
+            `delivery-${emailDeliveryId}`,
+            { deliveryId: emailDeliveryId, to: user.email, subject: template.subject, html: template.html },
+            { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
+          ).catch((err: any) => {
+            log.error({ err, userId: user.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file email")
           })
-          await publish(`nba:signal:user:${member.id}`, {
-            type: "signal.created",
-            signalId: signal.id,
-            publishedAt: signal.publishedAt,
-            imageUrl: signal.imageUrl,
-            imageUrls: signal.imageUrls,
-            audience: signal.audience.map((a: any) => a.plan.name),
-          })
-        } catch (err) {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_CONNECTION" }, "Échec Redis pubsub")
         }
 
-        const wantsNotifications = pagePrefs.get(member.id) !== false
-        if (!wantsNotifications) return
-
-        const delivery = await prisma.notificationDelivery.create({
-          data: { notificationId: notification.id, channel: "EMAIL", status: "PENDING" },
-        }).catch((err) => {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Échec création livraison EMAIL")
-          return null
-        })
-        if (!delivery) return
-
-        const template = tradingSignalEmail({ ...member, name: member.name ?? "" }, signal.content, imageDataUri)
-
-        await enqueueEmail(
-          `delivery-${delivery.id}`,
-          { deliveryId: delivery.id, to: member.email, subject: template.subject, html: template.html },
-          { attempts: 3, backoff: { type: "exponential", delay: 5000 } },
-        ).catch(async (err) => {
-          log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file email")
-          await prisma.notificationDelivery.update({
-            where: { id: delivery.id },
-            data: { status: "FAILED", errorMessage: (err as Error).message || "Échec enqueuement email" },
-          }).catch(() => {})
-        })
-
-        const notifId = notification.id
-        const pushDelivery = await prisma.notificationDelivery.create({
-          data: { notificationId: notifId, channel: "PUSH", status: "PENDING" },
-        }).catch((err) => {
-          log.error({ err, userId: member.id, errorCode: "DATABASE_ERROR" }, "Échec création livraison PUSH")
-          return null
-        })
-
-        if (pushDelivery) {
+        const pushDeliveryId = pushDeliveriesMap.get(n.id)
+        if (pushDeliveryId) {
           deps.enqueuePush?.(
-            `push-${notifId}`,
-            {
-              deliveryId: pushDelivery.id,
-              userId: member.id,
-              title: "Nouveau signal de trading",
-              body: "Un nouveau signal a été publié pour vos groupes.",
-              url: "/dashboard",
-              tag: notifId,
-            },
+            `push-${n.id}`,
+            { deliveryId: pushDeliveryId, userId: user.id, title: "Nouveau signal de trading",
+              body: "Un nouveau signal a été publié pour vos groupes.", url: "/dashboard", tag: n.id },
             { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
-          ).catch(async (err) => {
-            log.error({ err, userId: member.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file push")
-            await prisma.notificationDelivery.update({
-              where: { id: pushDelivery.id },
-              data: { status: "FAILED", errorMessage: (err as Error).message || "Échec enqueuement push" },
-            }).catch(() => {})
+          ).catch((err: any) => {
+            log.error({ err, userId: user.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file push")
           })
         }
-      }),
-    )
+      })
+      await Promise.all(queueOps)
     }
+
+    log.info({ signalId, processed: totalRecipients }, "Progression distribution")
   }
 
   log.info({ signalId, recipientCount: totalRecipients, skippedCount: existingNotificationIds.size }, "Signal distribution complete")

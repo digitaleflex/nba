@@ -36,23 +36,67 @@ if (process.env.SENTRY_DSN) {
 
 const log = logger.child({ module: "worker" })
 
-// Stable connection initialization with timeouts and circuit breaker
-const connection = new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
-  maxRetriesPerRequest: null,
-  connectTimeout: 5000,
-  commandTimeout: 5000,
-  retryStrategy: (times: number) => {
-    if (times > 10) {
-      log.error({ retries: times }, "Redis unavailable after max retries")
-      return null
-    }
-    return Math.min(times * 200, 2000)
-  },
-} as any)
+function createRedisConnection(opts?: { commandTimeout?: number }): IORedis {
+  return new IORedis(process.env.REDIS_URL ?? "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+    connectTimeout: 5000,
+    commandTimeout: opts?.commandTimeout,
+    retryStrategy: (times: number) => {
+      if (times > 10) {
+        log.error({ retries: times }, "Redis unavailable after max retries")
+        return null
+      }
+      return Math.min(times * 200, 2000)
+    },
+  } as any)
+}
+
+// Connection for BullMQ Queues (add jobs, admin ops) — has commandTimeout for safety.
+// Workers use a separate connection WITHOUT commandTimeout because BullMQ workers
+// rely on blocking BZPOPMIN commands that can block indefinitely. Setting commandTimeout
+// on worker connections causes spurious timeouts → reconnect storms → crash loops.
+const connection = createRedisConnection({ commandTimeout: 5000 })
+const workerConnection = createRedisConnection()
 
 connection.on("error", (err: Error) => {
   log.error({ err }, "Redis connection error")
 })
+workerConnection.on("error", (err: Error) => {
+  log.error({ err }, "Redis worker connection error")
+})
+
+// Queue health monitoring: warn when jobs sit in queue longer than threshold.
+async function checkQueueHealth() {
+  const queues = [
+    { name: "signal-distribution", maxAgeMs: 5 * 60 * 1000 },
+    { name: "push-delivery", maxAgeMs: 30 * 60 * 1000 },
+    { name: "notification-delivery", maxAgeMs: 60 * 60 * 1000 },
+    { name: "recovery", maxAgeMs: 2 * 60 * 60 * 1000 },
+  ]
+  for (const q of queues) {
+    try {
+      const queue = new Queue(q.name, { connection: connection as any, skipVersionCheck: true })
+      const jobs = await queue.getJobs(["waiting", "delayed"], 0, 5)
+      for (const job of jobs) {
+        const age = Date.now() - (job.timestamp ?? Date.now())
+        if (age > q.maxAgeMs) {
+          Sentry.captureMessage(`Queue ${q.name} has stale job`, {
+            level: "warning",
+            extra: { jobId: job.id, ageMs: age, queue: q.name, data: job.data },
+          })
+          log.warn({ jobId: job.id, queue: q.name, ageMs: age }, "Stale job in queue")
+        }
+      }
+      await queue.close()
+    } catch (err) {
+      log.error({ err, queue: q.name }, "Queue health check failed")
+    }
+  }
+}
+
+// Run health check every 10 minutes
+setInterval(checkQueueHealth, 10 * 60 * 1000)
+checkQueueHealth().catch(() => {})
 
 // ── Dead Letter Queue ──
 export const deadLetterQueue = new Queue("dead-letter", { connection: connection as any, skipVersionCheck: true })
@@ -109,7 +153,7 @@ const worker = new Worker(
     }
   },
   {
-    connection: connection as any,
+    connection: workerConnection as any,
     stalledInterval: 30000,
     lockDuration: 60000,
   }
@@ -169,7 +213,7 @@ const notificationWorker = new Worker(
     }
   },
   {
-    connection: connection as any,
+    connection: workerConnection as any,
     concurrency: 5,
     stalledInterval: 30000,
     lockDuration: 60000,
@@ -229,7 +273,7 @@ const pushWorker = new Worker(
     }
   },
   {
-    connection: connection as any,
+    connection: workerConnection as any,
     concurrency: 10,
     stalledInterval: 30000,
     lockDuration: 60000,
@@ -274,8 +318,8 @@ const signalWorker = new Worker(
     })
   },
   {
-    connection: connection as any,
-    concurrency: 1,
+    connection: workerConnection as any,
+    concurrency: 3,
     stalledInterval: 60000,
     lockDuration: 120000,
   }
@@ -315,7 +359,7 @@ const recoveryWorker = new Worker(
     await processRecovery(data)
   },
   {
-    connection: connection as any,
+    connection: workerConnection as any,
     concurrency: 5,
     stalledInterval: 30000,
     lockDuration: 60000,
@@ -440,8 +484,8 @@ async function gracefulShutdown(signal: string) {
     log.info("All queues closed")
 
     // Disconnect Redis
-    await connection.quit()
-    log.info("Redis connection closed")
+    await Promise.all([connection.quit(), workerConnection.quit()])
+    log.info("Redis connections closed")
 
     // Close Prisma
     await prisma.$disconnect()

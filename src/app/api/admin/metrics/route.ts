@@ -41,8 +41,12 @@ export async function GET() {
       if (redis) {
         await redis.ping()
         redisOk = true
-        const keys = await redis.keys("blocked:ip:*")
-        activeIps = keys.length
+        let cursor = "0"
+        do {
+          const [nextCursor, keys] = await redis.scan(cursor, { match: "blocked:ip:*", count: 100 })
+          cursor = nextCursor
+          activeIps += keys.length
+        } while (cursor !== "0")
       }
     } catch {}
 
