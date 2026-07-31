@@ -42,12 +42,6 @@ function mockFetchSuccess() {
       if (urlStr.includes("/api/public/select-plan")) {
         return new Response(JSON.stringify({ success: true }), { status: 200 });
       }
-      if (urlStr.includes("/api/auth/captcha/verify")) {
-        return new Response(JSON.stringify({ valid: true }), { status: 200 });
-      }
-      if (urlStr.includes("/api/auth/captcha")) {
-        return new Response(JSON.stringify({ question: "2 + 3 = ?", token: "test-captcha-token" }), { status: 200 });
-      }
       return new Response(null, { status: 404 });
     });
 }
@@ -83,12 +77,6 @@ async function fillWizard(user: ReturnType<typeof userEvent.setup>) {
     "Str0ng!Pass",
   );
   await user.click(screen.getByRole("button", { name: /suivant/i }));
-
-  // Captcha
-  await user.type(
-    screen.getByPlaceholderText("Votre reponse"),
-    "5",
-  );
 }
 
 describe("Register Wizard", () => {
@@ -339,7 +327,7 @@ describe("Register Wizard", () => {
     await user.click(screen.getByRole("button", { name: /Creer mon compte/i }));
     expect(
       await screen.findByText(
-        "Ce compte existe déjà. Veuillez vous connecter.",
+        "Un compte existe déjà avec cet email. Connectez-vous ou utilisez 'Mot de passe oublié' si vous ne vous en souvenez plus.",
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText("Inscription en cours…")).not.toBeInTheDocument();

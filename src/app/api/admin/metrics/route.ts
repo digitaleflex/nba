@@ -43,7 +43,7 @@ export async function GET() {
         redisOk = true
         let cursor = "0"
         do {
-          const [nextCursor, keys] = await redis.scan(cursor, { match: "blocked:ip:*", count: 100 })
+          const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "blocked:ip:*", "COUNT", 100)
           cursor = nextCursor
           activeIps += keys.length
         } while (cursor !== "0")

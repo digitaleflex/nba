@@ -130,7 +130,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
   let nextPagePromise: Promise<{ id: string; name: string | null; email: string }[]> | null = prisma.user.findMany(userQueryBase as any)
 
   while (true) {
-    const page = await nextPagePromise
+    const page: { id: string; name: string | null; email: string }[] | null = await nextPagePromise
     if (!page || page.length === 0) break
 
     cursor = page[page.length - 1].id

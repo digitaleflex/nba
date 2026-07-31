@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
     const ips: { ip: string; ttl: number }[] = []
     let cursor = "0"
     do {
-      const [nextCursor, keys] = await redis.scan(cursor, { match: "blocked:ip:*", count: 100 })
+      const [nextCursor, keys] = await redis.scan(cursor, "MATCH", "blocked:ip:*", "COUNT", 100)
       cursor = nextCursor
       for (const key of keys) {
         const ttl = await redis.ttl(key)
