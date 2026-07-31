@@ -2,15 +2,14 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@nba/lib/auth"
 import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
-import { logAuditEvent } from "@nba/lib/services/audit"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { getConnection as getRedis } from "@nba/lib/redis-pubsub"
 import { msg } from "@nba/lib/messages"
-import { AUTH_MESSAGES } from "@nba/lib/auth-error-messages"
 import { detectNewDevice, sendVerificationCode } from "@nba/lib/services/device"
 import { syncRiskEngine, asyncRiskEngine } from "@nba/lib/security/risk-engine"
 import { SessionManager } from "@nba/lib/security/session-manager"
 import { securityEventBus } from "@nba/lib/security/security-event-bus"
+import { recordAuthAttempt } from "@nba/lib/security/auth-attempt-recorder"
 import { incidentResponder } from "@nba/lib/security/incident-responder"
 import { abuseDetector } from "@nba/lib/security/abuse-detector"
 
@@ -102,6 +101,18 @@ export async function POST(req: NextRequest) {
             }
           }
         }
+
+        // La session a été créée → connexion réussie (identifiants valides).
+        // Enregistré avant les checks risque/abus pour garder une trace même
+        // si la connexion est ensuite bloquée (423/429).
+        await recordAuthAttempt({
+          email,
+          type: "LOGIN",
+          success: true,
+          ipAddress,
+          userAgent,
+          userId,
+        })
 
         if (userId) {
           // Device detection
@@ -250,26 +261,54 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         log.warn({ err, errorCode: "POST_AUTH_ERROR" }, "Echec post-auth traitement")
       }
+
+      return response
     }
+
+    // ── Echec : enregistrer pour le debogage + detection force-brute ──
+    let failureReason: string | null = null
+    try {
+      const body = await response.clone().json()
+      failureReason = typeof body?.message === "string" ? body.message : null
+    } catch {
+      // Corps non-JSON : on garde reason null
+    }
+
+    let failedUserId: string | null = null
+    try {
+      const existing = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      })
+      failedUserId = existing?.id ?? null
+    } catch {
+      // Non bloquant : l'enregistrement fonctionne sans userId
+    }
+
+    await recordAuthAttempt({
+      email,
+      type: "LOGIN",
+      success: false,
+      ipAddress,
+      userAgent,
+      userId: failedUserId,
+      reason: failureReason,
+      status: response.status,
+    })
 
     return response
   } catch (err) {
     const message = err instanceof Error ? err.message : msg.auth.INVALID_CREDENTIALS
     const status = (err as { status?: number; code?: number })?.status ?? (err as { status?: number; code?: number })?.code ?? 0
 
-    await logAuditEvent({
-      userId: undefined,
-      action: "LOGIN_FAILED",
-      resourceType: "session",
-      details: {
-        email,
-        reason: message,
-        status,
-        ipAddress,
-        userAgent,
-      },
-    }).catch((err) => {
-      log.warn({ err, email, errorCode: "DATABASE_ERROR" }, "Failed to log audit event for failed sign-in")
+    await recordAuthAttempt({
+      email,
+      type: "LOGIN",
+      success: false,
+      ipAddress,
+      userAgent,
+      reason: message,
+      status: status || 401,
     })
 
     return NextResponse.json({ message }, { status: status || 401 })

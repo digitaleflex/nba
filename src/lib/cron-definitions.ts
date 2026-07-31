@@ -107,6 +107,15 @@ export const CRON_DEFINITIONS: CronDefinition[] = [
     enabled: true,
   },
   {
+    name: "cleanup-auth-attempts",
+    label: "Cleanup tentatives d'auth",
+    desc: "Supprime les login_attempts (connexion/inscription) > 90 jours",
+    schedule: "0 5 * * 0",
+    command: "scripts/cleanup-auth-attempts.ts",
+    logFile: "/home/audest/logs/nba-cleanup-auth.log",
+    enabled: true,
+  },
+  {
     name: "cleanup",
     label: "Cleanup backup",
     desc: "Nettoyage hebdomadaire des anciennes sauvegardes",

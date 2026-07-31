@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
 
     const [highEvents, failedLogins, blockedDevices, suspendedAccounts] = await Promise.all([
       prisma.securityEvent.count({ where: { severity: { in: ["HIGH", "CRITICAL"] }, createdAt: { gte: today } } }),
-      prisma.loginAttempt.count({ where: { success: false, createdAt: { gte: lastHour } } }),
+      prisma.loginAttempt.count({ where: { success: false, type: "LOGIN", createdAt: { gte: lastHour } } }),
       prisma.securityEvent.count({ where: { type: "DEVICE_BLOCKED", createdAt: { gte: today } } }),
       prisma.user.count({ where: { isActive: false, suspendedAt: { gte: today } } }),
     ])

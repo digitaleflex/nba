@@ -45,6 +45,7 @@ export class AbuseDetector {
           ipAddress,
           createdAt: { gte: lastHour },
           success: false,
+          type: "SIGNUP",
         },
       })
       if (recentSignups > 20) {
@@ -65,7 +66,7 @@ export class AbuseDetector {
       const oneHourAgo = new Date(now - 3600000)
 
       const loginAttempts = await prisma.loginAttempt.count({
-        where: { userId, createdAt: { gte: oneHourAgo }, success: false },
+        where: { userId, createdAt: { gte: oneHourAgo }, success: false, type: "LOGIN" },
       })
 
       if (loginAttempts >= 5) {

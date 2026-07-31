@@ -804,15 +804,17 @@ model SecurityEvent {
 }
 
 model LoginAttempt {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String?  @map("user_id") @db.Uuid
+  id        String          @id @default(uuid()) @db.Uuid
+  userId    String?         @map("user_id") @db.Uuid
   email     String
   success   Boolean
-  ipAddress String   @map("ip_address")
-  userAgent String?  @map("user_agent")
-  deviceId  String?  @map("device_id") @db.Uuid
+  type      AuthAttemptType @default(LOGIN)
+  reason    String?
+  ipAddress String          @map("ip_address")
+  userAgent String?         @map("user_agent")
+  deviceId  String?         @map("device_id") @db.Uuid
   country   String?
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime        @default(now()) @map("created_at")
 
   user   User?   @relation(fields: [userId], references: [id])
   device Device? @relation(fields: [deviceId], references: [id])
@@ -820,8 +822,14 @@ model LoginAttempt {
   @@index([userId, createdAt])
   @@index([email, createdAt])
   @@index([ipAddress, createdAt])
+  @@index([type, success, createdAt])
   @@index([createdAt])
   @@map("login_attempts")
+}
+
+enum AuthAttemptType {
+  LOGIN
+  SIGNUP
 }
 
 model TwoFactorBackupCode {
