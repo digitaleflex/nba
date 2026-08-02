@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
       body: {
         email,
         password: body.password ?? "",
-        rememberMe: body.rememberMe ?? false,
+        rememberMe: body.rememberMe ?? true,
       },
       headers: req.headers,
       asResponse: true,
