@@ -28,8 +28,8 @@ importers:
         specifier: ^8.1.2
         version: 8.1.2(@bull-board/ui@8.1.2)
       '@bull-board/express':
-        specifier: ^8.1.2
-        version: 8.1.2
+        specifier: ^8.4.0
+        version: 8.4.0(bullmq@5.79.2)
       '@fingerprintjs/fingerprintjs':
         specifier: ^5.2.0
         version: 5.2.0
@@ -534,11 +534,26 @@ packages:
     peerDependencies:
       '@bull-board/ui': 8.1.2
 
-  '@bull-board/express@8.1.2':
-    resolution: {integrity: sha512-IldpQLXlezJRzk1BVNJjH+Oi3NBRcBopq9bI2ndLs0R+ySK1ux+TtGDUW+eX2fl0wEHwSpuUgPBAJID695zohA==}
+  '@bull-board/api@8.4.0':
+    resolution: {integrity: sha512-RUAqQ4Y6G2k4eIzKJgYHs8qx2nCRiOfCNUEwfnz6SCrHwRZ5TKJ9ZlYBjIuGY9kA5s1et+jm0xwfiVJWNwflKA==}
+    peerDependencies:
+      '@bull-board/ui': 8.4.0
+      bull: ^4.16.5
+      bullmq: ^5.79.2
+    peerDependenciesMeta:
+      bull:
+        optional: true
+      bullmq:
+        optional: true
+
+  '@bull-board/express@8.4.0':
+    resolution: {integrity: sha512-dgIQVMNQZOHSoEg60ZchktJzFHZq5/uX3zDOG/G+3/fiOqP9KUg2kgzWic0hVuCmAL+2SFSAaU7dswO9YgGgNA==}
 
   '@bull-board/ui@8.1.2':
     resolution: {integrity: sha512-gC5u9XUSiRile4/VC+WHXtaPvfZV4Mrrz8MSvPe32Hjl2MXStfSuEOb+9Tw/WMpNSZ442tGpFZLz0RDh1Yo3jg==}
+
+  '@bull-board/ui@8.4.0':
+    resolution: {integrity: sha512-N35K90lCAz2URwBtCXS1O/bOyU4/d7qeEZ7cx/qWWu0rn3NakwLC/oHNuU6L8R1qKBy2wVl8i5AxHdp2Mg3KNA==}
 
   '@csstools/color-helpers@6.1.0':
     resolution: {integrity: sha512-064IFJdjTfUqnjpCVpMOdbr8FLQBhinbZj6yRv2An2E41O/pLEXqfFRWqGq/SxlE5PEUYTlvWsG2r8MswAVvkg==}
@@ -4145,8 +4160,8 @@ packages:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
 
-  iconv-lite@0.7.2:
-    resolution: {integrity: sha512-im9DjEDQ55s9fL4EYzOAv0yMqmMBSZp6G0VvFyTMPKWxiSBHUj9NW/qqLmXUwXrrM7AvqSlTCfvqRb0cM8yYqw==}
+  iconv-lite@0.7.3:
+    resolution: {integrity: sha512-IKXpvIzjnC9XTAUbVBcMfGS0EPaIXtW6v+zr+RRp+hqULEpo0owZax6wyRwPOJbWbzjYspQwusTsfVr0ifh4uQ==}
     engines: {node: '>=0.10.0'}
 
   ieee754@1.2.1:
@@ -4697,8 +4712,8 @@ packages:
   mdn-data@2.27.1:
     resolution: {integrity: sha512-9Yubnt3e8A0OKwxYSXyhLymGW4sCufcLG6VdiDdUGVkPhpqLxlvP5vl1983gQjJl3tqbrM731mjaZaP68AgosQ==}
 
-  media-typer@1.1.0:
-    resolution: {integrity: sha512-aisnrDP4GNe06UcKFnV5bfMNPBUw4jsLGaWwWfnH3v02GnBuXX2MCVn5RbrWo0j3pczUilYblq7fQ7Nw2t5XKw==}
+  media-typer@1.1.1:
+    resolution: {integrity: sha512-yz3xRaG20c6/BOzvYoDaGtPmGscs7YivItZEEqe6GbwNfHuxu9YNmvnEkMzKldAGY4/80pRcQRZSEnhquk9XuQ==}
     engines: {node: '>= 0.8'}
 
   merge-descriptors@2.0.0:
@@ -6713,18 +6728,34 @@ snapshots:
       '@bull-board/ui': 8.1.2
       redis-info: 3.1.0
 
-  '@bull-board/express@8.1.2':
+  '@bull-board/api@8.4.0(@bull-board/ui@8.4.0(bullmq@5.79.2))(bullmq@5.79.2)':
     dependencies:
-      '@bull-board/api': 8.1.2(@bull-board/ui@8.1.2)
-      '@bull-board/ui': 8.1.2
+      '@bull-board/ui': 8.4.0(bullmq@5.79.2)
+      redis-info: 3.1.0
+    optionalDependencies:
+      bullmq: 5.79.2
+
+  '@bull-board/express@8.4.0(bullmq@5.79.2)':
+    dependencies:
+      '@bull-board/api': 8.4.0(@bull-board/ui@8.4.0(bullmq@5.79.2))(bullmq@5.79.2)
+      '@bull-board/ui': 8.4.0(bullmq@5.79.2)
       ejs: 6.0.1
       express: 5.2.1
     transitivePeerDependencies:
+      - bull
+      - bullmq
       - supports-color
 
   '@bull-board/ui@8.1.2':
     dependencies:
       '@bull-board/api': 8.1.2(@bull-board/ui@8.1.2)
+
+  '@bull-board/ui@8.4.0(bullmq@5.79.2)':
+    dependencies:
+      '@bull-board/api': 8.4.0(@bull-board/ui@8.4.0(bullmq@5.79.2))(bullmq@5.79.2)
+    transitivePeerDependencies:
+      - bull
+      - bullmq
 
   '@csstools/color-helpers@6.1.0': {}
 
@@ -9343,7 +9374,7 @@ snapshots:
       content-type: 2.0.0
       debug: 4.4.3
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       on-finished: 2.4.1
       qs: 6.15.3
       raw-body: 3.0.2
@@ -10553,7 +10584,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  iconv-lite@0.7.2:
+  iconv-lite@0.7.3:
     dependencies:
       safer-buffer: 2.1.2
 
@@ -11076,7 +11107,7 @@ snapshots:
 
   mdn-data@2.27.1: {}
 
-  media-typer@1.1.0: {}
+  media-typer@1.1.1: {}
 
   merge-descriptors@2.0.0: {}
 
@@ -11168,7 +11199,7 @@ snapshots:
       aws-ssl-profiles: 1.1.2
       denque: 2.1.0
       generate-function: 2.3.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       long: 5.3.2
       lru.min: 1.1.4
       named-placeholders: 1.1.6
@@ -11745,7 +11776,7 @@ snapshots:
     dependencies:
       bytes: 3.1.2
       http-errors: 2.0.1
-      iconv-lite: 0.7.2
+      iconv-lite: 0.7.3
       unpipe: 1.0.0
 
   rc9@3.0.1:
@@ -12587,7 +12618,7 @@ snapshots:
   type-is@2.1.0:
     dependencies:
       content-type: 2.0.0
-      media-typer: 1.1.0
+      media-typer: 1.1.1
       mime-types: 3.0.2
 
   typed-array-buffer@1.0.3:

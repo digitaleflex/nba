@@ -35,7 +35,7 @@
     "@base-ui/react": "^1.6.0",
     "@better-auth/utils": "^0.4.2",
     "@bull-board/api": "^8.1.2",
-    "@bull-board/express": "^8.1.2",
+    "@bull-board/express": "^8.4.0",
     "@fingerprintjs/fingerprintjs": "^5.2.0",
     "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "^7.9.1",
