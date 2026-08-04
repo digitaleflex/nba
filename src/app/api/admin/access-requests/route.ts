@@ -33,6 +33,7 @@ export async function GET(req: Request) {
                 whatsapp: true,
                 country: true,
                 onboardingStatus: true,
+                emailStatus: true,
                 createdAt: true,
               },
             },

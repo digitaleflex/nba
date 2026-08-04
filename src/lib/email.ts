@@ -592,6 +592,30 @@ export function accessRejectedEmail(user: TemplateUser, planName: string, reason
   }
 }
 
+export function planChangedEmail(user: TemplateUser, planName: string): { subject: string; html: string } {
+  const prenom = getFirstName(user.name)
+  return {
+    subject: `📋 Votre plan a été modifié — ${APP_NAME}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Bonjour ${prenom}
+      </p>
+      <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
+        L'administration a modifié votre plan d'accès vers <strong style="color:#283B5D">« ${planName} »</strong>.
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Une erreur ?")}
+      <p style="margin:0 0 16px 0;font-size:14px;color:#6A758B;line-height:1.5">
+        Si vous pensez qu'il s'agit d'une erreur, vous pouvez contester ce changement en contactant notre équipe support directement depuis votre messagerie privée.
+      </p>
+
+      ${ctaButton({ url: `${APP_DOMAIN}/dashboard/messages`, text: "Contester ce changement" })}
+    `),
+  }
+}
+
 // ══════════════════════════════════════
 //  SECURITY TEMPLATES
 // ══════════════════════════════════════

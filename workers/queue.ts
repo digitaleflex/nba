@@ -199,6 +199,17 @@ const notificationWorker = new Worker(
     const { deliveryId, to, subject, html } = job.data
     try {
       const externalId = await sendEmail(to, { subject, html })
+      if (externalId === null) {
+        await prisma.notificationDelivery.update({
+          where: { id: deliveryId },
+          data: {
+            status: "FAILED",
+            errorMessage: "EmailStatus bloque (BOUNCED/COMPLAINED/SUPPRESSED/INVALID)",
+            sentAt: new Date(),
+          },
+        })
+        return
+      }
       await prisma.notificationDelivery.update({
         where: { id: deliveryId },
         data: { status: "SENT", sentAt: new Date(), externalId: externalId ?? undefined },

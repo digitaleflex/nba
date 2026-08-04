@@ -52,7 +52,7 @@ export async function reviewAccessRequest(
   if (status === "APPROVED") {
     await prisma.user.update({
       where: { id: request.userId },
-      data: { onboardingStatus: "ACTIVE" },
+      data: { onboardingStatus: "ACTIVE", isActive: true },
     });
   }
 

@@ -9,6 +9,8 @@ import { validateOrThrow, memberUpdateSchema, memberQuerySchema } from "@nba/lib
 import { getRedisConnection } from "@nba/lib/queue"
 import { msg } from "@nba/lib/messages"
 import { rateLimitOrDeny } from "@nba/lib/rate-limit"
+import { notify } from "@nba/lib/services/notifications"
+import { accountReactivatedEmail } from "@nba/lib/email"
 
 const log = logger.child({ module: "admin-members" })
 
@@ -188,6 +190,28 @@ export async function PUT(request: NextRequest) {
 
     await invalidatePrefix("ops")
     await invalidatePrefix("members:")
+
+    if (typeof isActive === "boolean" && isActive) {
+      const reactivatedUsers = await prisma.user.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, name: true, email: true },
+      })
+      for (const user of reactivatedUsers) {
+        const template = accountReactivatedEmail(user)
+        await notify({
+          userId: user.id,
+          type: "ACCESS",
+          title: "Compte réactivé",
+          body: "Votre compte a été réactivé par l'administration. Vous pouvez de nouveau vous connecter.",
+          data: {},
+          linkUrl: "/login",
+          email: { to: user.email, subject: template.subject, html: template.html },
+        }).catch((err) => {
+          log.warn({ userId: user.id, err }, "Failed to send reactivation notification")
+        })
+      }
+    }
+
     return NextResponse.json({ count: updated.count })
   } catch (error) {
     return handleAuthError(error)

@@ -115,6 +115,7 @@ export const startMessageMemberSchema = z
 export const reviewAccessSchema = z.object({
   status: accessStatusSchema,
   notes: z.string().optional(),
+  planId: z.string().uuid("ID de plan invalide").optional(),
 }).strict()
 
 export const dashboardProfileSchema = z.object({
