@@ -966,6 +966,83 @@ export function supportTicketEmail(
   }
 }
 
+const SEVERITY_LABEL: Record<string, string> = {
+  low: "Mineur",
+  medium: "Moyen",
+  high: "Critique",
+}
+
+export function bugReportEmail(
+  user: { name: string; email: string },
+  report: {
+    title: string
+    description: string
+    severity?: string
+    steps?: string
+    context?: Record<string, string | undefined>
+  }
+): { subject: string; html: string } {
+  const contextRows = Object.entries(report.context ?? {})
+    .filter(([, v]) => !!v)
+    .map(
+      ([k, v]) => `
+        <tr>
+          <td style="padding:6px 0;font-size:13px;color:#6A758B;width:140px">${k}</td>
+          <td style="padding:6px 0;font-size:13px;color:#1E2024">${v}</td>
+        </tr>`
+    )
+    .join("")
+
+  return {
+    subject: `[Bug] ${report.severity ? `(${SEVERITY_LABEL[report.severity]}) ` : ""}${report.title}`,
+    html: layout(`
+      <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
+        Rapport de bug
+      </p>
+
+      ${divider()}
+
+      ${sectionTitle("Expéditeur")}
+      <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Nom</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${user.email}</td>
+        </tr>
+        <tr>
+          <td style="padding:8px 0;font-size:13px;color:#6A758B">Titre</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${report.title}</td>
+        </tr>
+        ${report.severity ? `<tr><td style="padding:8px 0;font-size:13px;color:#6A758B">Sévérité</td><td style="padding:8px 0;font-size:14px;color:#1E2024">${SEVERITY_LABEL[report.severity] ?? report.severity}</td></tr>` : ""}
+      </table>
+
+      ${divider()}
+
+      ${sectionTitle("Description")}
+      <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
+        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${report.description}</p>
+      </div>
+
+      ${report.steps ? `
+        ${sectionTitle("Étapes pour reproduire")}
+        <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
+          <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${report.steps}</p>
+        </div>
+      ` : ""}
+
+      ${contextRows ? `
+        ${sectionTitle("Contexte technique")}
+        <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">${contextRows}</table>
+      ` : ""}
+
+      ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=bugs`, text: "Voir dans le dashboard admin" })}
+    `),
+  }
+}
+
 // ══════════════════════════════════════
 //  JOURNAL : RAPPORT HEBDOMADAIRE
 // ══════════════════════════════════════

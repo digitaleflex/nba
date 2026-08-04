@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
 import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
 import { useLogout } from "@nba/hooks/use-logout"
+import { ReportBugDialog } from "@nba/components/report-bug-dialog"
 import {
   getMenuNavItems,
   getSidebarSections,
@@ -154,6 +155,15 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                 <span>Retour au Dashboard</span>
               </Link>
             )}
+
+            <div className="mt-3">
+              <ReportBugDialog
+                variant="ghost"
+                label="Signaler un bug"
+                className="w-full justify-start px-3 py-3 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted min-h-[44px]"
+                onOpenChange={(open) => { if (open) setOpen(false) }}
+              />
+            </div>
           </nav>
 
           <div className="border-t border-border p-3">

@@ -21,6 +21,7 @@ import { FraudTab } from "./features/FraudTab"
 import { EmailsTab } from "./features/EmailsTab"
 import { SettingsTab } from "./features/SettingsTab"
 import { AuditTab } from "./features/AuditTab"
+import { BugsTab } from "./features/BugsTab"
 import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
@@ -595,6 +596,10 @@ function AdminConsoleContent() {
 
         {activeTab === "audit" && (
           <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
+        )}
+
+        {activeTab === "bugs" && (
+          <BugsTab cachedGet={cachedGet} />
         )}
 
         {activeTab === "formation" && (

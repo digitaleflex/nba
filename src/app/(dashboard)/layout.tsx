@@ -7,6 +7,7 @@ import { AppShell } from "@nba/app/components/app-shell"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
 import { MessageBadge } from "@nba/components/message-badge"
+import { ReportBugDialog } from "@nba/components/report-bug-dialog"
 import { WelcomeGuide } from "./dashboard/welcome-guide"
 import { CoachIA } from "@nba/components/coach-ia"
 import { PageBreadcrumbs } from "@nba/app/components/breadcrumbs"
@@ -35,6 +36,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     <header className="hidden md:flex items-center justify-between border-b bg-card/50 backdrop-blur-xl sticky top-0 z-40 px-6 py-2.5">
       <div className="flex-1" />
       <div className="flex items-center gap-1">
+        <ReportBugDialog variant="ghost" size="icon-sm" />
         <MessageBadge />
         <NotificationBell />
         <Link

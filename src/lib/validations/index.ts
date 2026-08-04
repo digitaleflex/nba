@@ -137,6 +137,23 @@ export const supportSchema = z.object({
   message: z.string().trim().min(1, "Message requis").max(5000, "Message trop long"),
 })
 
+export const bugSeveritySchema = z.enum(["low", "medium", "high"])
+
+export const bugReportSchema = z.object({
+  title: z.string().trim().min(3, "Titre trop court").max(120, "Titre trop long"),
+  description: z.string().trim().min(10, "Décris le problème (min 10 caractères)").max(3000, "Description trop longue"),
+  severity: bugSeveritySchema.optional(),
+  steps: z.string().trim().max(2000, "Étapes trop longues").optional(),
+  context: z.object({
+    url: z.string().max(500).optional(),
+    userAgent: z.string().max(500).optional(),
+    platform: z.string().max(100).optional(),
+    screen: z.string().max(100).optional(),
+    language: z.string().max(50).optional(),
+    timezone: z.string().max(100).optional(),
+  }).strict().optional(),
+}).strict()
+
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, "Mot de passe actuel requis"),
   newPassword: z.string().min(8, "Le nouveau mot de passe doit contenir au moins 8 caractères").max(128),

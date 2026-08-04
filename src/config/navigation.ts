@@ -20,6 +20,7 @@ import {
   ShieldCheck,
   TrendingUp,
   Users,
+  Bug,
 } from "lucide-react"
 import { ADMIN_CONTEXTS, getContextForTab } from "@nba/app/(admin)/admin/admin-context"
 
@@ -200,6 +201,7 @@ const adminTabIconMap: Record<string, LucideIcon> = {
   emails: Mail,
   notifications: Bell,
   audit: Activity,
+  bugs: Bug,
   moderation: Shield,
   security: Shield,
   settings: Settings,

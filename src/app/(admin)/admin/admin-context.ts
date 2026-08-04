@@ -71,6 +71,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
     icon: ShieldCheck,
     tabs: [
       { value: "audit", label: "Audit" },
+      { value: "bugs", label: "Bugs" },
       { value: "moderation", label: "Modération" },
       { value: "security", label: "Sécurité" },
       { value: "fraud", label: "Anti-Fraude" },
