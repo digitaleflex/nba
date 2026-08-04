@@ -332,7 +332,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       </div>
 
       {/* Batch actions bar */}
-      <BatchActionsBar selectedIds={selectedIds} onClear={clearSelection} onSuccess={() => fetchMembres()} />
+      <BatchActionsBar selectedIds={selectedIds} onClear={clearSelection} onSuccess={() => fetchMembres()} plans={plans} />
 
       {/* Table (desktop) / Cards (mobile) */}
       <DualRender

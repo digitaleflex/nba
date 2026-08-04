@@ -15,6 +15,7 @@ export interface AccessRequest {
     createdAt: string
   }
   plan: {
+    id: string
     name: string
   }
   onboarding: {

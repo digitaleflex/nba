@@ -4,6 +4,7 @@ import { prisma } from "@nba/lib/db"
 import { startOrReplyAsAdmin } from "@nba/lib/services/messaging"
 import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 import { logger } from "@nba/lib/logger"
+import { createBatchStream } from "@nba/lib/batch-stream"
 
 const log = logger.child({ module: "bulk-message" })
 
@@ -54,7 +55,6 @@ export async function POST(req: NextRequest) {
     if (!content) {
       return NextResponse.json({ error: "Le contenu du message est requis." }, { status: 400 })
     }
-
     if (content.length > 4000) {
       return NextResponse.json({ error: "Le message dépasse 4000 caractères." }, { status: 400 })
     }
@@ -65,45 +65,87 @@ export async function POST(req: NextRequest) {
 
     const approvedAccess = await prisma.accessRequest.findMany({
       where: { status: "APPROVED", ...planWhere },
-      select: { userId: true, plan: { select: { name: true } } },
+      select: { userId: true },
     })
 
-    const unique = new Map<string, string>()
-    for (const a of approvedAccess) {
-      if (!unique.has(a.userId)) unique.set(a.userId, a.plan.name)
+    const unique = new Set(approvedAccess.map((a) => a.userId))
+    const members = Array.from(unique)
+
+    if (members.length === 0) {
+      return NextResponse.json({ error: "Aucun membre approuvé trouvé." }, { status: 404 })
     }
 
-    const members = Array.from(unique.entries())
-    const total = members.length
-
-    if (total === 0) {
-      return NextResponse.json({ error: "Aucun membre approuvé trouvé pour ces groupes." }, { status: 404 })
-    }
-
-    // Utiliser le compte admin dédié (admin@signauxx.com) comme expéditeur
     const systemAdmin = await prisma.user.findUnique({
       where: { email: "admin@signauxx.com" },
       select: { id: true },
     })
     const senderId = systemAdmin?.id ?? session.user.id
 
-    let sent = 0
-    let failed = 0
+    const { stream, progress, done, error: streamError } = createBatchStream()
 
-    for (const [userId] of members) {
-      try {
-        await startOrReplyAsAdmin(senderId, userId, content)
-        sent++
-      } catch (err) {
-        failed++
-        log.error({ err, userId, errorCode: "INTEGRATION_ERROR" }, "Échec envoi message groupé")
-      }
-    }
+    const response = new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    })
 
-    log.info({ sent, failed, total, adminId: session.user.id }, "Bulk message sent")
+    processBulkMessage(senderId, members, content, progress, done, streamError)
 
-    return NextResponse.json({ sent, failed, total })
+    return response
   } catch (error) {
     return handleAuthError(error)
+  }
+}
+
+async function processBulkMessage(
+  senderId: string,
+  members: string[],
+  content: string,
+  progress: (data: { succeeded: number; failed: number; total: number; step: string }) => void,
+  done: (result: { total: number; succeeded: number; skipped: number; failed: number; errors: { id: string; error: string }[] }) => void,
+  streamError: (msg: string) => void,
+) {
+  let sent = 0
+  let failed = 0
+  const errors: { id: string; error: string }[] = []
+  const total = members.length
+
+  try {
+    const batches: string[][] = []
+    for (let i = 0; i < members.length; i += 10) {
+      batches.push(members.slice(i, i + 10))
+    }
+
+    for (let bi = 0; bi < batches.length; bi++) {
+      const batch = batches[bi]
+      const results = await Promise.allSettled(
+        batch.map((userId) =>
+          startOrReplyAsAdmin(senderId, userId, content).then(() => userId)
+        )
+      )
+
+      for (const r of results) {
+        if (r.status === "fulfilled") sent++
+        else {
+          failed++
+          const idx = results.indexOf(r as any)
+          errors.push({ id: batch[idx] ?? "", error: r.reason?.message || "Erreur" })
+        }
+      }
+
+      progress({
+        succeeded: sent,
+        failed,
+        total,
+        step: `${sent + failed}/${total} message${total > 1 ? "s" : ""} envoyé${total > 1 ? "s" : ""}...`,
+      })
+    }
+
+    log.info({ sent, failed, total }, "Bulk message sent")
+    done({ total, succeeded: sent, skipped: 0, failed, errors: errors.slice(0, 5) })
+  } catch (err: any) {
+    streamError(err.message || "Erreur serveur")
   }
 }

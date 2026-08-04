@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, Button, Badge, Checkbox } from "@nba/design-system"
-import { Send, Loader2, Users, ChevronDown, Eye, AlertTriangle, CheckCircle2, Mail } from "lucide-react"
+import { Card, CardContent, Button, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
+import { readBatchStream } from "@nba/lib/batch-stream"
+import { Send, Loader2, Users, ChevronDown, Eye, AlertTriangle, CheckCircle2, Mail, XCircle } from "lucide-react"
 
 const PLACEHOLDER_MESSAGE = `Bonjour {prenom}, 👋
 
@@ -45,8 +46,11 @@ export default function BulkMessagePage() {
   const [content, setContent] = useState(PLACEHOLDER_MESSAGE)
   const [showPreview, setShowPreview] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState<{ sent: number; failed: number; total: number } | null>(null)
+  const [result, setResult] = useState<{ succeeded: number; failed: number; total: number } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [progressOpen, setProgressOpen] = useState(false)
+  const [progressStep, setProgressStep] = useState(0)
+  const [progressText, setProgressText] = useState("")
 
   useEffect(() => {
     fetch("/api/admin/bulk-message")
@@ -80,17 +84,35 @@ export default function BulkMessagePage() {
     setLoading(true)
     setError(null)
     setResult(null)
+    setProgressStep(0)
+    setProgressText("Envoi de la requête...")
+    setProgressOpen(true)
+
     try {
       const res = await fetch("/api/admin/bulk-message", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planIds: effectivePlanIds.length > 0 ? effectivePlanIds : undefined, content }),
       })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Erreur")
-      setResult(data)
+
+      await readBatchStream(res, {
+        onProgress: (data) => {
+          setProgressStep(Math.min(4, Math.round((data.succeeded + data.failed) / data.total * 4)))
+          setProgressText(data.step)
+        },
+        onDone: (result) => {
+          setProgressStep(5)
+          setProgressText("Terminé")
+          setResult(result)
+        },
+        onError: (msg) => {
+          setError(msg)
+          setProgressOpen(false)
+        },
+      })
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erreur inconnue")
+      setProgressOpen(false)
     } finally {
       setLoading(false)
     }
@@ -115,7 +137,7 @@ export default function BulkMessagePage() {
             <CheckCircle2 className="size-10 text-emerald-500" />
             <p className="font-semibold text-lg">Envoi terminé</p>
             <p className="text-sm text-muted-foreground">
-              {result.sent} message{result.sent > 1 ? "s" : ""} envoyé{result.sent > 1 ? "s" : ""}
+              {result.succeeded} message{result.succeeded > 1 ? "s" : ""} envoyé{result.succeeded > 1 ? "s" : ""}
               {result.failed > 0 && `, ${result.failed} échec${result.failed > 1 ? "s" : ""}`}
             </p>
             <Button variant="outline" size="sm" onClick={() => setResult(null)}>
@@ -250,6 +272,59 @@ export default function BulkMessagePage() {
           </div>
         </>
       )}
+
+      <Dialog open={progressOpen} onOpenChange={(o) => { if (!o) { setProgressOpen(false); setResult(null) } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>
+              {result ? "Résultat de l'envoi" : "Envoi en cours"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!result ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader2 className="size-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground text-center">
+                  Envoi à {totalAudience} membre{totalAudience > 1 ? "s" : ""}...
+                </p>
+                <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-500 rounded-full"
+                    style={{ width: `${Math.min(100, (progressStep / 5) * 100)}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  {progressText || "Traitement en cours..."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm">
+                  <CheckCircle2 className="size-4 text-emerald-500" />
+                  <span>{result.succeeded} message{result.succeeded > 1 ? "s" : ""} envoyé{result.succeeded > 1 ? "s" : ""}</span>
+                </div>
+                {result.failed > 0 && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <XCircle className="size-4 text-rose-500" />
+                    <span>{result.failed} échec{result.failed > 1 ? "s" : ""}</span>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                  Les messages sont disponibles dans la messagerie privée de chaque membre.
+                </p>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button variant="outline" size="sm" onClick={() => { setProgressOpen(false); setResult(null) }}>
+                    Fermer
+                  </Button>
+                  <Button size="sm" onClick={() => { setProgressOpen(false); setResult(null) }}>
+                    Envoyer un autre message
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
