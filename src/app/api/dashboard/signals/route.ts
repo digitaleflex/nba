@@ -10,8 +10,9 @@ export async function GET(req: NextRequest) {
     const filter = (searchParams.get("filter") || "all") as "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices"
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"))
     const limit = parseInt(searchParams.get("limit") || "20")
+    const planId = searchParams.get("plan") || undefined
 
-    const result = await getSignalsApi({ search, filter, page, limit })
+    const result = await getSignalsApi({ search, filter, page, limit, planId })
     return NextResponse.json(result)
   } catch (error) {
     if (error instanceof AuthError) {

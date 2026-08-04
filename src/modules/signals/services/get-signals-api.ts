@@ -10,6 +10,7 @@ interface GetSignalsParams {
   filter?: SignalFilter
   page?: number
   limit?: number
+  planId?: string
 }
 
 interface SignalListItem {
@@ -29,6 +30,7 @@ interface SignalListItem {
 
 interface GetSignalsResponse {
   signals: SignalListItem[]
+  activePlans: { id: string; name: string }[]
   pagination: {
     page: number
     limit: number
@@ -53,7 +55,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     throw new AuthError(msg.auth.UNAUTHORIZED, 401)
   }
 
-  const { search = "", filter = "all", page = 1, limit = 20 } = params
+  const { search = "", filter = "all", page = 1, limit = 20, planId } = params
   const skip = (page - 1) * limit
   const actualLimit = Math.min(50, Math.max(1, limit))
 
@@ -88,10 +90,30 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   if (!isAdmin && !user.signalsAccessOverride && activePlanIds.length === 0) {
     return {
       signals: [],
+      activePlans: [],
       pagination: { page, limit: actualLimit, total: 0, totalPages: 0 },
       summary: { new: 0, unread: 0, group: null, lastUpdate: null },
     }
   }
+
+  // Plans actifs de l'utilisateur (ou tous les plans pour un admin/override),
+  // pour construire les onglets « multisection » côté client.
+  const activePlans =
+    isAdmin || user.signalsAccessOverride
+      ? await prisma.subscriptionPlan.findMany({
+          where: { isActive: true, deletedAt: null },
+          select: { id: true, name: true },
+          orderBy: { sortOrder: "asc" },
+        })
+      : await prisma.subscriptionPlan.findMany({
+          where: { id: { in: activePlanIds } },
+          select: { id: true, name: true },
+          orderBy: { sortOrder: "asc" },
+        })
+
+  const filteredActivePlans = planId
+    ? activePlans.filter((p) => p.id === planId)
+    : activePlans
 
   const where: Record<string, unknown> = { deletedAt: null, status: "PUBLISHED" }
 
@@ -121,7 +143,11 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   }
 
   if (!isAdmin && !user.signalsAccessOverride) {
-    where.audience = { some: { planId: { in: activePlanIds } } }
+    where.audience = planId
+      ? { some: { planId } }
+      : { some: { planId: { in: activePlanIds } } }
+  } else if (planId) {
+    where.audience = { some: { planId } }
   }
 
   if (filter === "forex") {
@@ -183,17 +209,11 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     allAccessibleWhere.audience = { some: { planId: { in: activePlanIds } } }
   }
 
-  const [totalSignals, totalReadAll, planNames] = await Promise.all([
+  const [totalSignals, totalReadAll] = await Promise.all([
     prisma.signal.count({ where: allAccessibleWhere }),
     prisma.signalRead.count({
       where: { userId: session.user.id },
     }),
-    !isAdmin && !user.signalsAccessOverride && activePlanIds.length > 0
-      ? prisma.subscriptionPlan.findMany({
-          where: { id: { in: activePlanIds } },
-          select: { name: true },
-        })
-      : Promise.resolve([]),
   ])
 
   const signalsWithStatus: SignalListItem[] = signals.map((sig) => ({
@@ -212,14 +232,17 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
   }))
 
   const lastSignal = signals[0]
-  const group = isAdmin || user.signalsAccessOverride
-    ? "Tous les signaux"
-    : planNames.length > 0
-      ? planNames.map((p) => p.name).join(", ")
-      : null
+  const group = planId
+    ? filteredActivePlans[0]?.name ?? null
+    : isAdmin || user.signalsAccessOverride
+      ? "Tous les signaux"
+      : filteredActivePlans.length > 0
+        ? filteredActivePlans.map((p) => p.name).join(", ")
+        : null
 
   return {
     signals: signalsWithStatus,
+    activePlans: filteredActivePlans,
     pagination: { page, limit: actualLimit, total, totalPages: Math.ceil(total / actualLimit) },
     summary: {
       new: signalsWithStatus.filter((s) => !s.read).length,

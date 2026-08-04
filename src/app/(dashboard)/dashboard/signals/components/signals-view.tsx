@@ -53,6 +53,7 @@ interface Summary {
 
 interface ApiResponse {
   signals: SignalData[]
+  activePlans: { id: string; name: string }[]
   pagination: Pagination
   summary: Summary
 }
@@ -195,6 +196,8 @@ export function SignalsView() {
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [summary, setSummary] = useState<Summary | null>(null)
   const [activeFilter, setActiveFilter] = useState<FilterKey>("all")
+  const [activePlanId, setActivePlanId] = useState<string>("all")
+  const [activePlans, setActivePlans] = useState<{ id: string; name: string }[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [loading, setLoading] = useState(true)
   const [loadingMore, setLoadingMore] = useState(false)
@@ -231,6 +234,7 @@ export function SignalsView() {
     params.set("limit", "20")
     if (debouncedSearch) params.set("search", debouncedSearch)
     if (activeFilter !== "all") params.set("filter", activeFilter)
+    if (activePlanId !== "all") params.set("plan", activePlanId)
 
     try {
       if (append) setLoadingMore(true)
@@ -261,6 +265,7 @@ export function SignalsView() {
       } else {
         setSignals(sigs)
       }
+      if (Array.isArray(data.activePlans)) setActivePlans(data.activePlans)
       setPagination(data.pagination ?? { page: 1, totalPages: 1, totalCount: 0 })
       setSummary(data.summary ?? {})
     } catch (err) {
@@ -269,7 +274,7 @@ export function SignalsView() {
       setLoading(false)
       setLoadingMore(false)
     }
-  }, [debouncedSearch, activeFilter])
+  }, [debouncedSearch, activeFilter, activePlanId])
 
   useEffect(() => {
     fetchSignals(1, false)
@@ -438,6 +443,36 @@ export function SignalsView() {
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
+
+      {activePlans.length > 1 && (
+        <div className="relative sm:static">
+          <div className="flex gap-2 overflow-x-auto -mx-6 px-6 pb-1 snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <button
+              onClick={() => setActivePlanId("all")}
+              className={`shrink-0 snap-center px-4 py-2 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap min-h-[36px] ${
+                activePlanId === "all"
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+              }`}
+            >
+              Tous
+            </button>
+            {activePlans.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => setActivePlanId(p.id)}
+                className={`shrink-0 snap-center px-4 py-2 text-xs font-semibold rounded-lg border transition-colors whitespace-nowrap min-h-[36px] ${
+                  activePlanId === p.id
+                    ? "bg-primary text-primary-foreground border-primary"
+                    : "bg-background text-muted-foreground border-border hover:border-primary/40 hover:text-foreground"
+                }`}
+              >
+                {p.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="relative sm:static">
         <div className="flex gap-2 overflow-x-auto -mx-6 px-6 pb-1 snap-x snap-mandatory sm:flex-wrap sm:overflow-visible sm:mx-0 sm:px-0 sm:pb-0 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
