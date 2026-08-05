@@ -40,14 +40,9 @@ export async function PUT(
       details: { notes: parsed.notes },
     });
 
-    // Si KYC approuvé, vérifier si le broker est aussi approuvé pour activer l'utilisateur
+    // KYC approuvé seul suffit pour activer l'utilisateur
     if (parsed.status === "APPROVED") {
-      const brokerApproved = await prisma.brokerVerification.findFirst({
-        where: { userId: updated.userId, status: "APPROVED" },
-      })
-      if (brokerApproved) {
-        await updateOnboardingStatus(updated.userId, "ACTIVE")
-      }
+      await updateOnboardingStatus(updated.userId, "ACTIVE")
     }
 
     // Planifier le nettoyage des fichiers après 7 jours (APPROVED ou REJECTED)

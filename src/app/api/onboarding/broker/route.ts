@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     // Notifier l'utilisateur
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true },
+      select: { id: true, name: true, email: true },
     })
 
     if (user) {

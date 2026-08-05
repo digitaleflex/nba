@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Envoyer l'email
-    await sendOtpEmail(session.user.name, email, code)
+    await sendOtpEmail(session.user.name, email, code, session.user.id)
 
     return NextResponse.json({ success: true })
   } catch (error) {

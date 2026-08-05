@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     })
 
     const template = accountSuspendedEmail(user, "Votre compte a ete suspendu par l'administration.")
-    await sendEmailSync(user.email, template.subject, template.html)
+    await sendEmailSync(user.email, template.subject, template.html, { userId, templateName: "accountSuspendedEmail" })
 
     return NextResponse.json({ success: true })
   } catch (error) {

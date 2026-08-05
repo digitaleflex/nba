@@ -29,7 +29,7 @@ export async function DELETE(request: Request) {
     const [user, account] = await Promise.all([
       prisma.user.findUnique({
         where: { id: session.user.id },
-        select: { name: true, email: true },
+        select: { id: true, name: true, email: true },
       }),
       prisma.account.findFirst({
         where: { userId: session.user.id, providerId: "credential" },

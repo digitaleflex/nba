@@ -186,70 +186,100 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   return { id: notification.id }
 }
 
+async function trackEmailDelivery(userId: string, templateName: string, subject: string) {
+  try {
+    const notification = await prisma.notification.create({
+      data: {
+        userId,
+        type: "SYSTEM",
+        title: templateName,
+        body: `Email « ${subject} » envoyé`,
+        data: { templateName },
+      },
+    })
+    await prisma.notificationDelivery.create({
+      data: {
+        notificationId: notification.id,
+        channel: "EMAIL",
+        status: "SENT",
+        sentAt: new Date(),
+      },
+    })
+  } catch {
+    // Ne jamais bloquer le flux utilisateur pour du logging
+  }
+}
+
 /**
  * Envoie un email immédiatement (synchrone) sans notification in-app.
  * Utilisé pour les emails critiques (reset password, OTP).
+ * Accepte des métadonnées optionnelles pour tracer l'envoi en base (non-bloquant).
  */
 export async function sendEmailSync(
   to: string,
   subject: string,
-  html: string
+  html: string,
+  meta?: { userId?: string; templateName?: string },
 ): Promise<void> {
   await sendEmail(to, { subject, html })
+
+  if (meta?.userId && meta?.templateName) {
+    void trackEmailDelivery(meta.userId, meta.templateName, subject)
+  }
 }
 
 export async function sendVerificationEmail(user: { id: string; name: string; email: string }, url: string) {
   const template = verificationEmail(user, url)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "verificationEmail" })
 }
 
 export async function sendWelcomeEmail(user: { id: string; name: string; email: string }) {
   const template = welcomeEmail(user)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "welcomeEmail" })
 }
 
 export async function sendResetPasswordEmail(user: { id: string; name: string; email: string }, url: string) {
   const template = resetPasswordEmail(user, url)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "resetPasswordEmail" })
 }
 
-export async function sendOtpEmail(name: string, email: string, code: string) {
+export async function sendOtpEmail(name: string, email: string, code: string, userId?: string) {
   const template = emailOtp(name, code)
-  await sendEmailSync(email, template.subject, template.html)
+  await sendEmailSync(email, template.subject, template.html, userId ? { userId, templateName: "emailOtp" } : undefined)
 }
 
-export async function sendDeviceVerificationEmail(name: string, email: string, code: string) {
+export async function sendDeviceVerificationEmail(name: string, email: string, code: string, userId?: string) {
   const { deviceVerificationEmail } = await import("@nba/lib/email")
   const template = deviceVerificationEmail(name, code)
-  await sendEmailSync(email, template.subject, template.html)
+  await sendEmailSync(email, template.subject, template.html, userId ? { userId, templateName: "deviceVerificationEmail" } : undefined)
 }
 
-export async function sendAccountDeletionEmail(user: { name: string; email: string }) {
+export async function sendAccountDeletionEmail(user: { id: string; name: string; email: string }) {
   const { accountDeletionConfirmationEmail } = await import("@nba/lib/email")
   const template = accountDeletionConfirmationEmail(user)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "accountDeletionConfirmationEmail" })
 }
 
 export async function sendOnboardingStepEmail(
-  user: { name: string; email: string },
+  user: { id: string; name: string; email: string },
   stepLabel: string,
   nextStepLabel: string | null,
 ) {
   const { onboardingStepEmail } = await import("@nba/lib/email")
   const template = onboardingStepEmail(user, stepLabel, nextStepLabel)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "onboardingStepEmail" })
 }
 
-export async function sendKycSubmittedEmail(user: { name: string; email: string }) {
+export async function sendKycSubmittedEmail(user: { id: string; name: string; email: string }) {
   const { kycSubmittedEmail } = await import("@nba/lib/email")
   const template = kycSubmittedEmail(user)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "kycSubmittedEmail" })
 }
 
-export async function sendBrokerSubmittedEmail(user: { name: string; email: string }) {
+export async function sendBrokerSubmittedEmail(user: { id: string; name: string; email: string }) {
   const { brokerSubmittedEmail } = await import("@nba/lib/email")
   const template = brokerSubmittedEmail(user)
-  await sendEmailSync(user.email, template.subject, template.html)
+  await sendEmailSync(user.email, template.subject, template.html, { userId: user.id, templateName: "brokerSubmittedEmail" })
 }
 
 

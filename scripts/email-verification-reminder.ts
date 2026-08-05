@@ -56,8 +56,7 @@ async function getIncompleteUsers(): Promise<IncompleteUser[]> {
 
       const hasAccess =
         profileComplete &&
-        kycStatus === "APPROVED" &&
-        brokerStatus === "APPROVED"
+        kycStatus === "APPROVED"
 
       if (hasAccess) return null
 

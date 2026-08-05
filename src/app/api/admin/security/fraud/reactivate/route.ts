@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     })
 
     const template = accountReactivatedEmail({ name: user.name, email: user.email })
-    await sendEmailSync(user.email, template.subject, template.html)
+    await sendEmailSync(user.email, template.subject, template.html, { userId, templateName: "accountReactivatedEmail" })
 
     return NextResponse.json({ success: true })
   } catch (error) {

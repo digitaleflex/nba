@@ -107,7 +107,7 @@ export async function sendVerificationCode(userId: string, email: string, req: R
   })
 
   if (user) {
-    await sendDeviceVerificationEmail(user.name, email, code)
+    await sendDeviceVerificationEmail(user.name, email, code, userId)
   }
 }
 

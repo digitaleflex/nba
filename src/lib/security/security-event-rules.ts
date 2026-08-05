@@ -16,7 +16,7 @@ interface AlertRule {
 }
 
 const RULES: AlertRule[] = [
-  { name: "brute_force", eventType: "LOGIN_FAILED", windowMinutes: 1, threshold: 5, action: "suspend_account", severity: "HIGH", playbookType: "BRUTE_FORCE" },
+  { name: "brute_force", eventType: "LOGIN_FAILED", windowMinutes: 2, threshold: 5, action: "suspend_account", severity: "HIGH", playbookType: "BRUTE_FORCE" },
   { name: "impossible_travel_burst", eventType: "IMPOSSIBLE_TRAVEL_DETECTED", windowMinutes: 60, threshold: 3, action: "suspend_account", severity: "CRITICAL", playbookType: "IMPOSSIBLE_TRAVEL" },
   { name: "session_hijack", eventType: "SESSION_HIJACK_DETECTED", windowMinutes: 5, threshold: 1, action: "notify", severity: "CRITICAL", playbookType: "SESSION_HIJACK" },
   { name: "twofa_disabled_suspicious", eventType: "TWOFA_DISABLED", windowMinutes: 5, threshold: 1, action: "notify", severity: "HIGH", playbookType: "ACCOUNT_TAKEOVER" },

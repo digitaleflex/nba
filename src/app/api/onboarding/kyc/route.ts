@@ -57,12 +57,12 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    await updateOnboardingStatus(userId, "BROKER_PENDING")
+    await updateOnboardingStatus(userId, "REVIEW_PENDING")
 
     // Notifier l'utilisateur
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { name: true, email: true },
+      select: { id: true, name: true, email: true },
     })
 
     if (user) {
