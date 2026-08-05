@@ -161,14 +161,14 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     where.audience = {
       some: {
         ...((where.audience as any)?.some ?? {}),
-        plan: { name: { contains: "Indices", mode: "insensitive" } },
+        plan: { name: { contains: "Deriv", mode: "insensitive" } },
       },
     }
   } else if (filter === "forex+indices") {
     where.audience = {
       some: {
         ...((where.audience as any)?.some ?? {}),
-        plan: { name: { in: ["Forex", "Indices"] } },
+        plan: { name: { in: ["Forex", "Deriv"] } },
       },
     }
   }

@@ -68,8 +68,8 @@ const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "today", label: "Aujourd'hui" },
   { key: "week", label: "Cette semaine" },
   { key: "forex", label: "Forex" },
-  { key: "indices", label: "Indices" },
-  { key: "forex+indices", label: "Forex + Indices" },
+  { key: "indices", label: "Deriv" },
+  { key: "forex+indices", label: "Forex + Deriv" },
 ]
 
 function formatRelativeDate(dateStr: string): string {
@@ -219,11 +219,11 @@ export function SignalsView() {
 
     const groupStr = summary.group.toLowerCase()
     const hasForex = groupStr.includes("forex")
-    const hasIndices = groupStr.includes("indices")
+    const hasDeriv = groupStr.includes("deriv")
 
     return FILTERS.filter((f) => {
       if (f.key === "forex" && !hasForex) return false
-      if (f.key === "indices" && !hasIndices) return false
+      if (f.key === "indices" && !hasDeriv) return false
       return true
     })
   }, [summary])

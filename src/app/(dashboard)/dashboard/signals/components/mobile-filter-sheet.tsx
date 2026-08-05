@@ -39,8 +39,8 @@ const FILTER_GROUPS: FilterGroup[] = [
     label: "Marché",
     filters: [
       { key: "forex", label: "Forex" },
-      { key: "indices", label: "Indices" },
-      { key: "forex+indices", label: "Forex + Indices" },
+      { key: "indices", label: "Deriv" },
+      { key: "forex+indices", label: "Forex + Deriv" },
     ],
   },
 ]
@@ -69,7 +69,7 @@ export function MobileFilterSheet({
 
     const groupStr = group.toLowerCase()
     const hasForex = groupStr.includes("forex")
-    const hasIndices = groupStr.includes("indices")
+    const hasDeriv = groupStr.includes("deriv")
 
     return FILTER_GROUPS.map((g) => {
       if (g.label !== "Marché") return g
@@ -78,8 +78,8 @@ export function MobileFilterSheet({
         ...g,
         filters: g.filters.filter((f) => {
           if (f.key === "forex" && !hasForex) return false
-          if (f.key === "indices" && !hasIndices) return false
-          if (f.key === "forex+indices" && (!hasForex || !hasIndices)) return false
+          if (f.key === "indices" && !hasDeriv) return false
+          if (f.key === "forex+indices" && (!hasForex || !hasDeriv)) return false
           return true
         }),
       }

@@ -75,7 +75,8 @@ export async function GET(request: NextRequest) {
           accessRequests: {
             where: { status: "APPROVED" },
             select: {
-              plan: { select: { id: true, name: true } },
+              updatedAt: true,
+              plan: { select: { id: true, name: true, durationDays: true } },
             },
           },
           kycDocuments: {
@@ -118,7 +119,22 @@ export async function GET(request: NextRequest) {
       prisma.user.count({ where }),
     ])
 
-        return { members, total, page, limit }
+    const enrichedMembers = members.map((m: any) => {
+      const subscriptions = (m.accessRequests ?? []).map((ar: any) => {
+        const start = ar.updatedAt ?? new Date()
+        const days = ar.plan?.durationDays ?? 30
+        const expiresAt = new Date(start.getTime() + days * 24 * 60 * 60 * 1000)
+        return {
+          plan: { id: ar.plan?.id, name: ar.plan?.name },
+          startAt: start,
+          expiresAt,
+          remainingDays: Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (24 * 60 * 60 * 1000))),
+        }
+      })
+      return { ...m, subscriptions }
+    })
+
+        return { members: enrichedMembers, total, page, limit }
       },
       15,
     )

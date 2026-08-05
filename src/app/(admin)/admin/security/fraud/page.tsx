@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { type ComponentType } from "react"
 import { Loader2, ShieldAlert, Ban, Globe, Users, Play, Unlock, RotateCw, Search } from "lucide-react"
 import { toast } from "sonner"
+import { DuplicatesPanel } from "../../components/duplicates-panel"
 
 interface FraudSummary {
   highEvents: number
@@ -129,6 +130,8 @@ export default function FraudDashboard() {
         <StatCard icon={Users} label="Comptes suspendus" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" />
         <StatCard icon={Ban} label="Appareils bloques" value={summary?.blockedDevices ?? 0} color="text-amber-500" />
       </div>
+
+      <DuplicatesPanel />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="rounded-xl border p-6 space-y-4">

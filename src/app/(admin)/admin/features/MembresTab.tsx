@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle } from "lucide-react"
+import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
 import { Card, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
@@ -205,6 +205,24 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
     setPage(1)
   }
 
+  const [purgingCache, setPurgingCache] = useState(false)
+
+  async function purgeCacheAndReload() {
+    setPurgingCache(true)
+    try {
+      const res = await fetch("/api/admin/cache/purge", { method: "POST" })
+      if (!res.ok) throw new Error()
+      const d = await res.json()
+      invalidate()
+      await fetchMembres()
+      toast.success(`Cache purgé (${d.purged} préfixes)`)
+    } catch {
+      toast.error("Erreur lors de la purge du cache")
+    } finally {
+      setPurgingCache(false)
+    }
+  }
+
   const totalPages = Math.ceil(total / limit)
   const hasFilters = searchQuery || statusFilter || planFilter || onboardingFilter
 
@@ -294,6 +312,23 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             </button>
           )}
         </div>
+
+        <button
+          onClick={purgeCacheAndReload}
+          disabled={purgingCache}
+          title="Vider le cache et recharger immédiatement"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border/60 bg-background text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {purgingCache ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
+          Vider le cache
+        </button>
+        <Button
+          onClick={() => fetchMembres()}
+          title="Actualiser la liste"
+          className="h-9 px-3"
+        >
+          Actualiser
+        </Button>
 
         <FilterSheet
           groups={[
@@ -406,11 +441,17 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                           )}
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex flex-wrap gap-1">
-                            {m.accessRequests?.map((ar: any) => (
-                              <Badge key={ar.plan.id} variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">{ar.plan.name}</Badge>
-                            ))}
-                            {(!m.accessRequests || m.accessRequests.length === 0) && <span className="text-muted-foreground">—</span>}
+                          <div className="flex flex-col gap-1">
+                            {(m.subscriptions?.length ?? 0) > 0 ? (
+                              m.subscriptions.map((sub: any) => (
+                                <div key={sub.plan.id} className="flex flex-col">
+                                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
+                                  <ExpiryBadge expiresAt={sub.expiresAt} remainingDays={sub.remainingDays} />
+                                </div>
+                              ))
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
@@ -629,7 +670,6 @@ function MemberCard({
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const pushCount = m._count?.pushSubscriptions ?? 0
-  const hasPlans = m.accessRequests?.length > 0
 
   return (
     <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
@@ -657,8 +697,11 @@ function MemberCard({
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {hasPlans ? m.accessRequests.map((ar: any) => (
-          <Badge key={ar.plan.id} variant="secondary" className="text-[10px] px-2 py-0.5 font-medium">{ar.plan.name}</Badge>
+        {(m.subscriptions?.length ?? 0) > 0 ? m.subscriptions.map((sub: any) => (
+          <div key={sub.plan.id} className="flex flex-col gap-0.5">
+            <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
+            <ExpiryBadge expiresAt={sub.expiresAt} remainingDays={sub.remainingDays} />
+          </div>
         )) : (
           <span className="text-[10px] text-muted-foreground">Aucun abonnement</span>
         )}
@@ -765,4 +808,28 @@ function OnboardingBadge({ status }: { status: string | null }) {
   }
   const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+}
+
+function ExpiryBadge({ expiresAt, remainingDays }: { expiresAt: string; remainingDays: number }) {
+  const date = new Date(expiresAt)
+  const label = date.toLocaleDateString("fr-FR")
+  if (remainingDays <= 0) {
+    return (
+      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-rose-500/10 text-rose-600" title="Abonnement expiré">
+        Échu le {label}
+      </span>
+    )
+  }
+  if (remainingDays <= 7) {
+    return (
+      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-600" title="Abonnement expire bientôt">
+        ⏳ fin {label} ({remainingDays}j)
+      </span>
+    )
+  }
+  return (
+    <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted/50 text-muted-foreground" title="Abonnement actif">
+      fin {label} ({remainingDays}j)
+    </span>
+  )
 }
