@@ -15,6 +15,7 @@ import { SignalsTab } from "./features/SignalsTab"
 import { KycTab } from "./features/KycTab"
 import { BrokerTab } from "./features/BrokerTab"
 
+import { RevenueTab } from "./features/RevenueTab"
 import { AnalyticsTab } from "./features/AnalyticsTab"
 import { SecurityTab } from "./features/SecurityTab"
 import { FraudTab } from "./features/FraudTab"
@@ -567,6 +568,10 @@ function AdminConsoleContent() {
               )}
             </div>
           </div>
+        )}
+
+        {activeTab === "revenue" && (
+          <RevenueTab cachedGet={cachedGet} />
         )}
 
         {activeTab === "analytics" && (

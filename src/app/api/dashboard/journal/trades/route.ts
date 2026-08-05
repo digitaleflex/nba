@@ -186,9 +186,20 @@ export async function POST(request: NextRequest) {
     })
 
     const created = await withRetryTransaction(async (tx) => {
-      const activeSession = await tx.journalSession.findFirst({
+      let activeSession = await tx.journalSession.findFirst({
         where: { userId: session.user.id, isActive: true },
       })
+
+      if (!activeSession) {
+        const plan = await tx.accessRequest.findFirst({
+          where: { userId: session.user.id, status: "APPROVED" },
+          select: { planId: true },
+          orderBy: { reviewedAt: "desc" },
+        })
+        activeSession = await tx.journalSession.create({
+          data: { userId: session.user.id, planId: plan?.planId ?? null },
+        })
+      }
 
       const trade = await tx.trade.create({
         data: {

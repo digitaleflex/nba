@@ -7,6 +7,7 @@ import { Calendar, User, ChevronLeft } from "lucide-react"
 import { MarkdownMessage } from "@nba/lib/markdown"
 import Link from "next/link"
 import { SignalActions } from "./components/signal-actions"
+import { FirstSignalJournalGuide } from "@nba/components/guides/first-signal-journal-guide"
 
 export default async function SignalDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -138,6 +139,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
 
           {/* Journal : lien rapide vers le formulaire de trade */}
           <Link
+            id="journal-from-signal-btn"
             href={`/dashboard/journal?tab=trades&signalId=${signal.id}`}
             className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 text-sm font-medium text-primary transition-colors min-h-[44px] animate-[pulse_3s_ease-in-out_infinite]"
           >
@@ -196,6 +198,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           )}
         </CardContent>
       </Card>
+      <FirstSignalJournalGuide />
     </div>
   )
 }

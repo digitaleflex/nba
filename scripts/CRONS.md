@@ -12,6 +12,7 @@ Crons installes sur le VPS le 2026-07-13 (programme #audit-resend).
 | `0 4 * * 0` | Dimanche 4h | `cleanup-email-events.ts` | GDPR : aggreger + supprimer email_events > 6 mois |
 | `0 8 * * *` | Tous les jours 8h | `email-daily-digest.ts` | Digest HTML quotidien envoye a l'admin |
 | `0 9 * * 1` | Lundi 9h | `journal-weekly-report.ts` | Rapport hebdomadaire du journal de trading aux membres |
+| `0 18 * * *` | Tous les jours 18h | `journal-daily-nudge.ts` | Push de rappel quotidien pour inviter les membres à noter leur réflexion (17h-23h fuseau local) |
 | `0 5 * * 0` | Dimanche 5h | `cleanup-auth-attempts.ts` | Supprimer les login_attempts (connexion/inscription) > 90 jours |
 
 ## Logs
@@ -22,6 +23,8 @@ Tous les logs sont dans `/home/audest/logs/` :
 - `nba-cleanup.log` (ghost access)
 - `nba-email-gdpr.log` (GDPR)
 - `nba-digest.log` (digest)
+- `nba-weekly.log` (rapport hebdo journal)
+- `nba-nudge.log` (nudge quotidien journal)
 
 ## Verification
 

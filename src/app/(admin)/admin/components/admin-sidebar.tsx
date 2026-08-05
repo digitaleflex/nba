@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   LayoutDashboard, Users, FileText, Shield, Fingerprint, MessageCircle,
   Mail, Bell, Settings, BarChart3, Activity, Gavel, Radio, ShieldCheck,
-  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson, Code2, Terminal, Eye, ListChecks, MessagesSquare, Search, ChevronDown,
+  LucideIcon, AlertTriangle, Bot, Clock, Database, Smartphone, BookOpen, FileJson, Code2, Terminal, Eye, ListChecks, MessagesSquare, Search, ChevronDown, DollarSign,
 } from "lucide-react"
 import { cn } from "@nba/design-system"
 
@@ -54,6 +54,7 @@ export function AdminSidebar({ activeTab, supportCount }: { activeTab: string; s
     { tab: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
     { tab: "stats", label: "Statistiques", icon: BarChart3 },
     { tab: "analytics", label: "Analytics", icon: Activity },
+    { tab: "revenue", label: "Revenus", icon: DollarSign },
   ]
 
   const decisionItems: NavItem[] = [

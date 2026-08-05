@@ -117,7 +117,8 @@ describe("POST /api/dashboard/journal/trades", () => {
     vi.clearAllMocks()
     authSession()
     prismaMock.trade = { findMany: vi.fn(), count: vi.fn(), groupBy: vi.fn(), create: vi.fn() }
-    prismaMock.journalSession = { findFirst: vi.fn() }
+    prismaMock.journalSession = { findFirst: vi.fn(), create: vi.fn() }
+    prismaMock.accessRequest = { findFirst: vi.fn() }
     prismaMock.streak = { findUnique: vi.fn(), create: vi.fn(), update: vi.fn() }
     prismaMock.$transaction = vi.fn()
   })
@@ -139,6 +140,8 @@ describe("POST /api/dashboard/journal/trades", () => {
     }
 
     prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.accessRequest.findFirst.mockResolvedValue(null)
+    prismaMock.journalSession.create.mockResolvedValue({ id: "s1", userId: USER_ID, planId: null })
     prismaMock.trade.create.mockResolvedValue({
       id: "t1",
       userId: USER_ID,
@@ -176,6 +179,8 @@ describe("POST /api/dashboard/journal/trades", () => {
     }
 
     prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.accessRequest.findFirst.mockResolvedValue(null)
+    prismaMock.journalSession.create.mockResolvedValue({ id: "s2", userId: USER_ID, planId: null })
     prismaMock.trade.create.mockResolvedValue({ id: "t2", userId: USER_ID, pair: "BTCUSDT", pnl: -100 })
     prismaMock.streak.findUnique.mockResolvedValue(null)
     prismaMock.streak.create.mockResolvedValue({})
@@ -203,6 +208,8 @@ describe("POST /api/dashboard/journal/trades", () => {
     }
 
     prismaMock.journalSession.findFirst.mockResolvedValue(null)
+    prismaMock.accessRequest.findFirst.mockResolvedValue(null)
+    prismaMock.journalSession.create.mockResolvedValue({ id: "s3", userId: USER_ID, planId: null })
     prismaMock.trade.create.mockResolvedValue({ id: "t3", userId: USER_ID, pair: "EURUSD", pnl: 0 })
 
     const res = await POST(mockReq("https://x/api/dashboard/journal/trades", body))

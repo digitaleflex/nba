@@ -80,6 +80,15 @@ export const CRON_DEFINITIONS: CronDefinition[] = [
     enabled: true,
   },
   {
+    name: "journal-daily-nudge",
+    label: "Nudge journal quotidien",
+    desc: "Push de rappel aux membres pour noter leur réflexion du jour (17h-23h locale)",
+    schedule: "0 18 * * *",
+    command: "scripts/journal-daily-nudge.ts",
+    logFile: "/home/audest/logs/nba-nudge.log",
+    enabled: true,
+  },
+  {
     name: "backup-postgres",
     label: "Backup PostgreSQL",
     desc: "Sauvegarde quotidienne chiffrée vers B2 (scripts/backup.sh)",
