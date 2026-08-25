@@ -954,16 +954,6 @@ model SignalRead {
   @@map("signal_reads")
 }
 
-model SignalTemplate {
-  id        String   @id @default(uuid()) @db.Uuid
-  name      String   @unique
-  content   String
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("signal_templates")
-}
-
 model SignalFavorite {
   id        String   @id @default(uuid()) @db.Uuid
   signalId  String   @map("signal_id") @db.Uuid
