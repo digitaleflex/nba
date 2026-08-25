@@ -53,19 +53,17 @@ describe("GET /api/dashboard/journal/sessions", () => {
     expect(res.status).toBe(401)
   })
 
-  it("retourne session active et sessions récentes", async () => {
+  it("retourne la session active", async () => {
     prismaMock.journalSession.findFirst.mockResolvedValue({
       id: "s1",
-      plan: { name: "Premium" },
       _count: { trades: 3 },
     })
-    prismaMock.journalSession.findMany.mockResolvedValue([{ id: "s2", _count: { trades: 1 } }])
 
     const res = await GET()
     const json = await res.json()
 
     expect(json.active).toEqual(expect.objectContaining({ id: "s1" }))
-    expect(json.recent).toHaveLength(1)
+    expect(json.recent).toBeUndefined()
   })
 })
 

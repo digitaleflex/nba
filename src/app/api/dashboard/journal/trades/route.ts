@@ -96,7 +96,6 @@ export async function GET(request: NextRequest) {
       prisma.journalSession.findFirst({
         where: { userId: session.user.id, isActive: true },
         include: {
-          plan: { select: { name: true } },
           _count: { select: { trades: true } },
         },
       }),
@@ -110,7 +109,6 @@ export async function GET(request: NextRequest) {
 
     const activeSessionSummary = activeSession ? {
       id: activeSession.id,
-      planName: activeSession.plan?.name ?? "Général",
       tradeCount: activeSession._count.trades,
     } : null
 

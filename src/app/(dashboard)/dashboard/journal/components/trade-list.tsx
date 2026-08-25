@@ -20,6 +20,8 @@ interface Trade {
   rrRatio: number | null
   mood: string | null
   confidence: number | null
+  strategy: string | null
+  setupType: string | null
   note: string | null
   tags: string[]
   tradedAt: string

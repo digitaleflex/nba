@@ -6,6 +6,7 @@ import { Button, Input, Dialog, DialogContent, DialogHeader, DialogTitle, Bottom
 import { toast } from "sonner"
 import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 import { analyzeTrade } from "@nba/lib/coach/patterns"
+import { calculatePnl, calculateRR, getContractSize } from "@nba/lib/services/pnl"
 import { checkMissions } from "@nba/hooks/use-user-level"
 import { Confetti } from "@nba/components/confetti"
 import { AnalyticsEvents } from "@nba/lib/analytics"
@@ -18,11 +19,6 @@ const MOODS = [
   { value: "GREEDY", emoji: "🤑", label: "Gourmand", color: "bg-purple-500/20 hover:bg-purple-500/30" },
   { value: "REVENGE", emoji: "😡", label: "Revenge", color: "bg-red-500/20 hover:bg-red-500/30" },
 ]
-
-function getContractSize(pair: string): number {
-  const forex = ["AUDCAD","AUDCHF","AUDJPY","AUDNZD","AUDUSD","CADCHF","CADJPY","CHFJPY","EURAUD","EURCAD","EURCHF","EURGBP","EURJPY","EURNZD","EURUSD","GBPAUD","GBPCAD","GBPCHF","GBPJPY","GBPNZD","GBPUSD","NZDCAD","NZDCHF","NZDJPY","NZDUSD","USDCAD","USDCHF","USDJPY","USDMXN","USDCNH","XAUUSD","XAGUSD"]
-  return forex.includes(pair.toUpperCase()) ? 100000 : 1
-}
 
 function LotCalculator({ entry, sl, direction, contractSize, onApply }: {
   entry: number
@@ -144,20 +140,32 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   const swapVal = parseFloat(swap) || 0
   const sl = parseFloat(stopLoss)
   const tp = parseFloat(takeProfit)
-  const dir = direction === "BUY" ? 1 : -1
   const contractSize = getContractSize(pair)
 
   const pnl = useMemo(() => {
     if (result === "BREAKEVEN" || !entry || !exit || !lot) return 0
-    return Math.round(((exit - entry) * lot * contractSize * dir - spreadVal - commissionVal - swapVal) * 100) / 100
-  }, [entry, exit, lot, contractSize, dir, spreadVal, commissionVal, swapVal, result])
+    return calculatePnl({
+      pair,
+      entryPrice: entry,
+      exitPrice: exit,
+      lotSize: lot,
+      direction,
+      result,
+      spread: spreadVal,
+      commission: commissionVal,
+      swap: swapVal,
+    })
+  }, [pair, entry, exit, lot, direction, result, spreadVal, commissionVal, swapVal])
 
   const rr = useMemo(() => {
-    if (!sl || !tp || !entry) return null
-    const risk = Math.abs(entry - sl)
-    const reward = Math.abs(tp - entry)
-    return risk > 0 ? Math.round((reward / risk) * 10) / 10 : null
-  }, [entry, sl, tp])
+    if (!entry) return null
+    return calculateRR({
+      entryPrice: entry,
+      stopLoss: Number.isFinite(sl) ? sl : null,
+      takeProfit: Number.isFinite(tp) ? tp : null,
+      direction,
+    })
+  }, [entry, sl, tp, direction])
 
   const disablePrice = result === "BREAKEVEN"
 

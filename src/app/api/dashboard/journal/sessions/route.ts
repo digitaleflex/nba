@@ -16,23 +16,14 @@ export async function GET() {
     const sess = await getServerSession()
     if (!sess) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
 
-    const [active, recent] = await Promise.all([
-      prisma.journalSession.findFirst({
-        where: { userId: sess.user.id, isActive: true },
-        include: {
-          plan: { select: { name: true } },
-          _count: { select: { trades: true } },
-        },
-      }),
-      prisma.journalSession.findMany({
-        where: { userId: sess.user.id, isActive: false },
-        include: { _count: { select: { trades: true } } },
-        orderBy: { endedAt: "desc" },
-        take: 20,
-      }),
-    ])
+    const active = await prisma.journalSession.findFirst({
+      where: { userId: sess.user.id, isActive: true },
+      include: {
+        _count: { select: { trades: true } },
+      },
+    })
 
-    return NextResponse.json({ active, recent })
+    return NextResponse.json({ active })
   } catch (error) {
     return handleAuthError(error)
   }

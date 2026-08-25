@@ -31,8 +31,6 @@ export default function CoachingPage() {
       const res = await fetch(`/api/admin/journal/${id}`)
       if (!res.ok) { setError("Erreur chargement journal"); setLoading(false); return }
       const data = await res.json()
-      const wins = data.recentTrades.filter((t: any) => t.result === "WIN").length
-      data.stats.winRate = data.recentTrades.length > 0 ? Math.round((wins / data.recentTrades.length) * 100) : 0
       data.recentTrades = data.recentTrades.slice(0, 10)
       setJournal(data)
     } catch { setError("Erreur de recherche") }
@@ -93,7 +91,7 @@ export default function CoachingPage() {
             {journal.recentTrades.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Aucun trade</p> : (
               <table className="w-full text-xs text-left">
                 <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
-                  <th className="px-2 py-2">Date</th><th className="px-2 py-2">Paire</th><th className="px-2 py-2">Direction</th><th className="px-2 py-2">Resultat</th><th className="px-2 py-2">PnL</th><th className="px-2 py-2">Mood</th>
+                  <th className="px-2 py-2">Date</th><th className="px-2 py-2">Paire</th><th className="px-2 py-2">Direction</th><th className="px-2 py-2">Resultat</th><th className="px-2 py-2">PnL</th><th className="px-2 py-2">Setup</th><th className="px-2 py-2">Mood</th>
                 </tr></thead>
                 <tbody className="divide-y">
                   {journal.recentTrades.map((t: any) => (
@@ -103,6 +101,7 @@ export default function CoachingPage() {
                       <td className="px-2 py-2">{t.direction === "BUY" ? "📈" : "📉"}</td>
                       <td className="px-2 py-2"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${t.result === "WIN" ? "bg-emerald-100 text-emerald-700" : t.result === "LOSS" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>{t.result}</span></td>
                       <td className={`px-2 py-2 font-mono font-bold ${t.pnl >= 0 ? "text-emerald-500" : "text-red-500"}`}>{t.pnl.toFixed(2)}</td>
+                      <td className="px-2 py-2 text-muted-foreground">{[t.strategy, t.setupType].filter(Boolean).join(" · ") || "—"}</td>
                       <td className="px-2 py-2 text-muted-foreground">{t.mood || "—"}</td>
                     </tr>
                   ))}

@@ -17,12 +17,14 @@ export async function GET(
     })
     if (!user) return NextResponse.json({ error: "Utilisateur introuvable" }, { status: 404 })
 
-    const [trades, recentTrades, reflections, streaks, sessions] = await Promise.all([
+    const [trades, wins, recentTrades, reflections, streaks, sessions] = await Promise.all([
       prisma.trade.aggregate({
         where: { userId, deletedAt: null },
         _count: true,
         _sum: { pnl: true },
-        _avg: { pnl: true },
+      }),
+      prisma.trade.count({
+        where: { userId, deletedAt: null, result: "WIN" },
       }),
       prisma.trade.findMany({
         where: { userId: userId, deletedAt: null },
@@ -58,8 +60,8 @@ export async function GET(
       stats: {
         totalTrades: trades._count,
         totalPnl: trades._sum.pnl,
-        avgPnl: trades._avg.pnl,
-        winRate: 0, // calculated client-side
+        // Même définition que /api/dashboard/journal/stats : wins sur l'historique complet
+        winRate: trades._count > 0 ? Math.round((wins / trades._count) * 1000) / 10 : 0,
       },
       recentTrades,
       reflections,

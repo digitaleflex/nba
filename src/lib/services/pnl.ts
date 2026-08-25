@@ -1,4 +1,4 @@
-function getContractSize(pair: string): number {
+export function getContractSize(pair: string): number {
   const forexPairs = [
     "AUDCAD", "AUDCHF", "AUDJPY", "AUDNZD", "AUDUSD",
     "CADCHF", "CADJPY",
