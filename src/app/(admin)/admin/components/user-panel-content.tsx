@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail, Bell, UserCog } from "lucide-react"
+import { User, Shield, Check, Ban, FileText, ExternalLink, Trash2, Zap, Circle, UserPlus, Camera, Video, CreditCard, Mail, Bell } from "lucide-react"
 import { Button, Badge, cn, Input } from "@nba/design-system"
 import { useConfirm } from "@nba/components/confirm-dialog"
 import { useAdminRole } from "../role-context"
@@ -441,15 +441,6 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           {isSuperAdmin && <>
           <div className="space-y-2 border-t border-destructive/20 pt-4">
             <span className="text-[10px] text-destructive uppercase font-bold block">Zone de danger</span>
-
-            <Button
-              variant="outline"
-              size="sm"
-              className="w-full gap-1.5 justify-start border-primary/30 bg-primary/5 text-primary hover:bg-primary/10"
-              onClick={() => onAction("impersonate", { id: data.id })}
-            >
-              <UserCog className="size-3.5" /> Se connecter en tant que (impersonation)
-            </Button>
 
             <Button
               variant="destructive"

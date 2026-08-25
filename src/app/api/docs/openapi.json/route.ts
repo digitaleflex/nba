@@ -56,12 +56,6 @@ const api = {
     "/api/admin/security/digest": {
       post: { summary: "Générer rapport sécurité quotidien (cron)", tags: ["Admin - Fraude"], security: [{ adminAuth: [] }], responses: { "200": { description: "Email envoyé" } } },
     },
-    "/api/admin/sessions": {
-      get: { summary: "Sessions actives", tags: ["Admin - Sessions"], security: [{ adminAuth: [] }], responses: { "200": { description: "Liste" } } },
-    },
-    "/api/admin/sessions/{id}": {
-      delete: { summary: "Révoquer une session", tags: ["Admin - Sessions"], security: [{ adminAuth: [] }], responses: { "200": { description: "OK" } } },
-    },
     "/api/admin/support": {
       get: { summary: "Tickets support", tags: ["Admin - Support"], security: [{ adminAuth: [] }], responses: { "200": { description: "Liste" } } },
     },
@@ -73,9 +67,6 @@ const api = {
     },
     "/api/admin/journal/{userId}": {
       get: { summary: "Journal trading complet d'un membre", tags: ["Admin - Coaching"], security: [{ adminAuth: [] }], responses: { "200": { description: "Trades + stats + streaks" } } },
-    },
-    "/api/admin/metrics": {
-      get: { summary: "Métriques système (léger)", tags: ["Admin - Observabilité"], security: [{ adminAuth: [] }], responses: { "200": { description: "JSON compteurs" } } },
     },
     "/api/dashboard/sessions": {
       get: { summary: "Mes sessions actives", tags: ["Dashboard"], security: [{ userAuth: [] }], responses: { "200": { description: "Liste" } } },
@@ -97,11 +88,9 @@ const api = {
   tags: [
     { name: "Auth", description: "Authentification" },
     { name: "Admin - Fraude", description: "Anti-fraude, sécurité, playbooks" },
-    { name: "Admin - Sessions", description: "Gestion des sessions" },
     { name: "Admin - Support", description: "Tickets support" },
     { name: "Admin - Membres", description: "Gestion des membres" },
     { name: "Admin - Coaching", description: "Journal de trading" },
-    { name: "Admin - Observabilité", description: "Métriques et monitoring" },
     { name: "Dashboard", description: "API utilisateur" },
   ],
 }

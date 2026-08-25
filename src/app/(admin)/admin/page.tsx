@@ -21,7 +21,7 @@ import { SecurityTab } from "./features/SecurityTab"
 import { FraudTab } from "./features/FraudTab"
 import { EmailsTab } from "./features/EmailsTab"
 import { SettingsTab } from "./features/SettingsTab"
-import { AuditTab } from "./features/AuditTab"
+
 import { BugsTab } from "./features/BugsTab"
 import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
@@ -417,19 +417,6 @@ function AdminConsoleContent() {
         } else {
           toast.error("Erreur lors de l'envoi de la notification.")
         }
-      } else if (actionType === "impersonate") {
-        const res = await fetch(`/api/admin/members/${extraData.id}/impersonate`, {
-          method: "POST",
-        })
-        if (res.ok) {
-          toast.success("Connexion en tant que l'utilisateur…")
-          // better-auth a posé un nouveau cookie de session : on force un
-          // full reload pour adopter la session du membre côté client.
-          window.location.href = "/dashboard"
-        } else {
-          const body = await res.json().catch(() => ({}))
-          toast.error(body.error || "Impossible de vous connecter en tant que cet utilisateur.")
-        }
       }
     } catch (err) {
       console.error(err)
@@ -527,49 +514,6 @@ function AdminConsoleContent() {
           <BrokerTab cachedGet={cachedGet} invalidate={invalidateAdminCache} onOpenPanel={openPanel} registerRefetch={registerRefetch} />
         )}
 
-        {activeTab === "stats" && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-border pb-5">
-              <div>
-                <h1 className="text-xl font-bold tracking-tight text-foreground">Statistiques globales</h1>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Compteurs clés consolidés d&apos;activité de la plateforme NBA.
-                </p>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-              {opsData && (
-                <>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Membres</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalMembers || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Signaux émis</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.publishedSignalsCount || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Dossiers KYC Validés</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.approvedKycCount || 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails envoyés</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalEmailsSent ?? 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">E-mails en échec</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.attention?.failedEmailsCount ?? 0}</p>
-                  </Card>
-                  <Card className="border-border bg-card/30 p-6 space-y-1">
-                    <span className="text-[10px] text-muted-foreground uppercase font-bold">Notifications envoyées</span>
-                    <p className="text-2xl font-bold text-foreground">{opsData?.stats?.totalNotificationsSent ?? 0}</p>
-                  </Card>
-                </>
-              )}
-            </div>
-          </div>
-        )}
-
         {activeTab === "revenue" && (
           <RevenueTab cachedGet={cachedGet} />
         )}
@@ -597,10 +541,6 @@ function AdminConsoleContent() {
 
         {activeTab === "notifications" && (
           <NotificationsTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
-        )}
-
-        {activeTab === "audit" && (
-          <AuditTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
         )}
 
         {activeTab === "bugs" && (

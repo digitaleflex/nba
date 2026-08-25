@@ -6,7 +6,7 @@ const MODELS = ["User", "Session", "Account", "Signal", "Trade", "Device", "Secu
 
 export async function GET() {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    await requireRole(["SUPER_ADMIN"])
     const counts: Record<string, number> = {}
     for (const model of MODELS) {
       try {

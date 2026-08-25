@@ -19,10 +19,3 @@ export const signalCreateSchema = z.object({
 export const signalUpdateSchema = signalCreateSchema.partial()
 
 export type SignalCreateInput = z.infer<typeof signalCreateSchema>
-
-export const signalTemplateSchema = z.object({
-  name: z.string().min(1, "Le nom du modèle est requis").max(200),
-  content: z.string().min(1, "Le contenu du modèle est requis").max(10000),
-}).strict()
-
-export type SignalTemplateInput = z.infer<typeof signalTemplateSchema>

@@ -91,6 +91,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
     router.push(url)
   }
 
+  const navigateToAuditLog = () => {
+    setIsOpen(false)
+    setQuery("")
+    setResults(null)
+    setFocusedIndex(-1)
+    router.push("/admin/audit")
+  }
+
   const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "ArrowDown") {
       e.preventDefault()
@@ -104,7 +112,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
       if (option.type === "user") navigateTo("users", `search=${encodeURIComponent(option.label)}`)
       else if (option.type === "signal") navigateTo("signals", `edit=${option.id}`)
       else if (option.type === "kyc") navigateTo("kyc", `id=${option.id}`)
-      else if (option.type === "audit") navigateTo("audit")
+      else if (option.type === "audit") navigateToAuditLog()
     }
   }
 
@@ -241,7 +249,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                       <div className="space-y-0.5">
                         {results.audit.map((a, i) => {
                           const idx = results.users.length + results.signals.length + results.kyc.length + i
-                          return (<button key={a.id} id={`search-option-${idx}`} onClick={() => navigateTo("audit")} role="option" aria-selected={focusedIndex === idx} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === idx ? "bg-muted" : "hover:bg-muted/50"}`}>
+                          return (<button key={a.id} id={`search-option-${idx}`} onClick={() => navigateToAuditLog()} role="option" aria-selected={focusedIndex === idx} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === idx ? "bg-muted" : "hover:bg-muted/50"}`}>
                             <div>
                               <p className="font-semibold truncate">{a.action}</p>
                               <p className="text-[10px] text-muted-foreground">{a.resourceType}</p>

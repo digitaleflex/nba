@@ -5,7 +5,7 @@ const SECRET_KEYS = ["SECRET", "PASSWORD", "TOKEN", "KEY", "PRIVATE", "PASS", "D
 
 export async function GET() {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    await requireRole(["SUPER_ADMIN"])
     const vars = Object.entries(process.env).map(([key, value]) => {
       const isSecret = SECRET_KEYS.some(sk => key.toUpperCase().includes(sk))
       return {

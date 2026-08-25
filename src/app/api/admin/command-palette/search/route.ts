@@ -41,7 +41,7 @@ const ACTIONS: PaletteActionResult[] = [
   { type: "action", id: "act:view-requests", title: "Voir les demandes d'accès", subtitle: "Décider", href: "/admin?tab=requests", shortcut: "R" },
   { type: "action", id: "act:view-kyc", title: "Voir les KYC en attente", subtitle: "Décider", href: "/admin?tab=kyc", shortcut: "K" },
   { type: "action", id: "act:view-members", title: "Voir les membres", subtitle: "Décider", href: "/admin?tab=membres", shortcut: "M" },
-  { type: "action", id: "act:view-audit", title: "Voir l'audit", subtitle: "Auditer", href: "/admin?tab=audit", shortcut: "A" },
+  { type: "action", id: "act:view-audit", title: "Voir l'audit", subtitle: "Auditer", href: "/admin/audit", shortcut: "A" },
   { type: "action", id: "act:view-moderation", title: "Voir la modération", subtitle: "Auditer", href: "/admin?tab=moderation" },
   { type: "action", id: "act:view-security", title: "Voir la sécurité", subtitle: "Auditer", href: "/admin?tab=security" },
   { type: "action", id: "act:view-tracker", title: "Ouvrir le tracker", subtitle: "Surveiller", href: "/admin/tracker" },

@@ -1,3 +1,5 @@
+import { toast } from "sonner"
+
 export interface SuggestionAction {
   label: string
   variant: "destructive" | "default" | "outline"
@@ -53,9 +55,25 @@ export const SUGGESTION_RULES = [
           description: `${evts.length} tentatives échouées`,
           evidence: evts.map((e) => `${e.ipAddress || "?"} — ${new Date(e.createdAt).toLocaleTimeString("fr-FR")}`),
           actions: [
-            { label: "Bloquer IP", variant: "destructive" as const, onClick: async () => {} },
-            { label: "Suspendre", variant: "destructive" as const, onClick: async () => {} },
-            { label: "Voir les logs", variant: "outline" as const, onClick: async () => {} },
+            {
+              label: "Suspendre",
+              variant: "destructive" as const,
+              confirmRequired: true,
+              onClick: async () => {
+                const res = await fetch("/api/admin/security/fraud/suspend", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ userId }),
+                })
+                if (res.ok) toast.success("Compte suspendu, sessions révoquées.")
+                else toast.error("Échec de la suspension.")
+              },
+            },
+            {
+              label: "Voir les logs",
+              variant: "outline" as const,
+              onClick: async () => { window.location.assign("/admin/audit") },
+            },
           ],
           dismissible: true,
         }))
@@ -73,8 +91,20 @@ export const SUGGESTION_RULES = [
         description: `Connexion depuis des localisations distantes`,
         evidence: [`IP: ${e.ipAddress || "?"}`, `Détails: ${JSON.stringify(e.details)}`],
         actions: [
-          { label: "Révoquer session", variant: "destructive" as const, onClick: async () => {} },
-          { label: "Forcer 2FA", variant: "default" as const, onClick: async () => {} },
+          {
+            label: "Révoquer sessions",
+            variant: "destructive" as const,
+            confirmRequired: true,
+            onClick: async () => {
+              const res = await fetch("/api/admin/members/revoke-sessions", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ userId: e.userId }),
+              })
+              if (res.ok) toast.success("Sessions révoquées.")
+              else toast.error("Échec de la révocation.")
+            },
+          },
         ],
         dismissible: true,
       }))
@@ -93,9 +123,7 @@ export const SUGGESTION_RULES = [
           title: `IP partagée suspecte : ${ip}`,
           description: `${new Set(evts.map((e) => e.userId)).size} comptes différents depuis cette IP`,
           evidence: [...new Set(evts.map((e) => e.user?.email).filter(Boolean))] as string[],
-          actions: [
-            { label: "Bloquer IP", variant: "destructive" as const, onClick: async () => {} },
-          ],
+          actions: [],
           dismissible: true,
         }))
     },

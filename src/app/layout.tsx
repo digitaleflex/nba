@@ -2,7 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ThemeProvider, ToastProvider, TopLoader, TooltipProvider } from "@nba/design-system";
-import { ImpersonationBanner } from "./components/impersonation-banner";
 import { OfflineBanner } from "./components/offline-banner";
 import { DeviceFingerprintInit } from "@nba/lib/hooks/use-device-fingerprint";
 import "./globals.css";
@@ -117,7 +116,6 @@ export default function RootLayout({
           <Suspense fallback={null}>
             <TopLoader />
           </Suspense>
-          <ImpersonationBanner />
           <TooltipProvider delay={150}>
             {children}
           </TooltipProvider>

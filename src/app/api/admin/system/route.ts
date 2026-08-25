@@ -3,7 +3,7 @@ import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
 
 export async function GET() {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    await requireRole(["SUPER_ADMIN"])
     return NextResponse.json({
       node: process.version,
       platform: process.platform,

@@ -62,7 +62,6 @@ export const msg = {
   },
 
   admin: {
-    IMPERSONATION_UNAVAILABLE: "Impersonation temporairement indisponible.",
     ID_REQUIRED: "id requis",
     DLQ_ENTRY_NOT_FOUND: "DLQ entry not found",
     EMAIL_EVENT_NOT_FOUND: "email_event not found",

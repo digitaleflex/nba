@@ -111,7 +111,11 @@ export function SmartSuggestions({ events = [] }: SmartSuggestionsProps) {
                   {suggestion.actions.map((action) => (
                     <button
                       key={action.label}
-                      onClick={() => action.onClick()}
+                      onClick={async () => {
+                        if (action.confirmRequired && !window.confirm(`${action.label} — ${suggestion.title} ?`)) return
+                        await action.onClick()
+                        dismiss(suggestion.id)
+                      }}
                       className={cn(
                         "px-3 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer",
                         action.variant === "destructive" && "bg-red-500/10 text-red-600 hover:bg-red-500/20",

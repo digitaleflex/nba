@@ -17,15 +17,14 @@ import { useSocket } from "@nba/lib/hooks/use-socket"
 const ITEMS_PER_PAGE = 30
 
 const RESOURCE_ROUTES: Record<string, string> = {
-  signal: "/admin/signals",
-  user: "/admin/members",
-  kyc_document: "/admin/kyc",
-  broker_verification: "/admin/brokers",
-  subscription: "/admin/subscriptions",
-  access_request: "/admin/access-requests",
-  resend_domain: "/admin/emails/domains",
+  signal: "/admin?tab=signals",
+  kyc_document: "/admin?tab=kyc",
+  broker_verification: "/admin?tab=broker",
+  subscription: "/admin?tab=revenue",
+  access_request: "/admin?tab=requests",
+  resend_domain: "/admin?tab=emails",
   webhook_dlq: "/admin/webhooks/dlq",
-  settings: "/admin/settings",
+  settings: "/admin?tab=settings",
 }
 
 const SEVERITY_CONFIG = {
@@ -315,14 +314,15 @@ export default function AuditCenterPage() {
   if (endDate) activeChips.push({ label: `Au : ${new Date(endDate).toLocaleDateString("fr-FR")}`, onRemove: () => updateParams({ endDate: null }) })
 
   function getResourceUrl(resourceType: string, resourceId: string | null): string | null {
+    if (resourceType === "user") return userUrl(resourceId)
     const base = RESOURCE_ROUTES[resourceType]
     if (!base || !resourceId) return null
-    return `${base}/${resourceId}`
+    return base
   }
 
-  function userUrl(userId: string | null): string | null {
-    if (!userId) return null
-    return `/admin/members/${userId}`
+  function userUrl(_userId: string | null): string | null {
+    if (!_userId) return null
+    return "/admin?tab=membres"
   }
 
   const errorCount = useMemo(() => logs.filter((l) => l.severity === "error").length, [logs])

@@ -1,12 +1,10 @@
 import type { LucideIcon } from "lucide-react"
 import {
   Activity,
-  BarChart2,
   Bell,
   BookOpen,
   CreditCard,
   FileCheck,
-  Gavel,
   Gauge,
   LayoutDashboard,
   LineChart,
@@ -189,7 +187,6 @@ const dashboardMenu: NavItem[] = [
 // Mapping des icônes pour les onglets admin
 const adminTabIconMap: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
-  stats: BarChart2,
   analytics: LineChart,
   revenue: CreditCard,
   requests: ListTodo,
@@ -228,33 +225,8 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       section: "surveiller",
       isActive: (pathname) => pathname === "/admin/tracker",
     },
-    {
-      id: "developer",
-      href: "/admin/developer",
-      label: "Console développeur",
-      icon: Settings,
-      section: "surveiller",
-      isActive: (pathname) => pathname === "/admin/developer",
-    },
-    {
-      id: "cache",
-      href: "/admin/cache",
-      label: "Cache",
-      icon: Activity,
-      section: "surveiller",
-      isActive: (pathname) => pathname === "/admin/cache",
-    },
   ],
-  decider: [
-    {
-      id: "members",
-      href: "/admin/members",
-      label: "Annuaire membres",
-      icon: Users,
-      section: "decider",
-      isActive: (pathname) => pathname === "/admin/members",
-    },
-  ],
+  decider: [],
   communiquer: [
     {
       id: "messages",
@@ -294,17 +266,36 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
     {
       id: "audit",
       href: "/admin/audit",
-      label: "Journal d'audit (complet)",
+      label: "Journal d'audit",
       icon: FileCheck,
       section: "auditer",
       isActive: (pathname) => pathname === "/admin/audit",
+    },
+  ],
+  systeme: [
+    {
+      id: "developer",
+      href: "/admin/developer",
+      label: "Console développeur",
+      icon: Settings,
+      section: "systeme",
+      requiredRoles: ["SUPER_ADMIN"],
+      isActive: (pathname) => pathname === "/admin/developer",
+    },
+    {
+      id: "cache",
+      href: "/admin/cache",
+      label: "Cache",
+      icon: Activity,
+      section: "systeme",
+      isActive: (pathname) => pathname === "/admin/cache",
     },
     {
       id: "dlq",
       href: "/admin/webhooks/dlq",
       label: "DLQ Webhooks",
       icon: Activity,
-      section: "auditer",
+      section: "systeme",
       isActive: (pathname) => pathname.startsWith("/admin/webhooks/dlq"),
     },
     {
@@ -312,7 +303,7 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       href: "/admin/queues",
       label: "Files d'attente",
       icon: ListTodo,
-      section: "auditer",
+      section: "systeme",
       isActive: (pathname) => pathname === "/admin/queues",
     },
   ],
@@ -371,15 +362,18 @@ export function getSuperAdminSections(): NavSection[] {
     .map((context) => ({
       id: context.id,
       label: context.label,
-      items: context.tabs.map((tab) => ({
-        id: tab.value,
-        href: `/admin?tab=${tab.value}`,
-        label: tab.label,
-        icon: adminTabIconMap[tab.value] || context.icon,
-        section: context.id,
-        isActive: (pathname: string, searchParams: URLSearchParams) =>
-          pathname === "/admin" && searchParams.get("tab") === tab.value,
-      })),
+      items: [
+        ...context.tabs.map((tab) => ({
+          id: tab.value,
+          href: `/admin?tab=${tab.value}`,
+          label: tab.label,
+          icon: adminTabIconMap[tab.value] || context.icon,
+          section: context.id,
+          isActive: (pathname: string, searchParams: URLSearchParams) =>
+            pathname === "/admin" && searchParams.get("tab") === tab.value,
+        })),
+        ...(adminStandaloneLinks[context.id] || []),
+      ],
     }))
 }
 

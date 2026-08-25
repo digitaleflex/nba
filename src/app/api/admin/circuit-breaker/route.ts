@@ -5,7 +5,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 
 export async function GET() {
   try {
-    await requireRole(["ADMIN", "SUPER_ADMIN"])
+    await requireRole(["SUPER_ADMIN"])
     const states = getAllCircuitStates()
     const degraded = Object.values(states).some((s) => s.state === "open")
     return NextResponse.json({ circuits: states, degraded })
@@ -16,7 +16,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await requireRole(["ADMIN", "SUPER_ADMIN"])
+    const session = await requireRole(["SUPER_ADMIN"])
     const { name } = await request.json()
 
     if (!name) {

@@ -52,10 +52,8 @@ skipIfNoServer("Admin routes (without auth)", () => {
     "/api/admin/security/fraud/events",
     "/api/admin/security/fraud/blocked-ips",
     "/api/admin/security/fraud/playbook",
-    "/api/admin/metrics",
     "/api/admin/security/alerts",
     "/api/admin/support",
-    "/api/admin/sessions",
   ]
 
   for (const path of adminEndpoints) {

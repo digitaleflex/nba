@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle, RefreshCw } from "lucide-react"
-import { Card, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
+import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Eraser } from "lucide-react"
+import { Card, CardContent, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
@@ -90,6 +90,51 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   useEffect(() => { fetchMembres() }, [fetchMembres])
 
   const [updating, setUpdating] = useState<string | null>(null)
+
+  // Cleanup des accès fantômes (inactifs/supprimés avec access APPROVED)
+  const [cleanupLoading, setCleanupLoading] = useState(false)
+  const [cleanupPreview, setCleanupPreview] = useState<{
+    usersAffected: number
+    accessRequestsRevoked: number
+    ghostUsers: { email: string; name: string; reason: string }[]
+  } | null>(null)
+
+  async function previewCleanup() {
+    setCleanupLoading(true)
+    try {
+      const res = await fetch("/api/admin/access/cleanup?dryRun=1", { method: "POST" })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Erreur")
+      const data = await res.json()
+      setCleanupPreview({
+        usersAffected: data.usersAffected,
+        accessRequestsRevoked: data.accessRequestsRevoked,
+        ghostUsers: data.ghostUsers,
+      })
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors du nettoyage.")
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
+
+  async function runCleanup() {
+    setCleanupLoading(true)
+    try {
+      const res = await fetch("/api/admin/access/cleanup", { method: "POST" })
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Erreur")
+      const data = await res.json()
+      toast.success(
+        `${data.accessRequestsRevoked} accès révoqués sur ${data.usersAffected} membre(s) fantôme(s)`,
+        { duration: 6000 },
+      )
+      setCleanupPreview(null)
+      fetchMembres()
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors du nettoyage.")
+    } finally {
+      setCleanupLoading(false)
+    }
+  }
 
   async function updateMember(userId: string, data: Record<string, unknown>) {
     setUpdating(userId)
@@ -296,6 +341,62 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         )}
       </div>
 
+      {/* Modale de confirmation du cleanup fantômes */}
+      {cleanupPreview && (
+        <Card className="border-amber-500/30 bg-amber-500/5">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="size-4 text-amber-600 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="text-sm font-semibold">
+                  {cleanupPreview.usersAffected === 0
+                    ? "Aucun accès fantôme détecté"
+                    : `${cleanupPreview.accessRequestsRevoked} accès à révoquer sur ${cleanupPreview.usersAffected} membre(s) fantôme(s)`}
+                </p>
+                {cleanupPreview.usersAffected > 0 && (
+                  <div className="mt-2 max-h-40 overflow-y-auto rounded-md border bg-background/50 text-xs">
+                    <table className="w-full">
+                      <thead className="bg-muted/40 text-muted-foreground">
+                        <tr>
+                          <th className="text-left px-2 py-1 font-medium">Email</th>
+                          <th className="text-left px-2 py-1 font-medium">Nom</th>
+                          <th className="text-left px-2 py-1 font-medium">Raison</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cleanupPreview.ghostUsers.map((u) => (
+                          <tr key={u.email} className="border-t">
+                            <td className="px-2 py-1 font-mono">{u.email}</td>
+                            <td className="px-2 py-1">{u.name}</td>
+                            <td className="px-2 py-1 text-amber-700">{u.reason}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  Les accès APPROVED seront passés en REVOKED. Les autres données (KYC, profil,
+                  notifications) sont conservées. Action journalisée.
+                </p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-3">
+              <Button variant="ghost" size="sm" onClick={() => setCleanupPreview(null)} disabled={cleanupLoading}>
+                Annuler
+              </Button>
+              <Button
+                size="sm"
+                disabled={cleanupLoading || cleanupPreview.usersAffected === 0}
+                onClick={runCleanup}
+              >
+                {cleanupLoading ? <Loader2 className="size-3.5 animate-spin" /> : "Révoquer les accès"}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Search + Filters row */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 min-w-[200px] max-w-xs">
@@ -321,6 +422,15 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         >
           {purgingCache ? <Loader2 className="size-3.5 animate-spin" /> : <RefreshCw className="size-3.5" />}
           Vider le cache
+        </button>
+        <button
+          onClick={previewCleanup}
+          disabled={cleanupLoading}
+          title="Révoquer les accès des membres inactifs ou supprimés"
+          className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg border border-border/60 bg-background text-xs font-medium text-muted-foreground hover:text-foreground hover:border-primary/50 transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {cleanupLoading ? <Loader2 className="size-3.5 animate-spin" /> : <Eraser className="size-3.5" />}
+          Nettoyer accès fantômes
         </button>
         <Button
           onClick={() => fetchMembres()}

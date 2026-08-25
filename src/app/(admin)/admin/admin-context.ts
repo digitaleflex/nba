@@ -37,7 +37,6 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
     icon: Activity,
     tabs: [
       { value: "dashboard", label: "Tableau de bord" },
-      { value: "stats", label: "Statistiques" },
       { value: "analytics", label: "Analytics" },
       { value: "revenue", label: "Revenus" },
       { value: "devices", label: "Appareils" },
@@ -63,6 +62,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
       { value: "signals", label: "Signaux" },
       { value: "emails", label: "E-mails" },
       { value: "notifications", label: "Notifications" },
+      { value: "formation", label: "Formation" },
     ],
   },
   {
@@ -70,12 +70,10 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
     label: "Auditer",
     icon: ShieldCheck,
     tabs: [
-      { value: "audit", label: "Audit" },
       { value: "bugs", label: "Bugs" },
       { value: "moderation", label: "Modération" },
       { value: "security", label: "Sécurité" },
       { value: "fraud", label: "Anti-Fraude" },
-      { value: "formation", label: "Formation" },
     ],
   },
   {
