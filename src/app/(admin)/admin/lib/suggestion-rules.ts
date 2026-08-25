@@ -3,7 +3,8 @@ import { toast } from "sonner"
 export interface SuggestionAction {
   label: string
   variant: "destructive" | "default" | "outline"
-  onClick: () => Promise<void> | void
+  /** Retourne false en cas d'échec pour garder la suggestion visible. */
+  onClick: () => Promise<boolean | void> | boolean | void
   confirmRequired?: boolean
 }
 
@@ -65,8 +66,12 @@ export const SUGGESTION_RULES = [
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ userId }),
                 })
-                if (res.ok) toast.success("Compte suspendu, sessions révoquées.")
-                else toast.error("Échec de la suspension.")
+                if (res.ok) {
+                  toast.success("Compte suspendu, sessions révoquées.")
+                  return true
+                }
+                toast.error("Échec de la suspension.")
+                return false
               },
             },
             {
@@ -101,8 +106,12 @@ export const SUGGESTION_RULES = [
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ userId: e.userId }),
               })
-              if (res.ok) toast.success("Sessions révoquées.")
-              else toast.error("Échec de la révocation.")
+              if (res.ok) {
+                toast.success("Sessions révoquées.")
+                return true
+              }
+              toast.error("Échec de la révocation.")
+              return false
             },
           },
         ],

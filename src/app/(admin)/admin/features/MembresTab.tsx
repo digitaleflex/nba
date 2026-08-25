@@ -128,6 +128,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         { duration: 6000 },
       )
       setCleanupPreview(null)
+      invalidate()
       fetchMembres()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erreur lors du nettoyage.")

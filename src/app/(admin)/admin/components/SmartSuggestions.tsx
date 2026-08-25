@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { Lightbulb, X, AlertTriangle, Info, ArrowRight } from "lucide-react"
 import { cn } from "@nba/design-system"
+import { toast } from "sonner"
 import type { Suggestion } from "../lib/suggestion-rules"
 import { evaluateSuggestions } from "../lib/suggestion-rules"
 
@@ -113,8 +114,12 @@ export function SmartSuggestions({ events = [] }: SmartSuggestionsProps) {
                       key={action.label}
                       onClick={async () => {
                         if (action.confirmRequired && !window.confirm(`${action.label} — ${suggestion.title} ?`)) return
-                        await action.onClick()
-                        dismiss(suggestion.id)
+                        try {
+                          const result = await action.onClick()
+                          if (result !== false) dismiss(suggestion.id)
+                        } catch {
+                          toast.error("Action impossible. Vérifiez votre connexion.")
+                        }
                       }}
                       className={cn(
                         "px-3 py-1 text-xs font-medium rounded-lg transition-colors cursor-pointer",
