@@ -4,8 +4,8 @@ import {
   NAVIGATION,
   filterNavItems,
   getMobileNavItems,
-  getMenuNavItems,
   getSidebarSections,
+  getSuperAdminSections,
   isNavItemActive,
 } from "./navigation"
 
@@ -68,5 +68,35 @@ describe("navigation config", () => {
     }
     expect(isNavItemActive(item, "/admin", new URLSearchParams("?tab=dashboard"))).toBe(true)
     expect(isNavItemActive(item, "/admin", new URLSearchParams("?tab=requests"))).toBe(false)
+  })
+
+  it("considère /admin sans ?tab comme le tableau de bord (tab par défaut)", () => {
+    const sections = getSidebarSections("admin", "ADMIN")
+    const dashboard = sections.flatMap((s) => s.items).find((i) => i.id === "dashboard")
+    expect(dashboard).toBeDefined()
+    expect(isNavItemActive(dashboard!, "/admin", new URLSearchParams())).toBe(true)
+  })
+
+  it("retourne 5 contextes admin en mobile pour un SUPER_ADMIN (Système inclus)", () => {
+    const items = getMobileNavItems("admin", "SUPER_ADMIN")
+    expect(items.map((i) => i.id)).toEqual(["surveiller", "decider", "communiquer", "auditer", "systeme"])
+  })
+
+  it("expose la section Système au SUPER_ADMIN avec ses tabs et ses liens standalone", () => {
+    const sections = getSuperAdminSections()
+    expect(sections.map((s) => s.id)).toEqual(["systeme"])
+    const ids = sections[0].items.map((i) => i.id)
+    expect(ids).toEqual(expect.arrayContaining(["settings", "crons", "developer", "cache", "dlq", "queues"]))
+  })
+
+  it("masque les outils système aux ADMIN simples", () => {
+    const sections = getSidebarSections("admin", "ADMIN")
+    const allIds = sections.flatMap((s) => s.items.map((i) => i.id))
+    expect(allIds).not.toContain("developer")
+    expect(allIds).not.toContain("cache")
+    expect(allIds).not.toContain("dlq")
+    expect(allIds).not.toContain("queues")
+    expect(allIds).not.toContain("settings")
+    expect(allIds).not.toContain("crons")
   })
 })

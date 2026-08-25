@@ -40,15 +40,17 @@ export function Sidebar({ space, user }: SidebarProps) {
   const { logout } = useLogout({ confirm: false })
   const { unreadTotal } = useMessagingUnread()
   const reduce = useReducedMotion()
-  const [pendingKyc, setPendingKyc] = useState(0)
+  const [pendingRequests, setPendingRequests] = useState(0)
   useEffect(() => {
     if (space !== "admin") return
     const controller = new AbortController()
-    fetch("/api/admin/kyc?status=PENDING", { signal: controller.signal })
+    fetch("/api/admin/access-requests?status=PENDING", { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: any) => {
-        if (d?.total != null) setPendingKyc(d.total)
-        else if (Array.isArray(d?.docs)) setPendingKyc(d.docs.length)
+      .then((d: { total?: number; requests?: unknown[] } | { length: number }[] | null) => {
+        if (!d) return
+        if (Array.isArray(d)) { setPendingRequests(d.length); return }
+        if (d.total != null) setPendingRequests(d.total)
+        else if (Array.isArray(d.requests)) setPendingRequests(d.requests.length)
       })
       .catch(() => {})
     return () => controller.abort()
@@ -123,9 +125,9 @@ export function Sidebar({ space, user }: SidebarProps) {
               {!isCollapsed && section.label && (
                 <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
                   {section.label}
-                  {section.id === "decider" && pendingKyc > 0 ? (
+                  {section.id === "decider" && pendingRequests > 0 ? (
                     <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
-                      {pendingKyc > 9 ? "9+" : pendingKyc}
+                      {pendingRequests > 9 ? "9+" : pendingRequests}
                     </span>
                   ) : null}
                 </p>

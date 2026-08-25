@@ -1,26 +1,34 @@
 import type { LucideIcon } from "lucide-react"
 import {
-  Activity,
   Bell,
   BookOpen,
+  Contact,
   CreditCard,
+  Database,
   FileCheck,
   Gauge,
+  GraduationCap,
   LayoutDashboard,
   LineChart,
   Link2,
   ListTodo,
   Mail,
   MessageCircle,
+  MonitorSmartphone,
+  Radar,
   Radio,
   Settings,
   Shield,
+  ShieldAlert,
   ShieldCheck,
+  Siren,
+  Timer,
   TrendingUp,
   Users,
+  Webhook,
   Bug,
 } from "lucide-react"
-import { ADMIN_CONTEXTS, getContextForTab } from "@nba/app/(admin)/admin/admin-context"
+import { ADMIN_CONTEXTS, getContextForTab, type AdminContextDef, type AdminTabDef } from "@nba/app/(admin)/admin/admin-context"
 
 export type NavSpace = "dashboard" | "admin"
 export type UserRole = "ADMIN" | "SUPER_ADMIN" | "USER" | string
@@ -191,20 +199,20 @@ const adminTabIconMap: Record<string, LucideIcon> = {
   revenue: CreditCard,
   requests: ListTodo,
   membres: Users,
-  users: Users,
+  users: Contact,
   kyc: FileCheck,
   broker: Link2,
   signals: Radio,
   emails: Mail,
   notifications: Bell,
-  audit: Activity,
   bugs: Bug,
-  moderation: Shield,
-  security: Shield,
+  moderation: ShieldAlert,
+  security: ShieldCheck,
+  fraud: Siren,
   settings: Settings,
-  devices: Activity,
-  crons: Activity,
-  formation: ShieldCheck,
+  devices: MonitorSmartphone,
+  crons: Timer,
+  formation: GraduationCap,
 }
 
 const adminStandaloneLinks: Record<string, NavItem[]> = {
@@ -221,7 +229,7 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       id: "tracker",
       href: "/admin/tracker",
       label: "Tracker",
-      icon: Activity,
+      icon: Radar,
       section: "surveiller",
       isActive: (pathname) => pathname === "/admin/tracker",
     },
@@ -286,7 +294,7 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       id: "cache",
       href: "/admin/cache",
       label: "Cache",
-      icon: Activity,
+      icon: Database,
       section: "systeme",
       isActive: (pathname) => pathname === "/admin/cache",
     },
@@ -294,7 +302,7 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       id: "dlq",
       href: "/admin/webhooks/dlq",
       label: "DLQ Webhooks",
-      icon: Activity,
+      icon: Webhook,
       section: "systeme",
       isActive: (pathname) => pathname.startsWith("/admin/webhooks/dlq"),
     },
@@ -326,31 +334,34 @@ const adminMobile: NavItem[] = ADMIN_CONTEXTS.map((context) => {
   }
 })
 
+/**
+ * Fabrique unique : transforme un onglet admin en item de navigation.
+ * Utilisée par la sidebar ADMIN standard ET les sections SUPER_ADMIN.
+ */
+function tabToNavItem(tab: AdminTabDef, context: AdminContextDef): NavItem {
+  return {
+    id: tab.value,
+    href: `/admin?tab=${tab.value}`,
+    label: tab.label,
+    icon: adminTabIconMap[tab.value] || context.icon,
+    section: context.id,
+    isActive: (pathname: string, searchParams: URLSearchParams) =>
+      pathname === "/admin" && (searchParams.get("tab") ?? "dashboard") === tab.value,
+  }
+}
+
 const adminSidebarSections: NavSection[] = ADMIN_CONTEXTS
   .filter((context) => !context.requiredRole) // Sections réservées SUPER_ADMIN filtrées côté composant
-  .map((context) => {
-    const isDecider = context.id === "decider"
-    const items: NavItem[] = [
+  .map((context) => ({
+    id: context.id,
+    label: context.label,
+    items: [
       ...context.tabs
         .filter((tab) => !tab.requiredRole) // Tabs SUPER_ADMIN filtrées
-        .map((tab) => ({
-          id: tab.value,
-          href: `/admin?tab=${tab.value}`,
-          label: tab.label,
-          icon: adminTabIconMap[tab.value] || context.icon,
-          section: context.id,
-          isActive: (pathname: string, searchParams: URLSearchParams) =>
-            pathname === "/admin" && searchParams.get("tab") === tab.value,
-        })),
+        .map((tab) => tabToNavItem(tab, context)),
       ...(adminStandaloneLinks[context.id] || []),
-    ]
-    return {
-      id: context.id,
-      label: context.label,
-      items,
-      badge: isDecider ? undefined : undefined,
-    }
-  })
+    ],
+  }))
 
 /**
  * Sections réservées SUPER_ADMIN (Systeme).
@@ -363,15 +374,7 @@ export function getSuperAdminSections(): NavSection[] {
       id: context.id,
       label: context.label,
       items: [
-        ...context.tabs.map((tab) => ({
-          id: tab.value,
-          href: `/admin?tab=${tab.value}`,
-          label: tab.label,
-          icon: adminTabIconMap[tab.value] || context.icon,
-          section: context.id,
-          isActive: (pathname: string, searchParams: URLSearchParams) =>
-            pathname === "/admin" && searchParams.get("tab") === tab.value,
-        })),
+        ...context.tabs.map((tab) => tabToNavItem(tab, context)),
         ...(adminStandaloneLinks[context.id] || []),
       ],
     }))
