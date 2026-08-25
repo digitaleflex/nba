@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@nba/lib/db"
 import { requireRole, handleAuthError } from "@nba/lib/auth-utils"
+import { calculateRR } from "@nba/lib/services/pnl"
 
 export async function GET(
   _req: NextRequest,
@@ -32,7 +33,9 @@ export async function GET(
         take: 20,
         select: {
           id: true, pair: true, direction: true, result: true,
-          entryPrice: true, exitPrice: true, pnl: true, lotSize: true,
+          entryPrice: true, exitPrice: true, stopLoss: true, takeProfit: true,
+          lotSize: true, spread: true, commission: true, swap: true,
+          pnl: true,
           strategy: true, setupType: true, mood: true, confidence: true,
           tradedAt: true, tags: true, note: true,
         },
@@ -55,6 +58,17 @@ export async function GET(
       }),
     ])
 
+    // Même calcul de R:R que la vue membre (lib partagée)
+    const recentTradesWithRR = recentTrades.map((trade) => ({
+      ...trade,
+      rrRatio: calculateRR({
+        entryPrice: Number(trade.entryPrice),
+        stopLoss: trade.stopLoss === null ? null : Number(trade.stopLoss),
+        takeProfit: trade.takeProfit === null ? null : Number(trade.takeProfit),
+        direction: trade.direction as "BUY" | "SELL",
+      }),
+    }))
+
     return NextResponse.json({
       user,
       stats: {
@@ -63,7 +77,7 @@ export async function GET(
         // Même définition que /api/dashboard/journal/stats : wins sur l'historique complet
         winRate: trades._count > 0 ? Math.round((wins / trades._count) * 1000) / 10 : 0,
       },
-      recentTrades,
+      recentTrades: recentTradesWithRR,
       reflections,
       streaks,
       sessions,
