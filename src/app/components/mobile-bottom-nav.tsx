@@ -40,10 +40,11 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
     const controller = new AbortController()
     fetch("/api/admin/access-requests?status=PENDING", { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
-      .then((d: any) => {
-        if (d?.total != null) setPendingRequests(d.total)
-        else if (Array.isArray(d?.requests)) setPendingRequests(d.requests.length)
-        else if (Array.isArray(d)) setPendingRequests(d.length)
+      .then((d: { total?: number; requests?: unknown[] } | { length: number }[] | null) => {
+        if (!d) return
+        if (Array.isArray(d)) { setPendingRequests(d.length); return }
+        if (d.total != null) setPendingRequests(d.total)
+        else if (Array.isArray(d.requests)) setPendingRequests(d.requests.length)
       })
       .catch(() => {})
     return () => controller.abort()
@@ -65,7 +66,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/85 backdrop-blur-lg px-1 select-none" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       <nav className="flex h-16 items-center justify-around overflow-x-auto no-scrollbar">
-        {links.map((link, idx) => {
+        {links.map((link) => {
           const Icon = link.icon
           const isActive = isNavItemActive(link, pathname, searchParams)
           const badge = badgeFor(link)
@@ -74,8 +75,9 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
             <Link
               key={link.id}
               href={link.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center flex-1 h-16 gap-1 transition-all duration-200 relative shrink-0 min-w-[3.75rem]",
+                "flex flex-col items-center justify-center flex-1 h-16 gap-1 transition duration-200 relative shrink-0 min-w-[3.75rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60",
                 isActive
                   ? "text-primary scale-105"
                   : "text-muted-foreground hover:text-foreground",

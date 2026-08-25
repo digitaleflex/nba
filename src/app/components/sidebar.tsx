@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
-import { Button, Badge, cn } from "@nba/design-system"
+import { Button, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useLogout } from "@nba/hooks/use-logout"
 import {
@@ -57,11 +57,9 @@ export function Sidebar({ space, user }: SidebarProps) {
   }, [space])
 
   const [isCollapsed, setIsCollapsed] = useState(false)
-  const [mounted, setMounted] = useState(false)
   const [imageError, setImageError] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
     const saved = localStorage.getItem("nba-sidebar-collapsed")
     if (saved) {
       setIsCollapsed(saved === "true")
@@ -89,15 +87,17 @@ export function Sidebar({ space, user }: SidebarProps) {
   return (
     <aside
       className={cn(
-        "hidden md:flex h-screen shrink-0 flex-col border-r sticky top-0 py-6 justify-between select-none transition-all duration-300 z-40",
+        "hidden md:flex h-screen shrink-0 flex-col border-r sticky top-0 py-6 justify-between select-none transition-[width,padding] duration-300 z-40",
         "bg-card/80 backdrop-blur-xl border-border shadow-[1px_0_10px_rgba(0,0,0,0.015)]",
         isCollapsed ? "w-20 px-3" : "w-64 px-5"
       )}
     >
       <button
         onClick={toggleCollapse}
-        className="absolute -right-3 top-7 z-50 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground shadow-sm cursor-pointer hover:scale-110 active:scale-95 transition-all duration-200"
+        className="absolute -right-3 top-7 z-50 flex size-6 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground shadow-sm cursor-pointer hover:scale-110 active:scale-95 transition duration-200"
         title={isCollapsed ? "Déplier la barre" : "Plier la barre"}
+        aria-label={isCollapsed ? "Déplier la barre latérale" : "Plier la barre latérale"}
+        aria-expanded={!isCollapsed}
       >
         {isCollapsed ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
       </button>
@@ -141,8 +141,9 @@ export function Sidebar({ space, user }: SidebarProps) {
                     key={link.id}
                     id={link.id}
                     href={link.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative",
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition duration-200 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isCollapsed ? "justify-center" : "gap-3.5",
                       isActive
                         ? "bg-primary text-primary-foreground font-semibold shadow-xs"
@@ -151,7 +152,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                     title={isCollapsed ? link.label : undefined}
                   >
                     {isActive && !isCollapsed && (
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 animate-pulse" />
+                      <span className={`absolute right-3 top-1/2 -translate-y-1/2 size-1.5 rounded-full bg-primary-foreground/80 ${reduce ? "" : "animate-pulse"}`} />
                     )}
                     <span className="relative inline-flex shrink-0">
                       <Icon
@@ -201,8 +202,9 @@ export function Sidebar({ space, user }: SidebarProps) {
                   <Link
                     key={link.id}
                     href={link.href}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition-all duration-200 group relative",
+                      "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition duration-200 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isCollapsed ? "justify-center" : "gap-3.5",
                       isActive
                         ? "bg-amber-500/10 text-amber-600 font-semibold"
@@ -229,14 +231,14 @@ export function Sidebar({ space, user }: SidebarProps) {
             <Link
               href="/admin"
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition duration-200 group mt-4 border border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
                 isCollapsed ? "justify-center" : "gap-3.5"
               )}
               title={isCollapsed ? "Accéder à l'Admin" : undefined}
             >
               <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
-              {!isCollapsed && <span>Accéder à l'Admin</span>}
+              {!isCollapsed && <span>Accéder à l&apos;Admin</span>}
             </Link>
           )}
 
@@ -244,7 +246,7 @@ export function Sidebar({ space, user }: SidebarProps) {
             <Link
               href="/dashboard"
               className={cn(
-                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition-all duration-200 group mt-4 border border-dashed",
+                "flex items-center px-3 py-2.5 text-sm font-medium rounded-xl transition duration-200 group mt-4 border border-dashed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                 "border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5",
                 isCollapsed ? "justify-center" : "gap-3.5"
               )}
@@ -260,7 +262,7 @@ export function Sidebar({ space, user }: SidebarProps) {
       <div className="border-t border-border pt-4 shrink-0">
         <div
           className={cn(
-            "flex items-center justify-between rounded-2xl transition-all p-2",
+            "flex items-center justify-between rounded-2xl transition p-2",
             !isCollapsed && "bg-muted/50 border border-border",
             isCollapsed ? "flex-col gap-4" : "gap-3"
           )}
@@ -271,6 +273,8 @@ export function Sidebar({ space, user }: SidebarProps) {
                 <img
                   src={user.image}
                   alt={user.name}
+                  width={36}
+                  height={36}
                   loading="lazy"
                   decoding="async"
                   className="size-full rounded-full object-cover"

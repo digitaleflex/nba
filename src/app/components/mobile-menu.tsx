@@ -10,7 +10,9 @@ import { ReportBugDialog } from "@nba/components/report-bug-dialog"
 import {
   getMenuNavItems,
   getSidebarSections,
+  getSuperAdminSections,
   isNavItemActive,
+  type NavItem,
   type NavSpace,
   type UserRole,
 } from "@nba/config/navigation"
@@ -77,13 +79,18 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
           <nav className="flex-1 overflow-y-auto p-3 space-y-1">
             {space === "admin" ? (
               (() => {
-                const sections = getSidebarSections("admin", user.role)
+                const sections = [
+                  ...getSidebarSections("admin", user.role).map((s) => ({ label: s.label, items: s.items })),
+                  ...(user.role === "SUPER_ADMIN"
+                    ? getSuperAdminSections().map((s) => ({ label: s.label, items: s.items as NavItem[] }))
+                    : []),
+                ]
                 return sections.flatMap((section, si) => {
                   const sectionLinks = section.items
                   if (sectionLinks.length === 0) return []
                   return [
-                    si > 0 ? <div key={`sep-${section.id}`} className="h-3" /> : null,
-                    <p key={`h-${section.id}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    si > 0 ? <div key={`sep-${si}`} className="h-3" /> : null,
+                    <p key={`h-${si}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                       {section.label}
                     </p>,
                     ...sectionLinks.map((link) => {
@@ -95,8 +102,9 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                           id={link.id}
                           href={link.href}
                           onClick={() => setOpen(false)}
+                          aria-current={isActive ? "page" : undefined}
                           className={cn(
-                            "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
+                            "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                             isActive
                               ? "bg-primary text-primary-foreground"
                               : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -120,8 +128,9 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                     id={link.id}
                     href={link.href}
                     onClick={() => setOpen(false)}
+                    aria-current={isActive ? "page" : undefined}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
+                      "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60",
                       isActive
                         ? "bg-primary text-primary-foreground"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
@@ -141,7 +150,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                 className="flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors border border-dashed border-border text-muted-foreground hover:text-primary hover:border-primary/50 hover:bg-primary/5 mt-3 min-h-[44px]"
               >
                 <Shield className="size-5 shrink-0" />
-                <span>Accéder à l'Admin</span>
+                <span>Accéder à l&apos;Admin</span>
               </Link>
             )}
 
