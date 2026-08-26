@@ -47,13 +47,13 @@ const LOGO_IMG = `<img
 
 // ── Helpers ──
 
-function getFirstName(name: string): string {
+export function getFirstName(name: string): string {
   return name?.split(" ")[0] ?? "Utilisateur"
 }
 
 // ── Layout ──
 
-function layout(body: string): string {
+export function layout(body: string): string {
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -130,7 +130,7 @@ interface ButtonOptions {
   color?: string
 }
 
-function ctaButton({ url, text }: ButtonOptions): string {
+export function ctaButton({ url, text }: ButtonOptions): string {
   return `<table cellpadding="0" cellspacing="0" border="0" style="margin:20px 0" width="100%">
     <tr>
       <td align="center" bgcolor="#283B5D" style="background-color:#283B5D;border-radius:12px;padding:0" width="100%">
@@ -142,7 +142,7 @@ function ctaButton({ url, text }: ButtonOptions): string {
 
 // ── Section title ──
 
-function sectionTitle(text: string): string {
+export function sectionTitle(text: string): string {
   return `<h2 style="margin:0 0 16px 0;font-size:12px;font-weight:600;color:#6A758B;text-transform:uppercase;letter-spacing:1px">${text}</h2>`
 }
 
@@ -165,7 +165,7 @@ function onboardingSteps(steps: { label: string; done: boolean }[]): string {
 
 // ── Divider ──
 
-function divider(): string {
+export function divider(): string {
   return `<div style="height:1px;background-color:#E4E7EC;margin:24px 0"></div>`
 }
 
