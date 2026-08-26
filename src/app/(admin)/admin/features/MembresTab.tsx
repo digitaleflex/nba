@@ -503,7 +503,19 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                 </thead>
                 <tbody className="divide-y divide-border/40">
                   {loading ? (
-                    <tr><td colSpan={10} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <tr key={i} className="animate-pulse">
+                        <td className="px-2 py-3"><div className="size-3.5 rounded bg-muted/50" /></td>
+                        <td className="px-4 py-3"><div className="flex items-center gap-2"><div className="size-7 rounded-full bg-muted/50" /><div className="space-y-1"><div className="h-3 w-24 bg-muted/50 rounded" /><div className="h-2.5 w-16 bg-muted/30 rounded" /></div></div></td>
+                        <td className="px-4 py-3 hidden md:table-cell"><div className="h-3 w-20 bg-muted/50 rounded" /></td>
+                        <td className="px-4 py-3 hidden md:table-cell"><div className="h-3 w-32 bg-muted/50 rounded" /></td>
+                        <td className="px-4 py-3 hidden lg:table-cell"><div className="h-3 w-12 bg-muted/50 rounded" /></td>
+                        <td className="px-4 py-3"><div className="h-5 w-16 bg-muted/50 rounded-full" /></td>
+                        <td className="px-4 py-3 hidden md:table-cell"><div className="h-3 w-14 bg-muted/50 rounded" /></td>
+                        <td className="px-4 py-3"><div className="h-5 w-12 bg-muted/50 rounded-full" /></td>
+                        <td className="px-4 py-3"><div className="h-6 w-6 bg-muted/50 rounded" /></td>
+                      </tr>
+                    ))
                   ) : membres.length === 0 && loadError ? (
                     <tr><td colSpan={10} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
                   ) : membres.length === 0 ? (
@@ -708,7 +720,23 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         mobile={
           <div className="space-y-3 md:hidden">
             {loading ? (
-              <div className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></div>
+              Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="rounded-lg border border-border/50 bg-card p-4 animate-pulse space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="size-9 rounded-full bg-muted/50" />
+                    <div className="space-y-1.5 flex-1">
+                      <div className="h-3 w-28 bg-muted/50 rounded" />
+                      <div className="h-2.5 w-20 bg-muted/30 rounded" />
+                    </div>
+                    <div className="h-5 w-12 bg-muted/50 rounded-full" />
+                  </div>
+                  <div className="flex gap-2">
+                    <div className="h-6 w-6 bg-muted/50 rounded" />
+                    <div className="h-6 w-6 bg-muted/50 rounded" />
+                    <div className="h-6 w-6 bg-muted/50 rounded" />
+                  </div>
+                </div>
+              ))
             ) : membres.length === 0 && loadError ? (
               <div className="flex items-center justify-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div>
             ) : membres.length === 0 ? (
