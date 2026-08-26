@@ -4,20 +4,45 @@ import { useEffect, useState } from "react"
 import {
   Users,
   FileCheck,
-  CreditCard,
   MessageSquare,
-  ShieldCheck,
   TrendingUp,
   TrendingDown,
   Laptop,
   Radio,
-  Loader2,
+  CreditCard,
 } from "lucide-react"
-import { Card, CardContent, cn, Chart, EmptyState } from "@nba/design-system"
-import { StatCard, SectionTitle } from "./ui"
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  LabelList,
+  RadialBarChart,
+  RadialBar,
+} from "recharts"
+import { Card, CardContent, cn, EmptyState } from "@nba/design-system"
+import { StatCard, SectionTitle, TabLoading, DANGER_BOX } from "./ui"
+
+interface AnalyticsData {
+  totalMembers: number
+  membersBreakdown: { label: string; count: number }[]
+  kyc: { approved: number; pending: number; rejected: number; verifiedPct: number; completionPct: number }
+  plansBreakdown: { planId: string; planName: string; count: number }[]
+  messaging: { conversations: number; unreadMessages: number; reports: number }
+  infra: { devices: number; activeSessions: number }
+  growth: { days: number; currentPeriodCount: number; changePct: number; series: { label: string; count: number }[] }
+}
 
 interface AnalyticsTabProps {
-  cachedGet: (url: string, ttlMs?: number) => Promise<{ ok: boolean; data: any }>
+  cachedGet: (url: string, ttlMs?: number) => Promise<{ ok: boolean; data: unknown }>
 }
 
 const PERIODS = [
@@ -26,11 +51,21 @@ const PERIODS = [
   { value: 90, label: "90 j" },
 ]
 
-
+/** Palette charts — lisibles en clair ET en sombre. */
+const CHART_COLORS = ["#8b5cf6", "#10b981", "#f59e0b", "#3b82f6", "#ef4444", "#ec4899", "#14b8a6"]
+const AXIS_TICK = { fill: "var(--color-muted-foreground)", fontSize: 11 }
+const TOOLTIP_STYLE = {
+  background: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: 12,
+  fontSize: 12,
+  color: "var(--color-popover-foreground)",
+  boxShadow: "0 8px 24px rgb(0 0 0 / 0.12)",
+}
 
 export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
   const [days, setDays] = useState(30)
-  const [data, setData] = useState<any>(null)
+  const [data, setData] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,7 +82,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
           setLoading(false)
           return
         }
-        setData(res.data)
+        setData(res.data as AnalyticsData)
         setLoading(false)
       })
       .catch(() => {
@@ -60,19 +95,17 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
     }
   }, [days, cachedGet])
 
-  if (loading) {
-    return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-primary" />
-      </div>
-    )
-  }
+  if (loading) return <div className="pt-4"><TabLoading rows={4} /></div>
 
   if (error || !data) {
-    return <div className="py-20 text-center text-rose-600 text-sm" role="alert">{error}</div>
+    return <div className={DANGER_BOX} role="alert">{error ?? "Aucune donnée."}</div>
   }
 
-  const plansTotal = data.plansBreakdown.reduce((a: number, s: any) => a + s.count, 0) || 1
+  const growthSeries = data.growth.series.map((d) => ({
+    label: d.label,
+    inscriptions: d.count,
+  }))
+  const trendPositive = data.growth.changePct >= 0
 
   return (
     <div className="space-y-6">
@@ -80,7 +113,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Analytics</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Répartition des membres, vérifications, abonnements et activité plateforme.
+            Croissance, répartition et activité de la plateforme.
           </p>
         </div>
         <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-lg">
@@ -101,87 +134,171 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
         </div>
       </div>
 
-      {/* CARTES RAPIDES */}
+      {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard icon={Users} label="Membres" value={data.totalMembers} />
-        <StatCard icon={FileCheck} label="KYC vérifiés" value={`${data.kyc.verifiedPct}%`} />
+        <StatCard icon={FileCheck} label="KYC vérifiés" value={`${data.kyc.verifiedPct}%`} tone="success" />
         <StatCard icon={MessageSquare} label="Conversations" value={data.messaging.conversations} />
         <StatCard icon={Laptop} label="Sessions actives" value={data.infra.activeSessions} />
       </div>
 
-      {/* RÉPARTITION MEMBRES */}
+      {/* CROISSANCE — graphique héro */}
       <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-6">
-          <SectionTitle>Répartition des membres par statut</SectionTitle>
-          <div className="pt-4">
-            <Chart
-              type="funnel"
-              data={data.membersBreakdown.map((s: any) => ({ label: s.label, value: s.count }))}
-              emptyText="Aucun membre"
-              height={140}
-            />
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-border/40">
+            <SectionTitle>Inscriptions — {data.growth.days} derniers jours</SectionTitle>
+            <span className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold",
+              trendPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive",
+            )}>
+              {trendPositive ? <TrendingUp className="size-3.5" /> : <TrendingDown className="size-3.5" />}
+              {trendPositive ? "+" : ""}{data.growth.changePct}% vs période précédente
+            </span>
+          </div>
+          <div className="pt-4 h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={growthSeries} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="gradSignups" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.35} />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="label" tick={AXIS_TICK} axisLine={false} tickLine={false} minTickGap={24} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "var(--color-border)" }} />
+                <Area
+                  type="monotone"
+                  dataKey="inscriptions"
+                  name="Inscriptions"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  fill="url(#gradSignups)"
+                  dot={false}
+                  activeDot={{ r: 4 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* KYC + PLANS */}
+      {/* MEMBRES (donut) + KYC (radial) */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
-            <SectionTitle>Vérification KYC</SectionTitle>
-            <div className="pt-4 grid grid-cols-3 gap-3 text-center">
-              <div>
-                <p className="text-2xl font-bold text-emerald-600">{data.kyc.approved}</p>
-                <p className="text-xs text-muted-foreground mt-1">Approuvés</p>
+            <SectionTitle>Répartition des membres par statut</SectionTitle>
+            <div className="pt-2 relative h-[240px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={data.membersBreakdown}
+                    dataKey="count"
+                    nameKey="label"
+                    innerRadius="62%"
+                    outerRadius="88%"
+                    paddingAngle={3}
+                    strokeWidth={0}
+                  >
+                    {data.membersBreakdown.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-2xl font-bold tabular-nums text-foreground">{data.totalMembers}</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Membres</p>
               </div>
-              <div>
-                <p className="text-2xl font-bold text-amber-600">{data.kyc.pending}</p>
-                <p className="text-xs text-muted-foreground mt-1">En attente</p>
+              <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-1">
+                {data.membersBreakdown.map((s, i) => (
+                  <span key={s.label} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="size-2 rounded-full" style={{ background: CHART_COLORS[i % CHART_COLORS.length] }} />
+                    {s.label} · <strong className="text-foreground tabular-nums">{s.count}</strong>
+                  </span>
+                ))}
               </div>
-              <div>
-                <p className="text-2xl font-bold text-rose-600">{data.kyc.rejected}</p>
-                <p className="text-xs text-muted-foreground mt-1">Rejetés</p>
-              </div>
-            </div>
-            <div className="mt-4 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Membres vérifiés (KYC approuvé / total)</span>
-              <span className="font-bold text-foreground">{data.kyc.verifiedPct}%</span>
-            </div>
-            <div className="mt-1 flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">Taux de complétion (approuvés / dossiers)</span>
-              <span className="font-bold text-foreground">{data.kyc.completionPct}%</span>
             </div>
           </CardContent>
         </Card>
 
         <Card className="border-border/60 bg-card shadow-sm">
           <CardContent className="p-6">
-            <SectionTitle>Abonnements par plan</SectionTitle>
-            <div className="pt-4 space-y-2.5">
-              {data.plansBreakdown.length > 0 ? (
-                data.plansBreakdown.map((p: any) => (
-                  <div key={p.planId} className="flex items-center gap-3">
-                    <span className="text-xs w-44 shrink-0 text-muted-foreground truncate">
-                      {p.planName}
-                    </span>
-                    <div className="flex-1 h-2.5 rounded-full bg-muted/50 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-indigo-500/60"
-                        style={{ width: `${Math.max(3, (p.count / plansTotal) * 100)}%` }}
-                      />
-                    </div>
-                    <span className="text-xs font-bold w-10 text-right text-foreground">
-                      {p.count}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <EmptyState icon={CreditCard} title="Aucun abonnement actif" description="Les répartitions par plan apparaîtront lorsqu'il y aura des abonnés." />
-              )}
+            <SectionTitle>Vérification KYC</SectionTitle>
+            <div className="relative h-[160px] pt-2">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadialBarChart
+                  data={[{ name: "Vérifiés", value: data.kyc.verifiedPct, fill: "#10b981" }]}
+                  startAngle={90}
+                  endAngle={-270}
+                  innerRadius="72%"
+                  outerRadius="100%"
+                >
+                  <RadialBar background={{ fill: "var(--color-muted)" }} dataKey="value" cornerRadius={20} />
+                </RadialBarChart>
+              </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <p className="text-2xl font-bold tabular-nums text-success">{data.kyc.verifiedPct}%</p>
+                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">vérifiés</p>
+              </div>
             </div>
+            <div className="grid grid-cols-3 gap-3 pt-2 text-center border-t border-border/40 mt-2">
+              <div className="pt-3">
+                <p className="text-lg font-bold tabular-nums text-success">{data.kyc.approved}</p>
+                <p className="text-xs text-muted-foreground">Approuvés</p>
+              </div>
+              <div className="pt-3 border-x border-border/40">
+                <p className="text-lg font-bold tabular-nums text-amber-600 dark:text-amber-400">{data.kyc.pending}</p>
+                <p className="text-xs text-muted-foreground">En attente</p>
+              </div>
+              <div className="pt-3">
+                <p className="text-lg font-bold tabular-nums text-destructive">{data.kyc.rejected}</p>
+                <p className="text-xs text-muted-foreground">Rejetés</p>
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground pt-3 text-center">
+              Taux de complétion : <strong className="text-foreground">{data.kyc.completionPct}%</strong> (approuvés / dossiers soumis)
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* ABONNEMENTS PAR PLAN */}
+      <Card className="border-border/60 bg-card shadow-sm">
+        <CardContent className="p-6">
+          <SectionTitle>Abonnements actifs par plan</SectionTitle>
+          {data.plansBreakdown.length > 0 ? (
+            <div className="pt-4 h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={data.plansBreakdown}
+                  layout="vertical"
+                  margin={{ top: 4, right: 40, left: 8, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                  <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <YAxis
+                    type="category"
+                    dataKey="planName"
+                    tick={{ ...AXIS_TICK, fontSize: 11 }}
+                    axisLine={false}
+                    tickLine={false}
+                    width={170}
+                  />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--color-muted)", opacity: 0.5 }} />
+                  <Bar dataKey="count" name="Abonnés" fill="#8b5cf6" radius={[0, 6, 6, 0]} barSize={18}>
+                    <LabelList dataKey="count" position="right" style={{ fill: "var(--color-foreground)", fontSize: 11, fontWeight: 700 }} />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          ) : (
+            <EmptyState icon={CreditCard} title="Aucun abonnement actif" description="Les répartitions par plan apparaîtront lorsqu'il y aura des abonnés." />
+          )}
+        </CardContent>
+      </Card>
 
       {/* MESSAGERIE + INFRA */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -190,21 +307,15 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
             <SectionTitle>Messagerie</SectionTitle>
             <div className="pt-4 grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-                  <MessageSquare className="size-4 text-muted-foreground/60" />
-                  {data.messaging.conversations}
-                </p>
+                <p className="text-xl font-bold tabular-nums text-foreground">{data.messaging.conversations}</p>
                 <p className="text-xs text-muted-foreground mt-1">Conversations</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{data.messaging.unreadMessages}</p>
-                <p className="text-xs text-muted-foreground mt-1">Messages non lus</p>
+                <p className="text-xl font-bold tabular-nums text-foreground">{data.messaging.unreadMessages}</p>
+                <p className="text-xs text-muted-foreground mt-1">Non lus</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
-                  <ShieldCheck className="size-4 text-muted-foreground/60" />
-                  {data.messaging.reports}
-                </p>
+                <p className="text-xl font-bold tabular-nums text-destructive">{data.messaging.reports}</p>
                 <p className="text-xs text-muted-foreground mt-1">Signalements</p>
               </div>
             </div>
@@ -216,14 +327,14 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
             <SectionTitle>Infrastructure & sessions</SectionTitle>
             <div className="pt-4 grid grid-cols-2 gap-3 text-center">
               <div>
-                <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
+                <p className="text-xl font-bold tabular-nums text-foreground flex items-center justify-center gap-1">
                   <Laptop className="size-4 text-muted-foreground/60" />
                   {data.infra.devices}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Appareils enregistrés</p>
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
+                <p className="text-xl font-bold tabular-nums text-foreground flex items-center justify-center gap-1">
                   <Radio className="size-4 text-muted-foreground/60" />
                   {data.infra.activeSessions}
                 </p>
@@ -233,39 +344,6 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
           </CardContent>
         </Card>
       </div>
-
-      {/* CROISSANCE */}
-      <Card className="border-border/60 bg-card shadow-sm">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between pb-3.5 border-b border-border/40">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Inscriptions ({data.growth.days} derniers jours)</h3>
-            <div className="flex items-center gap-1.5 text-xs">
-              <span className="text-muted-foreground">
-                {data.growth.currentPeriodCount} inscrits
-              </span>
-              {data.growth.changePct >= 0 ? (
-                <span className="flex items-center gap-0.5 text-emerald-600 font-bold">
-                  <TrendingUp className="size-3.5" />
-                  +{data.growth.changePct}%
-                </span>
-              ) : (
-                <span className="flex items-center gap-0.5 text-rose-600 font-bold">
-                  <TrendingDown className="size-3.5" />
-                  {data.growth.changePct}%
-                </span>
-              )}
-              <span className="text-muted-foreground">vs période préc.</span>
-            </div>
-          </div>
-          <div className="pt-4">
-            <Chart
-              type="bar"
-              data={data.growth.series.map((d: any) => ({ label: d.label, value: d.count }))}
-              emptyText="Aucune inscription sur la période"
-            />
-          </div>
-        </CardContent>
-      </Card>
     </div>
   )
 }
