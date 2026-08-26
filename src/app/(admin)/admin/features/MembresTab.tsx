@@ -477,10 +477,10 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       <DualRender
         desktop={
           <Card className="border-border/60 bg-card shadow-sm">
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto md:overflow-x-visible">
               <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
+                <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
+                  <tr className="border-b border-border/40 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                     <th className="px-2 py-3 w-8">
                       <input
                         type="checkbox"
@@ -505,7 +505,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                   {loading ? (
                     <tr><td colSpan={10} className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></td></tr>
                   ) : membres.length === 0 && loadError ? (
-                    <tr><td colSpan={10} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
+                    <tr><td colSpan={10} className="py-12 text-center"><div className="flex items-center justify-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div></td></tr>
                   ) : membres.length === 0 ? (
                     <tr><td colSpan={10} className="py-12 text-center"><EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche. Appuyez sur M pour réinitialiser." shortcut="M" action={{ label: hasFilters ? "Réinitialiser les filtres" : "Actualiser", onClick: resetFilters }} /></td></tr>
                   ) : (
@@ -710,7 +710,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             {loading ? (
               <div className="py-12 text-center"><Loader2 className="animate-spin text-primary inline" /></div>
             ) : membres.length === 0 && loadError ? (
-              <div className="flex items-center justify-center gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div>
+              <div className="flex items-center justify-center gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive"><span>Impossible de charger les membres.</span><Button size="sm" variant="outline" onClick={() => fetchMembres()}>Réessayer</Button></div>
             ) : membres.length === 0 ? (
               <EmptyState icon={Inbox} title="Aucun membre trouvé" description="Essayez de modifier vos filtres de recherche." action={{ label: hasFilters ? "Réinitialiser les filtres" : "Actualiser", onClick: resetFilters }} />
             ) : (

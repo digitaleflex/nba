@@ -2,6 +2,7 @@
 
 import type { ComponentType, ReactNode } from "react"
 import { Card, CardContent, Skeleton, cn } from "@nba/design-system"
+import { AnimatedNumber } from "../components/AnimatedNumber"
 
 /**
  * Kit UI partagé des onglets admin — Phase 1 (fondations).
@@ -119,8 +120,11 @@ export function StatCard({ icon: Icon, label, value, sub, tone, className }: Sta
       <CardContent className="p-4 flex items-center justify-between">
         <div className="space-y-0.5 min-w-0">
           <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest truncate">{label}</p>
-          <p className={cn("text-xl font-bold tabular-nums", valueTone)}>{value}</p>
-          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+          <p className={cn("text-xl font-bold tabular-nums", valueTone)}>
+            {typeof value === "number" ? <AnimatedNumber value={value} /> : value}
+          </p>
+          {sub && <p className="text-xs text-muted-foreground">{sub}</p>
+          }
         </div>
         <Icon className="size-5 text-muted-foreground/40 shrink-0 ml-2" />
       </CardContent>
@@ -143,3 +147,9 @@ export function TabLoading({ rows = 3 }: { rows?: number }) {
     </div>
   )
 }
+
+/** Bannière d'erreur standard — recette unique pour tous les blocs destructifs. */
+export const DANGER_BOX = "rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive"
+
+/** Ligne de tableau interactive standard. */
+export const TABLE_ROW_INTERACTIVE = "cursor-pointer transition-colors hover:bg-accent/40"

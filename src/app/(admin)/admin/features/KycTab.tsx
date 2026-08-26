@@ -193,7 +193,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
           )}
         </>
       ) : kycError ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-rose-500/30 bg-rose-500/5 px-4 py-3 text-xs text-rose-700" role="alert">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/25 bg-destructive/5 px-4 py-3 text-xs text-destructive" role="alert">
           <span>Impossible de charger les dossiers KYC.</span>
           <Button size="sm" variant="outline" onClick={() => fetchKyc()}>Réessayer</Button>
         </div>

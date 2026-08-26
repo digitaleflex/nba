@@ -477,6 +477,7 @@ function AdminConsoleContent() {
         {/* ============================================================== */}
         <AdminTools />
 
+        <div key={activeTab} className="animate-fade-in">
         {/* ============================================================== */}
         {/* MODULE VIEWS */}
         {/* ============================================================== */}
@@ -493,6 +494,7 @@ function AdminConsoleContent() {
             initialSearch={searchParams.get("search") || ""}
           />
         )}
+        </div>
 
         {activeTab === "membres" && (
           <MembresTab cachedGet={cachedGet} invalidate={invalidateAdminCache} />
