@@ -1,14 +1,16 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 export const dynamic = "force-dynamic"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
 import {
-  Search, Shield, Loader2, ChevronLeft, ChevronRight, Download, Trash2,
-  Clock, User, Globe, AlertCircle, RefreshCw, Filter, X, FileText,
+  Search, Shield, ChevronLeft, ChevronRight, Download, Trash2,
+  Globe, AlertCircle, RefreshCw, Filter, X, FileText,
   Users, LayoutGrid, ChevronDown, ChevronUp, ExternalLink,
 } from "lucide-react"
+import { toast } from "sonner"
 import type { AuditEvent, AuditFilters, AuditView } from "@nba/lib/audit/types"
 import { getActionIcon, getActionLabel, getResourceIcon, getResourceLabel } from "@nba/lib/audit/labels"
 import { renderDescription } from "@nba/lib/audit/renderers"
@@ -230,7 +232,6 @@ export default function AuditCenterPage() {
     if (view !== "resource") return null
     const groups = new Map<string, { resourceType: string; resourceId: string | null; resourceLabel: string | null; logs: AuditEvent[] }>()
     for (const log of logs) {
-      const label = log.resourceLabel ?? getResourceLabel(log.resourceType)
       const key = log.resourceId ? `${log.resourceType}:${log.resourceId}` : log.resourceType
       if (!groups.has(key)) groups.set(key, { resourceType: log.resourceType, resourceId: log.resourceId, resourceLabel: log.resourceLabel, logs: [] })
       groups.get(key)!.logs.push(log)
@@ -622,7 +623,7 @@ export default function AuditCenterPage() {
           <select
             value={actionFilter}
             onChange={(e) => updateParams({ action: e.target.value || null, page: "1" })}
-            className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
           >
             <option value="">Toutes les actions</option>
             {filters?.actions.map((a) => (
@@ -632,7 +633,7 @@ export default function AuditCenterPage() {
           <select
             value={resourceTypeFilter}
             onChange={(e) => updateParams({ resourceType: e.target.value || null, page: "1" })}
-            className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
           >
             <option value="">Toutes les ressources</option>
             {filters?.resourceTypes.map((r) => (
@@ -673,13 +674,14 @@ export default function AuditCenterPage() {
               Avertissements
             </button>
             <button onClick={() => updateParams({ action: actionFilter === "session.login" ? null : "session.login", page: "1" })}
-              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors inline-flex items-center gap-1 ${
                 actionFilter === "session.login"
                   ? "bg-primary/10 text-primary border-primary/20"
                   : "border-border/50 text-muted-foreground hover:bg-muted/50"
               }`}
             >
-              🔑 Connexions
+              <span className="size-1.5 rounded-full bg-primary" />
+              Connexions
             </button>
             <span className="text-xs text-muted-foreground/40">|</span>
             <span className="text-xs text-muted-foreground shrink-0">Période :</span>
@@ -689,7 +691,7 @@ export default function AuditCenterPage() {
                   ? "bg-primary/10 text-primary border-primary/20"
                   : "border-border/50 text-muted-foreground hover:bg-muted/50"
               }`}
-            >Aujourd'hui</button>
+            >Aujourd&apos;hui</button>
             <button onClick={() => {
               const d = new Date(); d.setDate(d.getDate() - 7)
               updateParams({ startDate: d.toISOString().slice(0, 10), endDate: null, page: "1" })
@@ -730,7 +732,7 @@ export default function AuditCenterPage() {
           <select
             value={severityFilter}
             onChange={(e) => updateParams({ severity: e.target.value || null, page: "1" })}
-            className="h-9 rounded-lg border border-border/50 bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="h-9 rounded-lg border border-border/50 bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
           >
             <option value="">Toutes gravités</option>
             {Object.entries(SEVERITY_CONFIG).map(([k, v]) => (
@@ -776,8 +778,18 @@ export default function AuditCenterPage() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="size-8 text-muted-foreground/50 animate-spin" />
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="rounded-lg border border-border/50 bg-muted/20 p-4 animate-pulse">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="size-6 rounded-full bg-muted/50" />
+                <div className="h-3 w-24 bg-muted/50 rounded" />
+                <div className="ml-auto h-3 w-16 bg-muted/50 rounded" />
+              </div>
+              <div className="h-3 w-48 bg-muted/50 rounded mb-2" />
+              <div className="h-3 w-32 bg-muted/30 rounded" />
+            </div>
+          ))}
         </div>
       ) : error ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -948,11 +960,11 @@ export default function AuditCenterPage() {
                     const res = await fetch("/api/admin/audit-logs", { method: "DELETE" })
                     if (!res.ok) throw new Error()
                     const data = await res.json()
-                    alert(`${data.deleted} logs supprimés (plus de ${data.olderThanDays} jours)`)
+                    toast.success(`${data.deleted} logs supprimés (plus de ${data.olderThanDays} jours)`)
                     setShowPurgeModal(false)
                     fetchLogs()
                   } catch {
-                    alert("Erreur lors de la purge")
+                    toast.error("Erreur lors de la purge")
                   }
                 }}
                 className="px-4 py-2 text-xs font-medium rounded-lg bg-rose-600 text-white hover:bg-rose-700 transition-colors"
