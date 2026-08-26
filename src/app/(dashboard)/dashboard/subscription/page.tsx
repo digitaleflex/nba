@@ -1,8 +1,11 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, Badge, Button } from "@nba/design-system"
-import { Check, Loader2, AlertCircle, Radio, Calendar, Tag, Hash, ExternalLink, RefreshCw, MessageCircle } from "lucide-react"
+import { Card, CardContent, Button } from "@nba/design-system"
+import {
+  Check, Loader2, AlertCircle, Calendar, RefreshCw, MessageCircle,
+  Clock, ArrowRight, Zap,
+} from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { apiFetch, getErrorMessage } from "@nba/lib/fetch-client"
@@ -28,163 +31,41 @@ interface AccessRequest {
   plan: Plan
 }
 
-const STATUS_CONFIG: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline"; className: string }> = {
-  APPROVED: { label: "Actif", variant: "default", className: "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" },
-  PENDING: { label: "En attente", variant: "outline", className: "text-amber-600 border-amber-500/30 bg-amber-500/10" },
-  REJECTED: { label: "Refusé", variant: "destructive", className: "" },
-  SUSPENDED: { label: "Suspendu", variant: "outline", className: "text-muted-foreground" },
-  REVOKED: { label: "Révoqué", variant: "destructive", className: "" },
+function daysUntil(dateStr: string | Date) {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / 86400000)
 }
 
-function PlanCard({ request, isCurrentChoice }: { request: AccessRequest; isCurrentChoice: boolean }) {
-  const { plan, status, createdAt, reviewedAt, notes } = request
-  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.PENDING
-  const endDate = reviewedAt
-    ? new Date(new Date(reviewedAt).getTime() + plan.durationDays * 86400000)
-    : null
+function daysSince(dateStr: string | Date) {
+  return Math.floor((Date.now() - new Date(dateStr).getTime()) / 86400000)
+}
 
-  const features = Array.isArray(plan.features) ? plan.features : []
-  const checkoutUrl = features.find(f => f.startsWith("http")) ?? null
-  const displayFeatures = features.filter(f => !f.startsWith("http"))
+function endDate(request: AccessRequest): Date | null {
+  if (!request.reviewedAt) return null
+  return new Date(new Date(request.reviewedAt).getTime() + request.plan.durationDays * 86400000)
+}
 
-  const canResubscribe = ["REVOKED", "SUSPENDED", "REJECTED"].includes(status) && checkoutUrl
+function isActive(request: AccessRequest) {
+  const end = endDate(request)
+  return request.status === "APPROVED" && (!end || end.getTime() > Date.now())
+}
 
-  return (
-    <Card className="border-border/50">
-      <CardContent className="p-5 space-y-4">
-        {/* Header : nom + statut */}
-        <div className="flex items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-foreground">{plan.name}</h3>
-              <span className="text-sm font-bold text-primary">
-                {plan.price} {plan.currency}
-              </span>
-              {isCurrentChoice && (
-                <Badge variant="outline" className="text-[10px] text-primary border-primary/30 bg-primary/5">
-                  Choix initial
-                </Badge>
-              )}
-            </div>
-            {plan.description && (
-              <p className="text-sm text-muted-foreground">{plan.description}</p>
-            )}
-          </div>
-          <Badge variant={statusConfig.variant} className={statusConfig.className}>
-            {statusConfig.label}
-          </Badge>
-        </div>
-
-        {/* Détails : durée, date */}
-        <div className="grid grid-cols-2 sm:grid-cols-2 gap-3 text-sm">
-          <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Durée d&apos;accès</p>
-            <p className="font-semibold text-foreground">{plan.durationDays} jours</p>
-          </div>
-          <div className="space-y-0.5">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Demandé le</p>
-            <p className="font-semibold text-foreground">
-              {new Date(createdAt).toLocaleDateString("fr-FR", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </p>
-          </div>
-        </div>
-
-        {/* Dates d'approbation / expiration */}
-        {(reviewedAt || endDate) && (
-          <div className="grid grid-cols-2 gap-3 text-sm pt-2 border-t border-border/50">
-            {reviewedAt && (
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Approuvé le</p>
-                <p className="text-foreground">
-                  {new Date(reviewedAt).toLocaleDateString("fr-FR", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-            )}
-            {endDate && (
-              <div className="space-y-0.5">
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Expire le</p>
-                <p className="text-foreground">
-                  {endDate.toLocaleDateString("fr-FR", {
-                    day: "numeric",
-                    month: "short",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Features */}
-        {displayFeatures.length > 0 && (
-          <div className="space-y-2 pt-2 border-t border-border/50">
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold">Inclus</p>
-            <ul className="space-y-1">
-              {displayFeatures.map((f, i) => (
-                <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
-                  <Check className="size-3.5 text-primary shrink-0" />
-                  {f}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Bouton se réabonner */}
-        {canResubscribe && (
-          <div className="pt-2 border-t border-border/50">
-            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer">
-              <Button variant="default" size="sm" className="w-full cursor-pointer">
-                <RefreshCw className="size-3.5 mr-1.5" />
-                Se réabonner ({plan.price} {plan.currency})
-              </Button>
-            </a>
-          </div>
-        )}
-
-        {/* Notes admin (si refusée) */}
-        {notes && status === "REJECTED" && (
-          <>
-            <div className="rounded-lg border border-destructive/20 bg-destructive/5 p-3 text-sm text-destructive">
-              <p className="text-[10px] uppercase tracking-wider font-bold mb-1">Raison du refus</p>
-              <p className="italic">"{notes}"</p>
-            </div>
-            <div className="pt-1">
-              <Link href="/dashboard/messages">
-                <Button variant="outline" size="sm" className="w-full gap-1.5 text-muted-foreground">
-                  <MessageCircle className="size-3.5" />
-                  Contacter l'admin
-                </Button>
-              </Link>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  )
+function isExpired(request: AccessRequest) {
+  const end = endDate(request)
+  return request.status === "APPROVED" && end && end.getTime() <= Date.now()
 }
 
 export default function SubscriptionPage() {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const DEFAULT_ERROR = "Impossible de charger vos abonnements."
 
   useEffect(() => {
     apiFetch("/api/dashboard/subscription")
       .then((r) => r.json())
-      .then((subData) => setAccessRequests(Array.isArray(subData.requests) ? subData.requests : []))
+      .then((d) => setAccessRequests(Array.isArray(d.requests) ? d.requests : []))
       .catch((err) => {
         setError(getErrorMessage(err))
-        toast.error(DEFAULT_ERROR)
+        toast.error("Impossible de charger vos abonnements.")
       })
       .finally(() => setLoading(false))
   }, [])
@@ -212,118 +93,292 @@ export default function SubscriptionPage() {
     )
   }
 
-  const approved = accessRequests.filter((r) => r.status === "APPROVED")
-  const pending = accessRequests.filter((r) => r.status === "PENDING")
-  const rejected = accessRequests.filter((r) => r.status === "REJECTED")
-  const others = accessRequests.filter((r) => !["APPROVED", "PENDING", "REJECTED"].includes(r.status))
+  const approved = accessRequests.filter(r => r.status === "APPROVED")
+  const activeList = approved.filter(isActive)
+  const expiredList = approved.filter(isExpired)
+  const pending = accessRequests.filter(r => r.status === "PENDING")
+  const rejected = accessRequests.filter(r => r.status === "REJECTED")
   const hasAny = accessRequests.length > 0
+
+  // Plan prioritaire : celui qui expire bientôt ou le premier approuvé
+  const currentPlan = activeList[0] ?? expiredList[0] ?? null
+  const currentPlanEnd = currentPlan ? endDate(currentPlan) : null
+  const currentPlanDaysLeft = currentPlanEnd ? daysUntil(currentPlanEnd) : null
+  const isCurrentExpired = currentPlan ? isExpired(currentPlan) : false
+  const currentPlanExpiredDays = currentPlan && isCurrentExpired && currentPlanEnd ? daysSince(currentPlanEnd) : null
+
+  const checkoutUrl = currentPlan
+    ? (Array.isArray(currentPlan.plan.features) ? currentPlan.plan.features : []).find(f => f.startsWith("http")) ?? null
+    : null
+
+  const features = currentPlan
+    ? (Array.isArray(currentPlan.plan.features) ? currentPlan.plan.features : []).filter(f => !f.startsWith("http"))
+    : []
+
+  // Tous les plans disponibles (uniques par planId) pour affichage secondaire
+  const otherPlans = accessRequests
+    .filter(r => !currentPlan || r.planId !== currentPlan.planId)
+    .reduce((acc, r) => {
+      if (!acc.find(x => x.planId === r.planId)) acc.push(r)
+      return acc
+    }, [] as AccessRequest[])
 
   return (
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
-        <p className="text-sm text-muted-foreground">Gérez vos accès aux groupes de diffusion</p>
+        <p className="text-sm text-muted-foreground">Gérez votre accès aux signaux premium</p>
       </div>
 
-      {/* CTA : cas exceptionnel (aucun abonnement actif) */}
-      {approved.length === 0 && (
-        <Card className="border-warning/30 bg-warning/5">
-          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <Radio className="size-10 text-warning" />
+      {/* ══════════════════════════════════════════════════════════════
+          BANNIÈRE D'URGENCE — expiration ou inactivité
+      ══════════════════════════════════════════════════════════════ */}
+      {isCurrentExpired && (
+        <div className="rounded-xl border-2 border-destructive/30 bg-destructive/5 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <Clock className="size-5 text-destructive mt-0.5 shrink-0" />
             <div className="space-y-1">
-              <p className="font-semibold text-warning">
-                {hasAny ? "Aucun abonnement actif" : "Aucun abonnement sélectionné"}
+              <p className="font-bold text-destructive">
+                Votre abonnement a expiré
               </p>
-              <p className="text-sm text-muted-foreground max-w-md">
-                {rejected.length > 0
-                  ? "Votre demande précédente a été refusée. Contactez le support pour plus d'informations."
-                  : pending.length > 0
-                    ? "Votre demande est en cours de traitement."
-                    : !hasAny
-                      ? "Vous n'avez pas encore souscrit à un groupe. Contactez l'admin ou le support pour activer votre accès."
-                      : "Votre accès aux signaux n'est pas encore actif."}
+              <p className="text-sm text-foreground/80">
+                Accès au plan <strong>{currentPlan!.plan.name}</strong> expiré le{" "}
+                {currentPlanEnd!.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                {currentPlanExpiredDays !== null && currentPlanExpiredDays > 0 && (
+                  <> — il y a <strong>{currentPlanExpiredDays} jour{currentPlanExpiredDays > 1 ? "s" : ""}</strong></>
+                )}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Vos signaux ne sont plus diffusés. Renouvelez pour retrouver l&apos;accès immédiatement.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Link href="/dashboard/signals">
-                <Button variant="outline" size="sm">
-                  Voir les signaux
-                </Button>
-              </Link>
-              {rejected.length > 0 && (
-                <Link href="/dashboard/messages">
-                  <Button variant="default" size="sm" className="gap-1.5">
-                    <MessageCircle className="size-3.5" />
-                    Contacter l'admin
-                  </Button>
-                </Link>
-              )}
-              {!hasAny && (
-                <Link href="/dashboard/messages">
-                  <Button variant="default" size="sm" className="gap-1.5">
-                    <MessageCircle className="size-3.5" />
-                    Contacter l'admin
-                  </Button>
-                </Link>
-              )}
+          </div>
+          {checkoutUrl && (
+            <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="block">
+              <Button className="w-full gap-2 cursor-pointer" size="lg">
+                <RefreshCw className="size-4" />
+                Renouveler maintenant — {currentPlan!.plan.price} {currentPlan!.plan.currency}
+                <ArrowRight className="size-4" />
+              </Button>
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Bannière "pas encore d'abonnement" */}
+      {!hasAny && (
+        <div className="rounded-xl border-2 border-primary/20 bg-primary/5 p-5 space-y-3">
+          <div className="flex items-start gap-3">
+            <Zap className="size-5 text-primary mt-0.5 shrink-0" />
+            <div className="space-y-1">
+              <p className="font-bold text-foreground">Bienvenue sur SignauxX</p>
+              <p className="text-sm text-muted-foreground">
+                Choisissez un plan ci-dessous pour recevoir nos signaux premium dans votre groupe Telegram.
+              </p>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bannière "en attente" */}
+      {pending.length > 0 && activeList.length === 0 && expiredList.length === 0 && (
+        <div className="rounded-xl border-2 border-amber-500/20 bg-amber-500/5 p-5 space-y-2">
+          <div className="flex items-start gap-3">
+            <Clock className="size-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="font-bold text-amber-700">Demande en cours de traitement</p>
+              <p className="text-sm text-muted-foreground">
+                Votre demande d&apos;accès est en cours de validation par un administrateur.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          PLAN ACTIF / EXPIRÉ — carte principale
+      ══════════════════════════════════════════════════════════════ */}
+      {currentPlan && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <Check className={cn("size-4", isCurrentExpired ? "text-destructive" : "text-success")} />
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+              {isCurrentExpired ? "Dernier abonnement" : "Abonnement actif"}
+            </h2>
+          </div>
+
+          <Card className={cn(
+            "border-2 shadow-md",
+            isCurrentExpired ? "border-destructive/30" : "border-success/20"
+          )}>
+            <CardContent className="p-6 space-y-5">
+              {/* Header plan */}
+              <div className="flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <h3 className="text-xl font-bold text-foreground">{currentPlan.plan.name}</h3>
+                  {currentPlan.plan.description && (
+                    <p className="text-sm text-muted-foreground">{currentPlan.plan.description}</p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-foreground tabular-nums">
+                    {currentPlan.plan.price}
+                    <span className="text-sm font-normal text-muted-foreground ml-1">{currentPlan.plan.currency}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {currentPlan.plan.durationDays} jours
+                  </p>
+                </div>
+              </div>
+
+              {/* Dates */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm pt-3 border-t border-border/50">
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Approuvé le</p>
+                  <p className="font-semibold text-foreground">
+                    {currentPlan.reviewedAt
+                      ? new Date(currentPlan.reviewedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Expire le</p>
+                  <p className="font-semibold text-foreground">
+                    {currentPlanEnd
+                      ? currentPlanEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
+                      : "—"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+                    {isCurrentExpired ? "Expiré depuis" : "Jours restants"}
+                  </p>
+                  <p className={cn(
+                    "font-bold",
+                    isCurrentExpired ? "text-destructive" : (currentPlanDaysLeft !== null && currentPlanDaysLeft <= 7 ? "text-amber-600" : "text-foreground")
+                  )}>
+                    {isCurrentExpired
+                      ? `${currentPlanExpiredDays} jour${currentPlanExpiredDays !== 1 ? "s" : ""}`
+                      : currentPlanDaysLeft !== null
+                        ? `${currentPlanDaysLeft} jour${currentPlanDaysLeft !== 1 ? "s" : ""}`
+                        : "—"}
+                  </p>
+                </div>
+              </div>
+
+              {/* Features */}
+              {features.length > 0 && (
+                <div className="pt-3 border-t border-border/50">
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-2">Inclus dans ce plan</p>
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                    {features.map((f, i) => (
+                      <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">
+                        <Check className="size-3.5 text-success shrink-0" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* CTA */}
+              {checkoutUrl && (
+                <a href={checkoutUrl} target="_blank" rel="noopener noreferrer" className="block pt-2">
+                  <Button
+                    className={cn("w-full gap-2 cursor-pointer", isCurrentExpired && "bg-destructive hover:bg-destructive/90")}
+                    size="lg"
+                  >
+                    {isCurrentExpired ? (
+                      <><RefreshCw className="size-4" /> Renouveler l&apos;accès</>
+                    ) : (
+                      <><Calendar className="size-4" /> Prolonger l&apos;accès</>
+                    )}
+                  </Button>
+                </a>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          AUTRES PLANS — comparaison secondaire
+      ══════════════════════════════════════════════════════════════ */}
+      {otherPlans.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
+            Autres plans
+          </h2>
+          <div className="grid gap-3">
+            {otherPlans.map((r) => {
+              const rCheckout = (Array.isArray(r.plan.features) ? r.plan.features : []).find(f => f.startsWith("http"))
+              const rFeatures = (Array.isArray(r.plan.features) ? r.plan.features : []).filter(f => !f.startsWith("http"))
+              return (
+                <Card key={r.id} className="border-border/50">
+                  <CardContent className="p-5 space-y-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-semibold text-foreground">{r.plan.name}</p>
+                        {r.plan.description && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{r.plan.description}</p>
+                        )}
+                      </div>
+                      <p className="text-lg font-bold text-foreground tabular-nums shrink-0">
+                        {r.plan.price} <span className="text-xs font-normal text-muted-foreground">{r.plan.currency}</span>
+                      </p>
+                    </div>
+                    {rFeatures.length > 0 && (
+                      <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                        {rFeatures.map((f, i) => (
+                          <li key={i} className="flex items-center gap-1">
+                            <Check className="size-3 text-success/70" />
+                            {f}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {rCheckout && (
+                      <a href={rCheckout} target="_blank" rel="noopener noreferrer">
+                        <Button variant="outline" size="sm" className="w-full gap-1.5 cursor-pointer">
+                          Choisir ce plan
+                          <ArrowRight className="size-3" />
+                        </Button>
+                      </a>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════
+          DEMANDES REFUSÉES — contact admin
+      ══════════════════════════════════════════════════════════════ */}
+      {rejected.length > 0 && (
+        <Card className="border-destructive/20">
+          <CardContent className="p-5 space-y-3">
+            <div className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="size-4" />
+              <p className="font-semibold text-sm">Demande refusée</p>
+            </div>
+            {rejected[0].notes && (
+              <p className="text-sm text-muted-foreground italic">&ldquo;{rejected[0].notes}&rdquo;</p>
+            )}
+            <Link href="/dashboard/messages">
+              <Button variant="outline" size="sm" className="gap-1.5 cursor-pointer">
+                <MessageCircle className="size-3.5" />
+                Contacter un administrateur
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       )}
-
-      {/* Section 1 : Abonnements actifs (approuvés) */}
-      {approved.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Check className="size-4 text-emerald-600" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Abonnements actifs ({approved.length})
-            </h2>
-          </div>
-          {approved.map((r) => (
-            <PlanCard key={r.id} request={r} isCurrentChoice={approved.length === 1} />
-          ))}
-        </div>
-      )}
-
-      {/* Section 2 : Demandes en attente (choix initial) */}
-      {pending.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <Tag className="size-4 text-amber-600" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Choix initial en attente ({pending.length})
-            </h2>
-          </div>
-          {pending.map((r) => (
-            <PlanCard key={r.id} request={r} isCurrentChoice={pending.length === 1 && approved.length === 0} />
-          ))}
-        </div>
-      )}
-
-      {/* Section 3 : Refusées */}
-      {rejected.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <AlertCircle className="size-4 text-destructive" />
-            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">
-              Demandes refusées ({rejected.length})
-            </h2>
-          </div>
-          {rejected.map((r) => (
-            <PlanCard key={r.id} request={r} isCurrentChoice={false} />
-          ))}
-        </div>
-      )}
-
-      {/* Section 4 : Autres (suspendu, révoqué) */}
-      {others.length > 0 && (
-        <div className="space-y-3">
-          {others.map((r) => (
-            <PlanCard key={r.id} request={r} isCurrentChoice={false} />
-          ))}
-        </div>
-      )}
     </div>
   )
+}
+
+function cn(...classes: (string | undefined | false | null)[]) {
+  return classes.filter(Boolean).join(" ")
 }
