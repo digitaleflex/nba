@@ -84,7 +84,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left border-collapse">
             <thead>
-              <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+              <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                 <th className="px-6 py-3">Utilisateur</th>
                 <th className="px-6 py-3">Rôle</th>
                 <th className="px-6 py-3">WhatsApp</th>
@@ -112,7 +112,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                         </div>
                         <div>
                           <p className="font-semibold text-foreground">{member.name || "—"}</p>
-                          <p className="text-[10px] text-muted-foreground">{member.email}</p>
+                          <p className="text-xs text-muted-foreground">{member.email}</p>
                         </div>
                       </div>
                     </td>
@@ -132,7 +132,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-[10px] text-muted-foreground hover:text-foreground cursor-pointer"
+                        className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                         onClick={() => {
                           onOpenPanel({ title: "Détails Utilisateur", type: "user", data: member })
                         }}

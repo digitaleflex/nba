@@ -180,7 +180,7 @@ export function AdminInbox() {
     >
       <BellIcon className="size-5" />
       {pending > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-semibold leading-4 text-white">
+        <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-semibold leading-4 text-white">
           {pending > 99 ? "99+" : pending}
         </span>
       )}

@@ -56,7 +56,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
           >
             <Settings className="size-4 text-muted-foreground" />
           </button>
-          <Badge variant="outline" className="text-[10px] text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
+          <Badge variant="outline" className="text-xs text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
             <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
             Live
           </Badge>
@@ -146,10 +146,10 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
 
           <ProgressiveDetail level={2} expandable>
             <div>
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
                 <ShieldAlert className="size-3" />
                 Sécurité & Anti-Fraude
-                <button onClick={() => router.push("/admin?tab=fraud")} className="text-[10px] text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
+                <button onClick={() => router.push("/admin?tab=fraud")} className="text-xs text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
               </h3>
               <SummaryList
                 items={[
@@ -166,7 +166,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
             <Card className="border-border/60 bg-card shadow-sm lg:col-span-2">
               <CardContent className="p-5">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Inscriptions (7 jours)</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Inscriptions (7 jours)</h3>
                 <div className="pt-4">
                   <Chart type="bar" data={(opsData.activityGraph ?? []).map((d: any) => ({ label: d.day, value: d.count }))} emptyText="Aucune inscription cette semaine" />
                 </div>
@@ -174,10 +174,10 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             </Card>
             <Card className="border-border/60 bg-card shadow-sm">
               <CardContent className="p-5">
-                <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Activités récentes</h3>
+                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Activités récentes</h3>
                 <div className="pt-4 space-y-3.5 max-h-48 overflow-y-auto">
                   {opsData.recentActivities.length > 0 ? opsData.recentActivities.map((act: any, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-[10px]">
+                    <div key={idx} className="flex items-start gap-2.5 text-xs">
                       <span className="size-1.5 rounded-full bg-neutral-400 mt-1 shrink-0" />
                       <div>
                         <p className="font-semibold text-foreground leading-snug">{act.action}</p>
@@ -194,7 +194,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
 
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-5">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Santé du Système</h3>
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Santé du Système</h3>
               <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-4 text-xs">
                 <SysHealth icon={Server} label="Redis" healthy={opsData.systemStatus.redis === "healthy"} />
                 <SysHealth icon={Activity} label="BullMQ Workers" healthy={opsData.systemStatus.bullmq === "healthy"} okText="Actifs" failText="Ralentis" />
@@ -239,7 +239,7 @@ function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value
     <Card className="border-border/60 bg-card shadow-sm">
       <CardContent className="p-4 flex items-center justify-between">
         <div className="space-y-0.5">
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
           <p className="text-xl font-bold text-foreground">{value}</p>
         </div>
         <Icon className="size-5 text-muted-foreground/40" />

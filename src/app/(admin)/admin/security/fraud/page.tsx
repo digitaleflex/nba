@@ -173,9 +173,9 @@ export default function FraudDashboard() {
                   <tr key={e.id} className="hover:bg-accent/30">
                     <td className="px-3 py-2 text-muted-foreground">{new Date(e.createdAt).toLocaleString("fr-FR")}</td>
                     <td className="px-3 py-2 font-medium">{e.type}</td>
-                    <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
+                    <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-xs font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
                     <td className="px-3 py-2">{e.user ? `${e.user.name} (${e.user.email})` : "—"}</td>
-                    <td className="px-3 py-2 text-muted-foreground font-mono text-[10px]">{e.ipAddress || "—"}</td>
+                    <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{e.ipAddress || "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -192,7 +192,7 @@ export default function FraudDashboard() {
                 <div key={ip} className="flex items-center justify-between p-2 rounded-lg bg-accent/20">
                   <div>
                     <p className="text-xs font-mono">{ip}</p>
-                    <p className="text-[10px] text-muted-foreground">TTL: {Math.round(ttl / 60)}min</p>
+                    <p className="text-xs text-muted-foreground">TTL: {Math.round(ttl / 60)}min</p>
                   </div>
                   <button onClick={() => unblockIp(ip)} className="p-1.5 rounded-md hover:bg-accent cursor-pointer"><Unlock className="size-3.5" /></button>
                 </div>
@@ -204,7 +204,7 @@ export default function FraudDashboard() {
             {playbooks.map(p => (
               <div key={p.id} className="flex items-center justify-between p-2 rounded-lg text-xs">
                 <span>{p.name}</span>
-                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${p.severity === "P0" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>{p.severity}</span>
+                <span className={`px-1.5 py-0.5 rounded text-xs font-bold ${p.severity === "P0" ? "bg-red-100 text-red-700" : "bg-yellow-100 text-yellow-700"}`}>{p.severity}</span>
               </div>
             ))}
           </div>

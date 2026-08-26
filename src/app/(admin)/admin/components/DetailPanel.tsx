@@ -29,7 +29,7 @@ export function DetailPanel({ title, severity, description, evidence, actions, o
           <div className="flex items-center gap-2">
             <h3 className="font-semibold text-foreground">{title}</h3>
             {badge && (
-              <span className={cn("px-2 py-0.5 rounded-full text-[10px] font-bold border", badge.className)}>
+              <span className={cn("px-2 py-0.5 rounded-full text-xs font-bold border", badge.className)}>
                 {badge.label}
               </span>
             )}
@@ -45,7 +45,7 @@ export function DetailPanel({ title, severity, description, evidence, actions, o
 
       {evidence.length > 0 && (
         <div className="space-y-1">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Évidence</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Évidence</p>
           {evidence.map((e, i) => (
             <p key={i} className="text-xs font-mono text-foreground bg-muted/30 p-2 rounded-lg">{e}</p>
           ))}

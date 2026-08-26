@@ -78,7 +78,7 @@ export default function AdminQueuesPage() {
         </div>
         <div className="flex items-center gap-3">
           {lastUpdate && (
-            <span className="text-[10px] text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               MAJ {lastUpdate.toLocaleTimeString("fr-FR")}
             </span>
           )}
@@ -114,11 +114,11 @@ export default function AdminQueuesPage() {
                     {QUEUE_LABELS[q.name] ?? q.name}
                   </CardTitle>
                   {hasError ? (
-                    <Badge variant="outline" className="text-[10px] text-rose-600 border-rose-500/20">
+                    <Badge variant="outline" className="text-xs text-rose-600 border-rose-500/20">
                       Indisponible
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-[10px] text-emerald-600 border-emerald-500/20">
+                    <Badge variant="outline" className="text-xs text-emerald-600 border-emerald-500/20">
                       <CheckCircle2 className="mr-1 size-3" /> Actif
                     </Badge>
                   )}
@@ -176,7 +176,7 @@ export default function AdminQueuesPage() {
 function Metric({ label, value }: { label: string; value: number }) {
   return (
     <div className="rounded-lg bg-muted/40 px-3 py-2">
-      <p className="text-[10px] uppercase tracking-wide text-muted-foreground">{label}</p>
+      <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className="text-lg font-bold">{value}</p>
     </div>
   )

@@ -133,7 +133,7 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold text-foreground">{d.subject || selected.title}</h1>
-              <Badge variant="outline" className={cn("text-[10px]", sevCfg.className)}>{sev}</Badge>
+              <Badge variant="outline" className={cn("text-xs", sevCfg.className)}>{sev}</Badge>
             </div>
             <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
               <span className="font-semibold text-foreground/80">{reporterName}</span>
@@ -149,7 +149,7 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
               <span>{formatDate(selected.createdAt)}</span>
             </p>
           </div>
-          <Badge variant="outline" className={cn("text-[10px] shrink-0", sc.color)}>
+          <Badge variant="outline" className={cn("text-xs shrink-0", sc.color)}>
             <StatusIcon className="size-3 mr-1" />{sc.label}
           </Badge>
         </div>
@@ -256,7 +256,7 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
                 key={s}
                 onClick={() => setFilter(s)}
                 className={cn(
-                  "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                  "text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
                   filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50",
                 )}
               >
@@ -298,7 +298,7 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-0.5">
                           <p className="font-semibold text-sm text-foreground truncate">{d.subject || bug.title}</p>
-                          <Badge variant="outline" className={cn("text-[10px] shrink-0", sevCfg.className)}>
+                          <Badge variant="outline" className={cn("text-xs shrink-0", sevCfg.className)}>
                             {severityLabel(d.severity)}
                           </Badge>
                         </div>
@@ -310,10 +310,10 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
                         <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{d.message || bug.body}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <Badge variant="outline" className={cn("text-[10px]", sc.color)}>
+                        <Badge variant="outline" className={cn("text-xs", sc.color)}>
                           <StatusIcon className="size-3 mr-1" />{sc.label}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">{formatDate(bug.createdAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(bug.createdAt)}</span>
                       </div>
                     </div>
                   </CardContent>

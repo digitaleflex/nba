@@ -78,7 +78,7 @@ export function AdminTools() {
     <>
       <Card className="border-border">
         <CardContent className="p-4 flex flex-wrap items-center gap-3">
-          <span className="text-[10px] uppercase text-muted-foreground font-semibold mr-1">
+          <span className="text-xs uppercase text-muted-foreground font-semibold mr-1">
             Outils super-admin
           </span>
           <Button size="sm" variant="outline" className="gap-1.5" disabled={busy === "cache"} onClick={purgeCache}>
@@ -94,7 +94,7 @@ export function AdminTools() {
             <RefreshCw className="size-3.5" /> Files (stats)
           </Button>
           {cacheStats && (
-            <span className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border">
+            <span className="text-xs px-2 py-1 rounded bg-muted/50 border border-border">
               Cache: {cacheStats.hits} hits / {cacheStats.misses} misses ({cacheStats.ratio}) · {cacheStats.invalidations} invalidations
             </span>
           )}
@@ -103,7 +103,7 @@ export function AdminTools() {
               {queues.map((q: any) => (
                 <span
                   key={q.name}
-                  className="text-[10px] px-2 py-1 rounded bg-muted/50 border border-border"
+                  className="text-xs px-2 py-1 rounded bg-muted/50 border border-border"
                 >
                   {q.name}: <b className={q.failed ? "text-rose-500" : ""}>{q.failed ?? 0}</b> échec /{" "}
                   {q.waiting ?? 0} attente / {q.active ?? 0} actif

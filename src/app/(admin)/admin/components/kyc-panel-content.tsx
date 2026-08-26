@@ -15,18 +15,18 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
   return (
     <div className="space-y-6 text-xs">
       <div className="space-y-2">
-        <span className="text-[10px] text-muted-foreground uppercase">Dossier utilisateur</span>
+        <span className="text-xs text-muted-foreground uppercase">Dossier utilisateur</span>
         <h4 className="text-sm font-bold text-foreground">{data.user?.name}</h4>
         <p className="text-muted-foreground">{data.user?.email}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 border-t border-b py-4">
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Type de document</span>
+          <span className="text-xs text-muted-foreground uppercase">Type de document</span>
           <p className="font-semibold text-foreground mt-0.5">{data.type || data.documentType}</p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Statut KYC</span>
+          <span className="text-xs text-muted-foreground uppercase">Statut KYC</span>
           <div className="mt-0.5">
             <Badge
               variant="outline"
@@ -41,7 +41,7 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
           </div>
         </div>
         <div className="col-span-2">
-          <span className="text-[10px] text-muted-foreground uppercase">Soumis le</span>
+          <span className="text-xs text-muted-foreground uppercase">Soumis le</span>
           <p className="font-semibold text-foreground mt-0.5">
             {new Date(data.createdAt).toLocaleString()}
           </p>
@@ -54,7 +54,7 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
         <div className="space-y-3">
           {data.frontFilePath && (
             <div className="space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+              <span className="text-xs text-muted-foreground uppercase font-semibold">
                 Recto (Document principal)
               </span>
               <div className="border rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
@@ -77,7 +77,7 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
 
           {data.backFilePath && (
             <div className="space-y-1">
-              <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+              <span className="text-xs text-muted-foreground uppercase font-semibold">
                 Verso (Secondaire)
               </span>
               <div className="border rounded-xl overflow-hidden bg-neutral-100 dark:bg-neutral-900">
@@ -108,7 +108,7 @@ export function KycPanelContent({ data, onAction, onZoomImage }: KycPanelContent
 
       {onAction && (data.status === "PENDING" || data.status === "REJECTED") && (
         <div className="space-y-2 border-t pt-4">
-          <span className="text-[10px] text-muted-foreground uppercase">Revue administrative</span>
+          <span className="text-xs text-muted-foreground uppercase">Revue administrative</span>
           <textarea
             placeholder="Justification (obligatoire pour un refus)..."
             value={notes}

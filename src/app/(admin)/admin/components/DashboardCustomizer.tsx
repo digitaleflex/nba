@@ -75,7 +75,7 @@ export function DashboardCustomizer({
                     />
                     <span className="text-sm">{CARD_LABELS[card.type] || card.type}</span>
                   </div>
-                  <span className="text-[10px] text-muted-foreground uppercase">{card.size}</span>
+                  <span className="text-xs text-muted-foreground uppercase">{card.size}</span>
                 </label>
               ))}
             </div>

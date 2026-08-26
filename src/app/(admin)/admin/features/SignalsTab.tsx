@@ -291,7 +291,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[11px] uppercase",
+                          "text-xs uppercase",
                           sig.status === "PUBLISHED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                           sig.status === "DRAFT" && "bg-neutral-500/10 text-neutral-400 border-neutral-500/20",
                           sig.status === "ARCHIVED" && "bg-rose-500/10 text-rose-600 border-rose-500/20"
@@ -299,7 +299,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                       >
                         {sig.status === "PUBLISHED" ? "Publié" : sig.status === "DRAFT" ? "Brouillon" : "Archivé"}
                       </Badge>
-                      <span className="text-[10px] text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         {sig.publishedAt ? new Date(sig.publishedAt).toLocaleDateString() : new Date(sig.createdAt).toLocaleDateString()}
                       </span>
                     </div>
@@ -309,7 +309,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                     </p>
 
                     <div className="flex justify-between items-center pt-2 border-t border-border/60">
-                      <span className="text-[11px] text-muted-foreground">Créé par : {sig.creator?.name || "Admin"}</span>
+                      <span className="text-xs text-muted-foreground">Créé par : {sig.creator?.name || "Admin"}</span>
                       <div className="flex gap-1.5">
                         {sig.status === "DRAFT" && (
                           <Button
@@ -390,7 +390,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
             {/* Pagination */}
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
-                <span className="text-[10px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   Page {page} sur {totalPages}
                 </span>
                 <div className="flex gap-1">

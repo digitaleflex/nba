@@ -492,7 +492,7 @@ export default function AdminMessagesPage() {
           <Button variant="outline" onClick={() => { setModerationOpen(true); loadReports() }} className="gap-2">
             <ShieldAlert className="size-4" /> Modération
             {reports.length > 0 && (
-              <span className="ml-1 rounded-full bg-destructive px-1.5 text-[10px] text-destructive-foreground">{reports.length}</span>
+              <span className="ml-1 rounded-full bg-destructive px-1.5 text-xs text-destructive-foreground">{reports.length}</span>
             )}
           </Button>
         </div>
@@ -613,7 +613,7 @@ export default function AdminMessagesPage() {
                         return (
                           <Fragment key={m.id}>
                             {showDay && (
-                              <div className="text-center text-[11px] text-muted-foreground my-2">
+                              <div className="text-center text-xs text-muted-foreground my-2">
                                 {formatDay(m.createdAt)}
                               </div>
                             )}

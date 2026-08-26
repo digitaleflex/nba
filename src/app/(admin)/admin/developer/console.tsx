@@ -56,7 +56,7 @@ export function DeveloperConsole() {
           <p className="text-xs text-muted-foreground mt-1">Contrôle total de la plateforme</p>
         </div>
         <div className="flex items-center gap-2">
-          {isDegraded && <Badge className="text-[10px] bg-red-500/10 text-red-500 border-red-500/20">⚠ Circuits dégradés</Badge>}
+          {isDegraded && <Badge className="text-xs bg-red-500/10 text-red-500 border-red-500/20">⚠ Circuits dégradés</Badge>}
           <Button size="sm" variant="outline" onClick={loadAll}><RefreshCw className="size-3.5 mr-1" /> Rafraîchir</Button>
         </div>
       </div>
@@ -115,7 +115,7 @@ export function DeveloperConsole() {
           </div>
           <div className="max-h-96 overflow-y-auto">
             <table className="w-full text-xs text-left">
-              <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
+              <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
                 <th className="px-2 py-2">Clé</th><th className="px-2 py-2">Valeur</th><th className="px-2 py-2">Taille</th>
               </tr></thead>
               <tbody className="divide-y">
@@ -167,7 +167,7 @@ export function DeveloperConsole() {
             <p className="text-xs text-muted-foreground">{spec?.info?.title} v{spec?.info?.version}</p>
             <p className="text-xs">{Object.keys(spec?.paths || {}).length} endpoints · {spec?.tags?.length || 0} tags</p>
             <div className="flex flex-wrap gap-1 pt-2">
-              {spec?.tags?.map((t: any) => <Badge key={t.name} variant="outline" className="text-[10px]">{t.name}</Badge>)}
+              {spec?.tags?.map((t: any) => <Badge key={t.name} variant="outline" className="text-xs">{t.name}</Badge>)}
             </div>
             <div className="pt-2">
               <a href="/api/docs" className="text-xs text-primary hover:underline">Ouvrir Swagger UI →</a>
@@ -187,7 +187,7 @@ export function DeveloperConsole() {
                       <Badge variant="outline" className={`text-[9px] ${state === "open" ? "text-red-500" : "text-emerald-500"}`}>{state}</Badge>
                     </div>
                     {state !== "closed" && (
-                      <button onClick={() => resetCircuit(name)} className="text-[10px] text-primary hover:underline cursor-pointer">Reset</button>
+                      <button onClick={() => resetCircuit(name)} className="text-xs text-primary hover:underline cursor-pointer">Reset</button>
                     )}
                   </div>
                 ))}
@@ -206,7 +206,7 @@ function StatCard({ icon: Icon, label, value }: { icon: any; label: string; valu
       <CardContent className="p-4 flex items-center gap-3">
         <Icon className="size-5 text-muted-foreground" />
         <div>
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
           <p className="text-sm font-bold text-foreground font-mono">{value}</p>
         </div>
       </CardContent>

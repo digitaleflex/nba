@@ -105,7 +105,7 @@ export function HeroNumber({
             {details.map((detail, i) => (
               <div key={i} className="text-center">
                 <p className={cn("text-lg font-bold", detail.color || "text-foreground")}>{detail.value}</p>
-                <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{detail.label}</p>
+                <p className="text-xs text-muted-foreground uppercase tracking-wider">{detail.label}</p>
               </div>
             ))}
           </div>

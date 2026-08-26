@@ -60,9 +60,9 @@ function StatCard({
     <Card className="border-border/60 bg-card shadow-sm">
       <CardContent className="p-4 flex items-center justify-between">
         <div className="space-y-0.5">
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
           <p className="text-xl font-bold text-foreground">{value}</p>
-          {sub && <p className="text-[10px] text-muted-foreground">{sub}</p>}
+          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
         </div>
         <Icon className="size-5 text-muted-foreground/40" />
       </CardContent>
@@ -174,7 +174,7 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
                         <span className="text-sm font-medium text-foreground truncate">
                           {plan.planName}
                         </span>
-                        <span className="text-[10px] text-muted-foreground shrink-0">
+                        <span className="text-xs text-muted-foreground shrink-0">
                           {plan.members} membre{plan.members > 1 ? "s" : ""}
                         </span>
                       </div>
@@ -189,7 +189,7 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
                           style={{ width: `${Math.max(2, pct)}%` }}
                         />
                       </div>
-                      <span className="text-[10px] text-muted-foreground w-12 text-right shrink-0">
+                      <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
                         {plan.price} {plan.currency}/{plan.durationDays > 30 ? "an" : "mois"}
                       </span>
                     </div>

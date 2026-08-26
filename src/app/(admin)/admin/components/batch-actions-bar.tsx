@@ -204,7 +204,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
                 <select
                   value={assignPlanId}
                   onChange={(e) => setAssignPlanId(e.target.value)}
-                  className="text-[11px] border border-border rounded-md bg-background px-2 py-1 text-foreground outline-none focus:border-primary/50 cursor-pointer max-w-[130px] truncate"
+                  className="text-xs border border-border rounded-md bg-background px-2 py-1 text-foreground outline-none focus:border-primary/50 cursor-pointer max-w-[130px] truncate"
                 >
                   <option value="">Plan...</option>
                   {plans.map((p) => (
@@ -267,7 +267,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
                     style={{ width: `${Math.min(100, (dialogStep / 4) * 100)}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">{dialogProgressText || "Traitement en cours..."}</p>
+                <p className="text-xs text-muted-foreground">{dialogProgressText || "Traitement en cours..."}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -290,7 +290,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
                     {dialogResult.errors && (
                       <div className="max-h-24 overflow-y-auto space-y-0.5">
                         {dialogResult.errors.slice(0, 5).map((e, i) => (
-                          <p key={i} className="text-[10px] text-muted-foreground pl-6">
+                          <p key={i} className="text-xs text-muted-foreground pl-6">
                             {e.id.slice(0, 8)}... — {e.error}
                           </p>
                         ))}
@@ -298,7 +298,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
                     )}
                   </div>
                 )}
-                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                <p className="text-xs text-muted-foreground pt-1 border-t border-border">
                   Les données ont été propagées en base.
                 </p>
               </div>

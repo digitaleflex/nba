@@ -138,7 +138,7 @@ export function AdminContextPanel({
             {isFullscreen && breadcrumb && (
               <button
                 onClick={onClose}
-                className="flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mb-0.5"
+                className="flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer mb-0.5"
               >
                 <ChevronLeft className="size-3.5" />
                 {breadcrumb}
@@ -147,7 +147,7 @@ export function AdminContextPanel({
             <h3 className={cn("font-bold text-foreground truncate", isFullscreen ? "text-base" : "text-sm")}>
               {title}
             </h3>
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wider">{type}</p>
+            <p className="text-xs text-muted-foreground uppercase tracking-wider">{type}</p>
           </div>
           <button
             onClick={onClose}

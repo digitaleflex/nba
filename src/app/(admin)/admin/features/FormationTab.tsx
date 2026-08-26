@@ -464,7 +464,7 @@ export function FormationTab() {
                 <p className="text-sm font-semibold text-foreground">{s.title}</p>
                 <p className="text-xs text-muted-foreground truncate">{s.summary}</p>
               </div>
-              <Badge variant="outline" className="text-[10px] text-muted-foreground shrink-0">
+              <Badge variant="outline" className="text-xs text-muted-foreground shrink-0">
                 {s.concepts.length} {s.concepts.length > 1 ? "notions" : "notion"}
               </Badge>
               <ChevronDown className="size-4 text-muted-foreground shrink-0 transition-transform group-open:rotate-180" />
@@ -484,7 +484,7 @@ export function FormationTab() {
                     {c.tags && (
                       <div className="flex flex-wrap gap-1 pt-1">
                         {c.tags.map((t) => (
-                          <Badge key={t} variant="outline" className="text-[10px] text-muted-foreground">
+                          <Badge key={t} variant="outline" className="text-xs text-muted-foreground">
                             {t}
                           </Badge>
                         ))}
@@ -725,7 +725,7 @@ function FeatureCatalog() {
         <div>
           <h2 className="text-lg font-bold tracking-tight flex items-center gap-2">
             Catalogue complet des fonctionnalités
-            <Badge variant="outline" className="text-[10px] text-amber-400 border-amber-500/30">SUPER_ADMIN</Badge>
+            <Badge variant="outline" className="text-xs text-amber-400 border-amber-500/30">SUPER_ADMIN</Badge>
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {categories.reduce((s, c) => s + c.count, 0)} fonctionnalités documentées par catégorie et niveau de criticité.
@@ -747,12 +747,12 @@ function FeatureCatalog() {
                     <summary className="cursor-pointer flex items-center gap-1.5 py-0.5 [&::-webkit-details-marker]:hidden">
                       <ChevronDown className="size-3 text-muted-foreground shrink-0 transition-transform group-open:rotate-180" />
                       <span className="font-medium truncate">{f.name}</span>
-                      <span className={`shrink-0 ml-auto text-[10px] px-1.5 py-px rounded ${crit.bg} ${crit.color} border ${crit.border}`}>
+                      <span className={`shrink-0 ml-auto text-xs px-1.5 py-px rounded ${crit.bg} ${crit.color} border ${crit.border}`}>
                         {crit.label}
                       </span>
                     </summary>
                     <p className="text-muted-foreground leading-relaxed ml-4.5 mt-0.5">{f.desc}</p>
-                    <p className="text-[10px] text-amber-400/80 ml-4.5 mt-0.5">
+                    <p className="text-xs text-amber-400/80 ml-4.5 mt-0.5">
                       Impact si indisponible : {f.impact}
                     </p>
                   </details>

@@ -110,7 +110,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
           {/* Connexions récentes */}
       <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-5">
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
             Sessions récentes
           </h3>
               <div className="pt-4 space-y-3">
@@ -139,7 +139,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
           {/* Tentatives de force brute */}
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-5">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
                 Tentatives de connexion échouées
               </h3>
               <div className="pt-4 space-y-3">
@@ -166,7 +166,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       {/* Sessions récentes */}
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-5">
-              <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
+              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
             Sessions récentes
           </h3>
           {loadingSessions ? (
@@ -175,7 +175,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                     <th className="px-4 py-3">Utilisateur</th>
                     <th className="px-4 py-3">IP</th>
                     <th className="px-4 py-3">User-Agent</th>
@@ -189,7 +189,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                     <tr key={s.id} className="hover:bg-card/30 transition-colors">
                       <td className="px-4 py-3">
                         <p className="font-semibold text-foreground">{s.user?.name || "—"}</p>
-                        <p className="text-[10px] text-muted-foreground">{s.user?.email || "—"}</p>
+                        <p className="text-xs text-muted-foreground">{s.user?.email || "—"}</p>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{s.ipAddress || "—"}</td>
                       <td className="px-4 py-3 text-muted-foreground max-w-xs truncate">{s.userAgent || "—"}</td>
@@ -203,7 +203,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                         <Button
                           variant="destructive"
                           size="sm"
-                          className="text-[10px] h-7 px-3.5 cursor-pointer"
+                          className="text-xs h-7 px-3.5 cursor-pointer"
                           onClick={() => handleRevokeSession(s.id)}
                         >
                           Révoquer

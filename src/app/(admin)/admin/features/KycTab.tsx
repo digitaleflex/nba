@@ -86,7 +86,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
               key={s}
               onClick={() => { setKycStatusFilter(s); setKycPage(1) }}
               className={cn(
-                "text-[10px] px-3 py-1 rounded-full border transition-colors cursor-pointer",
+                "text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer",
                 kycStatusFilter === s
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border text-muted-foreground hover:border-primary/50"
@@ -123,15 +123,15 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
                   <CardContent className="p-4 space-y-4">
                     <div>
                       <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
-                      <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
+                      <p className="text-xs text-muted-foreground">{doc.user?.email}</p>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] text-muted-foreground border-t border-border/60 pt-3">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/60 pt-3">
                       <span>Reçu le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
                       <Button
                         variant="outline"
                         size="sm"
-                        className="text-[10px] border-border h-7 cursor-pointer"
+                        className="text-xs border-border h-7 cursor-pointer"
                         onClick={() => {
                           onOpenPanel({ title: "Dossier KYC", type: "kyc", data: doc })
                         }}
@@ -152,7 +152,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
                   leftActions={
                     <button
                       onClick={() => onOpenPanel({ title: "Dossier KYC", type: "kyc", data: doc })}
-                      className="flex h-full w-full items-center justify-center gap-2 bg-amber-500/90 text-white text-[11px] font-medium"
+                      className="flex h-full w-full items-center justify-center gap-2 bg-amber-500/90 text-white text-xs font-medium"
                     >
                       ← Examiner
                     </button>
@@ -160,7 +160,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
                   rightActions={
                     <button
                       onClick={() => approveKyc(doc.id)}
-                      className="flex h-full w-full items-center justify-center gap-2 bg-emerald-600/90 text-white text-[11px] font-medium"
+                      className="flex h-full w-full items-center justify-center gap-2 bg-emerald-600/90 text-white text-xs font-medium"
                     >
                       Approuver →
                     </button>
@@ -182,7 +182,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
               >
                 ← Précédent
               </Button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Page {kycPage} / {kycTotalPages}
               </span>
               <Button

@@ -93,7 +93,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Rédiger une notification système</h3>
           <div className="space-y-3">
             <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground uppercase font-bold">Titre</label>
+              <label className="text-xs text-muted-foreground uppercase font-bold">Titre</label>
               <Input
                 placeholder="Alerte système..."
                 className="bg-background border-border text-xs text-foreground"
@@ -102,7 +102,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
               />
             </div>
             <div className="space-y-1">
-              <label className="text-[10px] text-muted-foreground uppercase font-bold">Contenu</label>
+              <label className="text-xs text-muted-foreground uppercase font-bold">Contenu</label>
               <textarea
                 placeholder="Votre message..."
                 className="w-full p-3 rounded-lg border bg-background border-border/60 text-xs text-foreground focus:outline-none focus:border-primary/50 min-h-24"
@@ -164,7 +164,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
                       {new Date(notif.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-[10px] text-muted-foreground line-clamp-2">{notif.body}</p>
+                  <p className="text-xs text-muted-foreground line-clamp-2">{notif.body}</p>
                 </CardContent>
               </Card>
             ))}

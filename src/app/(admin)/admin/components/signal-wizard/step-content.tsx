@@ -71,7 +71,7 @@ export function StepContent({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
+        <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Message du signal</label>
         <div className="border rounded-xl bg-background overflow-hidden">
           <div className="flex items-center gap-1.5 p-2 bg-muted/40 border-b">
             <Button type="button" variant="ghost" size="sm" className="size-9 p-0 rounded-lg hover:bg-muted text-muted-foreground" onClick={() => insertFormat("**", "**")} title="Gras"><Bold className="size-4" /></Button>
@@ -95,7 +95,7 @@ export function StepContent({
       </div>
 
       <div className="space-y-2">
-        <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider block">Images et captures d'écran</label>
+        <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider block">Images et captures d'écran</label>
         <input type="file" ref={fileInputRef} className="hidden" accept="image/*" multiple onChange={(e) => onFileInput(e.target.files)} />
         <div className="flex flex-wrap gap-2.5 items-center">
           {imageUrls.map((url, idx) => (
@@ -126,7 +126,7 @@ export function StepContent({
             </div>
           )}
           {imageUrls.length === 0 && (
-            <span className="text-[10px] text-muted-foreground ml-1">
+            <span className="text-xs text-muted-foreground ml-1">
               Glissez vos captures ici (max: 5, PNG, JPG, WEBP).
             </span>
           )}

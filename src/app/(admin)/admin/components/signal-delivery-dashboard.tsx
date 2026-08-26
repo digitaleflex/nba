@@ -109,11 +109,11 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
+        <span className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase font-semibold">
           Diffusion en temps réel
           <InfoTooltip content="Tableau de bord live de l'envoi du signal vers chaque membre (email, push). Il se met à jour automatiquement à chaque accusé de réception ou d'échec renvoyé par les prestataires." />
         </span>
-        <span className="flex items-center gap-1.5 text-[10px]">
+        <span className="flex items-center gap-1.5 text-xs">
           <span
             className={cn(
               "inline-block h-1.5 w-1.5 rounded-full",
@@ -157,7 +157,7 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
           const pct = Math.round((c.sent / sum) * 100)
           return (
             <div key={c.channel} className="space-y-1">
-              <div className="flex items-center justify-between text-[11px]">
+              <div className="flex items-center justify-between text-xs">
                 <span className="flex items-center gap-1 font-medium text-foreground">
                   {CHANNEL_LABELS[c.channel] || c.channel}
                   <InfoTooltip
@@ -191,7 +191,7 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
       </div>
 
       {successRate < 100 && total > 0 && (
-        <p className="flex items-center gap-1 text-[10px] text-muted-foreground">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
           Taux de délivrance : <span className="text-foreground font-semibold">{successRate}%</span>
           <InfoTooltip content="Pourcentage de notifications arrivées avec succès par rapport au total envoyé (délivrés ÷ total). Un taux < 100% indique des échecs à investiguer dans la section ci-dessous." />
         </p>
@@ -199,13 +199,13 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
 
       {report.failures.length > 0 && (
         <div className="space-y-2">
-          <span className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
+          <span className="flex items-center gap-1.5 text-xs text-muted-foreground uppercase font-semibold">
             Échecs de livraison {report.failures.length >= 50 ? "(50 premiers)" : ""}
             <InfoTooltip content="Liste des envois en erreur, avec l'email du membre et le motif renvoyé par le prestataire. Sert au support pour relancer ou corriger un abonnement." />
           </span>
           <div className="max-h-40 overflow-y-auto rounded-xl border divide-y">
             {report.failures.map((f, idx) => (
-              <div key={idx} className="flex items-start justify-between gap-2 p-2 text-[11px]">
+              <div key={idx} className="flex items-start justify-between gap-2 p-2 text-xs">
                 <div className="min-w-0">
                   <p className="truncate font-medium text-foreground">
                     {f.userName || f.userEmail || "Inconnu"}

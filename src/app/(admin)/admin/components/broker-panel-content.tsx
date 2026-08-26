@@ -14,22 +14,22 @@ export function BrokerPanelContent({ data, onAction }: BrokerPanelContentProps) 
   return (
     <div className="space-y-6 text-xs">
       <div className="space-y-2">
-        <span className="text-[10px] text-muted-foreground uppercase">Utilisateur associé</span>
+        <span className="text-xs text-muted-foreground uppercase">Utilisateur associé</span>
         <h4 className="text-sm font-bold text-foreground">{data.user?.name}</h4>
         <p className="text-muted-foreground">{data.user?.email}</p>
       </div>
 
       <div className="grid grid-cols-2 gap-4 border-t border-b py-4">
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Broker</span>
+          <span className="text-xs text-muted-foreground uppercase">Broker</span>
           <p className="font-semibold text-foreground mt-0.5">{data.brokerName}</p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Compte Broker</span>
+          <span className="text-xs text-muted-foreground uppercase">Compte Broker</span>
           <p className="font-semibold text-foreground mt-0.5">{data.accountId}</p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Statut</span>
+          <span className="text-xs text-muted-foreground uppercase">Statut</span>
           <div className="mt-0.5">
             <Badge
               variant="outline"
@@ -44,7 +44,7 @@ export function BrokerPanelContent({ data, onAction }: BrokerPanelContentProps) 
           </div>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Soumis le</span>
+          <span className="text-xs text-muted-foreground uppercase">Soumis le</span>
           <p className="font-semibold text-foreground mt-0.5">
             {new Date(data.createdAt).toLocaleDateString()}
           </p>
@@ -67,7 +67,7 @@ export function BrokerPanelContent({ data, onAction }: BrokerPanelContentProps) 
 
       {onAction && data.status === "PENDING" && (
         <div className="space-y-2 border-t pt-4">
-          <span className="text-[10px] text-muted-foreground uppercase">Validation</span>
+          <span className="text-xs text-muted-foreground uppercase">Validation</span>
           <textarea
             placeholder="Justification (obligatoire pour un refus)..."
             value={notes}

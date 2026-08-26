@@ -118,7 +118,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{s.signalTitle}</p>
-                          <p className="text-[10px] text-muted-foreground">
+                          <p className="text-xs text-muted-foreground">
                             {new Date(s.publishedAt).toLocaleString("fr-FR")}
                           </p>
                         </div>
@@ -202,7 +202,7 @@ function StatusBadge({
     muted: "bg-muted text-muted-foreground",
   }
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-[10px] font-medium text-muted-foreground">
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
       <span className={cn("size-1.5 rounded-full", colors[tone].split(" ")[0])} />
       {label}: <span className="font-semibold">{value}</span>
     </span>

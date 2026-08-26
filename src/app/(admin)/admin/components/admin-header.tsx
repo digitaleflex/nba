@@ -126,7 +126,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           <Search className="size-3.5 text-muted-foreground/70" />
           <span>Rechercher...</span>
           <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-[9px] font-medium text-muted-foreground shadow-sm">
-            <span className="text-[10px]">⌘</span>K
+            <span className="text-xs">⌘</span>K
           </kbd>
         </button>
 
@@ -195,13 +195,13 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                 <div className="space-y-4 p-1">
                   {results.users.length > 0 && (
                     <div>
-                      <h4 className="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Utilisateurs</h4>
+                      <h4 className="px-2 pb-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Utilisateurs</h4>
                       <div className="space-y-0.5">
                         {results.users.map((u, i) => (
                           <button key={u.id} id={`search-option-${i}`} onClick={() => navigateTo("users", `search=${encodeURIComponent(u.email)}`)} role="option" aria-selected={focusedIndex === i} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === i ? "bg-muted" : "hover:bg-muted/50"}`}>
                             <div>
                               <p className="font-semibold">{u.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{u.email}</p>
+                              <p className="text-xs text-muted-foreground">{u.email}</p>
                             </div>
                             <ArrowRight className="size-3.5 text-muted-foreground/40" />
                           </button>
@@ -212,7 +212,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
                   {results.signals.length > 0 && (
                     <div>
-                      <h4 className="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Signaux</h4>
+                      <h4 className="px-2 pb-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Signaux</h4>
                       <div className="space-y-0.5">
                         {results.signals.map((s, i) => {
                           const idx = results.users.length + i
@@ -227,14 +227,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
                   {results.kyc.length > 0 && (
                     <div>
-                      <h4 className="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Dossiers KYC</h4>
+                      <h4 className="px-2 pb-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Dossiers KYC</h4>
                       <div className="space-y-0.5">
                         {results.kyc.map((k, i) => {
                           const idx = results.users.length + results.signals.length + i
                           return (<button key={k.id} id={`search-option-${idx}`} onClick={() => navigateTo("kyc", `id=${k.id}`)} role="option" aria-selected={focusedIndex === idx} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === idx ? "bg-muted" : "hover:bg-muted/50"}`}>
                             <div>
                               <p className="font-semibold">{k.user.name}</p>
-                              <p className="text-[10px] text-muted-foreground">{k.documentType} • {k.status}</p>
+                              <p className="text-xs text-muted-foreground">{k.documentType} • {k.status}</p>
                             </div>
                             <ArrowRight className="size-3.5 text-muted-foreground/40" />
                           </button>)
@@ -245,14 +245,14 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
                   {results.audit.length > 0 && (
                     <div>
-                      <h4 className="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Audit</h4>
+                      <h4 className="px-2 pb-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider">Audit</h4>
                       <div className="space-y-0.5">
                         {results.audit.map((a, i) => {
                           const idx = results.users.length + results.signals.length + results.kyc.length + i
                           return (<button key={a.id} id={`search-option-${idx}`} onClick={() => navigateToAuditLog()} role="option" aria-selected={focusedIndex === idx} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === idx ? "bg-muted" : "hover:bg-muted/50"}`}>
                             <div>
                               <p className="font-semibold truncate">{a.action}</p>
-                              <p className="text-[10px] text-muted-foreground">{a.resourceType}</p>
+                              <p className="text-xs text-muted-foreground">{a.resourceType}</p>
                             </div>
                             <span className="text-[9px] text-muted-foreground shrink-0">{new Date(a.createdAt).toLocaleDateString()}</span>
                           </button>)

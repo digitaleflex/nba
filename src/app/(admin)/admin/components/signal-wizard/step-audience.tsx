@@ -33,7 +33,7 @@ export function StepAudience({
   return (
     <div className="space-y-4">
       <div className="space-y-1">
-        <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Groupes de diffusion</label>
+        <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Groupes de diffusion</label>
         <Input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -47,7 +47,7 @@ export function StepAudience({
           type="button"
           onClick={() => plans.forEach((p) => { if (!selectedPlans.includes(p.id)) togglePlan(p.id) })}
           disabled={selectedPlans.length === plans.length}
-          className="text-[10px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-40"
+          className="text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-40"
         >
           Tout
         </button>
@@ -55,7 +55,7 @@ export function StepAudience({
           type="button"
           onClick={() => selectedPlans.forEach((id) => togglePlan(id))}
           disabled={selectedPlans.length === 0}
-          className="text-[10px] px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-40"
+          className="text-xs px-2.5 py-1 rounded-full border border-border text-muted-foreground hover:bg-muted/50 disabled:opacity-40"
         >
           Aucun
         </button>
@@ -97,7 +97,7 @@ export function StepAudience({
       {selectedPlans.length > 0 && (
         <div className="rounded-xl bg-primary/5 border border-primary/20 p-3 text-xs space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground">Destinataires prévus</span>
+            <span className="text-xs uppercase font-bold tracking-wider text-muted-foreground">Destinataires prévus</span>
             {estimation ? (
               <span className="font-bold text-primary text-sm">{estimation.total} membre{estimation.total > 1 ? "s" : ""}</span>
             ) : (

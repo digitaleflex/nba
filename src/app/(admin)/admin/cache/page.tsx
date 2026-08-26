@@ -121,7 +121,7 @@ export default function CacheStatusPage() {
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] py-0.5 px-2 flex items-center gap-1.5",
+                "text-xs py-0.5 px-2 flex items-center gap-1.5",
                 pulse ? "border-emerald-500/40 text-emerald-600 bg-emerald-500/5" : "border-border text-muted-foreground",
               )}
             >
@@ -138,13 +138,13 @@ export default function CacheStatusPage() {
             Surveillance du cache Redis, files d&apos;attente et workers en temps réel.
           </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <RefreshCw className="size-3" />
           <span>Auto-refresh 15s</span>
           {lastUpdate && <span>· MAJ {timeAgo(lastUpdate.toISOString())}</span>}
           <button
             onClick={fetchData}
-            className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-[10px] hover:bg-muted/50 min-h-[32px]"
+            className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-xs hover:bg-muted/50 min-h-[32px]"
           >
             Rafraîchir
           </button>
@@ -164,9 +164,9 @@ export default function CacheStatusPage() {
         <Card className={cn("border", redisStatus === "healthy" ? "border-emerald-500/40 bg-emerald-500/5" : "border-rose-500/40 bg-rose-500/5")}>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Redis</p>
+              <p className="text-xs text-muted-foreground uppercase">Redis</p>
               <p className="text-xl font-bold text-foreground">{redisStatus === "healthy" ? "OK" : "DOWN"}</p>
-              {redis?.version && <p className="text-[10px] text-muted-foreground mt-1">v{redis.version}</p>}
+              {redis?.version && <p className="text-xs text-muted-foreground mt-1">v{redis.version}</p>}
             </div>
             <Database className={cn("size-5", redisStatus === "healthy" ? "text-emerald-500" : "text-rose-500")} />
           </CardContent>
@@ -174,9 +174,9 @@ export default function CacheStatusPage() {
         <Card className={cn("border", anyQueueFailed ? "border-amber-500/40 bg-amber-500/5" : "border-border")}>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Files d&apos;attente</p>
+              <p className="text-xs text-muted-foreground uppercase">Files d&apos;attente</p>
               <p className="text-xl font-bold text-foreground">{totalFailed} échec(s)</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{totalWaiting} en attente</p>
+              <p className="text-xs text-muted-foreground mt-1">{totalWaiting} en attente</p>
             </div>
             <Activity className={cn("size-5", anyQueueFailed ? "text-amber-500" : "text-muted-foreground/30")} />
           </CardContent>
@@ -184,7 +184,7 @@ export default function CacheStatusPage() {
         <Card className="border-border">
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">WebSocket</p>
+              <p className="text-xs text-muted-foreground uppercase">WebSocket</p>
               <p className={cn("text-xl font-bold", data?.websocket?.startsWith("healthy") ? "text-emerald-600" : "text-rose-600")}>
                 {data?.websocket?.startsWith("healthy") ? "OK" : "DOWN"}
               </p>
@@ -195,9 +195,9 @@ export default function CacheStatusPage() {
         <Card className={cn("border", (issues?.totalFailedDeliveries ?? 0) > 0 ? "border-amber-500/40 bg-amber-500/5" : "border-border")}>
           <CardContent className="p-4 flex items-center justify-between">
             <div>
-              <p className="text-[10px] text-muted-foreground uppercase">Livraisons en échec</p>
+              <p className="text-xs text-muted-foreground uppercase">Livraisons en échec</p>
               <p className="text-xl font-bold text-foreground">{issues?.totalFailedDeliveries ?? 0}</p>
-              <p className="text-[10px] text-muted-foreground mt-1">{issues?.affectedUserCount ?? 0} user(s) touché(s)</p>
+              <p className="text-xs text-muted-foreground mt-1">{issues?.affectedUserCount ?? 0} user(s) touché(s)</p>
             </div>
             <AlertTriangle className={cn("size-5", (issues?.totalFailedDeliveries ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground/30")} />
           </CardContent>
@@ -304,7 +304,7 @@ export default function CacheStatusPage() {
             <Badge
               variant="outline"
               className={cn(
-                "text-[10px] py-0 px-2",
+                "text-xs py-0 px-2",
                 data?.websocket?.startsWith("healthy")
                   ? "text-emerald-600 border-emerald-500/20"
                   : "text-rose-600 border-rose-500/20",
@@ -329,13 +329,13 @@ export default function CacheStatusPage() {
               <h2 className="text-xs font-bold uppercase tracking-wider text-amber-700">
                 Problèmes de livraison (24h)
               </h2>
-              <Badge variant="outline" className="text-[10px] py-0 px-2 text-amber-600 border-amber-500/30">
+              <Badge variant="outline" className="text-xs py-0 px-2 text-amber-600 border-amber-500/30">
                 {issues.totalFailedDeliveries} échec(s) · {issues.affectedUserCount} user(s)
               </Badge>
             </div>
             <div className="pt-3 max-h-[300px] overflow-y-auto space-y-2">
               {issues.recentFailedDeliveries.map((d: any) => (
-                <div key={d.id} className="flex items-start gap-2 text-[11px] p-2 rounded bg-background/50">
+                <div key={d.id} className="flex items-start gap-2 text-xs p-2 rounded bg-background/50">
                   <XCircle className="size-3.5 text-rose-500 mt-0.5 shrink-0" />
                   <div className="flex-1 min-w-0">
                     <span className="font-medium text-foreground">
@@ -345,10 +345,10 @@ export default function CacheStatusPage() {
                       {d.status === "BOUNCED" ? "bounced" : "failed"}
                     </span>
                     {d.errorMessage && (
-                      <p className="text-[10px] text-muted-foreground truncate">{d.errorMessage}</p>
+                      <p className="text-xs text-muted-foreground truncate">{d.errorMessage}</p>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap">
                     {timeAgo(d.createdAt)}
                   </span>
                 </div>
@@ -370,7 +370,7 @@ export default function CacheStatusPage() {
             </div>
             <div className="pt-3 max-h-[250px] overflow-y-auto space-y-1.5">
               {issues.recentAuditErrors.slice(0, 15).map((e: any) => (
-                <div key={e.id} className="flex items-center justify-between text-[11px] py-1">
+                <div key={e.id} className="flex items-center justify-between text-xs py-1">
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-foreground/80 truncate">{e.action}</span>
                     {e.user && (
@@ -379,7 +379,7 @@ export default function CacheStatusPage() {
                       </span>
                     )}
                   </div>
-                  <span className="text-[10px] text-muted-foreground whitespace-nowrap ml-2">
+                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
                     {timeAgo(e.createdAt)}
                   </span>
                 </div>
@@ -405,7 +405,7 @@ function Metric({
     <div className="flex items-center gap-2.5 p-2.5 rounded-lg bg-muted/20 border border-border/50">
       <div className="text-muted-foreground shrink-0">{icon}</div>
       <div className="min-w-0">
-        <p className="text-[10px] text-muted-foreground truncate">{label}</p>
+        <p className="text-xs text-muted-foreground truncate">{label}</p>
         <p className="text-xs font-bold text-foreground truncate">{value}</p>
       </div>
     </div>

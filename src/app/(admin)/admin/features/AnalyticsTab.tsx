@@ -38,7 +38,7 @@ function StatCard({
     <Card className="border-border/60 bg-card shadow-sm">
       <CardContent className="p-4 flex items-center justify-between">
         <div className="space-y-0.5">
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
           <p className="text-xl font-bold text-foreground">{value}</p>
         </div>
         <Icon className="size-5 text-muted-foreground/40" />
@@ -116,7 +116,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
               key={p.value}
               onClick={() => setDays(p.value)}
               className={cn(
-                "text-[11px] px-3 py-1 rounded-md transition-colors cursor-pointer",
+                "text-xs px-3 py-1 rounded-md transition-colors cursor-pointer",
                 days === p.value
                   ? "bg-primary text-primary-foreground"
                   : "text-muted-foreground hover:text-foreground",
@@ -159,22 +159,22 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
             <div className="pt-4 grid grid-cols-3 gap-3 text-center">
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{data.kyc.approved}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Approuvés</p>
+                <p className="text-xs text-muted-foreground mt-1">Approuvés</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{data.kyc.pending}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">En attente</p>
+                <p className="text-xs text-muted-foreground mt-1">En attente</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-rose-600">{data.kyc.rejected}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Rejetés</p>
+                <p className="text-xs text-muted-foreground mt-1">Rejetés</p>
               </div>
             </div>
-            <div className="mt-4 flex items-center justify-between text-[11px]">
+            <div className="mt-4 flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Membres vérifiés (KYC approuvé / total)</span>
               <span className="font-bold text-foreground">{data.kyc.verifiedPct}%</span>
             </div>
-            <div className="mt-1 flex items-center justify-between text-[11px]">
+            <div className="mt-1 flex items-center justify-between text-xs">
               <span className="text-muted-foreground">Taux de complétion (approuvés / dossiers)</span>
               <span className="font-bold text-foreground">{data.kyc.completionPct}%</span>
             </div>
@@ -188,7 +188,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
               {data.plansBreakdown.length > 0 ? (
                 data.plansBreakdown.map((p: any) => (
                   <div key={p.planId} className="flex items-center gap-3">
-                    <span className="text-[11px] w-44 shrink-0 text-muted-foreground truncate">
+                    <span className="text-xs w-44 shrink-0 text-muted-foreground truncate">
                       {p.planName}
                     </span>
                     <div className="flex-1 h-2.5 rounded-full bg-muted/50 overflow-hidden">
@@ -197,7 +197,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
                         style={{ width: `${Math.max(3, (p.count / plansTotal) * 100)}%` }}
                       />
                     </div>
-                    <span className="text-[11px] font-bold w-10 text-right text-foreground">
+                    <span className="text-xs font-bold w-10 text-right text-foreground">
                       {p.count}
                     </span>
                   </div>
@@ -221,18 +221,18 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
                   <MessageSquare className="size-4 text-muted-foreground/60" />
                   {data.messaging.conversations}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Conversations</p>
+                <p className="text-xs text-muted-foreground mt-1">Conversations</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground">{data.messaging.unreadMessages}</p>
-                <p className="text-[10px] text-muted-foreground mt-1">Messages non lus</p>
+                <p className="text-xs text-muted-foreground mt-1">Messages non lus</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
                   <ShieldCheck className="size-4 text-muted-foreground/60" />
                   {data.messaging.reports}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Signalements</p>
+                <p className="text-xs text-muted-foreground mt-1">Signalements</p>
               </div>
             </div>
           </CardContent>
@@ -247,14 +247,14 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
                   <Laptop className="size-4 text-muted-foreground/60" />
                   {data.infra.devices}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Appareils enregistrés</p>
+                <p className="text-xs text-muted-foreground mt-1">Appareils enregistrés</p>
               </div>
               <div>
                 <p className="text-2xl font-bold text-foreground flex items-center justify-center gap-1">
                   <Radio className="size-4 text-muted-foreground/60" />
                   {data.infra.activeSessions}
                 </p>
-                <p className="text-[10px] text-muted-foreground mt-1">Sessions actives</p>
+                <p className="text-xs text-muted-foreground mt-1">Sessions actives</p>
               </div>
             </div>
           </CardContent>
@@ -265,8 +265,8 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
       <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-6">
           <div className="flex items-center justify-between pb-3.5 border-b border-border/40">
-            <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Inscriptions ({data.growth.days} derniers jours)</h3>
-            <div className="flex items-center gap-1.5 text-[11px]">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Inscriptions ({data.growth.days} derniers jours)</h3>
+            <div className="flex items-center gap-1.5 text-xs">
               <span className="text-muted-foreground">
                 {data.growth.currentPeriodCount} inscrits
               </span>

@@ -21,7 +21,7 @@ export function AdminRecents({ onNavigate, onOpenPanel }: AdminRecentsProps) {
     <div className="space-y-5">
       {prefs.favoriteTabs.length > 0 && (
         <div>
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Vos raccourcis</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Vos raccourcis</h3>
           <div className="flex flex-wrap gap-1.5">
             {prefs.favoriteTabs.map((tab) => (
               <button
@@ -38,7 +38,7 @@ export function AdminRecents({ onNavigate, onOpenPanel }: AdminRecentsProps) {
 
       {prefs.recentSearches.length > 0 && (
         <div>
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Recherches récentes</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Recherches récentes</h3>
           <div className="space-y-0.5">
             {prefs.recentSearches.slice(0, 5).map((search, i) => (
               <button
@@ -59,7 +59,7 @@ export function AdminRecents({ onNavigate, onOpenPanel }: AdminRecentsProps) {
 
       {prefs.watchedUsers.length > 0 && (
         <div>
-          <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Utilisateurs surveillés</h3>
+          <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-2.5">Utilisateurs surveillés</h3>
           <div className="space-y-0.5">
             {prefs.watchedUsers.slice(0, 5).map((user) => (
               <div
@@ -70,7 +70,7 @@ export function AdminRecents({ onNavigate, onOpenPanel }: AdminRecentsProps) {
                   onClick={() => onOpenPanel?.({ userId: user.userId, name: user.name, email: user.email })}
                   className="flex items-center gap-2 min-w-0 flex-1 cursor-pointer"
                 >
-                  <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-bold text-primary shrink-0">
+                  <div className="size-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
                     {user.name?.slice(0, 2).toUpperCase() || user.email?.slice(0, 2).toUpperCase()}
                   </div>
                   <div className="text-left min-w-0">

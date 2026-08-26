@@ -42,7 +42,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="border-border/60 bg-card shadow-sm">
           <div className="p-5 space-y-1.5">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">E-mails envoyés</span>
+            <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">E-mails envoyés</span>
             <p className="text-2xl font-bold text-foreground">
               {opsData?.stats?.totalEmailsSent ?? 0}
             </p>
@@ -50,7 +50,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
         </Card>
         <Card className="border-border/60 bg-card shadow-sm">
           <div className="p-5 space-y-1.5">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">E-mails en échec</span>
+            <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">E-mails en échec</span>
             <p className="text-2xl font-bold text-foreground">
               {opsData?.attention?.failedEmailsCount ?? 0}
             </p>
@@ -58,7 +58,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
         </Card>
         <Card className="border-border/60 bg-card shadow-sm">
           <div className="p-5 space-y-1.5">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Notifications envoyées</span>
+            <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Notifications envoyées</span>
             <p className="text-2xl font-bold text-foreground">
               {opsData?.stats?.totalNotificationsSent ?? 0}
             </p>
@@ -75,7 +75,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-xs text-left border-collapse">
               <thead>
-                <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                   <th className="px-4 py-3">Utilisateur</th>
                   <th className="px-4 py-3">Notification</th>
                   <th className="px-4 py-3">Statut</th>
@@ -88,11 +88,11 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                   <tr key={em.id} className="hover:bg-card/30 transition-colors">
                     <td className="px-4 py-3">
                       <p className="font-semibold text-foreground">{em.notification?.user?.name || "—"}</p>
-                      <p className="text-[10px] text-muted-foreground">{em.notification?.user?.email || "—"}</p>
+                      <p className="text-xs text-muted-foreground">{em.notification?.user?.email || "—"}</p>
                     </td>
                     <td className="px-4 py-3 text-foreground/90 max-w-xs">
                       <p className="font-medium">{em.notification?.title}</p>
-                      <p className="text-[10px] text-muted-foreground line-clamp-2">{em.notification?.body}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{em.notification?.body}</p>
                     </td>
                     <td className="px-4 py-3">
                       <Badge
@@ -110,7 +110,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                     <td className="px-4 py-3 text-muted-foreground">
                       {new Date(em.sentAt || em.createdAt).toLocaleDateString("fr-FR")}
                     </td>
-                    <td className="px-4 py-3 text-rose-600 text-[10px] max-w-xs">
+                    <td className="px-4 py-3 text-rose-600 text-xs max-w-xs">
                       {em.errorMessage || "—"}
                     </td>
                   </tr>

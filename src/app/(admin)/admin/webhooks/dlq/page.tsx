@@ -86,14 +86,14 @@ export default function DlqPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Card className="border-border bg-card/30">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                 En attente
               </p>
               <p className={cn("text-2xl font-bold mt-1", stats.pending > 0 ? "text-amber-600" : "text-foreground")}>
                 {stats.pending}
               </p>
               {stats.oldestPendingAt && (
-                <p className="text-[10px] text-muted-foreground mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Plus ancien : {new Date(stats.oldestPendingAt).toLocaleString("fr-FR")}
                 </p>
               )}
@@ -101,7 +101,7 @@ export default function DlqPage() {
           </Card>
           <Card className="border-border bg-card/30">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                 Rejoues
               </p>
               <p className="text-2xl font-bold text-emerald-600 mt-1">{stats.replayed}</p>
@@ -109,7 +109,7 @@ export default function DlqPage() {
           </Card>
           <Card className="border-border bg-card/30">
             <CardContent className="p-4">
-              <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
+              <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">
                 Abandonns
               </p>
               <p className="text-2xl font-bold text-rose-600 mt-1">{stats.abandoned}</p>
@@ -161,7 +161,7 @@ export default function DlqPage() {
                     <Badge
                       variant="outline"
                       className={cn(
-                        "text-[10px]",
+                        "text-xs",
                         it.status === "PENDING" && "text-amber-600 border-amber-500/30",
                         it.status === "REPLAYED" && "text-emerald-600 border-emerald-500/30",
                         it.status === "ABANDONED" && "text-rose-600 border-rose-500/30",
@@ -171,20 +171,20 @@ export default function DlqPage() {
                     </Badge>
                     <code className="text-xs font-bold">{it.eventType}</code>
                     {it.externalId && (
-                      <span className="text-[10px] text-muted-foreground font-mono">
+                      <span className="text-xs text-muted-foreground font-mono">
                         {it.externalId.slice(0, 16)}…
                       </span>
                     )}
-                    <span className="text-[10px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {it.attempts} tentative{it.attempts > 1 ? "s" : ""}
                     </span>
                   </div>
                   {it.lastError && (
-                    <p className="text-[10px] text-rose-600 mt-1 truncate font-mono">
+                    <p className="text-xs text-rose-600 mt-1 truncate font-mono">
                       {it.lastError}
                     </p>
                   )}
-                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {new Date(it.createdAt).toLocaleString("fr-FR")}
                     {it.replayedAt && ` · rejoue ${new Date(it.replayedAt).toLocaleString("fr-FR")}`}
                   </p>

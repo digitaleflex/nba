@@ -67,7 +67,7 @@ function AlertRow({
         <div className="min-w-0">
           <span className="text-xs font-medium text-foreground truncate block">{label}</span>
           {count > 0 && (
-            <span className={cn("text-[10px] font-medium", tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-blue-500")}>
+            <span className={cn("text-xs font-medium", tone === "rose" ? "text-rose-500" : tone === "amber" ? "text-amber-500" : "text-blue-500")}>
               {count} à traiter
             </span>
           )}
@@ -111,7 +111,7 @@ function AlertsBody({ data, loading, stale, onNavigate }: { data: AlertsData | n
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
           Alertes & à traiter
         </h3>
-        <span className="text-[10px] text-muted-foreground">MAJ auto 10s</span>
+        <span className="text-xs text-muted-foreground">MAJ auto 10s</span>
       </div>
 
       <div className="space-y-2">
@@ -280,7 +280,7 @@ export function AlertsPanel() {
           <BellRing className="size-4" />
           Alertes
           {alertCount > 0 && (
-            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] font-semibold text-primary-foreground">
+            <span className="ml-0.5 inline-flex min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground">
               {alertCount > 9 ? "9+" : alertCount}
             </span>
           )}

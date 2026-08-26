@@ -454,14 +454,14 @@ function AdminConsoleContent() {
                 items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
               }
               items.push(
-                <span key={`gl-${gi}`} className={cn("shrink-0 text-[11px] font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
+                <span key={`gl-${gi}`} className={cn("shrink-0 text-xs font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
                   {context.label}
                 </span>
               )
               visibleTabs.forEach((tab) => {
                 items.push(
                   <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                    className={cn("text-[11px] px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
+                    className={cn("text-xs px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
                   >
                     {tab.label}
                   </button>

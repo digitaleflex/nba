@@ -59,7 +59,7 @@ export function TrackerTabs({
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-1.5 text-[10px] font-medium transition-colors min-w-0",
+                  "flex flex-col items-center gap-0.5 px-3 py-1.5 text-xs font-medium transition-colors min-w-0",
                   isActive ? "text-primary" : "text-muted-foreground"
                 )}
               >

@@ -15,7 +15,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
 
   return (
     <div className="space-y-4">
-      <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Quand diffuser ?</label>
+      <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Quand diffuser ?</label>
 
       <div className="grid grid-cols-2 gap-3">
         <button
@@ -51,7 +51,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
       {scheduled && (
         <Card className="border-border/50 bg-card/60">
           <CardContent className="p-4 space-y-2">
-            <label className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Date et heure</label>
+            <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Date et heure</label>
             <input
               type="datetime-local"
               value={scheduledAt}
@@ -60,7 +60,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-primary/50"
             />
             {scheduledAt && new Date(scheduledAt).getTime() <= Date.now() && (
-              <p className="text-[10px] text-amber-600">Choisissez une date future pour la planification.</p>
+              <p className="text-xs text-amber-600">Choisissez une date future pour la planification.</p>
             )}
           </CardContent>
         </Card>

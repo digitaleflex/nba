@@ -56,7 +56,7 @@ export function FocusMode({
         {/* Title */}
         <div className="flex items-center gap-3 mb-6">
           <span className={cn(
-            "px-2 py-1 rounded text-[10px] font-bold",
+            "px-2 py-1 rounded text-xs font-bold",
             alert.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700",
           )}>
             {alert.severity}
@@ -69,7 +69,7 @@ export function FocusMode({
           {/* User card */}
           {alert.relatedData?.user && (
             <div className="rounded-2xl border bg-card p-4 space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Utilisateur</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Utilisateur</p>
               <div className="flex items-center gap-3">
                 <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
                   {alert.relatedData.user.name?.slice(0, 2).toUpperCase() || alert.relatedData.user.email?.slice(0, 2).toUpperCase()}
@@ -87,7 +87,7 @@ export function FocusMode({
           {/* Timeline */}
           {alert.timeline && alert.timeline.length > 0 && (
             <div className="rounded-2xl border bg-card p-4 space-y-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Activité suspecte</p>
+              <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Activité suspecte</p>
               <div className="space-y-2">
                 {alert.timeline.map((event, i) => (
                   <div key={i} className="flex items-start gap-3 text-xs">
@@ -95,7 +95,7 @@ export function FocusMode({
                     <div className="min-w-0">
                       <span className="font-mono text-muted-foreground">{event.time}</span>
                       <span className="ml-2 text-foreground">{event.action}</span>
-                      <p className="text-muted-foreground font-mono text-[10px]">{event.detail}</p>
+                      <p className="text-muted-foreground font-mono text-xs">{event.detail}</p>
                     </div>
                   </div>
                 ))}
@@ -105,7 +105,7 @@ export function FocusMode({
 
           {/* Suggested actions */}
           <div className="rounded-2xl border bg-card p-4 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Actions suggérées</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Actions suggérées</p>
             <div className="space-y-2">
               {alert.suggestedActions.map((action, i) => (
                 <button
@@ -122,7 +122,7 @@ export function FocusMode({
 
           {/* Checklist */}
           <div className="rounded-2xl border bg-card p-4 space-y-3">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Checklist de résolution</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Checklist de résolution</p>
             <ResolutionChecklist
               items={[
                 { id: "ips", label: "IPs bloquées" },

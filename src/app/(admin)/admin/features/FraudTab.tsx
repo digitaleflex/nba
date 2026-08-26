@@ -177,7 +177,7 @@ export function FraudTab() {
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Evenements recents (HAUT/CRITIQUE)</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
+            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th><th className="px-3 py-2 text-right">Action</th>
             </tr></thead>
             <tbody className="divide-y">
@@ -187,9 +187,9 @@ export function FraudTab() {
                 <tr key={e.id} className={cn("hover:bg-accent/30", acknowledged ? "opacity-60" : "", e.severity === "CRITICAL" && !acknowledged && "alert-pulse")}>
                   <td className="px-3 py-2 text-muted-foreground">{new Date(e.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2 font-medium">{e.type}</td>
-                  <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-[10px] font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
+                  <td className="px-3 py-2"><span className={`px-2 py-0.5 rounded text-xs font-bold ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span></td>
                   <td className="px-3 py-2">{e.user ? `${e.user.email}` : "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground font-mono text-[10px]">{e.ipAddress || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{e.ipAddress || "—"}</td>
                   <td className="px-3 py-2 text-right">
                     {acknowledged ? (
                       <CheckCircle2 className="size-3.5 text-emerald-500 inline" />
@@ -203,7 +203,7 @@ export function FraudTab() {
                           })
                           refresh()
                         }}
-                        className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
+                        className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 cursor-pointer"
                       >
                         Marquer
                       </button>
@@ -220,11 +220,11 @@ export function FraudTab() {
       <Card><CardContent className="p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tentatives d&apos;authentification récentes (connexion + inscription)</h3>
-          <span className="text-[10px] text-muted-foreground">{attempts.length} affichées / 100 max</span>
+          <span className="text-xs text-muted-foreground">{attempts.length} affichées / 100 max</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-xs text-left">
-            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
+            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Raison</th><th className="px-3 py-2">IP</th>
             </tr></thead>
             <tbody className="divide-y">
@@ -232,18 +232,18 @@ export function FraudTab() {
                 <tr key={a.id} className="hover:bg-accent/30">
                   <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{new Date(a.createdAt).toLocaleString("fr-FR")}</td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.type === "SIGNUP" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${a.type === "SIGNUP" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-700"}`}>
                       {a.type === "SIGNUP" ? "Inscription" : "Connexion"}
                     </span>
                   </td>
                   <td className="px-3 py-2">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${a.success ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
+                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${a.success ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}`}>
                       {a.success ? "Succès" : "Échec"}
                     </span>
                   </td>
                   <td className="px-3 py-2 font-mono">{a.email}</td>
                   <td className="px-3 py-2 text-muted-foreground max-w-[220px] truncate" title={a.reason ?? ""}>{a.reason || "—"}</td>
-                  <td className="px-3 py-2 text-muted-foreground font-mono text-[10px]">{a.ipAddress || "—"}</td>
+                  <td className="px-3 py-2 text-muted-foreground font-mono text-xs">{a.ipAddress || "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -6,6 +6,7 @@ import { Card, CardContent, Badge, Button, cn, EmptyState, DualRender, FilterShe
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
+import { StatusBadge, type Tone } from "./ui"
 
 interface MembresTabProps {
   cachedGet: CachedGet
@@ -376,7 +377,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                     </table>
                   </div>
                 )}
-                <p className="text-[10px] text-muted-foreground mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   Les accès APPROVED seront passés en REVOKED. Les autres données (KYC, profil,
                   notifications) sont conservées. Action journalisée.
                 </p>
@@ -487,7 +488,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
-                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-[10px]">
+                  <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                     <th className="px-2 py-3 w-8">
                       <input
                         type="checkbox"
@@ -529,24 +530,24 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="font-medium text-foreground text-sm">{m.name}</div>
-                          <div className="text-[10px] text-muted-foreground md:hidden">{m.email}{m.phone ? ` · ${m.phone}` : ""}</div>
-                          <div className="text-[10px] text-muted-foreground">{new Date(m.createdAt).toLocaleDateString("fr-FR")}</div>
+                          <div className="text-xs text-muted-foreground md:hidden">{m.email}{m.phone ? ` · ${m.phone}` : ""}</div>
+                          <div className="text-xs text-muted-foreground">{new Date(m.createdAt).toLocaleDateString("fr-FR")}</div>
                         </td>
                         <td className="px-4 py-3 text-muted-foreground hidden md:table-cell">
                           <div>{m.email}</div>
-                          {m.phone && <div className="text-[10px]">{m.phone}</div>}
-                          {m.country && <div className="text-[10px]">{m.country}</div>}
+                          {m.phone && <div className="text-xs">{m.phone}</div>}
+                          {m.country && <div className="text-xs">{m.country}</div>}
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <EmailStatusBadge status={m.emailStatus} />
                         </td>
                         <td className="px-4 py-3 hidden lg:table-cell">
                           {(m._count?.pushSubscriptions ?? 0) > 0 ? (
-                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600" title={`${m._count.pushSubscriptions} appareil(s)`}>
+                            <StatusBadge tone="success" title={`${m._count.pushSubscriptions} appareil(s)`}>
                               <Bell className="size-2.5" /> ON
-                            </span>
+                            </StatusBadge>
                           ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted/50 text-muted-foreground">
+                            <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-muted/50 text-muted-foreground">
                               <BellOff className="size-2.5" /> OFF
                             </span>
                           )}
@@ -556,7 +557,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                             {(m.subscriptions?.length ?? 0) > 0 ? (
                               m.subscriptions.map((sub: any) => (
                                 <div key={sub.plan.id} className="flex flex-col">
-                                  <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
+                                  <Badge variant="secondary" className="text-xs px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
                                   <ExpiryBadge expiresAt={sub.expiresAt} remainingDays={sub.remainingDays} />
                                 </div>
                               ))
@@ -575,13 +576,13 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                             title={m.isActive ? "Désactiver" : "Activer"}
                           >
                             {m.isActive ? (
-                              <span className="inline-flex items-center gap-1 text-emerald-600 text-[10px] font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                              <StatusBadge tone="success">
                                 <ToggleRight className="size-3" /> Actif
-                              </span>
+                              </StatusBadge>
                             ) : (
-                              <span className="inline-flex items-center gap-1 text-muted-foreground text-[10px] font-medium bg-muted/50 px-2 py-0.5 rounded-full">
+                              <StatusBadge tone="neutral">
                                 <ToggleLeft className="size-3" /> Inactif
-                              </span>
+                              </StatusBadge>
                             )}
                           </button>
                         </td>
@@ -594,7 +595,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                                 return (
                                   <button
                                     onClick={() => updateMember(m.id, { signalsAccessOverride: false })}
-                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors bg-rose-500/10 text-rose-600"
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors bg-rose-500/10 text-rose-600"
                                     title="Incohérent : ce membre a déjà un abonnement, l'override est inutile. Cliquez pour remettre à l'état normal."
                                   >
                                     <Radio className="size-3" />
@@ -604,7 +605,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                               }
                               return (
                                 <span
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted/50 text-muted-foreground cursor-not-allowed"
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-muted/50 text-muted-foreground cursor-not-allowed"
                                   title="Ce membre a déjà un abonnement actif : l'override est inutile."
                                 >
                                   <Radio className="size-3" />
@@ -616,7 +617,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                               <button
                                 onClick={() => updateMember(m.id, { signalsAccessOverride: !m.signalsAccessOverride })}
                                 className={cn(
-                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium cursor-pointer transition-colors",
+                                  "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium cursor-pointer transition-colors",
                                   m.signalsAccessOverride
                                     ? "bg-amber-500/10 text-amber-600"
                                     : "bg-muted/50 text-muted-foreground hover:bg-muted"
@@ -676,14 +677,14 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                               <div className="hidden absolute right-0 top-9 z-30 w-48 bg-card border border-border rounded-lg shadow-lg py-1">
                                 <button
                                   onClick={() => updateMember(m.id, { onboardingStatus: "ACTIVE" })}
-                                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
                                   title="Force l'utilisateur à terminer immédiatement l'onboarding et à accéder à tous les services"
                                 >
                                   <RotateCw className="size-3" /> Forcer onboarding
                                 </button>
                                 <button
                                   onClick={() => revokeSessions(m.id)}
-                                  className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                                  className="flex items-center gap-2 w-full px-3 py-2 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
                                   title="Déconnecte toutes les sessions actives de l'utilisateur et force un nouveau login"
                                 >
                                   <Shield className="size-3" /> Révoquer sessions
@@ -691,7 +692,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                                 {!m.isActive && (
                                   <button
                                     onClick={() => deleteMember(m.id)}
-                                    className="flex items-center gap-2 w-full px-3 py-2 text-[11px] text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
+                                    className="flex items-center gap-2 w-full px-3 py-2 text-xs text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
                                     title="Supprime le compte définitivement et désactive immédiatement toute l'activité"
                                   >
                                     <Trash2 className="size-3" /> Supprimer
@@ -791,18 +792,18 @@ function MemberCard({
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground truncate">{m.name}</p>
-            <p className="text-[11px] text-muted-foreground truncate">{m.email}</p>
+            <p className="text-xs text-muted-foreground truncate">{m.email}</p>
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">
           {m.isActive ? (
-            <span className="inline-flex items-center gap-1 text-emerald-600 text-[10px] font-medium bg-emerald-500/10 px-2 py-0.5 rounded-full">
+            <StatusBadge tone="success">
               <CheckCircle2 className="size-3" /> Actif
-            </span>
+            </StatusBadge>
           ) : (
-            <span className="inline-flex items-center gap-1 text-muted-foreground text-[10px] font-medium bg-muted/50 px-2 py-0.5 rounded-full">
+            <StatusBadge tone="neutral">
               <XCircle className="size-3" /> Inactif
-            </span>
+            </StatusBadge>
           )}
         </div>
       </div>
@@ -810,15 +811,15 @@ function MemberCard({
       <div className="flex flex-wrap gap-1.5">
         {(m.subscriptions?.length ?? 0) > 0 ? m.subscriptions.map((sub: any) => (
           <div key={sub.plan.id} className="flex flex-col gap-0.5">
-            <Badge variant="secondary" className="text-[10px] px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
+            <Badge variant="secondary" className="text-xs px-2 py-0.5 font-medium w-fit">{sub.plan.name}</Badge>
             <ExpiryBadge expiresAt={sub.expiresAt} remainingDays={sub.remainingDays} />
           </div>
         )) : (
-          <span className="text-[10px] text-muted-foreground">Aucun abonnement</span>
+          <span className="text-xs text-muted-foreground">Aucun abonnement</span>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         {m.phone && <span className="flex items-center gap-1"><Phone className="size-3" />{m.phone}</span>}
         {m.country && <span className="flex items-center gap-1"><User className="size-3" />{m.country}</span>}
         <span className="flex items-center gap-1"><Calendar className="size-3" />{new Date(m.createdAt).toLocaleDateString("fr-FR")}</span>
@@ -862,20 +863,20 @@ function MemberCard({
                 <div className="absolute right-0 bottom-10 z-20 w-48 bg-card border border-border rounded-lg shadow-lg py-1">
                   <button
                     onClick={() => { onUpdate(m.id, { onboardingStatus: "ACTIVE" }); setMenuOpen(false) }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
                   >
                     <RotateCw className="size-3" /> Forcer onboarding
                   </button>
                   <button
                     onClick={() => { onRevokeSessions(m.id); setMenuOpen(false) }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 text-left cursor-pointer"
                   >
                     <Shield className="size-3" /> Révoquer sessions
                   </button>
                   {!m.isActive && (
                     <button
                       onClick={() => { onDelete(m.id); setMenuOpen(false) }}
-                      className="flex items-center gap-2 w-full px-3 py-2.5 text-[11px] text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
+                      className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
                     >
                       <Trash2 className="size-3" /> Supprimer
                     </button>
@@ -884,7 +885,7 @@ function MemberCard({
                     onClick={() => {
                       if (confirm(`Bannir ${m.email} ?`)) { onBan(m.email); setMenuOpen(false) }
                     }}
-                    className="flex items-center gap-2 w-full px-3 py-2.5 text-[11px] text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
+                    className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
                   >
                     <Ban className="size-3" /> Bannir
                   </button>
@@ -898,16 +899,11 @@ function MemberCard({
   )
 }
 
+const EMAIL_TONES: Record<string, Tone> = { OK: "success", BOUNCED: "warning", INVALID: "destructive" }
+
 function EmailStatusBadge({ status }: { status: string | null | undefined }) {
-  if (!status || status === "OK") {
-    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600">OK</span>
-  }
-  const config: Record<string, { label: string; class: string }> = {
-    BOUNCED: { label: "BOUNCED", class: "bg-amber-500/10 text-amber-600" },
-    INVALID: { label: "INVALID", class: "bg-rose-500/10 text-rose-600" },
-  }
-  const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+  if (!status) return null
+  return <StatusBadge tone={EMAIL_TONES[status] ?? "neutral"}>{status}</StatusBadge>
 }
 
 function OnboardingBadge({ status }: { status: string | null }) {
@@ -918,7 +914,7 @@ function OnboardingBadge({ status }: { status: string | null }) {
     PENDING: { label: "En attente", class: "bg-amber-500/10 text-amber-600" },
   }
   const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.class}`}>{c.label}</span>
 }
 
 function ExpiryBadge({ expiresAt, remainingDays }: { expiresAt: string; remainingDays: number }) {
@@ -926,20 +922,20 @@ function ExpiryBadge({ expiresAt, remainingDays }: { expiresAt: string; remainin
   const label = date.toLocaleDateString("fr-FR")
   if (remainingDays <= 0) {
     return (
-      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-rose-500/10 text-rose-600" title="Abonnement expiré">
+      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-rose-500/10 text-rose-600" title="Abonnement expiré">
         Échu le {label}
       </span>
     )
   }
   if (remainingDays <= 7) {
     return (
-      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-amber-500/10 text-amber-600" title="Abonnement expire bientôt">
+      <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-amber-500/10 text-amber-600" title="Abonnement expire bientôt">
         ⏳ fin {label} ({remainingDays}j)
       </span>
     )
   }
   return (
-    <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-muted/50 text-muted-foreground" title="Abonnement actif">
+    <span className="w-fit inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-muted/50 text-muted-foreground" title="Abonnement actif">
       fin {label} ({remainingDays}j)
     </span>
   )

@@ -19,11 +19,11 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
     <div className="space-y-6 text-xs">
       <div className="grid grid-cols-2 gap-4 border-b pb-4">
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Créateur</span>
+          <span className="text-xs text-muted-foreground uppercase">Créateur</span>
           <p className="font-semibold text-foreground mt-0.5">{data.creator?.name || "Admin"}</p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Statut du Signal</span>
+          <span className="text-xs text-muted-foreground uppercase">Statut du Signal</span>
           <div className="mt-0.5">
             <Badge
               variant="outline"
@@ -38,13 +38,13 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
           </div>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Date de création</span>
+          <span className="text-xs text-muted-foreground uppercase">Date de création</span>
           <p className="font-semibold text-foreground mt-0.5">
             {new Date(data.createdAt).toLocaleDateString()}
           </p>
         </div>
         <div>
-          <span className="text-[10px] text-muted-foreground uppercase">Date de publication</span>
+          <span className="text-xs text-muted-foreground uppercase">Date de publication</span>
           <p className="font-semibold text-foreground mt-0.5">
             {data.publishedAt ? new Date(data.publishedAt).toLocaleDateString() : "Non publié"}
           </p>
@@ -52,7 +52,7 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
       </div>
 
       <div className="space-y-2">
-        <span className="text-[10px] text-muted-foreground uppercase">Contenu du message</span>
+        <span className="text-xs text-muted-foreground uppercase">Contenu du message</span>
         <div className="p-4 rounded-xl bg-neutral-100/50 dark:bg-neutral-900/50 border whitespace-pre-wrap leading-relaxed text-xs">
           {data.content}
         </div>
@@ -60,7 +60,7 @@ export function SignalPanelContent({ data, onZoomImage }: SignalPanelContentProp
 
       {imageList.length > 0 && (
         <div className="space-y-2">
-          <span className="text-[10px] text-muted-foreground uppercase font-semibold">
+          <span className="text-xs text-muted-foreground uppercase font-semibold">
             {imageList.length > 1 ? "Graphiques attachés" : "Graphique attaché"}
           </span>
           <div className={cn(

@@ -105,14 +105,14 @@ export default function AdminSupportPage() {
                 {selected.user?.id && (
                   <>
                     <span className="text-muted-foreground/60">·</span>
-                    <code className="text-[10px] bg-accent/30 px-1.5 py-0.5 rounded font-mono">{selected.user.id.slice(0, 8)}…</code>
+                    <code className="text-xs bg-accent/30 px-1.5 py-0.5 rounded font-mono">{selected.user.id.slice(0, 8)}…</code>
                   </>
                 )}
                 <span className="text-muted-foreground/60">·</span>
                 <span>{formatDate(selected.createdAt)}</span>
               </p>
             </div>
-            <Badge variant="outline" className={cn("text-[10px] shrink-0", sc.color)}>
+            <Badge variant="outline" className={cn("text-xs shrink-0", sc.color)}>
               <StatusIcon className="size-3 mr-1" />{sc.label}
             </Badge>
           </div>
@@ -123,7 +123,7 @@ export default function AdminSupportPage() {
               <div className="flex gap-2">
                 <a
                   href={`/admin?tab=fraud`}
-                  className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
+                  className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
                 >
                   Voir Anti-Fraude
                 </a>
@@ -241,7 +241,7 @@ export default function AdminSupportPage() {
                           <span className="text-muted-foreground/50">·</span>
                           <span>{ticket.user?.email || ""}</span>
                           {ticket.user?.id && (
-                            <code className="text-[10px] bg-accent/30 px-1 py-0.5 rounded font-mono text-muted-foreground/70">
+                            <code className="text-xs bg-accent/30 px-1 py-0.5 rounded font-mono text-muted-foreground/70">
                               #{ticket.user.id.slice(0, 8)}
                             </code>
                           )}
@@ -251,10 +251,10 @@ export default function AdminSupportPage() {
                         </p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
-                        <Badge variant="outline" className={cn("text-[10px]", sc.color)}>
+                        <Badge variant="outline" className={cn("text-xs", sc.color)}>
                           <StatusIcon className="size-3 mr-1" />{sc.label}
                         </Badge>
-                        <span className="text-[10px] text-muted-foreground">{formatDate(ticket.createdAt)}</span>
+                        <span className="text-xs text-muted-foreground">{formatDate(ticket.createdAt)}</span>
                       </div>
                     </div>
                   </CardContent>

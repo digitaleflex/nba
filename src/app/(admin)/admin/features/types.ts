@@ -13,6 +13,7 @@ export interface AccessRequest {
     country: string | null
     onboardingStatus: string
     createdAt: string
+    emailStatus?: string
   }
   plan: {
     id: string

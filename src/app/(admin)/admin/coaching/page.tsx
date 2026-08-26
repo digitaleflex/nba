@@ -143,7 +143,7 @@ export default function CoachingPage() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Derniers trades — cliquez pour le détail</h3>
           {journal.recentTrades.length === 0 ? <p className="text-sm text-muted-foreground py-4 text-center">Aucun trade</p> : (
             <table className="w-full text-xs text-left">
-              <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
+              <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
                 <th className="px-2 py-2"></th><th className="px-2 py-2">Date</th><th className="px-2 py-2">Paire</th><th className="px-2 py-2">Direction</th><th className="px-2 py-2">Resultat</th><th className="px-2 py-2">PnL</th><th className="px-2 py-2">Setup</th><th className="px-2 py-2">Mood</th>
               </tr></thead>
               <tbody className="divide-y">
@@ -218,7 +218,7 @@ export default function CoachingPage() {
       {!loadingList && !listError && filtered.length > 0 && (
         <Card><CardContent className="p-0">
           <table className="w-full text-xs text-left">
-            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-[10px]">
+            <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-4 py-3">Membre</th>
               <th className="px-2 py-3">Trades</th>
               <th className="px-2 py-3">PnL</th>
@@ -234,7 +234,7 @@ export default function CoachingPage() {
                 >
                   <td className="px-4 py-3">
                     <p className="font-semibold">{m.name || "—"}</p>
-                    <p className="text-[10px] text-muted-foreground">{m.email}{!m.isActive && " · suspendu"}</p>
+                    <p className="text-xs text-muted-foreground">{m.email}{!m.isActive && " · suspendu"}</p>
                   </td>
                   <td className="px-2 py-3 font-mono">{m.totalTrades}</td>
                   <td className={`px-2 py-3 font-mono font-bold ${Number(m.totalPnl) >= 0 ? "text-emerald-500" : "text-red-500"}`}>
@@ -268,7 +268,7 @@ function TradeRow({ trade: t, expanded, onToggle }: { trade: AdminTrade; expande
         <td className="px-2 py-2 text-muted-foreground">{new Date(t.tradedAt).toLocaleDateString("fr-FR")}</td>
         <td className="px-2 py-2 font-medium">{t.pair}</td>
         <td className="px-2 py-2">{t.direction === "BUY" ? "📈" : "📉"}</td>
-        <td className="px-2 py-2"><span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${t.result === "WIN" ? "bg-emerald-100 text-emerald-700" : t.result === "LOSS" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>{t.result}</span></td>
+        <td className="px-2 py-2"><span className={`px-1.5 py-0.5 rounded text-xs font-bold ${t.result === "WIN" ? "bg-emerald-100 text-emerald-700" : t.result === "LOSS" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-700"}`}>{t.result}</span></td>
         <td className={`px-2 py-2 font-mono font-bold ${Number(t.pnl) >= 0 ? "text-emerald-500" : "text-red-500"}`}>{Number(t.pnl).toFixed(2)}</td>
         <td className="px-2 py-2 text-muted-foreground">{[t.strategy, t.setupType].filter(Boolean).join(" · ") || "—"}</td>
         <td className="px-2 py-2 text-muted-foreground">{t.mood || "—"}</td>
@@ -287,7 +287,7 @@ function TradeRow({ trade: t, expanded, onToggle }: { trade: AdminTrade; expande
 function TradeDetails({ t }: { t: AdminTrade }) {
   const num = (v: unknown) => (v === null || v === undefined ? "—" : Number(v).toString())
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-[11px]">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-2 text-xs">
       <Detail label="Entrée" value={num(t.entryPrice)} />
       <Detail label="Sortie" value={num(t.exitPrice)} />
       <Detail label="Stop-loss" value={num(t.stopLoss)} />
@@ -330,7 +330,7 @@ function StatCard({ icon: Icon, label, value, color }: { icon: LucideIcon; label
       <CardContent className="p-4 flex items-center gap-3">
         <Icon className={`size-5 ${color || "text-muted-foreground"}`} />
         <div>
-          <p className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-wider">{label}</p>
           <p className={`text-lg font-bold ${color || "text-foreground"}`}>{value}</p>
         </div>
       </CardContent>

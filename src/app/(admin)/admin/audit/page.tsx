@@ -58,7 +58,7 @@ function Avatar({ name, email, image }: { name?: string | null; email?: string |
   const initials = (name ?? email ?? "S")[0].toUpperCase()
   if (image) return <img src={image} alt="" className="size-6 rounded-full" />
   return (
-    <span className="size-6 rounded-full bg-primary/10 text-primary text-[10px] font-bold flex items-center justify-center shrink-0">
+    <span className="size-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">
       {initials}
     </span>
   )
@@ -339,7 +339,7 @@ export default function AuditCenterPage() {
         {metrics.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {metrics.map((m, i) => (
-              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 text-[11px] text-muted-foreground font-medium">
+              <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-muted/50 text-xs text-muted-foreground font-medium">
                 {m.label} : {m.value}
               </span>
             ))}
@@ -359,7 +359,7 @@ export default function AuditCenterPage() {
         )}
 
         {/* Date complète + IP + User-Agent */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-muted-foreground/50">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground/50">
           <span>{formatDate(log.createdAt)}</span>
           {log.ipAddress && <span>· {log.ipAddress}</span>}
           {log.userAgent && <span className="truncate max-w-[200px]" title={log.userAgent}>· {log.userAgent}</span>}
@@ -370,14 +370,14 @@ export default function AuditCenterPage() {
           <div className="flex gap-2 flex-wrap">
             <button
               onClick={() => updateParams({ resourceId: log.resourceId, page: "1" })}
-              className="text-[11px] text-primary/70 hover:text-primary transition-colors"
+              className="text-xs text-primary/70 hover:text-primary transition-colors"
             >
               Voir toutes les actions sur cette ressource →
             </button>
             {getResourceUrl(log.resourceType, log.resourceId) && (
               <a
                 href={getResourceUrl(log.resourceType, log.resourceId)!}
-                className="inline-flex items-center gap-1 text-[11px] text-primary/70 hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-primary/70 hover:text-primary transition-colors"
               >
                 <ExternalLink className="size-3" />
                 Ouvrir la ressource
@@ -427,26 +427,26 @@ export default function AuditCenterPage() {
                 </span>
               )}
             </div>
-            <span className="shrink-0 text-[11px] text-muted-foreground/50" title={formatDate(log.createdAt)}>
+            <span className="shrink-0 text-xs text-muted-foreground/50" title={formatDate(log.createdAt)}>
               {timeAgo(log.createdAt)}
             </span>
           </div>
 
           {/* Badge row */}
           <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
-            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-semibold ${sev.textColor} ${sev.bgColor}`}>
+            <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold ${sev.textColor} ${sev.bgColor}`}>
               <ActionIcon className="size-3" />
               {getActionLabel(log.action)}
             </span>
             {getResourceUrl(log.resourceType, log.resourceId) ? (
               <a href={getResourceUrl(log.resourceType, log.resourceId)!}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] text-muted-foreground/70 hover:text-primary transition-colors bg-muted/30"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground/70 hover:text-primary transition-colors bg-muted/30"
               >
                 <ResourceIcon className="size-3" />
                 {getResourceLabel(log.resourceType)}
               </a>
             ) : (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] text-muted-foreground/70 bg-muted/30">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground/70 bg-muted/30">
                 <ResourceIcon className="size-3" />
                 {getResourceLabel(log.resourceType)}
               </span>
@@ -461,7 +461,7 @@ export default function AuditCenterPage() {
           )}
 
           {/* Footer: IP + expand */}
-          <div className="flex items-center gap-2 text-[11px] text-muted-foreground/50">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
             {log.ipAddress && (
               <span className="inline-flex items-center gap-1 font-mono">
                 <Globe className="size-3" />

@@ -174,7 +174,7 @@ export default function BulkMessagePage() {
                         onCheckedChange={() => togglePlan(plan.id)}
                       />
                       <span className="text-sm">{plan.name}</span>
-                      <Badge variant="secondary" className="ml-auto text-[10px]">
+                      <Badge variant="secondary" className="ml-auto text-xs">
                         {plan.count} membres
                       </Badge>
                     </label>
@@ -293,7 +293,7 @@ export default function BulkMessagePage() {
                     style={{ width: `${Math.min(100, (progressStep / 5) * 100)}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {progressText || "Traitement en cours..."}
                 </p>
               </div>
@@ -309,7 +309,7 @@ export default function BulkMessagePage() {
                     <span>{result.failed} échec{result.failed > 1 ? "s" : ""}</span>
                   </div>
                 )}
-                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                <p className="text-xs text-muted-foreground pt-1 border-t border-border">
                   Les messages sont disponibles dans la messagerie privée de chaque membre.
                 </p>
                 <div className="flex justify-end gap-2 pt-2">

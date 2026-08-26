@@ -50,13 +50,13 @@ export function SmartSuggestions({ events = [] }: SmartSuggestionsProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
           <Lightbulb className="size-3" />
           Actions suggérées
         </h3>
         <button
           onClick={dismissAll}
-          className="text-[10px] text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
+          className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors cursor-pointer"
         >
           Tout marquer comme lu
         </button>

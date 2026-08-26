@@ -99,7 +99,7 @@ export function DuplicatesPanel() {
         </button>
       </div>
 
-      <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
         <span className="flex items-center gap-1"><User className="w-3 h-3 text-sky-500" /> même nom</span>
         <span className="flex items-center gap-1"><Mail className="w-3 h-3 text-violet-500" /> email similaire</span>
         <span className="flex items-center gap-1"><Globe className="w-3 h-3 text-orange-500" /> même IP</span>
@@ -116,11 +116,11 @@ export function DuplicatesPanel() {
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2">
             <div className="rounded-lg bg-amber-500/10 p-3">
-              <p className="text-[10px] uppercase text-muted-foreground">Groupes de doublons</p>
+              <p className="text-xs uppercase text-muted-foreground">Groupes de doublons</p>
               <p className="text-lg font-bold">{groups.length}</p>
             </div>
             <div className="rounded-lg bg-muted/40 p-3">
-              <p className="text-[10px] uppercase text-muted-foreground">Accès multipliés</p>
+              <p className="text-xs uppercase text-muted-foreground">Accès multipliés</p>
               <p className="text-lg font-bold text-amber-600">
                 {groups.reduce((acc, g) => acc + Math.max(0, g.approvedCount - 1), 0)}
               </p>
@@ -149,12 +149,12 @@ export function DuplicatesPanel() {
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     {g.totalPaid > 0 && (
-                      <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600">
+                      <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-500/10 text-emerald-600">
                         {g.totalPaid.toLocaleString("fr-FR")} F
                       </span>
                     )}
                     {g.approvedCount > 1 && (
-                      <span className="px-2 py-0.5 flex items-center gap-1 text-[10px] font-bold bg-rose-500/10 text-rose-600">
+                      <span className="px-2 py-0.5 flex items-center gap-1 text-xs font-bold bg-rose-500/10 text-rose-600">
                         <UserCheck className="w-2.5 h-2.5" /> Multi
                       </span>
                     )}
@@ -166,15 +166,15 @@ export function DuplicatesPanel() {
                       <div key={a.id} className="px-3 py-2 flex items-center justify-between gap-2">
                         <div className="min-w-0">
                           <p className="text-xs font-medium truncate">{a.email}</p>
-                          <p className="text-[10px] text-muted-foreground truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {a.onboardingStatus} · {a.plans.length > 0 ? a.plans.map((p) => p.name).join(", ") : "aucun plan"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           {a.isActive ? (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600">Actif</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-emerald-500/10 text-emerald-600">Actif</span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-muted/50 text-muted-foreground">Inactif</span>
+                            <span className="px-2 py-0.5 rounded text-xs font-medium bg-muted/50 text-muted-foreground">Inactif</span>
                           )}
                           <button
                             onClick={() => revokeDuplicates(g, a.id)}

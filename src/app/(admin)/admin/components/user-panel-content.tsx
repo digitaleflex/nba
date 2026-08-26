@@ -43,7 +43,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
         <div>
           <h4 className="text-sm font-bold text-foreground">{data.name}</h4>
           <p className="text-muted-foreground">{data.email}</p>
-          <p className="text-[10px] text-muted-foreground/80 mt-0.5">ID: {data.id}</p>
+          <p className="text-xs text-muted-foreground/80 mt-0.5">ID: {data.id}</p>
         </div>
       </div>
 
@@ -51,11 +51,11 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
         <h5 className="font-bold text-foreground border-b pb-1">Détails administratifs</h5>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Statut d'onboarding</span>
+            <span className="text-xs text-muted-foreground uppercase">Statut d'onboarding</span>
             <p className="font-semibold text-foreground mt-0.5">{data.onboardingStatus}</p>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Compte Actif</span>
+            <span className="text-xs text-muted-foreground uppercase">Compte Actif</span>
             <div className="mt-0.5">
               <Badge variant="outline" className={cn(data.isActive ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" : "bg-rose-500/10 text-rose-400 border-rose-500/20")}>
                 {data.isActive ? "Actif" : "Suspendu"}
@@ -63,13 +63,13 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             </div>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Email</span>
+            <span className="text-xs text-muted-foreground uppercase">Email</span>
             <div className="mt-0.5">
               <EmailStatusBadge status={data.emailStatus} />
             </div>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Notifications Push</span>
+            <span className="text-xs text-muted-foreground uppercase">Notifications Push</span>
             <div className="mt-0.5">
               {data._count?.pushSubscriptions ? (
                 <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 inline-flex items-center gap-1">
@@ -81,21 +81,21 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             </div>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Téléphone (WhatsApp)</span>
+            <span className="text-xs text-muted-foreground uppercase">Téléphone (WhatsApp)</span>
             <p className="font-semibold text-foreground mt-0.5">{data.phone || "Non renseigné"}</p>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Pays</span>
+            <span className="text-xs text-muted-foreground uppercase">Pays</span>
             <p className="font-semibold text-foreground mt-0.5">{data.country || "Non renseigné"}</p>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Créé le</span>
+            <span className="text-xs text-muted-foreground uppercase">Créé le</span>
             <p className="font-semibold text-foreground mt-0.5">
               {new Date(data.createdAt).toLocaleDateString()}
             </p>
           </div>
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase">Rôle</span>
+            <span className="text-xs text-muted-foreground uppercase">Rôle</span>
             <p className="font-semibold text-primary mt-0.5">{data.role?.name || "Membre"}</p>
           </div>
         </div>
@@ -104,7 +104,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
       {onAction && (
         <div className="space-y-4 border-t pt-4">
           <div>
-            <span className="text-[10px] text-muted-foreground uppercase block mb-2">Actions de compte</span>
+            <span className="text-xs text-muted-foreground uppercase block mb-2">Actions de compte</span>
             <div className="flex flex-col gap-2">
               <div className="flex gap-2">
                 {data.isActive ? (
@@ -153,7 +153,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           {/* Accès signaux exceptionnel (override admin) */}
           <div className="space-y-2 border-t pt-4">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground uppercase">Accès signaux exceptionnel</span>
+              <span className="text-xs text-muted-foreground uppercase">Accès signaux exceptionnel</span>
               <Badge
                 variant="outline"
                 className={cn(
@@ -165,7 +165,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 {data.signalsAccessOverride ? "Accordé" : "Désactivé"}
               </Badge>
             </div>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Autorise cet utilisateur à voir les signaux même si le KYC / Broker ne sont pas validés.
             </p>
             <Button
@@ -184,7 +184,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
 
           {/* Outils super-admin (réparation d'états) */}
           <div className="space-y-2 border-t pt-4">
-            <span className="text-[10px] text-muted-foreground uppercase block">Outils super-admin</span>
+            <span className="text-xs text-muted-foreground uppercase block">Outils super-admin</span>
             <div className="grid grid-cols-1 gap-1.5">
               <Button
                 variant="outline"
@@ -223,7 +223,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
             <button
               type="button"
               onClick={() => setShowNotifForm(!showNotifForm)}
-              className="w-full flex items-center justify-between text-[10px] text-muted-foreground uppercase hover:text-foreground transition-colors cursor-pointer"
+              className="w-full flex items-center justify-between text-xs text-muted-foreground uppercase hover:text-foreground transition-colors cursor-pointer"
             >
               <span>Alerter l'utilisateur</span>
               <span>{showNotifForm ? "▲" : "▼"}</span>
@@ -269,7 +269,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           {data.kycDocuments && data.kycDocuments[0] && (
             <div className="space-y-3 border-t pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground uppercase">Dernier KYC ({data.kycDocuments[0].documentType})</span>
+                <span className="text-xs text-muted-foreground uppercase">Dernier KYC ({data.kycDocuments[0].documentType})</span>
                 <Badge
                   variant="outline"
                   className={cn(
@@ -347,7 +347,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           {data.brokerVerifications && data.brokerVerifications[0] && (
             <div className="space-y-3 border-t pt-4">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-muted-foreground uppercase">Dernier Broker ({data.brokerVerifications[0].brokerName})</span>
+                <span className="text-xs text-muted-foreground uppercase">Dernier Broker ({data.brokerVerifications[0].brokerName})</span>
                 <Badge
                   variant="outline"
                   className={cn(
@@ -412,7 +412,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
           {/* Timeline */}
           <MiniTimeline data={data} />
 
-          <span className="text-[10px] text-muted-foreground uppercase mt-3 block border-t pt-4">Changer le rôle</span>
+          <span className="text-xs text-muted-foreground uppercase mt-3 block border-t pt-4">Changer le rôle</span>
           <div className="grid grid-cols-1 gap-1.5">
             {ROLES.map((role) => (
               <button
@@ -428,7 +428,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
               >
                 <Shield className="size-3.5 shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-[11px] font-semibold">{role.label}</p>
+                  <p className="text-xs font-semibold">{role.label}</p>
                   <p className="text-[9px] text-muted-foreground truncate">{role.description}</p>
                 </div>
                 {data.role?.name === role.name && (
@@ -440,7 +440,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
 
           {isSuperAdmin && <>
           <div className="space-y-2 border-t border-destructive/20 pt-4">
-            <span className="text-[10px] text-destructive uppercase font-bold block">Zone de danger</span>
+            <span className="text-xs text-destructive uppercase font-bold block">Zone de danger</span>
 
             <Button
               variant="destructive"
@@ -480,14 +480,14 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
 
 function EmailStatusBadge({ status }: { status: string | null | undefined }) {
   if (!status || status === "OK") {
-    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600">OK</span>
+    return <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-600">OK</span>
   }
   const config: Record<string, { label: string; class: string }> = {
     BOUNCED: { label: "BOUNCED", class: "bg-amber-500/10 text-amber-600" },
     INVALID: { label: "INVALID", class: "bg-rose-500/10 text-rose-600" },
   }
   const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
-  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+  return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${c.class}`}>{c.label}</span>
 }
 
 /* Mini timeline du parcours utilisateur */
@@ -542,7 +542,7 @@ function MiniTimeline({ data }: { data: any }) {
 
   return (
     <div className="border-t pt-4 mt-3">
-      <span className="text-[10px] text-muted-foreground uppercase block mb-3">Parcours</span>
+      <span className="text-xs text-muted-foreground uppercase block mb-3">Parcours</span>
       <div className="relative pl-5 space-y-3">
         <div className="absolute left-[7px] top-1 bottom-1 w-px bg-border/50" />
         {events.map((ev, i) => {
@@ -558,7 +558,7 @@ function MiniTimeline({ data }: { data: any }) {
                 <Icon className="size-2.5" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-medium text-foreground/80">{ev.label}</p>
+                <p className="text-xs font-medium text-foreground/80">{ev.label}</p>
                 <p className="text-[9px] text-muted-foreground">
                   {ev.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>

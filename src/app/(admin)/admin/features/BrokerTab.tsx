@@ -66,7 +66,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
               key={s}
               onClick={() => { setBrokerStatusFilter(s); setBrokerPage(1) }}
               className={cn(
-                "text-[10px] px-3 py-1 rounded-full border transition-colors cursor-pointer",
+                "text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer",
                 brokerStatusFilter === s
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border text-muted-foreground hover:border-primary/50"
@@ -89,7 +89,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
                   <div className="flex items-start justify-between">
                     <div>
                       <h4 className="font-bold text-foreground text-xs">{doc.user?.name}</h4>
-                      <p className="text-[10px] text-muted-foreground">{doc.user?.email}</p>
+                      <p className="text-xs text-muted-foreground">{doc.user?.email}</p>
                     </div>
                     <Badge
                       variant="outline"
@@ -104,7 +104,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
                     </Badge>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/60 text-[10px]">
+                  <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/60 text-xs">
                     <div>
                       <span className="text-[9px] text-muted-foreground block uppercase">Broker</span>
                       <span className="font-semibold text-foreground">{doc.brokerName}</span>
@@ -115,12 +115,12 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-2 border-t border-border/60 text-[10px] text-muted-foreground">
+                  <div className="flex items-center justify-between pt-2 border-t border-border/60 text-xs text-muted-foreground">
                     <span>Soumis le : {new Date(doc.submittedAt || doc.createdAt).toLocaleDateString()}</span>
                     <Button
                       variant="outline"
                       size="sm"
-                      className="text-[10px] border-border h-7 cursor-pointer"
+                      className="text-xs border-border h-7 cursor-pointer"
                       onClick={() => {
                         onOpenPanel({ title: "Vérification Broker", type: "broker", data: doc })
                       }}
@@ -143,7 +143,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
               >
                 ← Précédent
               </Button>
-              <span className="text-[10px] text-muted-foreground">
+              <span className="text-xs text-muted-foreground">
                 Page {brokerPage} / {brokerTotalPages}
               </span>
               <Button

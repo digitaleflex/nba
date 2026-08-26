@@ -125,9 +125,9 @@ export function ModerationTab() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-medium text-foreground">{b.email}</span>
-                      <Badge variant="outline" className="text-[10px] bg-rose-500/10 text-rose-600 border-rose-500/20">{b.reason}</Badge>
+                      <Badge variant="outline" className="text-xs bg-rose-500/10 text-rose-600 border-rose-500/20">{b.reason}</Badge>
                     </div>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Banni le {new Date(b.bannedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </p>
                   </div>

@@ -2,12 +2,13 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { toast } from "sonner"
-import { Loader2, ChevronDown, CheckCircle2, XCircle, SkipForward, Square, CheckSquare } from "lucide-react"
+import { Loader2, ChevronDown, CheckCircle2, XCircle } from "lucide-react"
 import { readBatchStream } from "@nba/lib/batch-stream"
 import { Button, Card, CardContent, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, cn, SwipeableRow, useMediaQuery, EmptyState, Checkbox } from "@nba/design-system"
 import { Inbox } from "lucide-react"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
 import { AccessRequest, CachedGet } from "./types"
+import { StatusBadge, type Tone } from "./ui"
 
 interface RequestsTabProps {
   cachedGet: CachedGet
@@ -150,11 +151,9 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     setReexamineOpen(true)
   }
 
-  const [actingRequestId, setActingRequestId] = useState<string | null>(null)
   const isDesktop = useMediaQuery("(min-width: 768px)")
 
   function swipeApprove(id: string) {
-    setActingRequestId(id)
     invalidate()
     fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
@@ -167,7 +166,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       })
       .catch(() => toast.error("Échec de l'approbation. Réessayez."))
       .finally(() => {
-        setActingRequestId(null)
         fetchRequests(requestStatusFilter)
         refreshOps()
       })
@@ -175,7 +173,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
 
   async function handleReexamine(status: "APPROVED" | "REJECTED" | "REVOKED" | "SUSPENDED") {
     if (!reexamineTarget) return
-    setActingRequestId(reexamineTarget)
     invalidate()
     const body: Record<string, string> = { status, notes: `Réexaminé → ${status}` }
     if (reexaminePlanId) body.planId = reexaminePlanId
@@ -192,14 +189,12 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     }
     setReexamineOpen(false)
     setReexamineTarget(null)
-    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
 
   async function handleApprove(id: string) {
     if (!confirm("Approuver cette demande d'accès ?")) return
-    setActingRequestId(id)
     invalidate()
     const res = await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
@@ -211,7 +206,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     } else {
       toast.error("Échec de l'approbation. Réessayez.")
     }
-    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
@@ -230,7 +224,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
       return
     }
     invalidate()
-    setActingRequestId(rejectTarget)
     const notes = rejectNotes.trim() ? `${rejectReason} — ${rejectNotes.trim()}` : rejectReason
     const res = await fetch(`/api/admin/access-requests/${rejectTarget}`, {
       method: "PUT",
@@ -244,7 +237,6 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
     }
     setRejectOpen(false)
     setRejectTarget(null)
-    setActingRequestId(null)
     fetchRequests(requestStatusFilter)
     refreshOps()
   }
@@ -264,7 +256,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
               key={f.value}
               onClick={() => setRequestStatusFilter(f.value)}
               className={cn(
-                "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                "text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
                 requestStatusFilter === f.value
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border text-muted-foreground hover:bg-muted/50"
@@ -305,7 +297,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
               </button>
               <button
                 onClick={clearSelection}
-                className="text-[10px] text-muted-foreground hover:text-foreground px-2 cursor-pointer"
+                className="text-xs text-muted-foreground hover:text-foreground px-2 cursor-pointer"
               >
                 Annuler
               </button>
@@ -334,9 +326,9 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                     )}
                     <div>
                       <h3 className="font-bold text-foreground text-sm">{req.user.name}</h3>
-                      <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                      <p className="text-xs text-muted-foreground flex items-center gap-1.5">
                         {req.user.email}
-                        <EmailStatusBadge status={(req.user as any).emailStatus} />
+                        <EmailStatusBadge status={req.user.emailStatus} />
                       </p>
                     </div>
                   </div>
@@ -345,7 +337,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                       <select
                         value={req.plan.id}
                         onChange={(e) => handleChangePlan(req.id, e.target.value)}
-                        className="text-[10px] border border-border rounded-md bg-card px-2 py-1 text-foreground cursor-pointer outline-none focus:border-primary/50 max-w-[140px] truncate"
+                        className="text-xs border border-border rounded-md bg-card px-2 py-1 text-foreground cursor-pointer outline-none focus:border-primary/50 max-w-[140px] truncate"
                       >
                         {plans.map((p) => (
                           <option key={p.id} value={p.id}>{p.name}</option>
@@ -365,7 +357,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                   </div>
                 </div>
 
-                <div className="space-y-1.5 text-[11px] text-muted-foreground">
+                <div className="space-y-1.5 text-xs text-muted-foreground">
                   <div className="flex justify-between">
                     <span>Progression Onboarding</span>
                     <span className="font-semibold text-foreground">{req.onboarding.progress}%</span>
@@ -379,7 +371,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 </div>
 
                 {req.status !== "PENDING" && (
-                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1 text-[11px]">
+                  <div className="rounded-lg border border-border/60 bg-muted/30 p-3 space-y-1 text-xs">
                     <p className="text-muted-foreground">
                       Traité par <span className="font-medium text-foreground">{req.reviewer?.name ?? "Admin"}</span>
                       {req.reviewedAt ? ` · ${new Date(req.reviewedAt).toLocaleString("fr-FR")}` : ""}
@@ -391,7 +383,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                     )}
                     <button
                       onClick={() => openReexamine(req.id)}
-                      className="mt-2 inline-flex items-center gap-1 text-[10px] text-primary hover:underline cursor-pointer"
+                      className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline cursor-pointer"
                     >
                       <ChevronDown className="size-3" />
                       Réexaminer
@@ -400,7 +392,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 )}
 
                 <div className="flex justify-between items-center pt-2 border-t border-border/60">
-                  <span className="text-[10px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     Soumis le {new Date(req.createdAt).toLocaleString("fr-FR")}
                   </span>
                   {req.status === "PENDING" && (
@@ -408,7 +400,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                       <Button
                         variant="destructive"
                         size="sm"
-                        className="text-[10px] h-7 px-3.5 cursor-pointer"
+                        className="text-xs h-7 px-3.5 cursor-pointer"
                         onClick={() => openReject(req.id)}
                       >
                         Refuser
@@ -416,7 +408,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                       <Button
                         variant="default"
                         size="sm"
-                        className="text-[10px] h-7 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer"
+                        className="text-xs h-7 px-3.5 bg-emerald-600 hover:bg-emerald-700 text-white border-0 cursor-pointer"
                         onClick={() => handleApprove(req.id)}
                       >
                         Approuver
@@ -437,7 +429,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 leftActions={
                   <button
                     onClick={() => openReject(req.id)}
-                    className="flex h-full w-full items-center justify-center gap-2 bg-rose-600/90 text-white text-[11px] font-medium"
+                    className="flex h-full w-full items-center justify-center gap-2 bg-rose-600/90 text-white text-xs font-medium"
                   >
                     ← Refuser
                   </button>
@@ -445,7 +437,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                 rightActions={
                   <button
                     onClick={() => swipeApprove(req.id)}
-                    className="flex h-full w-full items-center justify-center gap-2 bg-emerald-600/90 text-white text-[11px] font-medium"
+                    className="flex h-full w-full items-center justify-center gap-2 bg-emerald-600/90 text-white text-xs font-medium"
                   >
                     Approuver →
                   </button>
@@ -535,7 +527,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                     key={r}
                     onClick={() => setRejectReason(r)}
                     className={cn(
-                      "text-[11px] px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
+                      "text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
                       rejectReason === r
                         ? "bg-rose-600 text-white border-rose-600"
                         : "border-border text-muted-foreground hover:bg-muted/50"
@@ -588,7 +580,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                     style={{ width: `${Math.min(100, (batchStep / 5) * 100)}%` }}
                   />
                 </div>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {batchProgressText || "Traitement en cours..."}
                 </p>
               </div>
@@ -604,7 +596,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                     <span>{batchResult.failed} échec{batchResult.failed > 1 ? "s" : ""}</span>
                   </div>
                 )}
-                <p className="text-[10px] text-muted-foreground pt-1 border-t border-border">
+                <p className="text-xs text-muted-foreground pt-1 border-t border-border">
                   Les modifications sont effectives immédiatement.
                 </p>
               </div>
@@ -616,14 +608,9 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
   )
 }
 
+const EMAIL_TONES: Record<string, Tone> = { OK: "success", BOUNCED: "warning", INVALID: "destructive" }
+
 function EmailStatusBadge({ status }: { status: string | null | undefined }) {
-  if (!status || status === "OK") {
-    return <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-emerald-500/10 text-emerald-600">OK</span>
-  }
-  const config: Record<string, { label: string; class: string }> = {
-    BOUNCED: { label: "BOUNCED", class: "bg-amber-500/10 text-amber-600" },
-    INVALID: { label: "INVALID", class: "bg-rose-500/10 text-rose-600" },
-  }
-  const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
-  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${c.class}`}>{c.label}</span>
+  if (!status) return null
+  return <StatusBadge tone={EMAIL_TONES[status] ?? "neutral"}>{status}</StatusBadge>
 }

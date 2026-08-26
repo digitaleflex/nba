@@ -437,7 +437,7 @@ export default async function SignalTrackerPage({
                       <div key={plan} className="flex items-center justify-between px-4 py-3">
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{plan}</div>
-                          <div className="text-[10px] text-muted-foreground">{s.users} utilisateurs · {s.sent} emails</div>
+                          <div className="text-xs text-muted-foreground">{s.users} utilisateurs · {s.sent} emails</div>
                         </div>
                         <div className="flex items-center gap-3 text-xs tabular-nums">
                           <span className={cn("font-semibold", planDeliveryRate >= 95 ? "text-success" : planDeliveryRate >= 80 ? "text-info" : "text-destructive")}>
@@ -493,7 +493,7 @@ export default async function SignalTrackerPage({
                       key={r}
                       href={href}
                       className={cn(
-                        "h-7 rounded-md px-2.5 text-[10px] font-medium flex items-center transition-colors",
+                        "h-7 rounded-md px-2.5 text-xs font-medium flex items-center transition-colors",
                         range === r
                           ? "bg-primary text-primary-foreground"
                           : "text-muted-foreground hover:text-foreground border border-border",
@@ -545,7 +545,7 @@ function FunnelBar({ label, value, pct, color }: { label: string; value: number;
         <div className={`h-full rounded-md transition-all ${color}`} style={{ width: `${Math.max(pct, 2)}%` }} />
       </div>
       <span className="w-16 text-right text-xs font-semibold tabular-nums">{value}</span>
-      <span className="w-10 text-right text-[10px] text-muted-foreground tabular-nums">{pct}%</span>
+      <span className="w-10 text-right text-xs text-muted-foreground tabular-nums">{pct}%</span>
     </div>
   )
 }

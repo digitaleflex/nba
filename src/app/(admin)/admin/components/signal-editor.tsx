@@ -270,10 +270,10 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
 
       {isLast ? (
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="text-[10px] h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("DRAFT")}>
+          <Button variant="outline" size="sm" className="text-xs h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("DRAFT")}>
             <Save className="size-3.5" /> Brouillon
           </Button>
-          <Button size="sm" className="text-[10px] h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("PUBLISHED")}>
+          <Button size="sm" className="text-xs h-8" disabled={isSubmitting !== null} onClick={() => openConfirmation("PUBLISHED")}>
             <Send className="size-3.5" /> Publier
           </Button>
         </div>
@@ -297,9 +297,9 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
         <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
           <div>
             <h1 className="text-lg font-bold tracking-tight">Nouveau signal</h1>
-            <p className="text-[11px] text-muted-foreground">Étape {step + 1}/{STEPS.length} — {STEPS[step]}</p>
+            <p className="text-xs text-muted-foreground">Étape {step + 1}/{STEPS.length} — {STEPS[step]}</p>
           </div>
-          <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Phone className="size-3" /> Mobile</span>
+          <span className="text-xs text-muted-foreground flex items-center gap-1"><Phone className="size-3" /> Mobile</span>
         </div>
 
         <div className="overflow-hidden">
@@ -352,7 +352,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
           <h1 className="text-xl font-bold tracking-tight">Créer un nouveau signal</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Flow guidé en 3 étapes.</p>
         </div>
-        <span className="text-[10px] text-muted-foreground flex items-center gap-1"><Laptop className="size-3" /> Desktop</span>
+        <span className="text-xs text-muted-foreground flex items-center gap-1"><Laptop className="size-3" /> Desktop</span>
       </div>
 
       <div className="flex items-center gap-2">
@@ -365,7 +365,7 @@ export function SignalEditor({ onSignalCreated }: { onSignalCreated?: () => void
               i === step ? "border-primary/30 bg-primary/5 text-foreground font-semibold" : "border-border text-muted-foreground hover:bg-muted/30"
             )}
           >
-            <span className={cn("size-5 rounded-full flex items-center justify-center text-[10px]", i === step ? "bg-primary text-primary-foreground" : "bg-muted")}>{i + 1}</span>
+            <span className={cn("size-5 rounded-full flex items-center justify-center text-xs", i === step ? "bg-primary text-primary-foreground" : "bg-muted")}>{i + 1}</span>
             {label}
           </button>
         ))}
