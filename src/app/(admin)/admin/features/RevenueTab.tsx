@@ -14,6 +14,7 @@ import {
 } from "lucide-react"
 import { Card, CardContent, EmptyState } from "@nba/design-system"
 import type { CachedGet } from "./types"
+import { StatCard, SectionTitle } from "./ui"
 
 interface RevenuePlan {
   planId: string
@@ -45,38 +46,7 @@ function formatCurrency(amount: number, currency: string) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(amount)
 }
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  sub,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: React.ReactNode
-  sub?: string
-}) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm">
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="space-y-0.5">
-          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
-          <p className="text-xl font-bold text-foreground">{value}</p>
-          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
-        </div>
-        <Icon className="size-5 text-muted-foreground/40" />
-      </CardContent>
-    </Card>
-  )
-}
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border/40">
-      {children}
-    </h3>
-  )
-}
 
 export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
   const [data, setData] = useState<RevenueData | null>(null)

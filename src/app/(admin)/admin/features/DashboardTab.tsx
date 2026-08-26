@@ -16,6 +16,7 @@ import { FocusMode } from "../components/FocusMode"
 import { SortableCard } from "../components/SortableCard"
 import { DashboardCustomizer } from "../components/DashboardCustomizer"
 import { useDashboardLayout } from "../hooks/useDashboardLayout"
+import { StatCard } from "./ui"
 import { SmartSuggestions } from "../components/SmartSuggestions"
 import { HeroNumber } from "../components/HeroNumber"
 
@@ -100,10 +101,10 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
           />
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <KpiCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
-            <KpiCard icon={ListTodo} label="Demandes en attente" value={opsData.attention.requestsPendingCount} />
-            <KpiCard icon={FileCheck} label="KYC à traiter" value={opsData.attention.kycPendingCount} />
-            <KpiCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
+            <StatCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
+            <StatCard icon={ListTodo} label="Demandes en attente" value={opsData.attention.requestsPendingCount} />
+            <StatCard icon={FileCheck} label="KYC à traiter" value={opsData.attention.kycPendingCount} />
+            <StatCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
           </div>
 
           {(secData?.highEvents ?? 0) > 0 && (
@@ -234,19 +235,6 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
   )
 }
 
-function KpiCard({ icon: Icon, label, value }: { icon: any; label: string; value: number }) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm">
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="space-y-0.5">
-          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
-          <p className="text-xl font-bold text-foreground">{value}</p>
-        </div>
-        <Icon className="size-5 text-muted-foreground/40" />
-      </CardContent>
-    </Card>
-  )
-}
 
 function SysHealth({ icon: Icon, label, healthy, okText = "En ligne", failText = "Échec" }: { icon: any; label: string; healthy: boolean; okText?: string; failText?: string }) {
   return (

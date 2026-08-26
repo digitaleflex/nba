@@ -6,6 +6,8 @@ import {
 } from "lucide-react"
 import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
 import { toast } from "sonner"
+import { StatCard } from "./ui"
+import { useConfirm } from "@nba/components/confirm-dialog"
 interface FraudSummary {
   highEvents: number
   failedLogins: number
@@ -41,6 +43,8 @@ interface AuthAttempt {
 }
 
 export function FraudTab() {
+  const { confirm, node: confirmNode } = useConfirm()
+
   const [summary, setSummary] = useState<FraudSummary | null>(null)
   const [events, setEvents] = useState<FraudEvent[]>([])
   const [ips, setIps] = useState<BlockedIp[]>([])
@@ -77,33 +81,57 @@ export function FraudTab() {
 
   async function suspendUser() {
     if (!suspendEmail) return toast.error("Saisissez l'email du compte à suspendre.")
-    if (!confirm("Suspendre ce compte ? L'utilisateur sera déconnecté et ne pourra plus se connecter.")) return
     try {
       const search = await fetch(`/api/admin/members/search?email=${suspendEmail}`)
       if (!search.ok) return toast.error("Aucun compte trouvé avec cet email.")
       const { id } = await search.json()
-      const res = await fetch("/api/admin/security/fraud/suspend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: id }) })
-      if (res.ok) { toast.success("Compte suspendu. Un email a été envoyé à l'utilisateur."); setSuspendEmail(""); refresh() } else toast.error("Échec de la suspension. Vérifiez que le compte n'est pas déjà suspendu.")
+      confirm({
+        title: "Suspendre ce compte ?",
+        description: `${suspendEmail} sera déconnecté et ne pourra plus se connecter.`,
+        confirmLabel: "Suspendre",
+        onConfirm: async () => {
+          const res = await fetch("/api/admin/security/fraud/suspend", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: id }) })
+          if (res.ok) { toast.success("Compte suspendu. Un email a été envoyé à l'utilisateur."); setSuspendEmail(""); refresh() } else toast.error("Échec de la suspension. Vérifiez que le compte n'est pas déjà suspendu.")
+        },
+      })
     } catch { toast.error("Impossible de contacter le serveur. Réessayez.") }
   }
 
   async function reactivateUser(userId: string) {
-    if (!confirm("Réactiver ce compte ? L'utilisateur pourra se reconnecter.")) return
-    const res = await fetch("/api/admin/security/fraud/reactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) })
-    if (res.ok) { toast.success("Compte réactivé. L'utilisateur peut se reconnecter."); refresh() } else toast.error("Échec de la réactivation. Réessayez.")
+    confirm({
+      title: "Réactiver ce compte ?",
+      description: "L'utilisateur pourra se reconnecter normalement.",
+      confirmLabel: "Réactiver",
+      onConfirm: async () => {
+        const res = await fetch("/api/admin/security/fraud/reactivate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId }) })
+          if (res.ok) { toast.success("Compte réactivé. L'utilisateur peut se reconnecter."); refresh() } else toast.error("Échec de la réactivation. Réessayez.")
+        },
+      })
   }
 
   async function unblockIp(ip: string) {
-    if (!confirm(`Débloquer l'adresse IP ${ip} ? Elle pourra de nouveau accéder au site.`)) return
-    const res = await fetch("/api/admin/security/fraud/unblock-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip }) })
-    if (res.ok) { toast.success("IP débloquée. L'accès est rétabli."); refresh() } else toast.error("Échec du déblocage. Réessayez.")
+    confirm({
+      title: `Débloquer l'adresse IP ${ip} ?`,
+      description: "Elle pourra de nouveau accéder au site.",
+      confirmLabel: "Débloquer",
+      onConfirm: async () => {
+        const res = await fetch("/api/admin/security/fraud/unblock-ip", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ip }) })
+        if (res.ok) { toast.success("IP débloquée. L'accès est rétabli."); refresh() } else toast.error("Échec du déblocage. Réessayez.")
+      },
+    })
   }
 
   async function executePlaybook() {
     if (!playbookUserId || !selectedPlaybook) return toast.error("Sélectionnez un utilisateur et un protocole de sécurité.")
-    if (!confirm(`Appliquer le protocole « ${selectedPlaybook} » sur cet utilisateur ? Cette action appliquera des restrictions automatiques.`)) return
-    const res = await fetch("/api/admin/security/fraud/playbook", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }) })
-    if (res.ok) { toast.success("Protocole appliqué. Les restrictions sont en place."); refresh() } else toast.error("Échec du protocole. Réessayez.")
+    confirm({
+      title: `Appliquer le protocole « ${selectedPlaybook} » ?`,
+      description: "Des restrictions automatiques seront appliquées à cet utilisateur.",
+      confirmLabel: "Appliquer",
+      onConfirm: async () => {
+        const res = await fetch("/api/admin/security/fraud/playbook", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ userId: playbookUserId, detectType: selectedPlaybook }) })
+        if (res.ok) { toast.success("Protocole appliqué. Les restrictions sont en place."); refresh() } else toast.error("Échec du protocole. Réessayez.")
+      },
+    })
   }
 
   async function searchUserFn() {
@@ -117,6 +145,7 @@ export function FraudTab() {
 
   return (
     <div className="space-y-6" data-testid="fraud-tab">
+      {confirmNode}
       <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Anti-Fraude</h1>
@@ -126,11 +155,11 @@ export function FraudTab() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard icon={ShieldAlert} label="Alertes critiques" value={summary?.highEvents ?? 0} color="text-red-500" className="stagger-1" />
-        <StatCard icon={AlertTriangle} label="Connexions échouées" value={summary?.failedLogins ?? 0} color="text-orange-500" className="stagger-2" />
-        <StatCard icon={Globe} label="IPs bloquées" value={summary?.blockedIps ?? 0} color="text-purple-500" className="stagger-3" />
-        <StatCard icon={Ban} label="Comptes suspendus" value={summary?.suspendedAccounts ?? 0} color="text-rose-500" className="stagger-4" />
-        <StatCard icon={Ban} label="Appareils bloqués" value={summary?.blockedDevices ?? 0} color="text-amber-500" className="stagger-5" />
+        <StatCard icon={ShieldAlert} label="Alertes critiques" value={summary?.highEvents ?? 0} tone="destructive" className="stagger-1" />
+        <StatCard icon={AlertTriangle} label="Connexions échouées" value={summary?.failedLogins ?? 0} tone="warning" className="stagger-2" />
+        <StatCard icon={Globe} label="IPs bloquées" value={summary?.blockedIps ?? 0} className="stagger-3" />
+        <StatCard icon={Ban} label="Comptes suspendus" value={summary?.suspendedAccounts ?? 0} tone="destructive" className="stagger-4" />
+        <StatCard icon={Ban} label="Appareils bloqués" value={summary?.blockedDevices ?? 0} tone="warning" className="stagger-5" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -269,15 +298,3 @@ export function FraudTab() {
   )
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function StatCard({ icon: Icon, label, value, color, className }: { icon: any; label: string; value: number; color: string; className?: string }) {
-  return (
-    <div className={cn("rounded-xl border p-4 flex items-center gap-3 interactive-card animate-slide-up", className)}>
-      <div className={`p-2 rounded-lg bg-accent/30 ${color}`}><Icon className="size-5" /></div>
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={`text-xl font-bold ${color}`}>{value}</p>
-      </div>
-    </div>
-  )
-}

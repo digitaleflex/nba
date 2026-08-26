@@ -1,7 +1,7 @@
 "use client"
 
-import type { ReactNode } from "react"
-import { cn } from "@nba/design-system"
+import type { ComponentType, ReactNode } from "react"
+import { Card, CardContent, Skeleton, cn } from "@nba/design-system"
 
 /**
  * Kit UI partagé des onglets admin — Phase 1 (fondations).
@@ -84,4 +84,62 @@ export const COMMON_STATUS_TONES: Record<string, Tone> = {
   BANNED: "destructive",
   INACTIVE: "neutral",
   BREAKEVEN: "neutral",
+}
+
+/** Titre de section standard (remplace les SectionTitle locaux). */
+export function SectionTitle({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <h3 className={cn("text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border/40", className)}>
+      {children}
+    </h3>
+  )
+}
+
+interface StatCardProps {
+  icon: ComponentType<{ className?: string }>
+  label: string
+  value: ReactNode
+  /** Ligne secondaire sous la valeur (ex : « +12 % vs mois dernier »). */
+  sub?: ReactNode
+  /** Colore la valeur selon un ton sémantique. */
+  tone?: Tone
+  className?: string
+}
+
+/** Carte KPI unique pour toute l'admin — remplace les 5 StatCard/KpiCard locaux. */
+export function StatCard({ icon: Icon, label, value, sub, tone, className }: StatCardProps) {
+  const valueTone =
+    tone === "success" ? "text-success"
+    : tone === "destructive" ? "text-destructive"
+    : tone === "warning" ? "text-warning-foreground"
+    : tone === "info" ? "text-primary"
+    : "text-foreground"
+  return (
+    <Card className={cn("border-border/60 bg-card shadow-sm", className)}>
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="space-y-0.5 min-w-0">
+          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest truncate">{label}</p>
+          <p className={cn("text-xl font-bold tabular-nums", valueTone)}>{value}</p>
+          {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+        </div>
+        <Icon className="size-5 text-muted-foreground/40 shrink-0 ml-2" />
+      </CardContent>
+    </Card>
+  )
+}
+
+/** État de chargement standard des onglets — squelette au lieu du spinner abstrait. */
+export function TabLoading({ rows = 3 }: { rows?: number }) {
+  return (
+    <div className="space-y-4" role="status" aria-label="Chargement…">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-20 rounded-xl" />
+        ))}
+      </div>
+      {Array.from({ length: rows }).map((_, i) => (
+        <Skeleton key={`r${i}`} className="h-14 rounded-xl" />
+      ))}
+    </div>
+  )
 }

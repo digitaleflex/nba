@@ -9,6 +9,8 @@ import { Inbox } from "lucide-react"
 import { REQUEST_FILTERS, REQUEST_STATUS_CLASS, REQUEST_STATUS_LABELS, REJECT_REASONS } from "./constants"
 import { AccessRequest, CachedGet } from "./types"
 import { StatusBadge, type Tone } from "./ui"
+import { FilterPills } from "../components/filter-pills"
+import { useConfirm } from "@nba/components/confirm-dialog"
 
 interface RequestsTabProps {
   cachedGet: CachedGet
@@ -17,6 +19,8 @@ interface RequestsTabProps {
 }
 
 export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabProps) {
+  const { confirm, node: confirmNode } = useConfirm()
+
   const [requests, setRequests] = useState<AccessRequest[]>([])
   const [loadingRequests, setLoadingRequests] = useState(false)
   const [plans, setPlans] = useState<{ id: string; name: string }[]>([])
@@ -104,7 +108,17 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
   async function batchReview(status: "APPROVED" | "REJECTED") {
     if (selectedCount === 0) return
     const label = status === "APPROVED" ? "approuvée" : "refusée"
-    if (!confirm(`${status === "APPROVED" ? "Approuver" : "Refuser"} ${selectedCount} demande${selectedCount > 1 ? "s" : ""} ?`)) return
+    confirm({
+      title: `${status === "APPROVED" ? "Approuver" : "Refuser"} ${selectedCount} demande${selectedCount > 1 ? "s" : ""} ?`,
+      description: "L'action sera appliquée à toutes les demandes sélectionnées.",
+      confirmLabel: "Confirmer",
+      onConfirm: () => doBatchReview(status),
+    })
+  }
+
+  async function doBatchReview(status: "APPROVED" | "REJECTED") {
+    const label = status === "APPROVED" ? "approuvée" : "refusée"
+
 
     setBatchResult(null)
     setBatchStep(0)
@@ -194,7 +208,15 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
   }
 
   async function handleApprove(id: string) {
-    if (!confirm("Approuver cette demande d'accès ?")) return
+    confirm({
+      title: "Approuver cette demande d'accès ?",
+      description: "Le membre recevra immédiatement l'accès au plan demandé.",
+      confirmLabel: "Approuver",
+      onConfirm: () => { void approveRequest(id) },
+    })
+  }
+
+  async function approveRequest(id: string) {
     invalidate()
     const res = await fetch(`/api/admin/access-requests/${id}`, {
       method: "PUT",
@@ -243,6 +265,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
 
   return (
     <div className="space-y-6">
+      {confirmNode}
       <div className="flex flex-col gap-4 border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Demandes d&apos;accès</h1>
@@ -250,22 +273,11 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
             Historique et validation des dossiers d&apos;inscription des membres.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {REQUEST_FILTERS.map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setRequestStatusFilter(f.value)}
-              className={cn(
-                "text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
-                requestStatusFilter === f.value
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:bg-muted/50"
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+        <FilterPills
+          options={REQUEST_FILTERS}
+          active={requestStatusFilter}
+          onChange={setRequestStatusFilter}
+        />
       </div>
 
       {pendingIds.length > 0 && (

@@ -14,6 +14,7 @@ import {
   Loader2,
 } from "lucide-react"
 import { Card, CardContent, cn, Chart, EmptyState } from "@nba/design-system"
+import { StatCard, SectionTitle } from "./ui"
 
 interface AnalyticsTabProps {
   cachedGet: (url: string, ttlMs?: number) => Promise<{ ok: boolean; data: any }>
@@ -25,35 +26,7 @@ const PERIODS = [
   { value: 90, label: "90 j" },
 ]
 
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  label: string
-  value: React.ReactNode
-}) {
-  return (
-    <Card className="border-border/60 bg-card shadow-sm">
-      <CardContent className="p-4 flex items-center justify-between">
-        <div className="space-y-0.5">
-          <p className="text-xs uppercase font-bold text-muted-foreground tracking-widest">{label}</p>
-          <p className="text-xl font-bold text-foreground">{value}</p>
-        </div>
-        <Icon className="size-5 text-muted-foreground/40" />
-      </CardContent>
-    </Card>
-  )
-}
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return (
-    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground pb-4 border-b border-border/40">
-      {children}
-    </h3>
-  )
-}
 
 export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
   const [days, setDays] = useState(30)

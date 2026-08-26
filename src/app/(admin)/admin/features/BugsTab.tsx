@@ -5,6 +5,7 @@ import { Card, CardContent, Button, Badge, cn } from "@nba/design-system"
 import { Bug, ChevronLeft, Loader2, AlertCircle, Circle, Clock, CheckCircle2, XCircle, Send } from "lucide-react"
 import { toast } from "sonner"
 import type { CachedGet } from "./types"
+import { FilterPills } from "../components/filter-pills"
 
 interface BugReport {
   id: string
@@ -248,23 +249,14 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
             {counts.open} bug{counts.open !== 1 ? "s" : ""} ouvert{counts.open !== 1 ? "s" : ""} sur {counts.total} — signalés par les membres et admins.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
-          {(["ALL", ...STATUS_ORDER] as const).map((s) => {
-            const cfg = s === "ALL" ? { label: "Tous" } : STATUS_CONFIG[s]
-            return (
-              <button
-                key={s}
-                onClick={() => setFilter(s)}
-                className={cn(
-                  "text-xs px-3 py-1.5 rounded-full border transition-colors cursor-pointer",
-                  filter === s ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50",
-                )}
-              >
-                {cfg.label}
-              </button>
-            )
-          })}
-        </div>
+        <FilterPills
+          options={[
+            { value: "ALL", label: "Tous" },
+            ...STATUS_ORDER.map((st) => ({ value: st, label: STATUS_CONFIG[st].label })),
+          ]}
+          active={filter}
+          onChange={setFilter}
+        />
       </div>
 
       {loading ? (

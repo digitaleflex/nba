@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Search, X, ToggleLeft, ToggleRight, Trash2, Ban, Mail, MoreHorizontal, Eye, Shield, RotateCw, Radio, ChevronLeft, ChevronRight, Inbox, Download, Bell, BellOff, Loader2, User, Phone, Calendar, Layers, CheckCircle2, XCircle, AlertTriangle, RefreshCw, Eraser } from "lucide-react"
 import { Card, CardContent, Badge, Button, cn, EmptyState, DualRender, FilterSheet } from "@nba/design-system"
+import { useConfirm } from "@nba/components/confirm-dialog"
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
@@ -14,6 +15,8 @@ interface MembresTabProps {
 }
 
 export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
+  const { confirm, node: confirmNode } = useConfirm()
+
   const [membres, setMembres] = useState<any[]>([])
   const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
@@ -162,86 +165,74 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
   }
 
   async function deleteMember(userId: string) {
-    const confirmed = confirm(
-      `Supprimer définitivement ce membre ?\n\n` +
-      `L'utilisateur perdra définitivement toutes ses données, accès aux signaux et à son compte. ` +
-      `Cette action ne peut être annulée.`
-    )
-    if (!confirmed) return
-
-    setUpdating(userId)
-    try {
-      const res = await fetch(`/api/admin/members?userId=${userId}`, { method: "DELETE" })
-      if (res.ok) {
-        invalidate()
-        fetchMembres()
-        toast.success("Membre supprimé")
-      } else {
-        toast.error("Erreur lors de la suppression")
-      }
-    } catch {
-      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
-    } finally {
-      setUpdating(null)
-    }
+    confirm({
+      title: "Supprimer définitivement ce membre ?",
+      description: "Il perdra toutes ses données, accès aux signaux et à son compte. Action irréversible.",
+      confirmLabel: "Supprimer",
+      onConfirm: async () => {
+        setUpdating(userId)
+        try {
+          const res = await fetch(`/api/admin/members?userId=${userId}`, { method: "DELETE" })
+          if (res.ok) { invalidate(); fetchMembres(); toast.success("Membre supprimé") }
+          else toast.error("Erreur lors de la suppression")
+        } catch {
+          toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
+        } finally {
+          setUpdating(null)
+        }
+      },
+    })
   }
 
   async function banMember(email: string) {
-    const confirmed = confirm(
-      `Bannir ${email} ?\n\n` +
-      `Ce compte sera définitivement supprimé et l'email blacklisté.\n` +
-      `L'utilisateur ne pourra plus se connecter sous aucun nom.\n\n` +
-      `Cette action est permanente et irréversible.`
-    )
-    if (!confirmed) return
-
-    setUpdating(email)
-    try {
-      const res = await fetch("/api/admin/moderation/bans", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, reason: "Banni depuis MembresTab" }),
-      })
-      if (res.ok) {
-        invalidate()
-        fetchMembres()
-        toast.success(`${email} banni et blacklisté`)
-      } else {
-        toast.error("Erreur lors du bannissement")
-      }
-    } catch {
-      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
-    } finally {
-      setUpdating(null)
-    }
+    confirm({
+      title: `Bannir ${email} ?`,
+      description: "Le compte sera supprimé et l'email blacklisté — il ne pourra plus se reconnecter sous aucun nom. Action permanente et irréversible.",
+      confirmLabel: "Bannir",
+      onConfirm: async () => {
+        setUpdating(email)
+        try {
+          const res = await fetch("/api/admin/moderation/bans", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, reason: "Banni depuis MembresTab" }),
+          })
+          if (res.ok) { invalidate(); fetchMembres(); toast.success(`${email} banni et blacklisté`) }
+          else toast.error("Erreur lors du bannissement")
+        } catch {
+          toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
+        } finally {
+          setUpdating(null)
+        }
+      },
+    })
   }
 
   async function revokeSessions(userId: string) {
-    const confirmed = confirm(
-      `Révoquer toutes les sessions de ce membre ?\n\n` +
-      `L'utilisateur sera déconnecté de toutes les sessions actives. ` +
-      `Il devra se reconnecter pour utiliser le compte.\n\n` +
-      `Session active : ${new Date().toLocaleString("fr-FR")}`
-    )
-    if (!confirmed) return
-
-    setUpdating(userId)
-    try {
-      const res = await fetch("/api/admin/members/revoke-sessions", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      })
-      if (res.ok) {
-        toast.success("Sessions révoquées")
-      } else {
-        toast.error("Échec de l'action. Réessayez.")
-      }
-    } catch {
-      toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
-    } finally {
-      setUpdating(null)
-    }
+    confirm({
+      title: "Révoquer toutes les sessions ?",
+      description: "Le membre sera déconnecté partout et devra se reconnecter.",
+      confirmLabel: "Révoquer",
+      onConfirm: async () => {
+        setUpdating(userId)
+        try {
+          const res = await fetch("/api/admin/members/revoke-sessions", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId }),
+          })
+          if (res.ok) {
+            toast.success("Sessions révoquées")
+          } else {
+            toast.error("Échec de l'action. Réessayez.")
+          }
+        } catch {
+          toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.")
+        } finally {
+          setUpdating(null)
+        }
+      },
+    })
   }
 
   function resetFilters() {
@@ -326,6 +317,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
 
   return (
     <div className="space-y-6">
+      {confirmNode}
       <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-foreground">Membres</h1>
@@ -645,9 +637,12 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
 
                             <button
                               onClick={() => {
-                                if (confirm(`Bannir ${m.email} ?\nCe compte sera définitivement supprimé et l'email blacklisté.\n\nL'utilisateur ne pourra plus se connecter sous aucun nom.`)) {
-                                  banMember(m.email)
-                                }
+                                confirm({
+                                  title: `Bannir ${m.email} ?`,
+                                  description: "Le compte sera supprimé et l'email blacklisté — il ne pourra plus se reconnecter sous aucun nom.",
+                                  confirmLabel: "Bannir",
+                                  onConfirm: () => banMember(m.email),
+                                })
                               }}
                               disabled={updating === m.email}
                               className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer disabled:opacity-50"
@@ -780,11 +775,14 @@ function MemberCard({
   onRevokeSessions: (userId: string) => void
   onDelete: (userId: string) => void
 }) {
+  const { confirm, node: confirmNode } = useConfirm()
+
   const [menuOpen, setMenuOpen] = useState(false)
   const pushCount = m._count?.pushSubscriptions ?? 0
 
   return (
     <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
+      {confirmNode}
       <div className="flex items-start justify-between gap-2">
         <div className="flex items-center gap-3 min-w-0">
           <div className="size-10 shrink-0 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-semibold">
@@ -883,7 +881,12 @@ function MemberCard({
                   )}
                   <button
                     onClick={() => {
-                      if (confirm(`Bannir ${m.email} ?`)) { onBan(m.email); setMenuOpen(false) }
+                      confirm({
+                                  title: `Bannir ${m.email} ?`,
+                                  description: "Le compte sera supprimé et l'email blacklisté.",
+                                  confirmLabel: "Bannir",
+                                  onConfirm: () => { onBan(m.email); setMenuOpen(false) },
+                                })
                     }}
                     className="flex items-center gap-2 w-full px-3 py-2.5 text-xs text-rose-500 hover:bg-rose-500/10 text-left cursor-pointer"
                   >

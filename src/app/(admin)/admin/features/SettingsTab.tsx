@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Loader2, Plus, Trash2, GripVertical, Package } from "lucide-react"
 import { toast } from "sonner"
 import { Card, CardContent, Input, Button, cn, EmptyState } from "@nba/design-system"
+import { useConfirm } from "@nba/components/confirm-dialog"
 import { CachedGet } from "./types"
 
 interface Plan {
@@ -23,6 +24,8 @@ interface SettingsTabProps {
 }
 
 export function SettingsTab({ cachedGet }: SettingsTabProps) {
+  const { confirm, node: confirmNode } = useConfirm()
+
   const [settings, setSettings] = useState({
     smtpHost: "", smtpPort: "", smtpTls: "", smtpUser: "", smtpPass: "", smtpFrom: "",
   })
@@ -91,13 +94,19 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
     } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") } finally { setSavingPlan(false) }
   }
 
-  const handleDeletePlan = async (id: string) => {
-    if (!confirm("Supprimer ce plan ?")) return
-    try {
-      const res = await fetch(`/api/admin/plans/${id}`, { method: "DELETE" })
-      if (res.ok) { toast.success("Plan supprimé"); fetchPlans() }
-      else toast.error("Échec de l'action. Réessayez.")
-    } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") }
+  const handleDeletePlan = (id: string) => {
+    confirm({
+      title: "Supprimer ce plan ?",
+      description: "Il ne sera plus proposé aux nouveaux abonnements.",
+      confirmLabel: "Supprimer",
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/admin/plans/${id}`, { method: "DELETE" })
+          if (res.ok) { toast.success("Plan supprimé"); fetchPlans() }
+          else toast.error("Échec de l'action. Réessayez.")
+        } catch { toast.error("Impossible de contacter le serveur. Vérifiez votre connexion.") }
+      },
+    })
   }
 
   const newPlan = (): Plan => ({
@@ -108,6 +117,7 @@ export function SettingsTab({ cachedGet }: SettingsTabProps) {
 
   return (
     <div className="space-y-10 max-w-3xl">
+      {confirmNode}
       {/* ── SMTP ── */}
       <div className="space-y-6">
         <div className="flex items-center justify-between border-b border-border/40 pb-5">

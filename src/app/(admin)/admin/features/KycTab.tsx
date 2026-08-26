@@ -5,6 +5,7 @@ import { toast } from "sonner"
 import { ImageIcon, Loader2, FileX } from "lucide-react"
 import { Card, CardContent, Badge, Button, cn, SwipeableRow, useMediaQuery, EmptyState } from "@nba/design-system"
 import { KYCDoc, CachedGet, OpenPanel, RegisterRefetch } from "./types"
+import { FilterPills } from "../components/filter-pills"
 
 interface KycTabProps {
   cachedGet: CachedGet
@@ -80,22 +81,16 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
             Examinez et validez les pièces d&apos;identité des abonnés.
           </p>
         </div>
-        <div className="flex gap-2">
-          {["ALL", "PENDING", "APPROVED", "REJECTED"].map((s) => (
-            <button
-              key={s}
-              onClick={() => { setKycStatusFilter(s); setKycPage(1) }}
-              className={cn(
-                "text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer",
-                kycStatusFilter === s
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:border-primary/50"
-              )}
-            >
-              {s === "ALL" ? "Tous" : s}
-            </button>
-          ))}
-        </div>
+        <FilterPills
+          options={[
+            { value: "ALL", label: "Tous" },
+            { value: "PENDING", label: "PENDING" },
+            { value: "APPROVED", label: "APPROVED" },
+            { value: "REJECTED", label: "REJECTED" },
+          ]}
+          active={kycStatusFilter}
+          onChange={(v) => { setKycStatusFilter(v); setKycPage(1) }}
+        />
       </div>
 
       {loadingKyc ? (

@@ -6,6 +6,7 @@ import {
   BarChart3, Smartphone, Tablet, Monitor, Apple, ShieldCheck, Loader2,
   AlertTriangle, Users
 } from "lucide-react"
+import { StatCard } from "./ui"
 
 interface DeviceStats {
   total: number
@@ -104,14 +105,13 @@ export function DevicesTab() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard icon={<Monitor className="size-5" />} label="Ordinateur" value={data.counts.desktop} accent="text-blue-500" />
-        <StatCard icon={<Smartphone className="size-5" />} label="Mobile" value={data.counts.mobile} accent="text-emerald-500" />
-        <StatCard icon={<Tablet className="size-5" />} label="Tablette" value={data.counts.tablet} accent="text-violet-500" />
+        <StatCard icon={Monitor} label="Ordinateur" value={data.counts.desktop} tone="info" />
+        <StatCard icon={Smartphone} label="Mobile" value={data.counts.mobile} tone="success" />
+        <StatCard icon={Tablet} label="Tablette" value={data.counts.tablet} tone="info" />
         <StatCard
-          icon={<Apple className="size-5" />}
+          icon={Apple}
           label="Marque #1"
           value={Object.entries(data.byBrand).sort((a, b) => b[1] - a[1])[0]?.[0] ?? "—"}
-          accent="text-rose-500"
         />
       </div>
 
@@ -247,24 +247,3 @@ export function DevicesTab() {
   )
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  accent,
-}: {
-  icon: React.ReactNode
-  label: string
-  value: string | number
-  accent: string
-}) {
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-1 p-4">
-        <span className={accent}>{icon}</span>
-        <p className="text-2xl font-bold">{value}</p>
-        <p className="text-xs text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
-  )
-}

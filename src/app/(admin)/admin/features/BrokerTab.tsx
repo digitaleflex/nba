@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import { Loader2, FileX } from "lucide-react"
 import { Card, CardContent, Badge, Button, cn, EmptyState } from "@nba/design-system"
 import { BrokerVerification, CachedGet, OpenPanel, RegisterRefetch } from "./types"
+import { FilterPills } from "../components/filter-pills"
 
 interface BrokerTabProps {
   cachedGet: CachedGet
@@ -60,22 +61,16 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
             Vérifiez la liaison de compte broker des utilisateurs avec les vidéos fournies.
           </p>
         </div>
-        <div className="flex gap-2">
-          {["ALL", "PENDING", "APPROVED", "REJECTED"].map((s) => (
-            <button
-              key={s}
-              onClick={() => { setBrokerStatusFilter(s); setBrokerPage(1) }}
-              className={cn(
-                "text-xs px-3 py-1 rounded-full border transition-colors cursor-pointer",
-                brokerStatusFilter === s
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border text-muted-foreground hover:border-primary/50"
-              )}
-            >
-              {s === "ALL" ? "Tous" : s}
-            </button>
-          ))}
-        </div>
+        <FilterPills
+          options={[
+            { value: "ALL", label: "Tous" },
+            { value: "PENDING", label: "PENDING" },
+            { value: "APPROVED", label: "APPROVED" },
+            { value: "REJECTED", label: "REJECTED" },
+          ]}
+          active={brokerStatusFilter}
+          onChange={(v) => { setBrokerStatusFilter(v); setBrokerPage(1) }}
+        />
       </div>
 
       {loadingBroker ? (
