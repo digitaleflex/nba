@@ -1,20 +1,23 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { TrendingUp, Users, CreditCard, Wallet } from "lucide-react"
 import {
-  TrendingUp,
-  Users,
-  CreditCard,
-  Wallet,
-  Loader2,
-  ArrowUpRight,
-  Euro,
-  DollarSign,
-  PoundSterling,
-} from "lucide-react"
+  ResponsiveContainer,
+  ComposedChart,
+  Bar,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart as RBarChart,
+  LabelList,
+} from "recharts"
+import { AlertTriangle, ArrowUpRight } from "lucide-react"
 import { Card, CardContent, EmptyState } from "@nba/design-system"
 import type { CachedGet } from "./types"
-import { StatCard, SectionTitle } from "./ui"
+import { StatCard, SectionTitle, TabLoading, DANGER_BOX } from "./ui"
 
 interface RevenuePlan {
   planId: string
@@ -32,14 +35,18 @@ interface RevenueData {
   totalPlans: number
   totalRevenue: number
   breakdown: RevenuePlan[]
+  timeline: { month: string; newSubs: number; newMrr: number; cumulatedMrr: number }[]
+  atRisk: { members: number; expiredAccesses: number; mrr: number }
 }
 
-function CurrencyIcon({ currency }: { currency: string }) {
-  const cls = "size-4 text-muted-foreground/40"
-  if (currency === "EUR") return <Euro className={cls} />
-  if (currency === "USD") return <DollarSign className={cls} />
-  if (currency === "GBP") return <PoundSterling className={cls} />
-  return <Wallet className={cls} />
+const AXIS_TICK = { fill: "var(--color-muted-foreground)", fontSize: 11 }
+const TOOLTIP_STYLE = {
+  background: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: 12,
+  fontSize: 12,
+  color: "var(--color-popover-foreground)",
+  boxShadow: "0 8px 24px rgb(0 0 0 / 0.12)",
 }
 
 function formatCurrency(amount: number, currency: string) {
@@ -77,19 +84,12 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
     return () => { cancelled = true }
   }, [cachedGet])
 
-  if (loading) {
-    return (
-      <div className="py-20 flex justify-center">
-        <Loader2 className="animate-spin text-primary" />
-      </div>
-    )
-  }
+  if (loading) return <div className="pt-4"><TabLoading rows={3} /></div>
 
   if (error || !data) {
-    return <div className="py-20 text-center text-rose-600 text-sm" role="alert">{error}</div>
+    return <div className={DANGER_BOX} role="alert">{error ?? "Aucune donnée."}</div>
   }
 
-  const maxRevenue = Math.max(...data.breakdown.map((p) => p.monthlyRevenue), 1)
 
   return (
     <div className="space-y-6">
@@ -128,44 +128,71 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
         />
       </div>
 
+      {/* ⚠️ Revenus à risque (accès expirés toujours actifs) */}
+      {data.atRisk.expiredAccesses > 0 && (
+        <div className={DANGER_BOX + " flex flex-wrap items-center gap-x-6 gap-y-2"}>
+          <span className="inline-flex items-center gap-2 font-bold">
+            <AlertTriangle className="size-4" />
+            Revenu à risque
+          </span>
+          <span>
+            <strong className="tabular-nums">{data.atRisk.members}</strong> membre(s) —{" "}
+            <strong className="tabular-nums">{formatCurrency(data.atRisk.mrr, data.currency)}</strong>/mois sur des accès expirés encore actifs
+          </span>
+        </div>
+      )}
+
+      {/* Évolution du MRR */}
+      <Card className="border-border/60 bg-card shadow-sm">
+        <CardContent className="p-6">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-border/40">
+            <SectionTitle>MRR ajouté & cumulé — 6 derniers mois</SectionTitle>
+          </div>
+          <div className="pt-4 h-[260px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={data.timeline} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+                <Bar dataKey="newMrr" name="MRR ajouté" fill="#10b981" radius={[6, 6, 0, 0]} barSize={28} />
+                <Line type="monotone" dataKey="cumulatedMrr" name="MRR cumulé" stroke="#8b5cf6" strokeWidth={2.5} dot={{ r: 3 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Détail par plan */}
       <Card className="border-border/60 bg-card shadow-sm">
         <CardContent className="p-6">
           <SectionTitle>Revenus par plan</SectionTitle>
           {data.breakdown.length > 0 ? (
-            <div className="pt-4 space-y-4">
-              {data.breakdown.map((plan) => {
-                const pct = maxRevenue > 0 ? (plan.monthlyRevenue / maxRevenue) * 100 : 0
-                return (
-                  <div key={plan.planId}>
-                    <div className="flex items-center justify-between mb-1.5">
-                      <div className="flex items-center gap-2 min-w-0 flex-1">
-                        <CurrencyIcon currency={plan.currency} />
-                        <span className="text-sm font-medium text-foreground truncate">
-                          {plan.planName}
-                        </span>
-                        <span className="text-xs text-muted-foreground shrink-0">
-                          {plan.members} membre{plan.members > 1 ? "s" : ""}
-                        </span>
-                      </div>
-                      <span className="text-sm font-bold text-foreground shrink-0 ml-4">
-                        {formatCurrency(plan.monthlyRevenue, plan.currency)}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-2 rounded-full bg-muted/50 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-emerald-500/60 transition-all duration-500"
-                          style={{ width: `${Math.max(2, pct)}%` }}
-                        />
-                      </div>
-                      <span className="text-xs text-muted-foreground w-12 text-right shrink-0">
-                        {plan.price} {plan.currency}/{plan.durationDays > 30 ? "an" : "mois"}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className="pt-4 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RBarChart data={data.breakdown} layout="vertical" margin={{ top: 4, right: 90, left: 8, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" horizontal={false} />
+                  <XAxis type="number" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                  <YAxis type="category" dataKey="planName" tick={{ ...AXIS_TICK }} axisLine={false} tickLine={false} width={180} />
+                  <Tooltip
+                    contentStyle={TOOLTIP_STYLE}
+                    cursor={{ fill: "var(--color-muted)", opacity: 0.5 }}
+                    formatter={(value, _name, item) => {
+                      const p = item?.payload as RevenuePlan | undefined
+                      if (!p) return [String(value), ""]
+                      return [`${formatCurrency(p.monthlyRevenue, p.currency)}/mois · ${p.members} membre(s)`, "Revenu"]
+                    }}
+                  />
+                  <Bar dataKey="monthlyRevenue" name="MRR" fill="#10b981" radius={[0, 6, 6, 0]} barSize={18}>
+                    <LabelList
+                      dataKey="monthlyRevenue"
+                      position="right"
+                      formatter={(v) => formatCurrency(Number(v), data.currency)}
+                      style={{ fill: "var(--color-foreground)", fontSize: 11, fontWeight: 700 }}
+                    />
+                  </Bar>
+                </RBarChart>
+              </ResponsiveContainer>
             </div>
           ) : (
             <div className="pt-4">
