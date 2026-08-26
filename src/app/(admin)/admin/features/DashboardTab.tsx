@@ -1,24 +1,38 @@
 "use client"
+/* eslint-disable @typescript-eslint/no-explicit-any */
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  ArrowRight, Users, ListTodo, FileCheck, Radio, Server, Activity, Laptop, Loader2,
-  ShieldAlert, Ban, Globe, AlertTriangle, CheckCircle2, Settings,
+  Users, ListTodo, Radio, Activity, Settings,
 } from "lucide-react"
-import { Card, CardContent, Badge, cn, Chart, EmptyState } from "@nba/design-system"
-import { AlertsPanel } from "../components/alerts-panel"
-import { ProgressiveDetail } from "../components/ProgressiveDetail"
-import { SummaryList } from "../components/SummaryList"
-import { DetailPanel } from "../components/DetailPanel"
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  BarChart,
+  Bar,
+} from "recharts"
+import { Card, CardContent, Badge, cn } from "@nba/design-system"
 import { AdminRecents } from "../components/AdminRecents"
-import { FocusMode } from "../components/FocusMode"
-import { SortableCard } from "../components/SortableCard"
 import { DashboardCustomizer } from "../components/DashboardCustomizer"
 import { useDashboardLayout } from "../hooks/useDashboardLayout"
-import { StatCard } from "./ui"
+import { StatCard, SectionTitle, TabLoading, DANGER_BOX } from "./ui"
 import { SmartSuggestions } from "../components/SmartSuggestions"
-import { HeroNumber } from "../components/HeroNumber"
+
+const AXIS_TICK = { fill: "var(--color-muted-foreground)", fontSize: 11 }
+const TOOLTIP_STYLE = {
+  background: "var(--color-popover)",
+  border: "1px solid var(--color-border)",
+  borderRadius: 12,
+  fontSize: 12,
+  color: "var(--color-popover-foreground)",
+  boxShadow: "0 8px 24px rgb(0 0 0 / 0.12)",
+}
 
 interface DashboardTabProps {
   opsData: any
@@ -28,10 +42,9 @@ interface DashboardTabProps {
 }
 
 export function DashboardTab({ opsData, loadingOps, errorOps, router }: DashboardTabProps) {
-  const [secData, setSecData] = useState<any>(null)
-  const [focusAlert, setFocusAlert] = useState<number | null>(null)
   const [customizerOpen, setCustomizerOpen] = useState(false)
-  const { layout, toggleCard, reorderCards, updateLayout, resetLayout } = useDashboardLayout()
+  const { layout, toggleCard, updateLayout, resetLayout } = useDashboardLayout()
+  const [secData, setSecData] = useState<any>(null)
 
   useEffect(() => {
     fetch("/api/admin/security/fraud/abuse")
@@ -40,13 +53,34 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
       .catch(() => {})
   }, [])
 
+  if (loadingOps) return <div className="pt-4"><TabLoading rows={3} /></div>
+
+  if (errorOps || !opsData) {
+    return <div className={DANGER_BOX} role="alert">{errorOps ?? "Aucune donnée."}</div>
+  }
+
+  const pending =
+    (opsData.attention.requestsPendingCount ?? 0) +
+    (opsData.attention.kycPendingCount ?? 0) +
+    (opsData.attention.brokerPendingCount ?? 0)
+
+  const signupCurve = (opsData.activityGraph ?? []).map((d: any) => ({
+    day: d.day,
+    inscriptions: d.count,
+  }))
+
+  const signalsCurve = (opsData.signalsTimeline ?? []).map((v: number, i: number) => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i))
+    return { day: d.toLocaleDateString("fr-FR", { weekday: "short" }), signaux: v }
+  })
+
   return (
     <div className="space-y-7">
       <div className="flex items-center justify-between border-b border-border/40 pb-5">
         <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Operations Center</h1>
+          <h1 className="text-xl font-bold tracking-tight text-foreground">Tableau de bord</h1>
           <p className="text-xs text-muted-foreground mt-1">
-            Surveillez l&apos;état opérationnel et traitez les tâches prioritaires.
+            Vue d&rsquo;ensemble de la plateforme — <span className="text-foreground/70 font-medium">tout en un coup d&rsquo;œil</span>.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -57,8 +91,8 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
           >
             <Settings className="size-4 text-muted-foreground" />
           </button>
-          <Badge variant="outline" className="text-xs text-emerald-600 bg-emerald-500/5 border-emerald-500/20 py-1 px-2.5 shrink-0">
-            <span className="inline-block size-1.5 rounded-full bg-emerald-500 mr-1.5 animate-pulse" />
+          <Badge variant="outline" className="text-xs text-success bg-success/5 border-success/20 py-1 px-2.5 shrink-0">
+            <span className="inline-block size-1.5 rounded-full bg-success mr-1.5 animate-pulse" />
             Live
           </Badge>
         </div>
@@ -76,137 +110,137 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
             onReset={resetLayout}
           />
 
-      {errorOps ? (
-        <div className="py-20 text-center text-rose-600 text-sm" role="alert">{errorOps}</div>
-      ) : loadingOps ? (
-        <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
-      ) : (
-        <>
-          <HeroNumber
-            value={(secData?.highEvents ?? 0) + (secData?.blockedIps ?? 0) + (secData?.suspendedAccounts ?? 0) + (secData?.blockedDevices ?? 0)}
-            label="alertes sécurité actives"
-            status={(secData?.highEvents ?? 0) > 0 ? "critical" : (secData?.blockedIps ?? 0) > 0 ? "warning" : "calm"}
-            icon={ShieldAlert}
-            subtitle={
-              (opsData?.attention?.kycPendingCount ?? 0) > 0 || (opsData?.attention?.brokerPendingCount ?? 0) > 0 || (opsData?.attention?.requestsPendingCount ?? 0) > 0
-                ? `${(opsData?.attention?.kycPendingCount ?? 0) + (opsData?.attention?.brokerPendingCount ?? 0) + (opsData?.attention?.requestsPendingCount ?? 0)} tâches administratives en attente`
-                : undefined
-            }
-            details={[
-              { label: "Événements HAUT", value: secData?.highEvents ?? 0, color: (secData?.highEvents ?? 0) > 0 ? "text-red-500" : "text-muted-foreground" },
-              { label: "IPs bloquées", value: secData?.blockedIps ?? 0, color: (secData?.blockedIps ?? 0) > 0 ? "text-purple-500" : "text-muted-foreground" },
-              { label: "Suspendus", value: secData?.suspendedAccounts ?? 0, color: (secData?.suspendedAccounts ?? 0) > 0 ? "text-rose-500" : "text-muted-foreground" },
-              { label: "Appareils bloqués", value: secData?.blockedDevices ?? 0, color: (secData?.blockedDevices ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground" },
-            ]}
-          />
-
+          {/* KPI */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <StatCard icon={Users} label="Membres actifs" value={opsData.stats.totalMembers} />
-            <StatCard icon={ListTodo} label="Demandes en attente" value={opsData.attention.requestsPendingCount} />
-            <StatCard icon={FileCheck} label="KYC à traiter" value={opsData.attention.kycPendingCount} />
-            <StatCard icon={Radio} label="Signaux publiés" value={opsData.stats.publishedSignalsCount} />
-          </div>
-
-          {(secData?.highEvents ?? 0) > 0 && (
-            <button
-              onClick={() => setFocusAlert(0)}
-              className="w-full py-2 text-xs font-medium text-primary bg-primary/5 hover:bg-primary/10 rounded-xl transition-colors cursor-pointer border border-primary/20"
-            >
-              Mode Focus — {secData?.highEvents ?? 0} alerte{(secData?.highEvents ?? 0) > 1 ? "s" : ""} haute{(secData?.highEvents ?? 0) > 1 ? "s" : ""} priorité
-            </button>
-          )}
-
-          {focusAlert !== null && (
-            <FocusMode
-              alert={{
-                id: "focus-1",
-                type: "SECURITY",
-                severity: "CRITICAL",
-                title: "Brute Force en cours",
-                description: `${secData?.highEvents ?? 0} événements haute sévérité détectés`,
-                evidence: ["IPs bloquées en cours"],
-                suggestedActions: [
-                  { label: "Bloquer les IPs", onClick: () => {} },
-                  { label: "Suspendre le compte", onClick: () => {} },
-                  { label: "Forcer la 2FA", onClick: () => {} },
-                ],
-                relatedData: {
-                  ip: "192.168.1.1",
-                },
-                timeline: [
-                  { time: "14:30:12", action: "Tentative #1", detail: "192.168.1.1" },
-                  { time: "14:30:15", action: "Tentative #2", detail: "10.0.0.1" },
-                  { time: "14:30:18", action: "Tentative #3", detail: "172.16.0.1" },
-                ],
-              }}
-              currentIndex={0}
-              totalAlerts={secData?.highEvents ?? 0}
-              onClose={() => setFocusAlert(null)}
+            <StatCard
+              icon={Users}
+              label="Membres actifs"
+              value={opsData.stats.activeMembers}
+              sub={`${opsData.stats.totalMembers} total`}
             />
-          )}
-
-          <ProgressiveDetail level={2} expandable>
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground mb-3 flex items-center gap-2">
-                <ShieldAlert className="size-3" />
-                Sécurité & Anti-Fraude
-                <button onClick={() => router.push("/admin?tab=fraud")} className="text-xs text-primary underline underline-offset-2 ml-auto cursor-pointer hover:text-primary/80">Voir tout →</button>
-              </h3>
-              <SummaryList
-                items={[
-                  { id: "high", title: `${secData?.highEvents ?? 0} événements HAUT`, subtitle: "Nécessitent une action immédiate", severity: (secData?.highEvents ?? 0) > 0 ? "critical" : undefined },
-                  { id: "failed", title: `${secData?.failedLogins ?? 0} échecs de connexion/h`, subtitle: "Tentatives échouées cette heure", severity: (secData?.failedLogins ?? 0) > 10 ? "high" : "low" },
-                  { id: "ips", title: `${secData?.blockedIps ?? 0} IPs bloquées`, subtitle: "Adresses en liste noire", severity: (secData?.blockedIps ?? 0) > 0 ? "medium" : undefined },
-                  { id: "suspended", title: `${secData?.suspendedAccounts ?? 0} suspendus aujourd'hui`, subtitle: "Comptes désactivés", severity: (secData?.suspendedAccounts ?? 0) > 0 ? "high" : undefined },
-                  { id: "devices", title: `${secData?.blockedDevices ?? 0} appareils bloqués`, subtitle: "Appareils non autorisés", severity: (secData?.blockedDevices ?? 0) > 0 ? "medium" : undefined },
-                ]}
-              />
-            </div>
-          </ProgressiveDetail>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <Card className="border-border/60 bg-card shadow-sm lg:col-span-2">
-              <CardContent className="p-5">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Inscriptions (7 jours)</h3>
-                <div className="pt-4">
-                  <Chart type="bar" data={(opsData.activityGraph ?? []).map((d: any) => ({ label: d.day, value: d.count }))} emptyText="Aucune inscription cette semaine" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-border/60 bg-card shadow-sm">
-              <CardContent className="p-5">
-                <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Activités récentes</h3>
-                <div className="pt-4 space-y-3.5 max-h-48 overflow-y-auto">
-                  {opsData.recentActivities.length > 0 ? opsData.recentActivities.map((act: any, idx: number) => (
-                    <div key={idx} className="flex items-start gap-2.5 text-xs">
-                      <span className="size-1.5 rounded-full bg-neutral-400 mt-1 shrink-0" />
-                      <div>
-                        <p className="font-semibold text-foreground leading-snug">{act.action}</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">{act.user?.name || "System"} • {new Date(act.createdAt).toLocaleDateString()}</p>
-                      </div>
-                    </div>
-                  )) : (
-                    <EmptyState icon={Activity} title="Aucune activité récente" description="Les actions des administrateurs apparaîtront ici." />
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <StatCard
+              icon={Activity}
+              label="MRR"
+              value={`${opsData.stats.mrr}`}
+              sub={opsData.stats.currency}
+            />
+            <StatCard
+              icon={ListTodo}
+              label="En attente"
+              value={pending}
+              sub={
+                pending > 0
+                  ? `${opsData.attention.requestsPendingCount} accès · ${opsData.attention.kycPendingCount} KYC`
+                  : "Tout est traité"
+              }
+            />
+            <StatCard
+              icon={Radio}
+              label="Signaux publiés"
+              value={opsData.stats.publishedSignalsCount}
+              sub={`${signalsCurve.reduce((s: number, d: any) => s + d.signaux, 0)} cette semaine`}
+            />
           </div>
 
+          {/* Alerte revenus à risque */}
+          {opsData.atRisk.members > 0 && (
+            <div className={DANGER_BOX + " flex flex-wrap items-center gap-x-6 gap-y-2"}>
+              <span className="inline-flex items-center gap-2 font-bold">Accès expirés actifs</span>
+              <span>
+                <strong className="tabular-nums">{opsData.atRisk.members}</strong> membre(s) —{" "}
+                <strong className="tabular-nums">{opsData.atRisk.mrr}</strong> {opsData.stats.currency}/mois de revenu à risque
+              </span>
+            </div>
+          )}
+
+          {/* Courbe d'inscriptions 7 jours */}
           <Card className="border-border/60 bg-card shadow-sm">
-            <CardContent className="p-5">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">Santé du Système</h3>
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 pt-4 text-xs">
-                <SysHealth icon={Server} label="Redis" healthy={opsData.systemStatus.redis === "healthy"} />
-                <SysHealth icon={Activity} label="BullMQ Workers" healthy={opsData.systemStatus.bullmq === "healthy"} okText="Actifs" failText="Ralentis" />
-                <SysHealth icon={Laptop} label="Stockage" healthy={opsData.systemStatus.storage === "healthy"} okText="Normal" failText="Presque plein" />
+            <CardContent className="p-6">
+              <SectionTitle>Inscriptions — 7 derniers jours</SectionTitle>
+              <div className="pt-4 h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={signupCurve} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gradInscriptions" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="var(--color-primary)" stopOpacity={0.2} />
+                        <stop offset="100%" stopColor="var(--color-primary)" stopOpacity={0.02} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ stroke: "var(--color-primary)", strokeWidth: 1, opacity: 0.5 }} />
+                    <Area
+                      type="monotone"
+                      dataKey="inscriptions"
+                      name="Inscriptions"
+                      stroke="var(--color-primary)"
+                      strokeWidth={2.5}
+                      fill="url(#gradInscriptions)"
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
-        </>
-        )}
+
+          {/* Signaux publiés par jour */}
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-6">
+              <SectionTitle>Signaux publiés — 7 derniers jours</SectionTitle>
+              <div className="pt-4 h-[180px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={signalsCurve} margin={{ top: 8, right: 8, left: -12, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" vertical={false} />
+                    <XAxis dataKey="day" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <YAxis allowDecimals={false} tick={AXIS_TICK} axisLine={false} tickLine={false} />
+                    <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "var(--color-muted)", opacity: 0.4 }} />
+                    <Bar dataKey="signaux" name="Signaux" fill="#10b981" radius={[6, 6, 0, 0]} barSize={24} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Activités récentes */}
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <SectionTitle>Activités récentes</SectionTitle>
+              <div className="pt-3 space-y-3.5 max-h-56 overflow-y-auto">
+                {(opsData.recentActivities ?? []).length > 0
+                  ? opsData.recentActivities.map((act: any, idx: number) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs">
+                      <span className="size-1.5 rounded-full bg-muted-foreground/40 mt-1.5 shrink-0" />
+                      <div>
+                        <p className="font-semibold text-foreground leading-snug">{act.action}</p>
+                        <p className="text-muted-foreground mt-0.5">
+                          {act.user?.name || "System"} · {new Date(act.createdAt).toLocaleDateString("fr-FR")}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                  : <p className="text-xs text-muted-foreground py-4">Aucune activité récente.</p>
+                }
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Santé du Système — compact */}
+          <Card className="border-border/60 bg-card shadow-sm">
+            <CardContent className="p-5">
+              <SectionTitle>Santé du système</SectionTitle>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-3 text-xs">
+                <SysHealth label="Redis" healthy={opsData.systemStatus.redis === "healthy"} />
+                <SysHealth label="BullMQ" healthy={opsData.systemStatus.bullmq === "healthy"} okText="Actifs" failText="Ralentis" />
+                <SysHealth label="SMTP" healthy={opsData.systemStatus.smtp === "healthy"} okText="Configuré" failText="Non configuré" />
+                <SysHealth label="Stockage" healthy={opsData.systemStatus.storage === "healthy"} okText="Normal" failText="Presque plein" />
+              </div>
+            </CardContent>
+          </Card>
+
         </div>
 
+        {/* Sidebar */}
         <aside className="lg:col-span-1 space-y-5">
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-4">
@@ -228,21 +262,27 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
               />
             </CardContent>
           </Card>
-          <AlertsPanel />
         </aside>
       </div>
     </div>
   )
 }
 
-
-function SysHealth({ icon: Icon, label, healthy, okText = "En ligne", failText = "Échec" }: { icon: any; label: string; healthy: boolean; okText?: string; failText?: string }) {
+function SysHealth({ label, healthy, okText = "En ligne", failText = "Échec" }: { label: string; healthy: boolean; okText?: string; failText?: string }) {
   return (
     <div className="flex items-center gap-3">
-      <Icon className="size-4 text-muted-foreground" />
+      <div className={cn("size-2 rounded-full shrink-0", healthy ? "bg-success" : "bg-destructive")} />
       <div>
         <p className="font-bold text-foreground">{label}</p>
-        <Badge variant="outline" className={cn("text-[9px] py-0 px-1.5 mt-0.5", healthy ? "text-emerald-600 bg-emerald-500/5 border-emerald-500/20" : "text-rose-600 bg-rose-500/5 border-rose-500/20")}>
+        <Badge
+          variant="outline"
+          className={cn(
+            "text-[9px] py-0 px-1.5 mt-0.5",
+            healthy
+              ? "text-success bg-success/5 border-success/20"
+              : "text-destructive bg-destructive/5 border-destructive/20"
+          )}
+        >
           {healthy ? okText : failText}
         </Badge>
       </div>

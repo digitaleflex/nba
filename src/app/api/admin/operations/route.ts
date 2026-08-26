@@ -29,6 +29,8 @@ export async function GET() {
       totalNotificationsSent,
       recentActivities,
       registrations,
+      approved,
+      allSignals,
     ] = await Promise.all([
       prisma.kycDocument.count({ where: { status: "PENDING" } }),
       prisma.brokerVerification.count({ where: { status: "PENDING" } }),
@@ -74,7 +76,55 @@ export async function GET() {
           createdAt: { gte: sevenDaysAgo },
         },
       }),
+      prisma.accessRequest.findMany({
+        where: { status: "APPROVED" },
+        select: {
+          userId: true,
+          reviewedAt: true,
+          plan: { select: { id: true, name: true, price: true, currency: true, durationDays: true } },
+        },
+      }),
+      prisma.signal.findMany({
+        where: { status: "PUBLISHED" },
+        select: { createdAt: true },
+      }),
     ])
+
+    // Membres actifs & MRR
+    const nowMs = Date.now()
+    const uniqueMembers = new Set<string>()
+    const uniqueActive = new Set<string>()
+    const uniqueAtRisk = new Set<string>()
+    let mrr = 0
+    let atRiskMrr = 0
+
+    for (const a of approved) {
+      uniqueMembers.add(a.userId)
+      const price = Number(a.plan.price)
+      const durationMonths = Math.max(a.plan.durationDays, 1) / 30
+      const m = price / durationMonths
+      mrr += m
+      if (a.reviewedAt && nowMs < a.reviewedAt.getTime() + a.plan.durationDays * 86400000) {
+        uniqueActive.add(a.userId)
+      } else {
+        uniqueAtRisk.add(a.userId)
+        atRiskMrr += m
+      }
+    }
+
+    // Signaux publiés par jour (7j) pour sparkline
+    const signalsByDay = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      return allSignals.filter(s => new Date(s.createdAt).toDateString() === d.toDateString()).length
+    }).reverse()
+
+    // Évolution MRR jour par jour sur 7j (agrégation des approuvés)
+    const mrrByDay = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(); d.setDate(d.getDate() - i)
+      return approved
+        .filter(a => a.reviewedAt && new Date(a.reviewedAt).toDateString() === d.toDateString())
+        .reduce((sum, a) => sum + Number(a.plan.price) / Math.max(a.plan.durationDays, 1) / 30, 0)
+    }).reverse()
 
     // Aggrégation par jour pour le graphe
     const dailyRegistrations = Array.from({ length: 7 }, (_, i) => {
@@ -134,11 +184,21 @@ export async function GET() {
       },
       stats: {
         totalMembers,
+        activeMembers: uniqueActive.size,
+        activeSubscriptions: uniqueActive.size,
         publishedSignalsCount,
         approvedKycCount,
         totalEmailsSent,
         totalNotificationsSent,
+        mrr: Number(mrr.toFixed(2)),
+        currency: approved[0]?.plan.currency ?? "XOF",
       },
+      atRisk: {
+        members: uniqueAtRisk.size,
+        mrr: Number(atRiskMrr.toFixed(2)),
+      },
+      signalsTimeline: signalsByDay,
+      mrrTimeline: mrrByDay,
       recentActivities,
       activityGraph: dailyRegistrations,
       systemStatus: {
