@@ -4,6 +4,7 @@ import { updateSignal } from "@nba/modules/signals/services/update-signal"
 import { requirePermission, handleAuthError } from "@nba/lib/auth-utils"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { logAuditEvent } from "@nba/lib/services/audit"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 export async function DELETE(
   req: NextRequest,
@@ -11,6 +12,9 @@ export async function DELETE(
 ) {
   try {
     const session = await requirePermission("signals.create")
+    const rl = await rateLimitOrDeny("ADMIN_SIGNAL_MUTATION", session.user.id)
+    if (rl) return rl
+
     const { id } = await params
     const updated = await deleteSignal(id)
     await invalidatePrefix("signals:")
@@ -34,6 +38,9 @@ export async function PUT(
 ) {
   try {
     const session = await requirePermission("signals.create")
+    const rl = await rateLimitOrDeny("ADMIN_SIGNAL_MUTATION", session.user.id)
+    if (rl) return rl
+
     const { id } = await params
     const body = await req.json()
     const updated = await updateSignal(id, session.user.id, body)

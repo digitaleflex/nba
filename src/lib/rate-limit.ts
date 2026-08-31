@@ -64,6 +64,12 @@ export const rateLimits = {
   NOTIFICATION_MUTATION: { window: 60, max: 30 },
   BULK_MESSAGE: { window: 3600, max: 3 },
   SELECT_PLAN: { window: 60, max: 5 },
+  ADMIN_SIGNAL_PUBLISH: { window: 60, max: 30 },
+  ADMIN_SIGNAL_MUTATION: { window: 60, max: 20 },
+  ADMIN_BROKER_REVIEW: { window: 60, max: 20 },
+  ADMIN_ACCESS_MUTATION: { window: 60, max: 20 },
+  ADMIN_KYC_REVIEW: { window: 60, max: 20 },
+  ADMIN_WEBHOOK_REPLAY: { window: 60, max: 10 },
 } as const
 
 export type RateLimitName = keyof typeof rateLimits

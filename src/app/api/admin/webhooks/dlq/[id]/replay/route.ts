@@ -6,6 +6,7 @@ import { markDlqReplayed, abandonDlq } from "@nba/lib/services/email-webhooks"
 import { logAuditEvent } from "@nba/lib/services/audit"
 import { serverError } from "@nba/lib/api-error"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 const log = logger.child({ module: "dlq-replay" })
 
@@ -20,6 +21,9 @@ export async function POST(
 ) {
   try {
     const session = await requirePermission("admin.webhooks.dlq")
+    const rl = await rateLimitOrDeny("ADMIN_WEBHOOK_REPLAY", session.user.id)
+    if (rl) return rl
+
     const { id } = await params
 
     const dlq = await prisma.webhookDlq.findUnique({ where: { id } })

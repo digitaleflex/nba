@@ -8,6 +8,7 @@ import { brokerApprovedEmail, brokerRejectedEmail } from "@nba/lib/email";
 import { scheduleFileCleanup } from "@nba/lib/queue";
 import { updateOnboardingStatus } from "@nba/lib/services/onboarding";
 import { invalidatePrefix } from "@nba/lib/cache";
+import { rateLimitOrDeny } from "@nba/lib/rate-limit";
 
 export async function PUT(
   req: NextRequest,
@@ -15,6 +16,9 @@ export async function PUT(
 ) {
   try {
     const session = await requirePermission("broker.review");
+    const rl = await rateLimitOrDeny("ADMIN_BROKER_REVIEW", session.user.id);
+    if (rl) return rl;
+
     const { id } = await params;
     const body = await req.json();
     const parsed = validateOrThrow(reviewDocumentSchema, body);

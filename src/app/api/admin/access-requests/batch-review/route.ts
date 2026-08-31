@@ -5,6 +5,7 @@ import { logAuditEvent } from "@nba/lib/services/audit"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { createBatchStream } from "@nba/lib/batch-stream"
 import { z } from "zod"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 const batchReviewSchema = z.object({
   requestIds: z.array(z.string().uuid()).min(1).max(100),
@@ -15,6 +16,9 @@ const batchReviewSchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const session = await requirePermission("subscriptions.manage")
+    const rl = await rateLimitOrDeny("ADMIN_ACCESS_MUTATION", session.user.id)
+    if (rl) return rl
+
     const body = await req.json()
     const { requestIds, status, notes } = batchReviewSchema.parse(body)
 

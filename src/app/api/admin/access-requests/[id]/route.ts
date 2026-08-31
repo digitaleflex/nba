@@ -9,6 +9,7 @@ import { startOrReplyAsAdmin } from "@nba/lib/services/messaging"
 import { accessApprovedEmail, accessRejectedEmail, accessRevokedEmail, accountSuspendedEmail, planChangedEmail } from "@nba/lib/email"
 import { invalidatePrefix } from "@nba/lib/cache"
 import { msg } from "@nba/lib/messages"
+import { rateLimitOrDeny } from "@nba/lib/rate-limit"
 
 const log = logger.child({ module: "admin-access-requests" })
 
@@ -59,6 +60,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const { id } = await params
     const body = await req.json()
     const parsed = validateOrThrow(reviewAccessSchema, body)
+    const rl = await rateLimitOrDeny("ADMIN_ACCESS_MUTATION", session.user.id)
+    if (rl) return rl
 
     const request = await prisma.accessRequest.findUniqueOrThrow({ where: { id } })
 

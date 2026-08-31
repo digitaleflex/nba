@@ -73,16 +73,28 @@ export default function middleware(request: NextRequest) {
     const blocked = csrfCheck(request);
     if (blocked) return withRequestId(blocked, requestId);
 
-    // Rate-limit global pour les routes admin
+    // Rate-limit global + whitelist IP pour les routes admin
     if (pathname.startsWith("/api/admin/")) {
       const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
         ?? request.headers.get("x-real-ip")
         ?? "unknown"
+
       if (!checkAdminRateLimit(ip)) {
         return withRequestId(
           NextResponse.json({ error: "Trop de requetes" }, { status: 429 }),
           requestId,
         )
+      }
+
+      const allowedEnv = process.env.ADMIN_ALLOWED_IPS
+      if (allowedEnv) {
+        const allowed = allowedEnv.split(",").map((s) => s.trim()).filter(Boolean)
+        if (allowed.length > 0 && !allowed.includes(ip)) {
+          return withRequestId(
+            NextResponse.json({ error: "Acces non authorise depuis cette IP" }, { status: 403 }),
+            requestId,
+          )
+        }
       }
     }
   }
