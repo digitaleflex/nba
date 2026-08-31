@@ -104,11 +104,11 @@ export default function middleware(request: NextRequest) {
   const isAuthenticated = hasSession(request);
 
   if (pathname === "/") {
-    return NextResponse.redirect(isAuthenticated ? "/dashboard" : "/login");
+    return NextResponse.redirect(new URL(isAuthenticated ? "/dashboard" : "/login", request.url));
   }
 
   if (AUTH_ROUTES.includes(pathname)) {
-    if (isAuthenticated) return NextResponse.redirect("/dashboard");
+    if (isAuthenticated) return NextResponse.redirect(new URL("/dashboard", request.url));
     const res = NextResponse.next(nextOptions);
     res.headers.set("Content-Security-Policy", buildCsp(nonce));
     return res;
