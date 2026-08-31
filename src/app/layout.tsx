@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { connection } from "next/server";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -58,11 +59,15 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // CSP avec nonce exige un rendu dynamique : attendre la requête courante
+  // pour que Next.js puisse injecter le nonce dans les <script>/<style> inline.
+  await connection();
+
   return (
     <html
       lang="fr"

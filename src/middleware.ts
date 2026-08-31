@@ -40,18 +40,22 @@ function hasSession(request: NextRequest): boolean {
 }
 
 function buildCsp(nonce: string): string {
+  const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'`,
-    `style-src 'self' 'nonce-${nonce}'`,
-    "img-src 'self' data: https:",
-    "font-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
+    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    "img-src 'self' blob: data: https:",
+    "font-src 'self' data:",
     "connect-src 'self' https://api.resend.com",
     "frame-src 'none'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
-  ].join("; ");
+    "upgrade-insecure-requests",
+  ]
+    .filter((v) => v.trim() !== "")
+    .join("; ");
 }
 
 export default function middleware(request: NextRequest) {
@@ -59,8 +63,13 @@ export default function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID().slice(0, 8).toUpperCase();
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
+  // La CSP est posée sur les headers de la requête (Next.js l'utilise pour
+  // injecter le nonce dans les <script>/<style> inline) ET sur la réponse.
+  const csp = buildCsp(nonce);
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("Content-Security-Policy", csp);
 
   const nextOptions = {
     request: {
@@ -68,10 +77,14 @@ export default function middleware(request: NextRequest) {
     },
   };
 
-  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
-    const res = NextResponse.next(nextOptions);
-    res.headers.set("Content-Security-Policy", buildCsp(nonce));
+  const withCsp = (res: NextResponse): NextResponse => {
+    res.headers.set("Content-Security-Policy", csp);
+    res.headers.set("x-request-id", requestId);
     return res;
+  };
+
+  if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
+    return withCsp(NextResponse.next(nextOptions));
   }
 
   if (process.env.MAINTENANCE_MODE === "true" && pathname !== "/maintenance" && !pathname.startsWith("/api/webhooks")) {
@@ -104,36 +117,28 @@ export default function middleware(request: NextRequest) {
   const isAuthenticated = hasSession(request);
 
   if (pathname === "/") {
-    return NextResponse.redirect(new URL(isAuthenticated ? "/dashboard" : "/login", request.url));
+    return withCsp(NextResponse.redirect(new URL(isAuthenticated ? "/dashboard" : "/login", request.url)));
   }
 
   if (AUTH_ROUTES.includes(pathname)) {
-    if (isAuthenticated) return NextResponse.redirect(new URL("/dashboard", request.url));
-    const res = NextResponse.next(nextOptions);
-    res.headers.set("Content-Security-Policy", buildCsp(nonce));
-    return res;
+    if (isAuthenticated) return withCsp(NextResponse.redirect(new URL("/dashboard", request.url)));
+    return withCsp(NextResponse.next(nextOptions));
   }
 
   if (PUBLIC_PATHS.includes(pathname)) {
-    const res = NextResponse.next(nextOptions);
-    res.headers.set("Content-Security-Policy", buildCsp(nonce));
-    return res;
+    return withCsp(NextResponse.next(nextOptions));
   }
 
   if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return NextResponse.redirect(loginUrl);
+      return withCsp(NextResponse.redirect(loginUrl));
     }
-    const res = NextResponse.next(nextOptions);
-    res.headers.set("Content-Security-Policy", buildCsp(nonce));
-    return res;
+    return withCsp(NextResponse.next(nextOptions));
   }
 
-  const res = NextResponse.next(nextOptions);
-  res.headers.set("Content-Security-Policy", buildCsp(nonce));
-  return res;
+  return withCsp(NextResponse.next(nextOptions));
 }
 
 export const config = {
