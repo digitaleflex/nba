@@ -39,61 +39,63 @@ function hasSession(request: NextRequest): boolean {
   return request.cookies.getAll().some((c) => SESSION_COOKIES.includes(c.name));
 }
 
-function redirectTo(url: string, request: NextRequest) {
-  return NextResponse.redirect(new URL(url, request.url));
-}
-
-function withRequestId(res: NextResponse, id: string): NextResponse {
-  res.headers.set("x-request-id", id);
-  return res;
+function buildCsp(nonce: string): string {
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}'`,
+    `style-src 'self' 'nonce-${nonce}'`,
+    "img-src 'self' data: https:",
+    "font-src 'self'",
+    "connect-src 'self' https://api.resend.com",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join("; ");
 }
 
 export default function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requestId = crypto.randomUUID().slice(0, 8).toUpperCase();
+  const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const nextOptions = {
+    request: {
+      headers: requestHeaders,
+    },
+  };
 
   if (PUBLIC_PREFIXES.some((p) => pathname.startsWith(p)) || pathname === "/sitemap.xml" || pathname === "/robots.txt") {
-    const res = NextResponse.next()
-    res.headers.set("x-request-id", requestId)
-    if (pathname.startsWith("/api/public/")) {
-      res.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300")
-    }
-    // Security headers
-    res.headers.set("X-Content-Type-Options", "nosniff")
-    res.headers.set("X-Frame-Options", "DENY")
-    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-    return res
+    const res = NextResponse.next(nextOptions);
+    res.headers.set("Content-Security-Policy", buildCsp(nonce));
+    return res;
   }
 
   if (process.env.MAINTENANCE_MODE === "true" && pathname !== "/maintenance" && !pathname.startsWith("/api/webhooks")) {
-    return withRequestId(NextResponse.redirect(new URL("/maintenance", request.url)), requestId);
+    return NextResponse.redirect(new URL("/maintenance", request.url));
   }
 
   if (pathname.startsWith("/api/")) {
     const blocked = csrfCheck(request);
-    if (blocked) return withRequestId(blocked, requestId);
+    if (blocked) return NextResponse.redirect(new URL("/login", request.url));
 
-    // Rate-limit global + whitelist IP pour les routes admin
     if (pathname.startsWith("/api/admin/")) {
       const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
         ?? request.headers.get("x-real-ip")
         ?? "unknown"
 
       if (!checkAdminRateLimit(ip)) {
-        return withRequestId(
-          NextResponse.json({ error: "Trop de requetes" }, { status: 429 }),
-          requestId,
-        )
+        return NextResponse.json({ error: "Trop de requetes" }, { status: 429 });
       }
 
       const allowedEnv = process.env.ADMIN_ALLOWED_IPS
       if (allowedEnv) {
         const allowed = allowedEnv.split(",").map((s) => s.trim()).filter(Boolean)
         if (allowed.length > 0 && !allowed.includes(ip)) {
-          return withRequestId(
-            NextResponse.json({ error: "Acces non authorise depuis cette IP" }, { status: 403 }),
-            requestId,
-          )
+          return NextResponse.json({ error: "Acces non authorise depuis cette IP" }, { status: 403 });
         }
       }
     }
@@ -102,39 +104,36 @@ export default function middleware(request: NextRequest) {
   const isAuthenticated = hasSession(request);
 
   if (pathname === "/") {
-    return withRequestId(redirectTo(isAuthenticated ? "/dashboard" : "/login", request), requestId);
+    return NextResponse.redirect(isAuthenticated ? "/dashboard" : "/login");
   }
 
   if (AUTH_ROUTES.includes(pathname)) {
-    if (isAuthenticated) return withRequestId(redirectTo("/dashboard", request), requestId);
-    return withRequestId(NextResponse.next(), requestId);
+    if (isAuthenticated) return NextResponse.redirect("/dashboard");
+    const res = NextResponse.next(nextOptions);
+    res.headers.set("Content-Security-Policy", buildCsp(nonce));
+    return res;
   }
 
   if (PUBLIC_PATHS.includes(pathname)) {
-    return withRequestId(NextResponse.next(), requestId);
+    const res = NextResponse.next(nextOptions);
+    res.headers.set("Content-Security-Policy", buildCsp(nonce));
+    return res;
   }
 
   if (PROTECTED_PREFIXES.some((p) => pathname.startsWith(p))) {
     if (!isAuthenticated) {
       const loginUrl = new URL("/login", request.url);
       loginUrl.searchParams.set("redirect", pathname);
-      return withRequestId(NextResponse.redirect(loginUrl), requestId);
+      return NextResponse.redirect(loginUrl);
     }
-    const res = NextResponse.next()
-    res.headers.set("x-request-id", requestId)
-    res.headers.set("Cache-Control", "private, no-cache, no-store, must-revalidate")
-    // Security headers
-    res.headers.set("X-Content-Type-Options", "nosniff")
-    res.headers.set("X-Frame-Options", "DENY")
-    res.headers.set("Referrer-Policy", "strict-origin-when-cross-origin")
-    res.headers.set("X-XSS-Protection", "0")
-    res.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
-    return res
+    const res = NextResponse.next(nextOptions);
+    res.headers.set("Content-Security-Policy", buildCsp(nonce));
+    return res;
   }
 
-  const res = NextResponse.next()
-  res.headers.set("x-request-id", requestId)
-  return withRequestId(res, requestId);
+  const res = NextResponse.next(nextOptions);
+  res.headers.set("Content-Security-Policy", buildCsp(nonce));
+  return res;
 }
 
 export const config = {

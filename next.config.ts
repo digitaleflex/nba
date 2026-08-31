@@ -42,27 +42,6 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=31536000, immutable" },
         ],
       },
-      // Content-Security-Policy with nonce
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'nonce-{x-nonce}'",
-              "style-src 'self' 'nonce-{x-nonce}'",
-              "img-src 'self' data: https:",
-              "font-src 'self'",
-              "connect-src 'self' https://api.resend.com",
-              "frame-src 'none'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
-          },
-        ],
-      },
     ];
   },
 };
