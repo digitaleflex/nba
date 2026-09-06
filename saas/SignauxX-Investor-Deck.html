@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SignauxX - Investor Deck - Sept 2026</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500&display=swap');
+@page { size: A4; margin: 0; }
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Inter', -apple-system, sans-serif; color: #0f172a; background: #fff; line-height:1.5; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.page { width:210mm; min-height:297mm; padding: 18mm 16mm 14mm 16mm; page-break-after: always; position:relative; overflow:hidden; }
+.page:last-child { page-break-after: avoid; }
+.cover { background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 40%, #312e81 70%, #4f46e5 100%); color: white; display:flex; flex-direction:column; justify-content:space-between; padding: 20mm 18mm 16mm 18mm; }
+.cover::before { content:''; position:absolute; top:-40mm; right:-30mm; width:120mm; height:120mm; background: radial-gradient(circle, rgba(99,102,241,0.3) 0%, transparent 70%); border-radius:50%; }
+.cover::after { content:''; position:absolute; bottom:-20mm; left:-20mm; width:100mm; height:100mm; background: radial-gradient(circle, rgba(168,85,247,0.2) 0%, transparent 70%); border-radius:50%; }
+.badge { display:inline-flex; align-items:center; gap:6px; background: rgba(255,255,255,0.12); border:1px solid rgba(255,255,255,0.18); backdrop-filter: blur(8px); padding: 6px 12px; border-radius: 999px; font-size: 8px; font-weight: 600; letter-spacing: 0.12em; text-transform:uppercase; }
+.logo { font-size: 38px; font-weight: 900; letter-spacing: -0.03em; line-height:1; }
+.logo span { background: linear-gradient(90deg, #818cf8, #c084fc); -webkit-background-clip:text; -webkit-text-fill-color: transparent; }
+.tagline { font-size: 15px; font-weight: 500; color: #cbd5e1; margin-top:10px; line-height:1.4; max-width: 130mm; }
+.stats-row { display:flex; gap:10px; margin-top:22px; }
+.stat-card { flex:1; background: rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12); border-radius:12px; padding:12px 14px; }
+.stat-num { font-size:18px; font-weight:800; color:white; }
+.stat-label { font-size:7.5px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#94a3b8; margin-top:2px; }
+.cover-footer { display:flex; justify-content:space-between; align-items:flex-end; margin-top: auto; padding-top:20px; border-top:1px solid rgba(255,255,255,0.12); font-size:7.5px; color:#94a3b8; letter-spacing:0.06em; }
+h1 { font-size:22px; font-weight:800; letter-spacing:-0.02em; line-height:1.15; color:#0f172a; }
+h2 { font-size:13px; font-weight:800; letter-spacing:-0.015em; color:#0f172a; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+h2 .num { background:#4f46e5; color:white; width:22px; height:22px; border-radius:6px; display:inline-flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; }
+h3 { font-size:9.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; color:#64748b; margin-bottom:6px; }
+.subtitle { font-size:9.5px; color:#64748b; margin-top:4px; line-height:1.5; }
+.kicker { font-size:7.5px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:#6366f1; margin-bottom:6px; }
+.divider { height:1px; background:#e2e8f0; margin:10px 0; }
+.card { background:#f8fafc; border:1px solid #e2e8f0; border-radius:10px; padding:12px; }
+.card-dark { background:#0f172a; color:white; border-radius:10px; padding:12px; }
+.grid-2 { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.grid-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px; }
+.grid-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
+.table { width:100%; border-collapse:collapse; font-size:7.8px; }
+.table th { background:#f1f5f9; font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#475569; padding:7px 8px; text-align:left; border-bottom:1px solid #e2e8f0; }
+.table td { padding:7px 8px; border-bottom:1px solid #f1f5f9; }
+.table tr:last-child td { border-bottom:none; }
+.badge-mini { display:inline-flex; padding:2px 6px; border-radius:999px; font-size:6.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; }
+.badge-green { background:#dcfce7; color:#166534; }
+.badge-indigo { background:#e0e7ff; color:#3730a3; }
+.badge-amber { background:#fef3c7; color:#92400e; }
+.badge-slate { background:#f1f5f9; color:#475569; }
+.progress { height:6px; background:#e2e8f0; border-radius:999px; overflow:hidden; }
+.progress-bar { height:100%; background: linear-gradient(90deg, #4f46e5, #7c3aed); border-radius:999px; }
+.callout { background: linear-gradient(135deg, #eef2ff, #f5f3ff); border:1px solid #c7d2fe; border-left:3px solid #4f46e5; border-radius:8px; padding:10px 12px; font-size:8px; color:#3730a3; }
+ul.clean { list-style:none; }
+ul.clean li { position:relative; padding-left:12px; font-size:8px; color:#334155; margin-bottom:4px; line-height:1.5; }
+ul.clean li::before { content:'→'; position:absolute; left:0; color:#6366f1; font-weight:700; }
+.metric { text-align:center; }
+.metric-num { font-size:20px; font-weight:800; letter-spacing:-0.02em; color:#0f172a; }
+.metric-label { font-size:7px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:#64748b; margin-top:2px; }
+.footer { position:absolute; bottom:10mm; left:16mm; right:16mm; display:flex; justify-content:space-between; font-size:6.5px; color:#94a3b8; letter-spacing:0.06em; border-top:1px solid #f1f5f9; padding-top:6px; }
+.page-num { background:#f1f5f9; padding:2px 6px; border-radius:4px; font-weight:700; color:#475569; }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="page cover">
+  <div>
+    <div class="badge">● Production live &nbsp;•&nbsp; 81 users &nbsp;•&nbsp; 8 releases</div>
+    <div style="margin-top:28px;">
+      <div class="logo">Signaux<span>X</span></div>
+      <div style="font-size:9px; letter-spacing:0.22em; text-transform:uppercase; color:#818cf8; font-weight:700; margin-top:4px;">NeverBrokeAgain</div>
+      <div class="tagline">L'infrastructure <strong style="color:white;">white-label</strong> des coachs trading.<br>Chaque coach obtient sa plateforme premium à son nom en 48h — sans coder.</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num">157k</div><div class="stat-label">Lignes de code</div></div>
+        <div class="stat-card"><div class="stat-num">29</div><div class="stat-label">Models Prisma</div></div>
+        <div class="stat-card"><div class="stat-num">89 j-h</div><div class="stat-label">Dev senior</div></div>
+        <div class="stat-card"><div class="stat-num" style="color:#a5b4fc;">18,5M</div><div class="stat-label">FCFA investis</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="cover-footer">
+    <div>INVESTOR DECK &nbsp;•&nbsp; SEPTEMBRE 2026 &nbsp;•&nbsp; CONFIDENTIAL</div>
+    <div>signauxx.com &nbsp;•&nbsp; Next.js 16 • Prisma 7 • BullMQ • Socket.IO • Better Auth</div>
+  </div>
+</div>
+
+<!-- 02 PROBLEM / SOLUTION -->
+<div class="page">
+  <div class="kicker">01 — Problème & Solution</div>
+  <h1>Les coachs trading gagnent<br>sans tech. Toi tu as la tech.</h1>
+  <p class="subtitle">Marché : 10 000+ coachs FR/Afrique/Dubaï monétisent sur Telegram/Whop à 30% de commission, sans marque, sans data, sans rétention.</p>
+  
+  <div class="grid-2" style="margin-top:14px;">
+    <div class="card" style="border-left:3px solid #ef4444;">
+      <h3 style="color:#dc2626;">😤 Aujourd'hui sans SignauxX</h3>
+      <ul class="clean">
+        <li>Groupe Telegram fouillis, signaux perdus</li>
+        <li>0 KYC, 0 preuve, chargebacks Stripe</li>
+        <li>Commission Whop/Skool 10–30%</li>
+        <li>Pas de journal, pas de rétention</li>
+        <li>Marque = 0, data = 0</li>
+      </ul>
+      <div style="margin-top:8px; background:#fef2f2; border-radius:6px; padding:8px; font-size:7.5px; color:#991b1b; text-align:center; font-weight:700;">Churn 35% / mois • LTV &lt; 2 mois</div>
+    </div>
+    <div class="card" style="border-left:3px solid #10b981; background: linear-gradient(135deg, #f0fdf4, #ecfdf5);">
+      <h3 style="color:#059669;">✨ Avec SignauxX en 48h</h3>
+      <ul class="clean">
+        <li><strong>moncoach.signauxx.com</strong> à ton nom, ton logo</li>
+        <li>Signaux temps réel (push + email + WS)</li>
+        <li>KYC + vidéo broker, anti-fraude</li>
+        <li>Journal trading + stats + streaks</li>
+        <li>Admin 17 onglets + MRR + audit</li>
+      </ul>
+      <div style="margin-top:8px; background:#0f172a; color:white; border-radius:6px; padding:8px; font-size:7.5px; text-align:center; font-weight:700;">Commission 3% seulement • LTV 8–12 mois</div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:12px;">
+    <strong>Insight :</strong> Whop a fait $30M ARR en taxant 30% des créateurs. SignauxX fait la même infra mais <strong>verticalisée trading</strong> (KYC, journal, signaux) à 3% — 10× moins cher et 10× plus adaptée.
+  </div>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="card" style="text-align:center; padding:14px;">
+      <div style="font-size:18px;">⚡</div><div style="font-size:8px; font-weight:800; margin-top:4px;">48h pour livrer</div><div style="font-size:7px; color:#64748b;">vs 4 mois à dev</div>
+    </div>
+    <div class="card" style="text-align:center; padding:14px;">
+      <div style="font-size:18px;">🔒</div><div style="font-size:8px; font-weight:800; margin-top:4px;">Prod-grade</div><div style="font-size:7px; color:#64748b;">0 vulnérabilité, CSP nonce</div>
+    </div>
+    <div class="card" style="text-align:center; padding:14px;">
+      <div style="font-size:18px;">📈</div><div style="font-size:8px; font-weight:800; margin-top:4px;">Rétention ×4</div><div style="font-size:7px; color:#64748b;">Journal + streaks</div>
+    </div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">02 / 14</span></div>
+</div>
+
+<!-- 03 PRODUIT -->
+<div class="page">
+  <div class="kicker">02 — Produit</div>
+  <h1>Une plateforme premium.<br>Pas un groupe Telegram.</h1>
+  <p class="subtitle">5 modules qui justifient 32€/mois par membre — et que Whop/Skool n'ont pas.</p>
+
+  <div class="grid-2" style="margin-top:12px;">
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span style="background:#e0e7ff; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px;">📡</span><strong style="font-size:9px;">Signaux temps réel</strong><span class="badge-mini badge-indigo">Cœur</span></div>
+      <ul class="clean"><li>Éditeur Notion-like + versioning + image</li><li>Distribution BullMQ batch 500 + Redis pub/sub</li><li>Push VAPID + Email Resend + WebSocket live</li><li>Idempotent, retry 3×, DLQ</li></ul>
+    </div>
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span style="background:#fef3c7; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px;">📓</span><strong style="font-size:9px;">Journal Trading</strong><span class="badge-mini badge-amber">Rétention</span></div>
+      <ul class="clean"><li>Trade + Session + DailyReflection + Streak</li><li>Stats PnL / winRate / recharts</li><li>Mood, setup, stratégie, commission</li><li>Nudges & milestones anti-churn</li></ul>
+    </div>
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span style="background:#dcfce7; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px;">💬</span><strong style="font-size:9px;">Messagerie temps réel</strong></div>
+      <ul class="clean"><li>DM + bulk-message admin→tous</li><li>Typing, présence, reactions, quote</li><li>Redis typing + Socket.IO rooms</li></ul>
+    </div>
+    <div class="card">
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;"><span style="background:#fce7f3; width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px;">🛡️</span><strong style="font-size:9px;">KYC & Broker Verify</strong></div>
+      <ul class="clean"><li>ID + magicBytes + auto-cleanup 7j</li><li>Vidéo broker, anti-fraude 30 scénarios</li><li>Device fingerprint + impossible-travel</li></ul>
+    </div>
+  </div>
+
+  <div class="card-dark" style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:12px; align-items:center;">
+    <div><div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8;">Stack</div><div style="font-size:8px; font-weight:700; margin-top:4px; line-height:1.6;">Next.js 16 • React 19<br>Prisma 7 • Neon PG • Valkey<br>BullMQ • Socket.IO • Better Auth</div></div>
+    <div><div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8;">Admin</div><div style="font-size:8px; font-weight:700; margin-top:4px; line-height:1.6;">17 onglets • MRR/Churn<br>Fraud • Audit hash-chain<br>RBAC 5 rôles / 11 perms</div></div>
+    <div><div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8;">Infra</div><div style="font-size:8px; font-weight:700; margin-top:4px; line-height:1.6;">Docker multi-VPS<br>Tailscale • Traefik TLS<br>Sentry • B2 backup quotidien</div></div>
+  </div>
+
+  <div style="margin-top:10px; background:#f8fafc; border:1px dashed #cbd5e1; border-radius:8px; padding:10px; display:flex; gap:10px; align-items:center;">
+    <div style="flex:1; text-align:center;"><div style="font-size:7px; color:#64748b; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Design System</div><div style="font-size:7.5px; margin-top:3px;">shadcn + base-ui • glassmorphisme • a11y #001-#025 • 40px touch</div></div>
+    <div style="width:1px; height:24px; background:#e2e8f0;"></div>
+    <div style="flex:1; text-align:center;"><div style="font-size:7px; color:#64748b; letter-spacing:0.08em; text-transform:uppercase; font-weight:700;">Qualité</div><div style="font-size:7.5px; margin-top:3px;">5 410 tests Vitest • CI verte • Trivy 0 vuln • 8 releases</div></div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">03 / 14</span></div>
+</div>
+
+<!-- 04 TRACTION & VALEUR -->
+<div class="page">
+  <div class="kicker">03 — Traction & Valeur</div>
+  <h1>81 users en prod.<br>18,5M déjà investis.</h1>
+  <p class="subtitle">Pas une idée. Une infra qui tourne, chiffrée git par git (913 commits audités).</p>
+
+  <div class="grid-4" style="margin-top:12px;">
+    <div class="card metric"><div class="metric-num">913</div><div class="metric-label">Commits totaux</div><div style="font-size:6.5px; color:#94a3b8; margin-top:3px;">786 non-merge • 773 humains</div></div>
+    <div class="card metric"><div class="metric-num">67j</div><div class="metric-label">Calendaires</div><div style="font-size:6.5px; color:#94a3b8; margin-top:3px;">35 j actifs • 1,33× productivité</div></div>
+    <div class="card metric"><div class="metric-num">157k</div><div class="metric-label">LOC</div><div style="font-size:6.5px; color:#94a3b8; margin-top:3px;">565 fichiers src + 37 migrations</div></div>
+    <div class="card metric"><div class="metric-num">8</div><div class="metric-label">Releases</div><div style="font-size:6.5px; color:#94a3b8; margin-top:3px;">v1.0 → v2.5.0 • 0 vuln</div></div>
+  </div>
+
+  <h3 style="margin-top:14px;">Volumétrie & temps-homme (méthode hybride croisée)</h3>
+  <table class="table">
+    <tr><th>Catégorie</th><th>Volume</th><th>Jours-homme</th><th>Preuve</th></tr>
+    <tr><td>Code applicatif</td><td>150 517 LOC</td><td>62 j-h</td><td>773 commits × 45 min</td></tr>
+    <tr><td>Tests + dette</td><td>5 410 LOC</td><td>+20 j-h</td><td>Vitest + debug</td></tr>
+    <tr><td>Infra / Docker / CI</td><td>53 fichiers</td><td>+7 j-h</td><td>multi-VPS, GHCR, Traefik</td></tr>
+    <tr style="background:#f8fafc; font-weight:700;"><td>TOTAL</td><td>157 381 LOC</td><td>89 j-h</td><td>11 semaines pleines</td></tr>
+  </table>
+
+  <h3 style="margin-top:12px;">Valorisation — coût de remplacement</h3>
+  <table class="table">
+    <tr><th>Scénario</th><th>TJM</th><th>Base 89j-h</th><th>+58% qualité</th><th>Total</th></tr>
+    <tr><td>Afrique senior</td><td>120k FCFA</td><td>10,68M</td><td>+6,19M</td><td style="font-weight:800; color:#4f46e5;">16,87M FCFA</td></tr>
+    <tr><td>Europe freelance senior</td><td>700€</td><td>62 300€</td><td>+36 134€</td><td style="font-weight:800; color:#4f46e5;">98 434 €</td></tr>
+    <tr><td>Agence Europe</td><td>×1,8 marge</td><td>100 000€</td><td>+58 000€</td><td style="font-weight:800; color:#4f46e5;">158 000 €</td></tr>
+    <tr><td>US startup</td><td>$1 100/j</td><td>100k$</td><td>+58k$</td><td style="font-weight:800;">158 000 $</td></tr>
+  </table>
+  <div style="margin-top:6px; display:flex; gap:8px;">
+    <div style="flex:1; background:#eef2ff; border-radius:6px; padding:8px; text-align:center;"><div style="font-size:7px; color:#6366f1; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Médiane retenue</div><div style="font-size:13px; font-weight:800; color:#3730a3; margin-top:2px;">18,5M FCFA</div><div style="font-size:6.5px; color:#6366f1;">~27 500€ • ~30 000$</div></div>
+    <div style="flex:1; background:#f0fdf4; border-radius:6px; padding:8px; text-align:center;"><div style="font-size:7px; color:#15803d; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">Bonus qualité +58%</div><div style="font-size:7px; color:#334155; margin-top:2px; line-height:1.5;">CSP nonce • 0 vuln • multi-VPS<br>Accessibilité #001-#025 • RBAC • audit hash-chain</div></div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">04 / 14</span></div>
+</div>
+
+<!-- 05 AUDIT SaaS READINESS -->
+<div class="page">
+  <div class="kicker">04 — Audit SaaS-Readiness</div>
+  <h1>80% du SaaS est déjà là.<br>Il ne manque que le multi-tenant.</h1>
+  <p class="subtitle">Audit module par module — ce qui est prêt vs le gap restant (4–6 semaines).</p>
+
+  <table class="table" style="margin-top:10px;">
+    <tr><th>Module</th><th>État</th><th>Preuve fichier</th><th>Effort restant</th></tr>
+    <tr><td>Auth + RBAC</td><td><span class="badge-mini badge-green">● Ready</span></td><td>Better Auth 1.6 + 5 rôles/11 perms</td><td>—</td></tr>
+    <tr><td>Signaux + distribution</td><td><span class="badge-mini badge-green">● Ready</span></td><td>signal-distribution.ts batch 200/500</td><td>Ajouter orgId</td></tr>
+    <tr><td>Realtime (WS + Redis)</td><td><span class="badge-mini badge-green">● Ready</span></td><td>Socket.IO + redis-adapter, rooms user:*</td><td>Namespacer par org</td></tr>
+    <tr><td>Queues BullMQ (6 queues)</td><td><span class="badge-mini badge-green">● Ready</span></td><td>workers/queue.ts + DLQ + crons</td><td>Préfixer par org</td></tr>
+    <tr><td>Journal Trading</td><td><span class="badge-mini badge-green">● Ready</span></td><td>Trade/Session/Streak + recharts</td><td>Filtre orgId</td></tr>
+    <tr><td>Messagerie</td><td><span class="badge-mini badge-green">● Ready</span></td><td>Conversation/Message + bulk</td><td>Filtre orgId</td></tr>
+    <tr><td>KYC / Broker verify</td><td><span class="badge-mini badge-green">● Ready</span></td><td>magicBytes + MinIO + imgproxy</td><td>—</td></tr>
+    <tr><td>Admin 17 onglets</td><td><span class="badge-mini badge-green">● Ready</span></td><td>admin/page.tsx SPA + audit</td><td>Scoper par org</td></tr>
+    <tr><td>Email + Push</td><td><span class="badge-mini badge-green">● Ready</span></td><td>Resend circuitBreaker + VAPID</td><td>Par org</td></tr>
+    <tr><td>Infra multi-VPS</td><td><span class="badge-mini badge-green">● Ready</span></td><td>compose.yml + VPS2 Tailscale</td><td>Wildcard Traefik</td></tr>
+    <tr style="background:#fef2f2;"><td><strong>Multi-tenant</strong></td><td><span class="badge-mini" style="background:#fecaca; color:#991b1b;">○ Gap P0</span></td><td>Single-tenant actuel</td><td style="font-weight:700; color:#dc2626;">2–3 sem • Schema + middleware</td></tr>
+    <tr style="background:#fffbeb;"><td>Stripe billing / org</td><td><span class="badge-mini badge-amber">○ Gap P1</span></td><td>Plans existent, pas de billing/org</td><td>1–2 sem</td></tr>
+    <tr style="background:#fffbeb;"><td>Sous-domaines + API publique</td><td><span class="badge-mini badge-amber">○ Gap P1</span></td><td>Pas de wildcard / OAuth</td><td>1 sem</td></tr>
+  </table>
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div class="card" style="background:#f0fdf4; border-color:#bbf7d0;">
+      <div style="font-size:8px; font-weight:800; color:#166534;">✅ Déjà prod-grade</div>
+      <div style="font-size:7.5px; color:#334155; margin-top:4px; line-height:1.5;">CSP nonce dynamique • CSRF • rate-limit 120/min<br>Device fingerprint • impossible-travel • ip-reputation<br>Audit hash-chain • backup B2 quotidien • Sentry</div>
+    </div>
+    <div class="card" style="background:#fef2f2; border-color:#fecaca;">
+      <div style="font-size:8px; font-weight:800; color:#991b1b;">🎯 Seul gap bloquant</div>
+      <div style="font-size:7.5px; color:#334155; margin-top:4px; line-height:1.5;"><strong>Organization + orgId partout</strong><br>Prisma: 1 model + 1 FK par table (22 fichiers)<br>Middleware: filtre automatique par org<br><strong>→ 4–6 semaines pour SaaS complet</strong></div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; background:#0f172a; color:white; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div><div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8;">Effort total transformation SaaS</div><div style="font-size:13px; font-weight:800; margin-top:2px;">8 000 – 15 000 € &nbsp;<span style="font-weight:400; color:#94a3b8;">• 4–6 semaines • 1 dev senior</span></div></div>
+    <div style="background:#4f46e5; padding:8px 14px; border-radius:8px; font-size:7.5px; font-weight:800; text-align:center;">80% FAIT<br><span style="font-weight:400; opacity:0.8;">20% restant</span></div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">05 / 14</span></div>
+</div>
+
+<!-- 06 BUSINESS MODEL WHITE-LABEL -->
+<div class="page">
+  <div class="kicker">05 — Business Model ⭐ White-Label</div>
+  <h1>Le modèle qui scale :<br>tu taxes 3%, pas 30%.</h1>
+  <p class="subtitle">3 SaaS possibles — le white-label est le STAR (le plus rapide, le plus rentable).</p>
+
+  <div class="grid-3" style="margin-top:10px;">
+    <div class="card" style="border:2px solid #4f46e5; background: linear-gradient(135deg, #eef2ff, #f5f3ff); position:relative;">
+      <div style="position:absolute; top:-7px; left:10px; background:#4f46e5; color:white; font-size:6px; font-weight:800; letter-spacing:0.08em; padding:2px 6px; border-radius:999px;">⭐ RECOMMANDÉ</div>
+      <div style="font-size:9px; font-weight:800; margin-top:4px;">A. White-Label</div><div style="font-size:7px; color:#6366f1; font-weight:600;">Pour coachs trading</div>
+      <div style="font-size:7px; color:#334155; margin-top:6px; line-height:1.5;">Chaque coach a sa plateforme à son nom. Tu factures l'hébergement + commission.</div>
+      <div style="margin-top:8px; background:white; border-radius:6px; padding:7px; font-size:7px;"><strong>Pricing :</strong> 49€ / 149€ / 299€ + 3%<br><strong>Cible :</strong> 10k coachs FR/Afrique/Dubaï</div>
+      <div style="margin-top:6px; background:#4f46e5; color:white; border-radius:6px; padding:6px; text-align:center; font-size:7px; font-weight:700;">Go-to-market le plus court</div>
+    </div>
+    <div class="card" style="opacity:0.9;">
+      <div style="font-size:9px; font-weight:700;">B. Communauté générique</div><div style="font-size:7px; color:#64748b; font-weight:600;">Skool-like</div>
+      <div style="font-size:7px; color:#334155; margin-top:6px; line-height:1.5;">Pour tout créateur (fitness, business). Plus large mais plus concurrentiel.</div>
+      <div style="margin-top:8px; background:#f8fafc; border-radius:6px; padding:7px; font-size:7px;"><strong>Pricing :</strong> 39€ / 99€ / 199€<br><strong>Risque :</strong> vs Skool/Whop direct</div>
+    </div>
+    <div class="card" style="opacity:0.9;">
+      <div style="font-size:9px; font-weight:700;">C. Journal B2B</div><div style="font-size:7px; color:#64748b; font-weight:600;">Pour brokers</div>
+      <div style="font-size:7px; color:#334155; margin-top:6px; line-height:1.5;">Vendu aux brokers type Deriv comme outil rétention. B2B long cycle.</div>
+      <div style="margin-top:8px; background:#f8fafc; border-radius:6px; padding:7px; font-size:7px;"><strong>Pricing :</strong> 499€ / 1 499€ / entreprise<br><strong>Cycle :</strong> 6–12 mois</div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; background:#0f172a; border-radius:10px; padding:12px; color:white;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="font-size:8px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase;">Pricing White-Label en détail</div>
+      <div style="font-size:7px; color:#94a3b8;">Commission dégressive • Stripe 1,5% à part</div>
+    </div>
+    <table class="table" style="margin-top:8px;">
+      <tr><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Tier</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Prix / mois</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Membres max</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Commission</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Cible</th></tr>
+      <tr><td style="color:white; border-color:#1e293b;">Starter</td><td style="color:white; border-color:#1e293b;">49€</td><td style="color:#cbd5e1; border-color:#1e293b;">100</td><td style="color:#fbbf24; border-color:#1e293b;">10%</td><td style="color:#94a3b8; border-color:#1e293b;">Coach débutant</td></tr>
+      <tr><td style="color:white; border-color:#1e293b;">Pro <span style="background:#4f46e5; padding:1px 4px; border-radius:4px; font-size:6px;">POPULAIRE</span></td><td style="color:white; border-color:#1e293b;">149€</td><td style="color:#cbd5e1; border-color:#1e293b;">1 000</td><td style="color:#fbbf24; border-color:#1e293b;">7%</td><td style="color:#94a3b8; border-color:#1e293b;">Coach 10k followers</td></tr>
+      <tr><td style="color:white; border-color:#1e293b;">Scale</td><td style="color:white; border-color:#1e293b;">299€</td><td style="color:#cbd5e1; border-color:#1e293b;">Illimité</td><td style="color:#fbbf24; border-color:#1e293b;">5%</td><td style="color:#94a3b8; border-color:#1e293b;">Académie</td></tr>
+    </table>
+    <div style="margin-top:8px; display:flex; gap:8px; font-size:7px;">
+      <div style="flex:1; background: rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.25); border-radius:6px; padding:7px; text-align:center;"><strong style="color:#a5b4fc;">1 org Pro 180 membres</strong><br><span style="color:#cbd5e1;">= 552€/mois pour toi</span> <span style="color:#94a3b8;">(149€ + 403€ commission)</span></div>
+      <div style="flex:1; background: rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.2); border-radius:6px; padding:7px; text-align:center;"><strong style="color:#6ee7b7;">vs Whop 30% = 1 728€ pris au coach</strong><br><span style="color:#94a3b8;">Toi tu prends 552€ — 3× moins cher</span></div>
+    </div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">06 / 14</span></div>
+</div>
+
+<!-- 07 REVENUS HORS SAAS -->
+<div class="page">
+  <div class="kicker">06 — Revenus hors SaaS</div>
+  <h1>13 façons de monétiser<br>sans même devenir SaaS.</h1>
+  <p class="subtitle">Chaque module est un produit. Stack tes revenus dès demain.</p>
+
+  <div class="grid-3" style="margin-top:10px; gap:8px;">
+    <div class="card" style="padding:9px; border-left:2px solid #4f46e5;"><div style="font-size:7px; font-weight:800;">01 Licence code source</div><div style="font-size:6.5px; color:#64748b; margin-top:2px;">590 / 990 / 1 990€</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Gumroad + Codester. 2–4k€/mois dès M1.</div></div>
+    <div class="card" style="padding:9px; border-left:2px solid #f59e0b; background:#fffbeb;"><div style="font-size:7px; font-weight:800;">02 Affiliation Deriv IB ⭐</div><div style="font-size:6.5px; color:#92400e; margin-top:2px;">30–50% spread à VIE</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">100 traders = 1–3k€/mois passif.</div></div>
+    <div class="card" style="padding:9px; border-left:2px solid #6366f1;"><div style="font-size:7px; font-weight:800;">03 Marketplace signaleurs</div><div style="font-size:6.5px; color:#64748b; margin-top:2px;">20% commission</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Fiverr du signal. 1–5k€/mois.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">04 Journal standalone</div><div style="font-size:6.5px; color:#64748b;">19–49€/mois</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Extrait Trade/Session/Streak.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">05 KYC-as-a-Service</div><div style="font-size:6.5px; color:#64748b;">0,50€ / vérif</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Pour fintechs Afrique. Smile Identity $20M.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">06 Moteur distribution</div><div style="font-size:6.5px; color:#64748b;">99€/mois API</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">BullMQ+WS+Push en API.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">07 Boilerplate Admin</div><div style="font-size:6.5px; color:#64748b;">299–1 500€</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">17 onglets. ShipFast $300k/an.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">08 Formation 97–497€</div><div style="font-size:6.5px; color:#64748b;">Funnel Resend</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Module Formation déjà prêt.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">09 API-as-a-Product</div><div style="font-size:6.5px; color:#64748b;">19–99$/mois</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">RapidAPI, rate-limit.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">10 Service Agence</div><div style="font-size:6.5px; color:#64748b;">5–15k€ / projet</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Clonage sur-mesure.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">11 Copy Trading 25%</div><div style="font-size:6.5px; color:#64748b;">Perf fee</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">PAMM/MAM Deriv/Binance.</div></div>
+    <div class="card" style="padding:9px;"><div style="font-size:7px; font-weight:800;">12 Data insights B2B</div><div style="font-size:6.5px; color:#64748b;">199–499€/mois</div><div style="font-size:6.5px; color:#334155; margin-top:4px;">Data anonymisée journal.</div></div>
+  </div>
+  <div class="card" style="margin-top:8px; background: linear-gradient(135deg, #0f172a, #1e1b4b); color:white; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div><div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#a5b4fc; font-weight:700;">13 Franchise + VIP</div><div style="font-size:7.5px; margin-top:2px;">Franchise par pays 1 500€ + 15% • VIP Telegram 19–39€/mois</div></div>
+    <div style="text-align:right;"><div style="font-size:7px; color:#94a3b8;">Stack Cash Now</div><div style="font-size:10px; font-weight:800; color:#6ee7b7;">5–10k€/mois</div><div style="font-size:6.5px; color:#94a3b8;">sans coder plus</div></div>
+  </div>
+  <div style="margin-top:8px; display:flex; gap:8px;">
+    <div style="flex:1; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:7px; padding:8px; text-align:center;"><div style="font-size:7px; font-weight:700; color:#166534;">STACK CASH NOW (J1–14)</div><div style="font-size:7px; color:#334155; margin-top:3px;">IB Deriv + VIP Telegram + Licence Boilerplate</div><div style="font-size:9px; font-weight:800; color:#15803d; margin-top:3px;">→ 3–6k€ dès M1</div></div>
+    <div style="flex:1; background:#eef2ff; border:1px solid #c7d2fe; border-radius:7px; padding:8px; text-align:center;"><div style="font-size:7px; font-weight:700; color:#3730a3;">STACK SCALE (M2–6)</div><div style="font-size:7px; color:#334155; margin-top:3px;">White-Label + Marketplace + Formation</div><div style="font-size:9px; font-weight:800; color:#4f46e5; margin-top:3px;">→ 13k€ MRR à 50 coachs</div></div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">07 / 14</span></div>
+</div>
+
+<!-- 08 PIVOTS -->
+<div class="page">
+  <div class="kicker">07 — 10 Pivots sans réécrire le code</div>
+  <h1>Même moteur.<br>10 marchés.</h1>
+  <p class="subtitle">Change 1 colonne Prisma, pas 157k LOC. Chaque pivot a déjà un concurrent qui gagne.</p>
+
+  <div class="grid-2" style="margin-top:10px; gap:8px;">
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#fef3c7; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">⚽</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Paris sportifs</div><div style="font-size:6.5px; color:#64748b;">Beasts Bets • $50k MRR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">Signal → BetTip</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#e0e7ff; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🪂</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Crypto airdrops</div><div style="font-size:6.5px; color:#64748b;">AirdropAlert • $20k MRR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">pair → token</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#dcfce7; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🏠</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Immo — biens sous-évalués</div><div style="font-size:6.5px; color:#64748b;">Mubawab Leads</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">pips → prix/m²</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#e0e7ff; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">📈</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Bourse actions</div><div style="font-size:6.5px; color:#64748b;">Seeking Alpha • $40M ARR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: label <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">FOREX → STOCK</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#fce7f3; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🎓</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Communauté créateurs</div><div style="font-size:6.5px; color:#64748b;">Skool • $10M ARR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: 0 — déjà générique</div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#fef3c7; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🏷️</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Deals / Leaks</div><div style="font-size:6.5px; color:#64748b;">Dealabs • 1M users FR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">signal → deal</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#f1f5f9; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🏢</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Alerting B2B interne</div><div style="font-size:6.5px; color:#64748b;">PagerDuty • $400M ARR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">Signal → Alert</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px;">
+      <div style="background:#e0e7ff; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🤝</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Mentoring 1to1</div><div style="font-size:6.5px; color:#64748b;">Superpeer • $5M ARR</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: <span style="font-family:monospace; background:#f1f5f9; padding:1px 3px; border-radius:3px;">+ calendly</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px; border:1px solid #4f46e5;">
+      <div style="background:#eef2ff; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🧱</div>
+      <div><div style="font-size:7.5px; font-weight:800;">Boilerplate SaaS</div><div style="font-size:6.5px; color:#4f46e5; font-weight:700;">ShipFast $300k/an</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: extraire <span style="font-family:monospace; background:#eef2ff; padding:1px 3px; border-radius:3px;">admin/17 onglets</span></div></div>
+    </div>
+    <div class="card" style="padding:8px; display:flex; gap:8px; border:1px solid #f59e0b; background:#fffbeb;">
+      <div style="background:#fef3c7; width:28px; height:28px; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:14px; flex-shrink:0;">🪪</div>
+      <div><div style="font-size:7.5px; font-weight:800;">KYC fintech Afrique</div><div style="font-size:6.5px; color:#92400e; font-weight:700;">Smile ID $20M levés</div><div style="font-size:6.5px; color:#334155; margin-top:2px;">Pivot: exposer <span style="font-family:monospace; background:#fef3c7; padding:1px 3px; border-radius:3px;">KycDocument</span> en API</div></div>
+    </div>
+  </div>
+
+  <div class="callout" style="margin-top:10px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:7.5px;"><strong>Template pivot 3 jours :</strong> renommer 1 label Prisma → traduire 10 strings → changer 1 icône → déployer. Pas de refactor.</div>
+    <div style="background:#4f46e5; color:white; padding:4px 8px; border-radius:6px; font-size:7px; font-weight:700;">Détails: saas/pivots/</div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">08 / 14</span></div>
+</div>
+
+<!-- 09 MARCHE & GTM -->
+<div class="page">
+  <div class="kicker">08 — Marché & Go-To-Market</div>
+  <h1>Afrique francophone + Dubaï.<br>Ton unfair advantage.</h1>
+  <p class="subtitle">Tu connais le terrain. Eux non.</p>
+
+  <div class="grid-3" style="margin-top:12px;">
+    <div class="card" style="text-align:center;">
+      <div style="font-size:20px; font-weight:800; color:#4f46e5;">10 000+</div><div style="font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#64748b;">Coachs FR/Afrique/Dubaï</div><div style="font-size:7px; color:#94a3b8; margin-top:3px;">500 à 500k followers</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:20px; font-weight:800; color:#0f172a;">32€</div><div style="font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#64748b;">Prix membre / mois</div><div style="font-size:7px; color:#94a3b8; margin-top:3px;">25–49€ observé Telegram</div>
+    </div>
+    <div class="card" style="text-align:center;">
+      <div style="font-size:20px; font-weight:800; color:#059669;">120€</div><div style="font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#64748b;">CAC / org</div><div style="font-size:7px; color:#94a3b8; margin-top:3px;">Payback 0,23 mois</div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:12px;">ICP — qui tu chasses en premier</h3>
+  <div class="card" style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
+    <div><div style="font-size:7px; font-weight:700; color:#4f46e5;">🎯 CŒUR DE CIBLE (M1–3)</div><div style="font-size:7.5px; margin-top:4px; line-height:1.6;"><strong>Coach 8k–40k followers</strong> Telegram/TikTok<br>200–800 membres payants • churn 30%<br>Douleur: groupe fouillis + Whop 30%<br><strong>→ 50 premiers = ton MRR</strong></div></div>
+    <div><div style="font-size:7px; font-weight:700; color:#64748b;">💎 WHALE (M4–12)</div><div style="font-size:7.5px; margin-top:4px; line-height:1.6;"><strong>Académie 50k+ followers</strong><br>1k–5k membres • team 3–5<br>Douleur: besoin marque + data<br><strong>→ 1 whale = 1 339€ MRR</strong></div></div>
+  </div>
+
+  <h3 style="margin-top:12px;">7 canaux — priorisés</h3>
+  <table class="table">
+    <tr><th>Canal</th><th>Action J1–30</th><th>Coût</th><th>Objectif M1</th></tr>
+    <tr><td><strong>1. DM outbound</strong> <span class="badge-mini badge-indigo">P0</span></td><td>30 DM/jour coachs Telegram (script fourni)</td><td>0€</td><td>5 pilotes</td></tr>
+    <tr><td><strong>2. Influenceur pilote</strong></td><td>1 coach 20k followers = ambassadeur -50%</td><td>0€</td><td>Preuve sociale</td></tr>
+    <tr><td><strong>3. TikTok/Reels</strong></td><td>1 vidéo/jour “avant/après SignauxX”</td><td>0€</td><td>10k vues</td></tr>
+    <tr><td><strong>4. Discord/Telegram</strong></td><td>Poster dans 10 groupes trading FR</td><td>0€</td><td>100 leads</td></tr>
+    <tr><td>5. Ads Meta/TikTok</td><td>Ciblage “trading + 18–34 + Bénin/Sénégal/Dubaï”</td><td>20€/j</td><td>50 leads</td></tr>
+    <tr><td>6. Bouche-à-oreille</td><td>Parrainage -1 mois offert</td><td>0€</td><td>×1,3 viralité</td></tr>
+    <tr><td>7. Broker partenariat</td><td>Deriv IB co-marketing</td><td>0€</td><td>Leads gratuits</td></tr>
+  </table>
+
+  <div class="card" style="margin-top:8px; background:#f8fafc; padding:9px;">
+    <div style="font-size:7px; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; color:#334155;">Script DM qui convertit (extrait doc 06)</div>
+    <div style="font-size:7.5px; color:#475569; margin-top:4px; font-style:italic; background:white; border-left:2px solid #4f46e5; padding:6px 8px; border-radius:0 6px 6px 0;">“Salut [Prénom], j’ai vu ton groupe Telegram — tu gères combien de membres payants ? J’ai une plateforme qui remplace Telegram + Whop à 3% au lieu de 30%, avec KYC et journal intégré. 48h pour te livrer ton site à ton nom. Tu veux une démo 15min ?”</div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">09 / 14</span></div>
+</div>
+
+<!-- 10 ROADMAP -->
+<div class="page">
+  <div class="kicker">09 — Roadmap Technique</div>
+  <h1>4–6 semaines pour SaaS.<br>Pas 6 mois.</h1>
+  <p class="subtitle">Parce que 80% est fait. Voici le plan fichier par fichier.</p>
+
+  <div style="margin-top:10px; display:flex; gap:8px;">
+    <div style="flex:1; background: linear-gradient(135deg, #eef2ff, #f5f3ff); border:1px solid #c7d2fe; border-radius:8px; padding:10px;">
+      <div style="font-size:7px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#4f46e5;">Phase 1 — Multi-tenant (2–3 sem)</div><div style="font-size:6.5px; color:#64748b;">Le seul P0 bloquant</div>
+      <ul class="clean" style="margin-top:6px;"><li>Model <code style="background:white; padding:1px 4px; border-radius:3px;">Organization</code> + <code style="background:white; padding:1px 4px; border-radius:3px;">orgId</code> sur 22 tables</li><li>Middleware <code style="background:white; padding:1px 4px; border-radius:3px;">withOrganization()</code> auto-filtre</li><li>Migration Prisma + backfill org “default”</li></ul>
+      <div style="margin-top:6px; font-size:7px; font-weight:700; color:#3730a3;">Fichiers: schema.prisma, middleware.ts, lib/db.ts, 22 routes API</div>
+    </div>
+    <div style="flex:1; background:#fffbeb; border:1px solid #fde68a; border-radius:8px; padding:10px;">
+      <div style="font-size:7px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#92400e;">Phase 2 — Billing (1–2 sem)</div><div style="font-size:6.5px; color:#a16207;">Stripe par org</div>
+      <ul class="clean" style="margin-top:6px;"><li>Stripe Customer + Subscription / org</li><li>Webhooks + limites membres</li><li>Page pricing + checkout</li></ul>
+      <div style="margin-top:6px; font-size:7px; font-weight:700; color:#92400e;">Fichiers: lib/stripe.ts, api/webhooks/stripe/*</div>
+    </div>
+    <div style="flex:1; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:10px;">
+      <div style="font-size:7px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#166534;">Phase 3 — Scale (1 sem)</div><div style="font-size:6.5px; color:#15803d;">Sous-domaines + API</div>
+      <ul class="clean" style="margin-top:6px;"><li>Wildcard Traefik <code style="background:white; padding:1px 4px; border-radius:3px;">*.signauxx.com</code></li><li>API publique <code style="background:white; padding:1px 4px; border-radius:3px;">/api/v1/signals</code> OAuth</li><li>i18n EN + docs OpenAPI</li></ul>
+      <div style="margin-top:6px; font-size:7px; font-weight:700; color:#166534;">Fichiers: compose.yml, api/public/*</div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; background:#0f172a; border-radius:8px; padding:10px 12px;">
+    <div style="font-size:7px; letter-spacing:0.1em; text-transform:uppercase; color:#94a3b8; font-weight:700;">Budget détaillé — 1 dev senior</div>
+    <table class="table" style="margin-top:6px;">
+      <tr><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Phase</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Durée</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Coût (120k FCFA/j)</th><th style="background:#1e293b; color:#94a3b8; border-color:#334155;">Coût Europe (700€/j)</th></tr>
+      <tr><td style="color:white; border-color:#1e293b;">1 Multi-tenant</td><td style="color:#cbd5e1; border-color:#1e293b;">12–15 j</td><td style="color:white; border-color:#1e293b;">1,44–1,8M</td><td style="color:white; border-color:#1e293b;">8 400–10 500€</td></tr>
+      <tr><td style="color:white; border-color:#1e293b;">2 Billing</td><td style="color:#cbd5e1; border-color:#1e293b;">6–10 j</td><td style="color:white; border-color:#1e293b;">720k–1,2M</td><td style="color:white; border-color:#1e293b;">4 200–7 000€</td></tr>
+      <tr><td style="color:white; border-color:#1e293b;">3 Scale</td><td style="color:#cbd5e1; border-color:#1e293b;">4–5 j</td><td style="color:white; border-color:#1e293b;">480k–600k</td><td style="color:white; border-color:#1e293b;">2 800–3 500€</td></tr>
+      <tr style="background:#1e1b4b;"><td style="color:#a5b4fc; font-weight:800; border-color:#1e293b;">TOTAL</td><td style="color:#a5b4fc; font-weight:800; border-color:#1e293b;">22–30 j</td><td style="color:#a5b4fc; font-weight:800; border-color:#1e293b;">2,6–3,6M FCFA</td><td style="color:#a5b4fc; font-weight:800; border-color:#1e293b;">15 400–21 000€</td></tr>
+    </table>
+    <div style="font-size:6.5px; color:#94a3b8; margin-top:6px; text-align:center;">Fourchette basse si solo fondateur (pas de marge agence) → <strong style="color:white;">8–12k€ réaliste</strong>. Doc complet : <span style="color:#a5b4fc;">saas/04-roadmap-technique.md</span> (22 fichiers listés)</div>
+  </div>
+
+  <div class="grid-3" style="margin-top:8px;">
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;"><div style="font-size:6.5px; color:#64748b; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">S1–3</div><div style="font-size:7.5px; font-weight:700; margin-top:2px;">5 pilotes live</div><div style="font-size:6.5px; color:#94a3b8;">1 org/jour</div></div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;"><div style="font-size:6.5px; color:#64748b; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">S4–6</div><div style="font-size:7.5px; font-weight:700; margin-top:2px;">Billing + 15 orgs</div><div style="font-size:6.5px; color:#94a3b8;">Stripe live</div></div>
+    <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px; text-align:center;"><div style="font-size:6.5px; color:#64748b; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">S7–12</div><div style="font-size:7.5px; font-weight:700; margin-top:2px;">50 orgs → 13k€ MRR</div><div style="font-size:6.5px; color:#94a3b8;">Scale</div></div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">10 / 14</span></div>
+</div>
+
+<!-- 11 ARCHITECTURE -->
+<div class="page">
+  <div class="kicker">10 — Architecture Cible</div>
+  <h1>Multi-tenant isolé.<br>Scalable à 10k orgs.</h1>
+  <p class="subtitle">1 DB, 1 codebase, isolation logique par orgId + sous-domaines.</p>
+
+  <div style="margin-top:10px; background:#0f172a; border-radius:10px; padding:14px; color:white; font-family: 'JetBrains Mono', monospace; font-size:6.8px; line-height:1.7;">
+    <div style="text-align:center; color:#94a3b8; font-family: Inter, sans-serif; font-size:7px; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:8px;">Diagram — Flux multi-tenant</div>
+    <div style="display:grid; grid-template-columns: 1fr auto 1fr; gap:10px; align-items:center;">
+      <div style="background:#1e293b; border:1px solid #334155; border-radius:8px; padding:10px; text-align:center;">
+        <div style="color:#a5b4fc; font-weight:700; font-family: Inter, sans-serif; font-size:7.5px;">CLIENTS</div>
+        <div style="margin-top:6px; line-height:1.8;">coach1.signauxx.com<br>coach2.signauxx.com<br>coachN.signauxx.com</div>
+        <div style="margin-top:6px; background:#312e81; padding:4px; border-radius:4px; font-size:6px;">Traefik wildcard *.signauxx.com<br>TLS Let's Encrypt</div>
+      </div>
+      <div style="color:#4f46e5; font-size:14px;">→<br>→<br>→</div>
+      <div style="background:#1e1b4b; border:1px solid #4338ca; border-radius:8px; padding:10px; text-align:center;">
+        <div style="color:#c4b5fd; font-weight:700; font-family: Inter, sans-serif; font-size:7.5px;">APP Next.js (orgId)</div>
+        <div style="margin-top:6px; line-height:1.8;">middleware withOrganization()<br>Prisma where: { orgId }<br>RBAC scoper par org</div>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:center; color:#4f46e5; margin:6px 0;">↓ &nbsp;&nbsp;&nbsp; ↓ &nbsp;&nbsp;&nbsp; ↓</div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+      <div style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:8px; text-align:center;"><div style="color:#6ee7b7; font-family: Inter, sans-serif; font-size:7px; font-weight:700;">PostgreSQL Neon</div><div style="margin-top:4px;">orgId FK sur 22 tables<br>Index composite (orgId, id)<br>Row-level isolation</div></div>
+      <div style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:8px; text-align:center;"><div style="color:#fbbf24; font-family: Inter, sans-serif; font-size:7px; font-weight:700;">Valkey + BullMQ</div><div style="margin-top:4px;">Queues préfixées org:123:signal<br>Redis pub/sub par org<br>DLQ par org</div></div>
+      <div style="background:#1e293b; border:1px solid #334155; border-radius:6px; padding:8px; text-align:center;"><div style="color:#f472b6; font-family: Inter, sans-serif; font-size:7px; font-weight:700;">Socket.IO</div><div style="margin-top:4px;">Rooms org:123:user:*<br>Adapter Redis<br>Auth cookie HMAC + org</div></div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div class="card">
+      <h3>Schema Prisma — 1 model + 22 FK</h3>
+      <div style="background:#0f172a; color:#e2e8f0; font-family: monospace; font-size:6.5px; padding:8px; border-radius:6px; line-height:1.6; margin-top:4px;">
+        model Organization {<br>&nbsp;&nbsp;id String @id @default(cuid())<br>&nbsp;&nbsp;slug String @unique // coach1<br>&nbsp;&nbsp;name String // "Coach Karim"<br>&nbsp;&nbsp;ownerId String<br>&nbsp;&nbsp;plan Tier // STARTER/PRO/SCALE<br>&nbsp;&nbsp;stripeCustomerId String?<br>&nbsp;&nbsp;signals Signal[]<br>&nbsp;&nbsp;members User[]<br>}<br><br>// Sur chaque table:<br>model Signal {<br>&nbsp;&nbsp;orgId String // + index<br>&nbsp;&nbsp;@@index([orgId, createdAt])<br>}
+      </div>
+    </div>
+    <div>
+      <h3>3 paliers de scale</h3>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+        <div style="display:flex; gap:8px; align-items:center; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; padding:7px;"><span style="background:#166534; color:white; font-size:7px; font-weight:800; padding:2px 6px; border-radius:4px;">0–100 orgs</span><span style="font-size:7px;">1 VPS app + 1 worker (actuel) • 5€/org</span></div>
+        <div style="display:flex; gap:8px; align-items:center; background:#eef2ff; border:1px solid #c7d2fe; border-radius:6px; padding:7px;"><span style="background:#3730a3; color:white; font-size:7px; font-weight:800; padding:2px 6px; border-radius:4px;">100–1k</span><span style="font-size:7px;">2 app (Hetzner) + Redis cluster</span></div>
+        <div style="display:flex; gap:8px; align-items:center; background:#fef3c7; border:1px solid #fde68a; border-radius:6px; padding:7px;"><span style="background:#92400e; color:white; font-size:7px; font-weight:800; padding:2px 6px; border-radius:4px;">1k–10k</span><span style="font-size:7px;">K8s + Neon autoscale + CDN</span></div>
+      </div>
+      <div class="callout" style="margin-top:8px; font-size:7px;"><strong>Sécurité :</strong> CSP nonce • orgId jamais depuis client • audit log par org • backup B2 par org possible</div>
+    </div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">11 / 14</span></div>
+</div>
+
+<!-- 12 FINANCIAL MODEL -->
+<div class="page">
+  <div class="kicker">11 — Financial Model</div>
+  <h1>50 coachs = 13k€ MRR.<br>Valo 1,57M€ (10× ARR).</h1>
+  <p class="subtitle">Mix 40% Starter / 45% Pro / 15% Scale • 514€ / org / mois en moyenne pondérée</p>
+
+  <table class="table" style="margin-top:10px;">
+    <tr><th>Tier</th><th>Prix</th><th>Membres</th><th>Rev. coach</th><th>Commission</th><th style="color:#4f46e5;">Rev. toi / org</th></tr>
+    <tr><td>Starter</td><td>49€</td><td>35</td><td>1 120€</td><td>112€ (10%)</td><td style="font-weight:800; color:#4f46e5;">161€</td></tr>
+    <tr><td>Pro ★</td><td>149€</td><td>180</td><td>5 760€</td><td>403€ (7%)</td><td style="font-weight:800; color:#4f46e5;">552€</td></tr>
+    <tr><td>Scale</td><td>299€</td><td>650</td><td>20 800€</td><td>1 040€ (5%)</td><td style="font-weight:800; color:#4f46e5;">1 339€</td></tr>
+    <tr style="background:#eef2ff; font-weight:700;"><td colspan="5" style="text-align:right;">Moyenne pondérée 40/45/15 →</td><td style="color:#3730a3;">≈ 514€ / org / mois</td></tr>
+  </table>
+
+  <div style="margin-top:10px; display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+    <div class="card" style="text-align:center; border-top:3px solid #94a3b8;">
+      <div style="font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#64748b;">Prudent — 10 coachs</div>
+      <div style="font-size:18px; font-weight:800; margin-top:4px;">2 623€</div><div style="font-size:7px; color:#64748b;">MRR M12</div>
+      <div style="margin-top:6px; background:#f8fafc; border-radius:6px; padding:6px; font-size:7px;"><strong>31,5k€ ARR</strong><br>Valo 315k€ (10×)</div>
+      <div style="font-size:6.5px; color:#94a3b8; margin-top:4px;">1 org/mois • churn 7%</div>
+    </div>
+    <div class="card" style="text-align:center; border:2px solid #4f46e5; background: linear-gradient(135deg, #eef2ff, #f5f3ff);">
+      <div style="font-size:7px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#4f46e5;">Base — 50 coachs ⭐</div>
+      <div style="font-size:18px; font-weight:800; margin-top:4px; color:#4f46e5;">13 117€</div><div style="font-size:7px; color:#6366f1;">MRR M12</div>
+      <div style="margin-top:6px; background:#4f46e5; color:white; border-radius:6px; padding:6px; font-size:7px;"><strong>157k€ ARR</strong><br>Valo 1,57M€ (10×)</div>
+      <div style="font-size:6.5px; color:#6366f1; margin-top:4px;">4–5 orgs/mois • churn 5%</div>
+    </div>
+    <div class="card" style="text-align:center; border-top:3px solid #f59e0b;">
+      <div style="font-size:7px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#92400e;">Ambitieux — 150 coachs</div>
+      <div style="font-size:18px; font-weight:800; margin-top:4px;">39 351€</div><div style="font-size:7px; color:#64748b;">MRR M12</div>
+      <div style="margin-top:6px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; padding:6px; font-size:7px;"><strong>472k€ ARR</strong><br>Valo 4,72M€ (10×)</div>
+      <div style="font-size:6.5px; color:#94a3b8; margin-top:4px;">12–13 orgs/mois • churn 4%</div>
+    </div>
+  </div>
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div class="card" style="background:#f0fdf4; border-color:#bbf7d0;">
+      <h3 style="color:#166534;">✅ Seuil rentabilité : 6 orgs</h3>
+      <div style="font-size:7.5px; color:#334155; margin-top:4px; line-height:1.6;">Coût fixe 400€ + 13€/org (infra 5€ + support 8€)<br>400 + 6×13 = 478€ vs 6×514 = 3 084€ MRR<br><strong>→ Bénéfice dès M2, marge 85% à 50 orgs</strong></div>
+    </div>
+    <div class="card" style="background:#0f172a; color:white;">
+      <h3 style="color:#a5b4fc;">Unit economics</h3>
+      <div style="font-size:7.5px; margin-top:4px; line-height:1.8;"><span style="color:#94a3b8;">CAC</span> 120€ &nbsp;•&nbsp; <span style="color:#94a3b8;">LTV</span> 514€ × 12 / 0,05 = 10k€+ &nbsp;•&nbsp; <span style="color:#6ee7b7;">LTV/CAC 85×</span><br><span style="color:#94a3b8;">Payback</span> 0,23 mois (7 jours) • <span style="color:#94a3b8;">Marge</span> 85% à scale</div>
+    </div>
+  </div>
+  <div style="margin-top:8px; font-size:6.5px; color:#94a3b8; text-align:center;">Détail complet : <span style="color:#4f46e5; font-weight:700;">saas/08-financial-model.md</span> • Hypothèses + sensibilité + 3 scénarios mois par mois</div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">12 / 14</span></div>
+</div>
+
+<!-- 13 RISQUES & MOAT -->
+<div class="page">
+  <div class="kicker">12 — Risques & Moat</div>
+  <h1>Ton moat n'est pas l'idée.<br>C'est 157k LOC d'avance.</h1>
+  <p class="subtitle">Risques adressés. Barrière à l'entrée mesurable.</p>
+
+  <div class="grid-2" style="margin-top:10px;">
+    <div>
+      <h3>⚠️ Risques & mitigations</h3>
+      <table class="table" style="margin-top:4px;">
+        <tr><th>Risque</th><th>Mitigation</th></tr>
+        <tr><td><strong>Conseil financier (AMF/ESMA)</strong></td><td>Disclaimer + CGU : “outil, pas CIF” • Responsabilité = coach white-label</td></tr>
+        <tr><td><strong>Chargebacks</strong></td><td>KYC + vidéo broker + preuve • Stripe Radar</td></tr>
+        <tr><td><strong>Churn coachs</strong></td><td>Journal + streaks + data lock-in • export impossible sans toi</td></tr>
+        <tr><td><strong>Concurrence Whop</strong></td><td>10× moins cher + vertical trading natif • TAM niche mais profond</td></tr>
+        <tr><td><strong>RGPD</strong></td><td>MinIO UE • auto-cleanup 7j • DPA par org • registre traitement</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>🏰 Moat — pourquoi tu ne te fais pas cloner en 2 semaines</h3>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:8px; display:flex; gap:8px;">
+          <span style="background:#4f46e5; color:white; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">◈</span>
+          <div><div style="font-size:7.5px; font-weight:800;">157k LOC • 4,5 mois d'avance</div><div style="font-size:6.5px; color:#64748b;">89 j-h • 913 commits • 37 migrations • 5,4k tests</div></div>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:8px; display:flex; gap:8px;">
+          <span style="background:#0f172a; color:white; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">🛡</span>
+          <div><div style="font-size:7.5px; font-weight:800;">Sécurité prod-grade rare</div><div style="font-size:6.5px; color:#64748b;">CSP nonce • hash-chain audit • impossible-travel • 0 vuln</div></div>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:8px; display:flex; gap:8px;">
+          <span style="background:#059669; color:white; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">⚙</span>
+          <div><div style="font-size:7.5px; font-weight:800;">Infra distribuée déjà scalée</div><div style="font-size:6.5px; color:#64748b;">Multi-VPS • Tailscale • Traefik • B2 backup • Valkey</div></div>
+        </div>
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:7px; padding:8px; display:flex; gap:8px;">
+          <span style="background:#7c3aed; color:white; width:20px; height:20px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:10px; flex-shrink:0;">🎨</span>
+          <div><div style="font-size:7.5px; font-weight:800;">UX premium différenciante</div><div style="font-size:6.5px; color:#64748b;">Design system • a11y #001-#025 • recharts • glassmorphisme</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:10px; background: linear-gradient(135deg, #eef2ff, #f5f3ff); border:1px solid #c7d2fe; border-radius:8px; padding:10px 12px; display:flex; justify-content:space-between; align-items:center;">
+    <div style="font-size:7.5px; color:#3730a3;"><strong>En 1 phrase :</strong> Un clone mettrait 4,5 mois et 100–160k€ pour arriver où tu es aujourd'hui — et tu as déjà 81 users qui paient.</div>
+    <div style="background:white; border:1px solid #c7d2fe; padding:6px 10px; border-radius:6px; font-size:7px; font-weight:800; color:#4f46e5;">Doc juridique : saas/07-risques-juridiques.md</div>
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">13 / 14</span></div>
+</div>
+
+<!-- 14 ASK -->
+<div class="page" style="background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);">
+  <div class="kicker">13 — Ask & Prochaines étapes</div>
+  <h1>On lance à 5 pilotes.<br>Tu veux être dedans ?</h1>
+  
+  <div class="grid-2" style="margin-top:12px;">
+    <div class="card" style="background:#0f172a; color:white; border:none;">
+      <div style="font-size:7px; letter-spacing:0.12em; text-transform:uppercase; color:#a5b4fc; font-weight:700;">Deux voies — tu choisis</div>
+      <div style="margin-top:10px; display:flex; flex-direction:column; gap:8px;">
+        <div style="background: rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.3); border-radius:8px; padding:10px;">
+          <div style="font-size:8px; font-weight:800; color:#a5b4fc;">🚀 Bootstrapped (recommandé)</div>
+          <div style="font-size:7px; color:#cbd5e1; margin-top:3px;">0 levée • Cash Now 3–6k€ M1 (IB+VIP+licence) finance le dev SaaS</div>
+          <div style="font-size:7px; color:#94a3b8; margin-top:4px;">→ Rentable à 6 orgs • 13k€ MRR à 50 orgs en 6 mois</div>
+        </div>
+        <div style="background: rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); border-radius:8px; padding:10px;">
+          <div style="font-size:8px; font-weight:800; color:white;">💰 Levée 40–60k€ (option)</div>
+          <div style="font-size:7px; color:#cbd5e1; margin-top:3px;">15k€ dev + 15k€ GTM + 10k€ tampon + 10k€ juridique</div>
+          <div style="font-size:7px; color:#94a3b8; margin-top:4px;">→ 150 orgs en 12 mois • 39k€ MRR • valo 4,7M€</div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <h3>Checklist 12 semaines — S1 → S12</h3>
+      <div style="display:flex; flex-direction:column; gap:5px; margin-top:6px;">
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#4f46e5; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S1–2</span><span><strong>Multi-tenant</strong> — schema + middleware • 1 org/jour</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#4f46e5; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S3</span><span><strong>5 pilotes live</strong> — moncoach.signauxx.com • feedback</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#3730a3; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S4–5</span><span><strong>Stripe billing</strong> — checkout + webhooks + limites</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#3730a3; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S6</span><span><strong>15 orgs</strong> — GTM full • TikTok 1/j • DM 30/j</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#059669; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S7–9</span><span><strong>30 orgs</strong> — API publique + i18n EN • bouche-à-oreille</span></div>
+        <div style="display:flex; gap:8px; align-items:center; font-size:7px;"><span style="background:#059669; color:white; padding:2px 6px; border-radius:4px; font-weight:800; font-size:6px;">S10–12</span><span><strong>50 orgs → 13k€ MRR</strong> • valo 1,57M€ • levée ou scale</span></div>
+      </div>
+      <div style="margin-top:8px; background:#f8fafc; border:1px solid #e2e8f0; border-radius:6px; padding:8px;">
+        <div style="font-size:7px; font-weight:700; color:#334155;">📂 Dossier complet livré</div>
+        <div style="font-size:6.5px; color:#64748b; margin-top:3px; line-height:1.6;">42 fichiers • 352KB • <span style="font-family:monospace; background:#f1f5f9; padding:1px 4px; border-radius:3px;">saas/</span> : valeur, audit, roadmap (22 fichiers), GTM, juridique, financial, checklist<br>13 revenus + 10 pivots + 3 SaaS models en fiches individuelles</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px; background: linear-gradient(135deg, #4f46e5, #7c3aed); border-radius:10px; padding:14px 16px; color:white; display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <div style="font-size:11px; font-weight:800;">SignauxX — Prêt à scaler.</div>
+      <div style="font-size:7.5px; color:#c4b5fd; margin-top:2px;">157k LOC • 81 users prod • 0 dette tech bloquante • 4–6 semaines pour SaaS</div>
+    </div>
+    <div style="background:white; color:#4f46e5; padding:8px 16px; border-radius:8px; font-size:8px; font-weight:800; text-align:center;">CONTACT<br><span style="font-size:7px; font-weight:500; color:#64748b;">digitaleflex • signauxx.com</span></div>
+  </div>
+
+  <div style="margin-top:10px; text-align:center; font-size:6.5px; color:#94a3b8;">
+    Dossier SaaS complet : <span style="color:#4f46e5; font-weight:700;">/home/audest/nba/saas/</span> &nbsp;•&nbsp; Deck généré le 6 sept 2026 &nbsp;•&nbsp; Confidential — ne pas distribuer sans accord
+  </div>
+  <div class="footer"><span>SignauxX — Investor Deck — Sept 2026 — Confidential</span><span class="page-num">14 / 14</span></div>
+</div>
+
+</body>
+</html>

@@ -22,6 +22,20 @@ services:
       - "traefik.http.services.nba-maintenance.loadbalancer.server.port=80"
     restart: "no"
 
+  # ── Fallback erreurs 502/503 — affiche une belle page au lieu du "Bad Gateway" brut Traefik
+  # Doit s'appeler `error-pages` (sans préfixe) car le provider file de Traefik attend http://error-pages:80
+  # Utilisé par le middleware `errors` (500-599) du file provider + Docker
+  error-pages:
+    container_name: error-pages
+    build:
+      context: .
+      dockerfile: Dockerfile.maintenance
+    networks:
+      - proxy
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=false"
+
   app:
     # Image immutable par SHA pour reproductibilite ; latest pour compat local/dev.
     image: ghcr.io/digitaleflex/nba:${NBA_IMAGE_TAG:-latest}
@@ -122,8 +136,8 @@ services:
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: server /data --console-address ":9001"
     ports:
-      - "9000:9000" # API S3
-      - "9001:9001" # Console d'administration
+      - "127.0.0.1:9000:9000" # API S3 (localhost only - évite conflit + sécu)
+      - "127.0.0.1:9001:9001" # Console d'administration
     restart: unless-stopped
     networks:
       - nba
@@ -216,7 +230,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
       IMGPROXY_S3_ENDPOINT: "http://nba-minio:9000"
     ports:
-      - "8080:8080" # imgproxy API
+      - "127.0.0.1:8083:8080" # imgproxy API (0.0.0.0:8080 conflit avec digi-innova-webserver)
     depends_on:
       - nba-minio
     restart: unless-stopped

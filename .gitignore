@@ -54,3 +54,4 @@ __pycache__/
 # agent skills
 /.agents/
 skills-lock.json
+compose.override.yml
