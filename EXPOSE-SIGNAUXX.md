@@ -5,6 +5,7 @@
 > **Chiffres d'usage** : dossier de septembre 2026 (81 utilisateurs en production, 8 releases, 913 commits).
 > **Nom interne** : NeverBrokeAgain (NBA). **Nom commercial** : SignauxX.
 > **Support de présentation** : `SIGNAUXX-DECK.html` (16 slides, navigation clavier) et `SIGNAUXX-DECK.pdf` (version PDF prête à projeter).
+> **Version WhatsApp** : `SIGNAUXX-WHATSAPP.txt` (4 messages prêts à copier-coller, centrés trader).
 
 ### Comment utiliser ce document
 
