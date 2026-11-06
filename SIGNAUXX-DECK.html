@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SignauxX — L'expérience trader</title>
+<style>
+  :root{
+    --bg:#05080f;
+    --panel:#0a101a;
+    --panel-2:#0d1522;
+    --line:rgba(255,255,255,.085);
+    --text:#f8fafc;
+    --muted:#94a3b8;
+    --muted-2:#64748b;
+    --emerald:#10b981;
+    --mint:#6ee7b7;
+    --gold:#f5c46b;
+    --rose:#fb7185;
+    --blue:#60a5fa;
+    --violet:#a78bfa;
+    --radius:18px;
+    --font:"Inter","SF Pro Display","Segoe UI",system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+    --mono:"SFMono-Regular",Consolas,"Liberation Mono",monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
+  body{font-family:var(--font);overflow:hidden;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+  button{font-family:inherit}
+  .svg-sprite{position:absolute;width:0;height:0;overflow:hidden}
+  .icon{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+  /* ── Stage 16:9, scaled to viewport ─────────────────────────── */
+  .stage-wrap{position:fixed;inset:0;display:grid;place-items:center;overflow:hidden}
+  .stage{
+    width:1280px;height:720px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(900px 520px at 10% 0%,rgba(16,185,129,.13),transparent 62%),
+      radial-gradient(800px 520px at 100% 100%,rgba(245,196,107,.09),transparent 62%),
+      linear-gradient(180deg,#070c15 0%,#05080f 100%);
+    transform-origin:center center;
+    box-shadow:0 40px 120px rgba(0,0,0,.55);
+    border-radius:18px;
+  }
+  .slide{
+    position:absolute;inset:0;display:none;flex-direction:column;
+    padding:52px 62px 58px;overflow:hidden;isolation:isolate;
+    background:radial-gradient(720px 360px at 88% 2%,var(--glow,rgba(16,185,129,.10)),transparent 62%);
+  }
+  .slide.active{display:flex;animation:slideIn .55s cubic-bezier(.2,.8,.2,1) both}
+  @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    .slide.active{animation:none}
+    .pulse,.float{animation:none!important}
+  }
+
+  /* ── Shared type ────────────────────────────────────────────── */
+  .kicker{
+    display:flex;align-items:center;gap:10px;margin:0 0 16px;
+    font-size:10.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--mint)
+  }
+  .kicker::before{content:"";width:26px;height:1px;background:currentColor;opacity:.65}
+  .h1,.h2{margin:0;font-weight:800;text-wrap:balance}
+  .h1{font-size:64px;line-height:.98;letter-spacing:-.055em;max-width:760px}
+  .h2{font-size:42px;line-height:1.04;letter-spacing:-.045em;max-width:820px}
+  .h1 em,.h2 em{font-style:normal;color:var(--mint)}
+  .lead{margin:15px 0 0;max-width:640px;font-size:16.5px;line-height:1.55;color:var(--muted)}
+  .small{font-size:11.5px;line-height:1.5;color:var(--muted-2)}
+  .mono{font-family:var(--mono)}
+  .accent{color:var(--mint)}
+  .gold{color:var(--gold)}
+  .rose{color:var(--rose)}
+  .blue{color:var(--blue)}
+  .muted{color:var(--muted)}
+
+  .split{display:grid;grid-template-columns:1.02fr .98fr;gap:46px;align-items:center;flex:1;min-height:0}
+  .split-wide{display:grid;grid-template-columns:1.12fr .88fr;gap:44px;align-items:center;flex:1;min-height:0}
+  .stack{display:flex;flex-direction:column;gap:14px}
+
+  .bullets{display:flex;flex-direction:column;gap:11px;margin:20px 0 0;padding:0;list-style:none}
+  .bullets li{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;line-height:1.45;color:#cbd5e1}
+  .bullets li .icon{width:16px;height:16px;color:var(--mint);margin-top:2px}
+  .bullets strong{color:var(--text);font-weight:650}
+
+  .cards{display:grid;gap:13px}
+  .cards-2{grid-template-columns:repeat(2,1fr)}
+  .cards-3{grid-template-columns:repeat(3,1fr)}
+  .cards-4{grid-template-columns:repeat(4,1fr)}
+  .card{
+    position:relative;padding:18px;border-radius:var(--radius);
+    background:linear-gradient(180deg,rgba(255,255,255,.055),rgba(255,255,255,.022));
+    border:1px solid var(--line);overflow:hidden
+  }
+  .card::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:radial-gradient(220px 110px at 100% 0%,rgba(255,255,255,.055),transparent 70%)
+  }
+  .card h3{margin:12px 0 5px;font-size:14.5px;line-height:1.2;letter-spacing:-.01em}
+  .card p{margin:0;font-size:12px;line-height:1.5;color:var(--muted)}
+  .icon-box{
+    width:36px;height:36px;border-radius:11px;display:grid;place-items:center;
+    background:rgba(16,185,129,.11);border:1px solid rgba(16,185,129,.23);color:var(--mint)
+  }
+  .icon-box.gold{background:rgba(245,196,107,.10);border-color:rgba(245,196,107,.22);color:var(--gold)}
+  .icon-box.blue{background:rgba(96,165,250,.10);border-color:rgba(96,165,250,.22);color:var(--blue)}
+  .icon-box.violet{background:rgba(167,139,250,.10);border-color:rgba(167,139,250,.22);color:var(--violet)}
+  .icon-box.rose{background:rgba(251,113,133,.10);border-color:rgba(251,113,133,.22);color:var(--rose)}
+
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;
+    border:1px solid var(--line);background:rgba(255,255,255,.035);color:#cbd5e1;font-size:10.5px;font-weight:600
+  }
+  .pill .icon{width:12px;height:12px;color:var(--mint)}
+
+  .quote{
+    margin-top:auto;padding-top:18px;border-top:1px solid var(--line);
+    display:flex;align-items:center;gap:12px;font-size:12.5px;color:var(--muted)
+  }
+  .quote strong{color:var(--text);font-weight:650}
+  .quote-line{width:3px;height:32px;border-radius:3px;background:linear-gradient(180deg,var(--emerald),transparent)}
+
+  /* ── Cover ──────────────────────────────────────────────────── */
+  .cover{padding:58px 64px 52px}
+  .cover-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;flex:1;min-height:0}
+  .brand{display:flex;align-items:center;gap:11px;margin-bottom:26px}
+  .brand img{width:34px;height:34px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+  .brand-name{font-size:14px;font-weight:800;letter-spacing:.02em}
+  .brand-sub{font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted-2);margin-top:2px}
+  .cover .h1{font-size:60px}
+  .cover .lead{max-width:560px;font-size:16px}
+  .cover-footer{display:flex;align-items:center;gap:14px;margin-top:28px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted-2)}
+  .cover-footer b{color:var(--mint);font-weight:700}
+  .cover-phone-wrap{display:flex;justify-content:center;position:relative}
+  .cover-phone-wrap::before{
+    content:"";position:absolute;width:340px;height:340px;border-radius:50%;
+    background:radial-gradient(circle,rgba(16,185,129,.18),transparent 68%);filter:blur(12px)
+  }
+  .float{animation:float 6s ease-in-out infinite}
+  @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-9px)}}
+
+  /* ── Phone mock ─────────────────────────────────────────────── */
+  .phone{
+    width:294px;height:548px;border-radius:40px;border:1px solid rgba(255,255,255,.14);
+    background:#080d16;padding:9px;position:relative;z-index:1;
+    box-shadow:0 34px 90px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.03)
+  }
+  .phone-screen{height:100%;border-radius:32px;background:#060b13;border:1px solid rgba(255,255,255,.055);overflow:hidden;position:relative}
+  .phone-notch{position:absolute;top:16px;left:50%;transform:translateX(-50%);width:88px;height:20px;border-radius:20px;background:#04070c;z-index:4}
+  .phone-top{padding:36px 14px 10px;display:flex;align-items:center;justify-content:space-between}
+  .phone-title{font-size:13px;font-weight:800;letter-spacing:-.02em}
+  .phone-sub{font-size:8px;color:var(--muted-2);margin-top:2px}
+  .avatar{width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#10b981,#065f46);display:grid;place-items:center;font-size:8px;font-weight:800;color:#03110c}
+  .phone-chips{display:flex;flex-wrap:wrap;gap:4px;padding:8px 14px 7px;overflow:visible}
+  .chip{font-size:7px;padding:3px 7px;border-radius:999px;border:1px solid var(--line);color:var(--muted);white-space:nowrap}
+  .chip.on{background:rgba(16,185,129,.16);border-color:rgba(16,185,129,.32);color:var(--mint);font-weight:700}
+  .phone-feed{padding:0 12px;display:flex;flex-direction:column;gap:8px}
+  .sig{
+    border:1px solid var(--line);border-radius:12px;padding:10px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015));
+    position:relative
+  }
+  .sig.unread{border-color:rgba(16,185,129,.26);background:linear-gradient(180deg,rgba(16,185,129,.075),rgba(255,255,255,.015))}
+  .sig-top{display:flex;align-items:center;justify-content:space-between;gap:6px}
+  .sig-tag{font-size:7px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mint)}
+  .sig-time{font-size:7px;color:var(--muted-2)}
+  .sig-title{font-size:10px;font-weight:700;margin:5px 0 2px;line-height:1.25}
+  .sig-body{font-size:7.5px;line-height:1.4;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .sig-foot{display:flex;align-items:center;gap:6px;margin-top:7px}
+  .sig-dot{width:4px;height:4px;border-radius:50%;background:var(--mint)}
+  .sig-meta{font-size:6.8px;color:var(--muted-2)}
+  .phone-nav{position:absolute;bottom:0;left:0;right:0;height:48px;border-top:1px solid var(--line);display:flex;align-items:center;justify-content:space-around;background:rgba(6,11,19,.9);backdrop-filter:blur(10px)}
+  .phone-nav .icon{width:13px;height:13px;color:var(--muted-2)}
+  .phone-nav .on .icon{color:var(--mint)}
+
+  /* ── Browser mock ───────────────────────────────────────────── */
+  .browser{border-radius:16px;border:1px solid var(--line);background:var(--panel);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.45)}
+  .browser-bar{height:32px;display:flex;align-items:center;gap:5px;padding:0 12px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.025)}
+  .dot{width:7px;height:7px;border-radius:50%}
+  .dot.r{background:#fb7185}.dot.y{background:#f5c46b}.dot.g{background:#10b981}
+  .browser-url{margin-left:8px;font-size:8px;color:var(--muted-2);background:rgba(255,255,255,.04);border:1px solid var(--line);padding:3px 10px;border-radius:20px}
+  .browser-body{padding:14px}
+  .mock-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px}
+  .mock-title{font-size:11px;font-weight:800}
+  .mock-sub{font-size:7px;color:var(--muted-2);margin-top:2px}
+  .mock-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+  .mock-kpi{background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:10px;padding:9px}
+  .mock-kpi .label{font-size:6px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.1em}
+  .mock-kpi .value{font-size:14px;font-weight:800;margin-top:3px;letter-spacing:-.02em}
+  .mock-kpi .delta{font-size:6px;color:var(--mint);margin-top:2px}
+  .mock-chart{margin-top:9px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:10px;padding:10px}
+  .mock-chart-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+  .mock-chart-title{font-size:7px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+  .bars{display:flex;align-items:flex-end;gap:5px;height:78px}
+  .bar{flex:1;border-radius:3px 3px 0 0;background:linear-gradient(180deg,rgba(16,185,129,.95),rgba(16,185,129,.12));min-height:6px}
+  .bar.dim{background:linear-gradient(180deg,rgba(148,163,184,.45),rgba(148,163,184,.06))}
+  .mock-rows{display:flex;flex-direction:column;gap:5px;margin-top:9px}
+  .mock-row{display:flex;align-items:center;gap:7px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.025)}
+  .mock-row .icon{width:10px;height:10px;color:var(--mint)}
+  .mock-row .t{font-size:7px;font-weight:600;flex:1}
+  .mock-row .s{font-size:6px;color:var(--muted-2)}
+
+  /* ── Signal detail mock ─────────────────────────────────────── */
+  .detail{
+    border-radius:18px;border:1px solid rgba(16,185,129,.2);background:linear-gradient(180deg,rgba(16,185,129,.055),rgba(255,255,255,.02));
+    padding:18px;box-shadow:0 30px 80px rgba(0,0,0,.4)
+  }
+  .detail-head{display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:10px}
+  .detail-badge{font-size:7px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mint);border:1px solid rgba(16,185,129,.28);background:rgba(16,185,129,.1);padding:4px 8px;border-radius:999px}
+  .detail-date{font-size:7px;color:var(--muted-2)}
+  .detail-title{font-size:15px;font-weight:800;margin:12px 0 5px;letter-spacing:-.02em}
+  .detail-text{font-size:9px;line-height:1.55;color:#cbd5e1}
+  .detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+  .detail-cell{border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:rgba(255,255,255,.025)}
+  .detail-cell .k{font-size:6px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.1em}
+  .detail-cell .v{font-size:9px;font-weight:700;margin-top:2px}
+  .chart-box{margin-top:10px;border:1px solid var(--line);border-radius:10px;background:#070d15;padding:8px;overflow:hidden}
+  .chart-box svg{display:block;width:100%;height:88px}
+  .detail-actions{display:flex; gap:5px;margin-top:10px}
+  .mini-btn{font-size:7px;padding:5px 8px;border-radius:7px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.025);display:flex;align-items:center;gap:4px}
+  .mini-btn.on{color:var(--gold);border-color:rgba(245,196,107,.25);background:rgba(245,196,107,.08)}
+  .mini-btn .icon{width:8px;height:8px}
+  .trade-link{margin-top:9px;border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.09);border-radius:8px;padding:7px;text-align:center;font-size:8px;font-weight:700;color:var(--mint)}
+
+  /* ── Journal mock ───────────────────────────────────────────── */
+  .form-card{border-radius:18px;border:1px solid var(--line);background:var(--panel);padding:16px;box-shadow:0 30px 80px rgba(0,0,0,.42)}
+  .form-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+  .form-title{font-size:11px;font-weight:800}
+  .form-pill{font-size:7px;color:var(--mint);border:1px solid rgba(16,185,129,.25);background:rgba(16,185,129,.08);padding:4px 8px;border-radius:999px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+  .field{border:1px solid var(--line);border-radius:8px;background:rgba(255,255,255,.025);padding:7px 8px}
+  .field .lab{font-size:6px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.1em}
+  .field .val{font-size:9px;font-weight:600;margin-top:2px;color:#e2e8f0}
+  .field .val.green{color:var(--mint)}
+  .pnl-strip{display:flex;align-items:center;justify-content:space-between;margin-top:9px;border:1px solid rgba(16,185,129,.22);background:rgba(16,185,129,.07);border-radius:9px;padding:8px 10px}
+  .pnl-strip .k{font-size:7px;color:var(--muted)}
+  .pnl-strip .v{font-size:15px;font-weight:800;color:var(--mint)}
+  .mood-row{display:flex;gap:4px;margin-top:7px}
+  .mood{font-size:8px;padding:4px 6px;border-radius:6px;border:1px solid var(--line);background:rgba(255,255,255,.025);color:var(--muted)}
+  .mood.on{border-color:rgba(16,185,129,.3);background:rgba(16,185,129,.1);color:var(--mint)}
+
+  /* ── Stats slide ────────────────────────────────────────────── */
+  .stats-kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:10px}
+  .stat{border:1px solid var(--line);border-radius:13px;background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02));padding:12px}
+  .stat .k{font-size:7.5px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.1em}
+  .stat .v{font-size:22px;font-weight:800;letter-spacing:-.03em;margin-top:4px}
+  .stat .s{font-size:7px;color:var(--muted-2);margin-top:2px}
+  .stats-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:12px;margin-top:12px}
+  .panel{border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.028);padding:12px}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+  .panel-title{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:700}
+  .panel-tag{font-size:7px;color:var(--mint)}
+  .pair-bars{display:flex;flex-direction:column;gap:6px}
+  .pair{display:grid;grid-template-columns:42px 1fr 34px;align-items:center;gap:7px;font-size:7px;color:var(--muted)}
+  .track{height:5px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden}
+  .fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--emerald),var(--mint))}
+  .fill.rose{background:linear-gradient(90deg,#fb7185,#fda4af)}
+  .emotion-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-top:4px}
+  .emo{display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);border-radius:7px;padding:5px 7px;font-size:7px;color:var(--muted)}
+  .emo b{color:#e2e8f0}
+  .callout{margin-top:12px;border-left:3px solid var(--emerald);background:rgba(16,185,129,.06);border-radius:0 8px 8px 0;padding:8px 10px;font-size:9px;color:#cbd5e1}
+
+  /* ── Discipline / community / control ───────────────────────── */
+  .ring{width:150px;height:150px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--emerald) 0 78%,rgba(255,255,255,.07) 78% 100%)}
+  .ring::before{content:"";position:absolute;inset:9px;border-radius:50%;background:#0a101a}
+  .ring-inner{position:relative;text-align:center}
+  .ring-inner .n{font-size:32px;font-weight:800;line-height:1;letter-spacing:-.05em}
+  .ring-inner .l{font-size:7px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.14em;margin-top:4px}
+  .mission{display:flex;align-items:center;gap:7px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:8px;color:var(--muted);background:rgba(255,255,255,.025)}
+  .mission .check{width:13px;height:13px;border-radius:50%;border:1px solid rgba(16,185,129,.35);display:grid;place-items:center;color:var(--mint);font-size:7px}
+  .mission.done{color:#cbd5e1;border-color:rgba(16,185,129,.2)}
+  .chat{display:flex;flex-direction:column;gap:7px}
+  .bubble{max-width:82%;padding:7px 9px;border-radius:10px;font-size:8px;line-height:1.45}
+  .bubble.them{background:rgba(255,255,255,.06);border:1px solid var(--line);border-bottom-left-radius:3px;color:#cbd5e1}
+  .bubble.me{align-self:flex-end;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.25);border-bottom-right-radius:3px;color:#d1fae5}
+  .bubble .meta{font-size:6px;color:var(--muted-2);margin-top:2px}
+  .device{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:rgba(255,255,255,.025)}
+  .device .icon{width:12px;height:12px;color:var(--mint)}
+  .device .t{font-size:7.5px;font-weight:600;flex:1}
+  .device .s{font-size:6px;color:var(--muted-2)}
+  .toggle{width:22px;height:12px;border-radius:99px;background:rgba(16,185,129,.35);position:relative}
+  .toggle::after{content:"";position:absolute;width:8px;height:8px;border-radius:50%;background:#6ee7b7;top:2px;right:2px}
+  .toggle.off{background:rgba(255,255,255,.12)}
+  .toggle.off::after{right:auto;left:2px;background:#94a3b8}
+
+  /* ── Week timeline ──────────────────────────────────────────── */
+  .week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:12px}
+  .day{border:1px solid var(--line);border-radius:11px;background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.018));padding:10px 8px;min-height:150px;display:flex;flex-direction:column;gap:6px}
+  .day .d{font-size:7px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.14em}
+  .day .n{font-size:10px;font-weight:800;letter-spacing:-.01em}
+  .day .txt{font-size:8px;line-height:1.4;color:var(--muted)}
+  .day .mini{display:flex;flex-direction:column;gap:4px;margin-top:7px}
+  .day .mini span{font-size:7px;line-height:1.3;color:var(--muted);display:flex;gap:4px;align-items:flex-start}
+  .day .mini span::before{content:"";width:3px;height:3px;border-radius:50%;background:rgba(16,185,129,.7);margin-top:3px;flex:none}
+  .day .res{font-size:8px;line-height:1.35;color:var(--mint);margin-top:auto;font-weight:600}
+  .day .dot{width:6px;height:6px;border-radius:50%;background:var(--emerald);margin-top:6px;box-shadow:0 0 0 4px rgba(16,185,129,.08)}
+  .day.hot{border-color:rgba(16,185,129,.25);background:linear-gradient(180deg,rgba(16,185,129,.08),rgba(255,255,255,.018))}
+
+  /* ── Comparison table ───────────────────────────────────────── */
+  .compare{width:100%;border-collapse:separate;border-spacing:0;font-size:10px;margin-top:12px}
+  .compare th,.compare td{padding:7px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+  .compare thead th{font-size:7px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.14em;font-weight:700}
+  .compare tbody td:first-child{color:var(--muted);font-size:9px}
+  .compare tbody td:nth-child(2){color:#cbd5e1}
+  .compare tbody td:nth-child(3){color:#d1fae5;font-weight:600}
+  .compare .yes{color:var(--mint)}
+  .compare .no{color:var(--rose)}
+  .compare tr:last-child td{border-bottom:none}
+
+  /* ── Plans / access ─────────────────────────────────────────── */
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;margin-top:10px}
+  .step{border:1px solid var(--line);border-radius:13px;background:rgba(255,255,255,.028);padding:14px;position:relative}
+  .step .num{font-size:8px;font-weight:800;color:var(--mint);letter-spacing:.12em}
+  .step h3{font-size:12px;margin:7px 0 4px}
+  .step p{font-size:9px;line-height:1.45;color:var(--muted);margin:0}
+  .plans{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+  .plan{border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.025);padding:10px}
+  .plan .p{font-size:8px;color:var(--muted-2);text-transform:uppercase;letter-spacing:.12em}
+  .plan .n{font-size:10px;font-weight:750;margin-top:3px}
+  .plan .m{font-size:7.5px;color:var(--muted);margin-top:2px}
+
+  /* ── CTA ────────────────────────────────────────────────────── */
+  .cta{display:flex;flex-direction:column;justify-content:center;align-items:flex-start;height:100%}
+  .cta .h1{font-size:48px;max-width:640px}
+  .cta-outcomes{display:flex;gap:10px;margin-top:24px}
+  .cta-outcome{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:9px 12px;font-size:10px;color:#cbd5e1;background:rgba(255,255,255,.028)}
+  .cta-outcome .icon{width:14px;height:14px;color:var(--mint)}
+  .cta-button{display:inline-flex;align-items:center;gap:9px;margin-top:24px;background:var(--emerald);color:#03110c;font-size:12px;font-weight:800;padding:12px 18px;border-radius:11px;border:none;box-shadow:0 14px 34px rgba(16,185,129,.28)}
+  .cta-button .icon{width:14px;height:14px}
+  .disclaimer{position:absolute;left:62px;right:62px;bottom:30px;font-size:7.5px;line-height:1.5;color:var(--muted-2);border-top:1px solid var(--line);padding-top:9px}
+
+  /* ── HUD ────────────────────────────────────────────────────── */
+  .hud{
+    position:fixed;left:50%;bottom:14px;transform:translateX(-50%);
+    display:flex;align-items:center;gap:10px;padding:6px 8px 6px 12px;border-radius:999px;
+    background:rgba(7,12,20,.82);border:1px solid rgba(255,255,255,.1);backdrop-filter:blur(16px);
+    color:var(--muted);font-size:10px;z-index:50;box-shadow:0 12px 40px rgba(0,0,0,.35)
+  }
+  .hud-brand{display:flex;align-items:center;gap:7px;font-weight:700;color:#e2e8f0}
+  .hud-brand img{width:16px;height:16px;border-radius:5px}
+  .hud-sep{color:rgba(255,255,255,.18)}
+  .hud-label{max-width:150px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted-2)}
+  .hud button{
+    width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.1);
+    background:rgba(255,255,255,.04);color:#cbd5e1;cursor:pointer;display:grid;place-items:center;font-size:12px;
+    transition:.2s
+  }
+  .hud button:hover{background:rgba(16,185,129,.14);border-color:rgba(16,185,129,.3);color:var(--mint)}
+  .hud button.wide{width:auto;padding:0 10px;border-radius:999px;font-size:9px;display:flex;align-items:center;gap:5px}
+  .hud button.wide .icon{width:11px;height:11px}
+  .hud-count{font-variant-numeric:tabular-nums;color:#e2e8f0;font-weight:700;min-width:44px;text-align:center}
+  .progress{position:fixed;top:0;left:0;right:0;height:2px;background:rgba(255,255,255,.06);z-index:60}
+  .progress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--emerald),var(--gold));transition:width .35s ease}
+
+  /* ── Print / PDF ────────────────────────────────────────────── */
+  @page{size:13.333in 7.5in;margin:0}
+  @media print{
+    html,body{background:#05080f;overflow:visible}
+    .stage-wrap{position:static;display:block;overflow:visible}
+    .stage{width:auto;height:auto;transform:none!important;box-shadow:none;border-radius:0;overflow:visible}
+    .slide{position:relative;display:flex!important;width:13.333in;height:7.5in;page-break-after:always;break-after:page;animation:none!important}
+    .slide:last-child{page-break-after:auto;break-after:auto}
+    .hud,.progress{display:none!important}
+    *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  }
+</style>
+</head>
+<body>
+
+<svg class="svg-sprite" aria-hidden="true">
+  <symbol id="i-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M7.8 7.8a6 6 0 0 0 0 8.4M16.2 7.8a6 6 0 0 1 0 8.4M4.9 4.9a10 10 0 0 0 0 14.2M19.1 4.9a10 10 0 0 1 0 14.2"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-7"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 3V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-device" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8M12 18v4"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></symbol>
+  <symbol id="i-archive" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8M10 12h4"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5l11 7-11 7z"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 21h14"/></symbol>
+</svg>
+
+<div class="progress"><span id="progressBar"></span></div>
+
+<div class="stage-wrap">
+<div class="stage" id="stage">
+
+  <!-- 01 — COVER -->
+  <section class="slide active cover" data-title="SignauxX" style="--glow:rgba(16,185,129,.14)">
+    <div class="cover-grid">
+      <div>
+        <div class="brand">
+          <img src="public/logo.svg" alt="SignauxX">
+          <div>
+            <div class="brand-name">SignauxX</div>
+            <div class="brand-sub">Trading signal platform</div>
+          </div>
+        </div>
+        <h1 class="h1">Le signal ne suffit pas.<br><em>Ce qu'il te faut, c'est un système.</em></h1>
+        <p class="lead">SignauxX réunit tes signaux, ton journal, tes statistiques et ton coaching dans un seul espace pensé pour le trader.</p>
+        <div class="pill-row">
+          <span class="pill"><svg class="icon"><use href="#i-radio"/></svg> Temps réel</span>
+          <span class="pill"><svg class="icon"><use href="#i-book"/></svg> Journal intégré</span>
+          <span class="pill"><svg class="icon"><use href="#i-shield"/></svg> Communauté vérifiée</span>
+        </div>
+        <div class="cover-footer"><b>Recevoir</b> <span>·</span> <b>Comprendre</b> <span>·</span> <b>Exécuter</b> <span>·</span> <b>Mesurer</b></div>
+      </div>
+      <div class="cover-phone-wrap">
+        <div class="phone float">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-top">
+              <div><div class="phone-title">Mes signaux</div><div class="phone-sub">3 nouveaux aujourd'hui</div></div>
+              <div class="avatar">JD</div>
+            </div>
+            <div class="phone-chips">
+              <span class="chip on">Tous</span><span class="chip">Non lus</span><span class="chip">Forex</span><span class="chip">Deriv</span><span class="chip">Favoris</span>
+            </div>
+            <div class="phone-feed">
+              <div class="sig unread">
+                <div class="sig-top"><span class="sig-tag">Forex · Pro</span><span class="sig-time">09:42</span></div>
+                <div class="sig-title">EUR/USD — Rebond sur support</div>
+                <div class="sig-body">Contexte H1, entrée sur retest, structure haussière confirmée. TP et SL indiqués dans l'analyse.</div>
+                <div class="sig-foot"><span class="sig-dot"></span><span class="sig-meta">Nouveau · il y a 2 min</span></div>
+              </div>
+              <div class="sig unread">
+                <div class="sig-top"><span class="sig-tag">Deriv · Indices</span><span class="sig-time">08:15</span></div>
+                <div class="sig-title">US30 — Cassure de range</div>
+                <div class="sig-body">Momentum acheteur, retest de la zone de cassure. Gestion du risque expliquée.</div>
+                <div class="sig-foot"><span class="sig-dot"></span><span class="sig-meta">Nouveau · il y a 1 h</span></div>
+              </div>
+              <div class="sig">
+                <div class="sig-top"><span class="sig-tag">Forex</span><span class="sig-time">Hier</span></div>
+                <div class="sig-title">GBP/JPY — Prise de profit</div>
+                <div class="sig-body">Clôture partielle recommandée après objectif atteint.</div>
+                <div class="sig-foot"><span class="sig-meta">Lu · Favori</span></div>
+              </div>
+            </div>
+            <div class="phone-nav">
+              <span class="on"><svg class="icon"><use href="#i-radio"/></svg></span>
+              <span><svg class="icon"><use href="#i-book"/></svg></span>
+              <span><svg class="icon"><use href="#i-chart"/></svg></span>
+              <span><svg class="icon"><use href="#i-message"/></svg></span>
+              <span><svg class="icon"><use href="#i-user"/></svg></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 — PAIN -->
+  <section class="slide" data-title="Le constat" style="--glow:rgba(251,113,133,.10)">
+    <div class="split">
+      <div>
+        <div class="kicker">Le constat</div>
+        <h2 class="h2">Tu ne perds pas à cause du manque de signaux.<br><em>Tu perds dans le bruit.</em></h2>
+        <p class="lead">Le problème n'est pas l'information. C'est le système autour de l'information.</p>
+        <div class="quote" style="margin-top:26px">
+          <div class="quote-line"></div>
+          <div><strong>Le vrai problème :</strong> tu consommes des signaux, mais tu ne construis pas de système.</div>
+        </div>
+      </div>
+      <div class="cards cards-2" style="gap:14px">
+        <div class="card">
+          <div class="icon-box rose"><svg class="icon"><use href="#i-message"/></svg></div>
+          <h3>7 groupes, 3 apps</h3>
+          <p>Le signal arrive au milieu de 200 messages. Tu scrolles, tu cherches, tu perds le fil.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box rose"><svg class="icon"><use href="#i-search"/></svg></div>
+          <h3>Aucune trace</h3>
+          <p>Impossible de savoir ce que tu as reçu, lu ou appliqué. Tout se perd dans le flux.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box rose"><svg class="icon"><use href="#i-chart"/></svg></div>
+          <h3>Aucun feedback</h3>
+          <p>Tu ne sais pas si tu progresses vraiment. Tu avances à l'instinct, pas avec des données.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box rose"><svg class="icon"><use href="#i-spark"/></svg></div>
+          <h3>Aucune discipline</h3>
+          <p>Revenge trading, sur-trading, décisions à chaud. Personne ne t'aide à corriger.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 — PROMISE -->
+  <section class="slide" data-title="La promesse" style="--glow:rgba(96,165,250,.11)">
+    <div class="split">
+      <div>
+        <div class="kicker">La promesse</div>
+        <h2 class="h2">Un seul espace.<br><em>Quatre réflexes.</em></h2>
+        <p class="lead">Chaque fonctionnalité de SignauxX répond à une étape de ta journée de trader.</p>
+        <div class="quote" style="margin-top:26px">
+          <div class="quote-line"></div>
+          <div><strong>C'est ça, SignauxX :</strong> un système qui relie le signal à ta performance.</div>
+        </div>
+      </div>
+      <div class="cards cards-2" style="gap:14px">
+        <div class="card">
+          <div class="icon-box"><svg class="icon"><use href="#i-radio"/></svg></div>
+          <div class="small" style="margin-top:10px">01</div>
+          <h3>Recevoir</h3>
+          <p>Temps réel, email, push. Tu ne rates plus l'essentiel, même en déplacement.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box"><svg class="icon"><use href="#i-search"/></svg></div>
+          <div class="small" style="margin-top:10px">02</div>
+          <h3>Comprendre</h3>
+          <p>Un signal structuré, illustré, avec sa section et son contexte. Pas un message qui défile.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box"><svg class="icon"><use href="#i-target"/></svg></div>
+          <div class="small" style="margin-top:10px">03</div>
+          <h3>Exécuter</h3>
+          <p>Tu copies, tu trades, tu enregistres dans ton journal. Le lien est direct.</p>
+        </div>
+        <div class="card">
+          <div class="icon-box"><svg class="icon"><use href="#i-chart"/></svg></div>
+          <div class="small" style="margin-top:10px">04</div>
+          <h3>Mesurer</h3>
+          <p>PnL, win rate, drawdown, discipline. Tu sais enfin ce qui marche.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 04 — DASHBOARD -->
+  <section class="slide" data-title="Ton dashboard" style="--glow:rgba(16,185,129,.13)">
+    <div class="split-wide">
+      <div>
+        <div class="kicker">Ton dashboard</div>
+        <h2 class="h2">Ta journée commence par une vue claire,<br><em>pas par 200 notifications.</em></h2>
+        <p class="lead">PnL, win rate, trades, série de discipline : tout ce qui compte est là, dès la connexion.</p>
+        <ul class="bullets">
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>4 KPI immédiats</strong> — PnL total, win rate, nombre de trades, série discipliné.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Actions rapides</strong> — nouveau trade, réflexion du jour, signaux, journal.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Push intégré</strong> — active les notifications sans quitter ton espace.</span></li>
+        </ul>
+      </div>
+      <div class="browser">
+        <div class="browser-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="browser-url">signauxx.com/dashboard</span></div>
+        <div class="browser-body">
+          <div class="mock-head">
+            <div><div class="mock-title">Tableau de bord</div><div class="mock-sub">Vue d'ensemble de ton activité</div></div>
+            <span class="badge" style="font-size:6px">Août 2026</span>
+          </div>
+          <div class="mock-kpis">
+            <div class="mock-kpi"><div class="label">PnL total</div><div class="value" style="color:var(--mint)">+1 240 €</div><div class="delta">+12,4 %</div></div>
+            <div class="mock-kpi"><div class="label">Win rate</div><div class="value">54 %</div><div class="delta">32 W / 27 L</div></div>
+            <div class="mock-kpi"><div class="label">Trades</div><div class="value">59</div><div class="delta">ce mois</div></div>
+            <div class="mock-kpi"><div class="label">Discipline</div><div class="value">12 j</div><div class="delta">record 21 j</div></div>
+          </div>
+          <div class="mock-chart">
+            <div class="mock-chart-head"><span class="mock-chart-title">PnL cumulé — 30 jours</span><span style="font-size:6px;color:var(--mint)">+18,2 %</span></div>
+            <div class="bars">
+              <div class="bar" style="height:28%"></div><div class="bar" style="height:42%"></div><div class="bar" style="height:36%"></div><div class="bar" style="height:54%"></div><div class="bar" style="height:48%"></div><div class="bar" style="height:66%"></div><div class="bar" style="height:58%"></div><div class="bar" style="height:74%"></div><div class="bar" style="height:69%"></div><div class="bar" style="height:86%"></div><div class="bar" style="height:78%"></div><div class="bar" style="height:94%"></div>
+            </div>
+          </div>
+          <div class="mock-rows">
+            <div class="mock-row"><svg class="icon"><use href="#i-radio"/></svg><span class="t">Nouveau signal Forex</span><span class="s">il y a 2 min</span></div>
+            <div class="mock-row"><svg class="icon"><use href="#i-book"/></svg><span class="t">Réflexion du jour</span><span class="s">à compléter</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Tout ce qui compte, en un coup d'œil.</strong> Pas de bruit, pas de scroll.</div></div>
+  </section>
+
+  <!-- 05 — SIGNALS INBOX -->
+  <section class="slide" data-title="Tes signaux" style="--glow:rgba(16,185,129,.12)">
+    <div class="split">
+      <div style="display:flex;justify-content:center">
+        <div class="phone" style="width:276px;height:520px">
+          <div class="phone-notch"></div>
+          <div class="phone-screen">
+            <div class="phone-top"><div><div class="phone-title">Mes signaux</div><div class="phone-sub">12 non lus · 3 nouveaux</div></div><div class="avatar">JD</div></div>
+            <div class="phone-chips"><span class="chip on">Tous</span><span class="chip">Non lus</span><span class="chip">Forex</span><span class="chip">Deriv</span><span class="chip">Favoris</span><span class="chip">Archives</span></div>
+            <div class="phone-feed">
+              <div class="sig unread">
+                <div class="sig-top"><span class="sig-tag">Forex · Pro</span><span class="sig-time">09:42</span></div>
+                <div class="sig-title">EUR/USD — Rebond sur support</div>
+                <div class="sig-body">Contexte H1, entrée sur retest, structure haussière confirmée.</div>
+                <div class="sig-foot"><span class="sig-dot"></span><span class="sig-meta">Nouveau</span></div>
+              </div>
+              <div class="sig unread">
+                <div class="sig-top"><span class="sig-tag">Deriv · Indices</span><span class="sig-time">08:15</span></div>
+                <div class="sig-title">US30 — Cassure de range</div>
+                <div class="sig-body">Momentum acheteur, retest de la zone de cassure.</div>
+                <div class="sig-foot"><span class="sig-dot"></span><span class="sig-meta">Nouveau</span></div>
+              </div>
+              <div class="sig">
+                <div class="sig-top"><span class="sig-tag">Forex</span><span class="sig-time">Hier</span></div>
+                <div class="sig-title">GBP/JPY — Prise de profit</div>
+                <div class="sig-body">Clôture partielle recommandée après objectif atteint.</div>
+                <div class="sig-foot"><span class="sig-meta">Lu · Favori</span></div>
+              </div>
+              <div class="sig">
+                <div class="sig-top"><span class="sig-tag">Deriv</span><span class="sig-time">Lun.</span></div>
+                <div class="sig-title">GER40 — Retest de support</div>
+                <div class="sig-body">Plan de trade détaillé, gestion du risque incluse.</div>
+                <div class="sig-foot"><span class="sig-meta">Lu · Archivé</span></div>
+              </div>
+            </div>
+            <div class="phone-nav"><span class="on"><svg class="icon"><use href="#i-radio"/></svg></span><span><svg class="icon"><use href="#i-book"/></svg></span><span><svg class="icon"><use href="#i-chart"/></svg></span><span><svg class="icon"><use href="#i-message"/></svg></span><span><svg class="icon"><use href="#i-user"/></svg></span></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="kicker">Tes signaux</div>
+        <h2 class="h2">Une inbox,<br><em>pas un group chat.</em></h2>
+        <p class="lead">Le bon signal, au bon endroit, au bon moment. Et surtout : retrouvable.</p>
+        <ul class="bullets">
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Filtres</strong> — non lus, Forex, Indices, favoris, archives.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Recherche instantanée</strong> — retrouve un signal en quelques secondes.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Temps réel</strong> — le signal apparaît sans rafraîchir.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Favoris & archives</strong> — garde ce qui compte, range le reste.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Multi-canal</strong> — in-app, email, push. Tu choisis.</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 — SIGNAL DETAIL -->
+  <section class="slide" data-title="Le détail du signal" style="--glow:rgba(245,196,107,.10)">
+    <div class="split">
+      <div>
+        <div class="kicker">Le détail</div>
+        <h2 class="h2">Un signal qui se lit,<br><em>pas qui défile.</em></h2>
+        <p class="lead">Chaque signal est une fiche consultable, illustrée et exploitable. Pas un message noyé dans un flux.</p>
+        <ul class="bullets">
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Contenu enrichi</strong> — markdown sécurisé, images et graphiques joints.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Ta section</strong> — le signal affiche le plan auquel il appartient.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Copier, partager, imprimer</strong> — en un clic.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>« J'ai tradé ce signal »</strong> — le lien direct vers ton journal.</span></li>
+        </ul>
+      </div>
+      <div class="detail">
+        <div class="detail-head"><span class="detail-badge">Signal officiel</span><span class="detail-date">06 nov. 2026 · 09:42</span></div>
+        <div class="detail-title">EUR/USD — Rebond sur support H1</div>
+        <div class="detail-text">Structure haussière confirmée. Entrée sur retest du support 1,0840. Objectif 1,0920. Stop sous 1,0810. Gestion du risque : 1 % du capital.</div>
+        <div class="detail-grid">
+          <div class="detail-cell"><div class="k">Section</div><div class="v">Forex · Pro</div></div>
+          <div class="detail-cell"><div class="k">Direction</div><div class="v" style="color:var(--mint)">Achat</div></div>
+        </div>
+        <div class="chart-box">
+          <svg viewBox="0 0 400 120" preserveAspectRatio="none" aria-hidden="true">
+            <defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#10b981" stop-opacity=".28"/><stop offset="1" stop-color="#10b981" stop-opacity="0"/></linearGradient></defs>
+            <path d="M0 92 L28 84 L52 88 L76 70 L102 76 L128 60 L154 66 L180 48 L206 56 L232 40 L258 46 L284 32 L310 38 L336 22 L362 28 L400 14 L400 120 L0 120 Z" fill="url(#area)"/>
+            <path d="M0 92 L28 84 L52 88 L76 70 L102 76 L128 60 L154 66 L180 48 L206 56 L232 40 L258 46 L284 32 L310 38 L336 22 L362 28 L400 14" fill="none" stroke="#10b981" stroke-width="2.5"/>
+            <circle cx="400" cy="14" r="4" fill="#6ee7b7"/>
+          </svg>
+        </div>
+        <div class="detail-actions">
+          <span class="mini-btn on"><svg class="icon"><use href="#i-star"/></svg> Favori</span>
+          <span class="mini-btn"><svg class="icon"><use href="#i-copy"/></svg> Copier</span>
+          <span class="mini-btn"><svg class="icon"><use href="#i-archive"/></svg> Archiver</span>
+          <span class="mini-btn"><svg class="icon"><use href="#i-message"/></svg> Partager</span>
+        </div>
+        <div class="trade-link">+ J'ai tradé ce signal → ouvrir le journal</div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Chaque signal est une fiche, pas un message.</strong></div></div>
+  </section>
+
+  <!-- 07 — JOURNAL -->
+  <section class="slide" data-title="Ton journal" style="--glow:rgba(96,165,250,.11)">
+    <div class="split">
+      <div>
+        <div class="kicker">Ton journal</div>
+        <h2 class="h2">Chaque trade<br><em>devient une donnée.</em></h2>
+        <p class="lead">Tu enregistres ton trade une fois. SignauxX calcule le PnL, le R:R, les statistiques et les tendances.</p>
+        <ul class="bullets">
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Champs complets</strong> — paire, direction, entrée, sortie, lot, spread, commission, swap.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Contexte</strong> — stratégie, setup, émotion, confiance, tags, note.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Calculs automatiques</strong> — PnL, R:R, incohérences signalées.</span></li>
+        </ul>
+        <div class="pill-row"><span class="pill">Sessions de trading</span><span class="pill">Brouillon auto</span><span class="pill">Historique</span></div>
+      </div>
+      <div class="form-card">
+        <div class="form-head"><span class="form-title">Nouveau trade</span><span class="form-pill">PnL auto</span></div>
+        <div class="form-grid">
+          <div class="field"><div class="lab">Paire</div><div class="val">EUR/USD</div></div>
+          <div class="field"><div class="lab">Direction</div><div class="val green">Achat</div></div>
+          <div class="field"><div class="lab">Entrée</div><div class="val">1,08400</div></div>
+          <div class="field"><div class="lab">Sortie</div><div class="val">1,09120</div></div>
+          <div class="field"><div class="lab">Lot</div><div class="val">0,10</div></div>
+          <div class="field"><div class="lab">Résultat</div><div class="val green">Gagné</div></div>
+          <div class="field"><div class="lab">Stop loss</div><div class="val">1,08100</div></div>
+          <div class="field"><div class="lab">Take profit</div><div class="val">1,09200</div></div>
+        </div>
+        <div class="pnl-strip"><span class="k">PnL calculé · R:R 1:2,6</span><span class="v">+72,00 €</span></div>
+        <div class="mood-row"><span class="mood on">😊 Confiant</span><span class="mood">😐 Neutre</span><span class="mood">😰 Anxieux</span><span class="mood">🤑 Gourmand</span><span class="mood">😡 Revenge</span></div>
+        <div style="margin-top:8px;border:1px dashed rgba(255,255,255,.14);border-radius:8px;padding:7px;text-align:center;font-size:7px;color:var(--muted-2)">+ Ajouter une note, un setup, des tags…</div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Le PnL est calculé. Toi, tu analyses.</strong></div></div>
+  </section>
+
+  <!-- 08 — STATS -->
+  <section class="slide" data-title="Tes statistiques" style="--glow:rgba(16,185,129,.12)">
+    <div class="kicker">Tes statistiques</div>
+    <h2 class="h2">Tes chiffres révèlent<br><em>tes vraies fuites.</em></h2>
+    <div class="stats-kpis" style="margin-top:16px">
+      <div class="stat"><div class="k">Win rate</div><div class="v">54 %</div><div class="s">32 W / 27 L</div></div>
+      <div class="stat"><div class="k">PnL total</div><div class="v" style="color:var(--mint)">+1 240 €</div><div class="s">sur 30 jours</div></div>
+      <div class="stat"><div class="k">Profit factor</div><div class="v">1,32</div><div class="s">gains / pertes</div></div>
+      <div class="stat"><div class="k">Drawdown</div><div class="v" style="color:var(--rose)">180 €</div><div class="s">max</div></div>
+      <div class="stat"><div class="k">Expectancy</div><div class="v">0,18 R</div><div class="s">par trade</div></div>
+    </div>
+    <div class="stats-grid">
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">PnL cumulé · 30 jours</span><span class="panel-tag">+18,2 %</span></div>
+        <div class="bars" style="height:92px">
+          <div class="bar dim" style="height:22%"></div><div class="bar dim" style="height:30%"></div><div class="bar" style="height:25%"></div><div class="bar" style="height:42%"></div><div class="bar dim" style="height:34%"></div><div class="bar" style="height:55%"></div><div class="bar" style="height:48%"></div><div class="bar dim" style="height:44%"></div><div class="bar" style="height:68%"></div><div class="bar" style="height:62%"></div><div class="bar" style="height:78%"></div><div class="bar" style="height:88%"></div><div class="bar" style="height:81%"></div><div class="bar" style="height:96%"></div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="panel-head"><span class="panel-title">Par paire</span><span class="panel-tag">PnL</span></div>
+        <div class="pair-bars">
+          <div class="pair"><span>EURUSD</span><div class="track"><div class="fill" style="width:82%"></div></div><span class="accent">+640 €</span></div>
+          <div class="pair"><span>XAUUSD</span><div class="track"><div class="fill" style="width:64%"></div></div><span class="accent">+410 €</span></div>
+          <div class="pair"><span>GBPJPY</span><div class="track"><div class="fill" style="width:38%"></div></div><span class="accent">+190 €</span></div>
+          <div class="pair"><span>US30</span><div class="track"><div class="fill rose" style="width:44%"></div></div><span class="rose">−220 €</span></div>
+        </div>
+        <div class="panel-head" style="margin-top:10px"><span class="panel-title">Par émotion</span><span class="panel-tag">PnL</span></div>
+        <div class="emotion-grid">
+          <div class="emo"><span>Confiant</span><b class="accent">+820 €</b></div>
+          <div class="emo"><span>Neutre</span><b class="accent">+310 €</b></div>
+          <div class="emo"><span>Gourmand</span><b class="rose">−140 €</b></div>
+          <div class="emo"><span>Revenge</span><b class="rose">−380 €</b></div>
+        </div>
+      </div>
+    </div>
+    <div class="callout">Ta paire fétiche est peut-être ta pire source de pertes. Tes émotions aussi.</div>
+    <div class="cards cards-3" style="margin-top:10px;gap:10px">
+      <div class="card" style="padding:13px">
+        <div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Ta paire la plus rentable</div>
+        <div style="font-size:17px;font-weight:800;margin-top:4px">EURUSD <span class="accent">+640 €</span></div>
+        <div class="small" style="margin-top:2px">C'est là que ton edge est le plus net.</div>
+      </div>
+      <div class="card" style="padding:13px">
+        <div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Ton émotion la plus coûteuse</div>
+        <div style="font-size:17px;font-weight:800;margin-top:4px">Revenge <span class="rose">−380 €</span></div>
+        <div class="small" style="margin-top:2px">Le signal est bon. La réaction ne l'est pas.</div>
+      </div>
+      <div class="card" style="padding:13px">
+        <div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Ta prochaine action</div>
+        <div style="font-size:17px;font-weight:800;margin-top:4px">Réduire US30</div>
+        <div class="small" style="margin-top:2px">Moins de taille, plus de discipline.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 09 — DISCIPLINE -->
+  <section class="slide" data-title="Ta discipline" style="--glow:rgba(245,196,107,.11)">
+    <div class="split">
+      <div>
+        <div class="kicker">Ta discipline</div>
+        <h2 class="h2">La régularité se construit,<br><em>pas se souhaite.</em></h2>
+        <p class="lead">Chaque soir, tu notes ta journée. Chaque jour, ta série grandit. Tes mauvaises habitudes deviennent visibles — et corrigeables.</p>
+        <ul class="bullets">
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Réflexion quotidienne</strong> — note 1–10, humeur, note libre.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Série de discipline</strong> — actuelle et record.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Missions & paliers</strong> — des objectifs concrets, pas des sermons.</span></li>
+          <li><svg class="icon"><use href="#i-check"/></svg><span><strong>Rapport hebdomadaire</strong> — ton bilan, chaque semaine.</span></li>
+        </ul>
+      </div>
+      <div class="stack">
+        <div class="card" style="display:flex;align-items:center;gap:22px;padding:22px">
+          <div class="ring"><div class="ring-inner"><div class="n">12</div><div class="l">jours</div></div></div>
+          <div>
+            <div class="small" style="letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)">Série actuelle</div>
+            <div style="font-size:26px;font-weight:800;letter-spacing:-.04em;margin-top:4px">Tu tiens le rythme.</div>
+            <div class="small" style="margin-top:6px">Record personnel : <b class="accent">21 jours</b></div>
+            <div class="pill-row" style="margin-top:10px"><span class="pill">🔥 12 jours</span><span class="pill">🏆 Record 21</span></div>
+          </div>
+        </div>
+        <div class="card" style="padding:16px">
+          <div class="mock-head"><div><div class="mock-title">Réflexion du jour</div><div class="mock-sub">06 nov. 2026</div></div><span class="form-pill">À compléter</span></div>
+          <div style="display:flex;gap:4px;margin:8px 0 10px">
+            <span class="mood">1</span><span class="mood">2</span><span class="mood">3</span><span class="mood">4</span><span class="mood">5</span><span class="mood">6</span><span class="mood on">7</span><span class="mood">8</span><span class="mood">9</span><span class="mood">10</span>
+          </div>
+          <div class="mission done"><span class="check">✓</span> Noter mon humeur</div>
+          <div class="mission done" style="margin-top:5px"><span class="check">✓</span> Enregistrer mes trades</div>
+          <div class="mission" style="margin-top:5px"><span class="check">○</span> Écrire ma réflexion</div>
+        </div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Un trader qui écrit est un trader qui progresse.</strong></div></div>
+  </section>
+
+  <!-- 10 — COMMUNITY -->
+  <section class="slide" data-title="Tu n'es pas seul" style="--glow:rgba(167,139,250,.11)">
+    <div class="kicker">Ton accompagnement</div>
+    <h2 class="h2">Tu n'es pas seul<br><em>derrière ton écran.</em></h2>
+    <p class="lead">Une question, un doute, un bug ? Tu as un canal clair — et une communauté vérifiée.</p>
+    <div class="cards cards-3" style="margin-top:24px;flex:1;align-items:stretch">
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="icon-box blue"><svg class="icon"><use href="#i-message"/></svg></div>
+        <h3>Messagerie directe</h3>
+        <p>Échange en 1-1 avec l'admin ou le support. Texte, images, réactions, réponses citées.</p>
+        <div class="chat" style="margin-top:12px">
+          <div class="bubble them">Salut, ton setup sur EURUSD était valide ?<div class="meta">Coach · 09:12</div></div>
+          <div class="bubble me">Oui, entrée sur retest. Je l'ai journalisé.<div class="meta">Toi · 09:15</div></div>
+        </div>
+        <div class="small" style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line)">Un canal clair, pas un groupe perdu.</div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="icon-box"><svg class="icon"><use href="#i-shield"/></svg></div>
+        <h3>Support & tickets</h3>
+        <p>Un problème ? Un ticket, un suivi, une réponse. Pas un message perdu dans un groupe.</p>
+        <div class="mission done" style="margin-top:12px"><span class="check">✓</span> Ticket #248 — résolu</div>
+        <div class="mission" style="margin-top:5px"><span class="check">○</span> Ticket #251 — en cours</div>
+        <div class="small" style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line)">Un suivi, pas un message oublié.</div>
+      </div>
+      <div class="card" style="display:flex;flex-direction:column">
+        <div class="icon-box gold"><svg class="icon"><use href="#i-user"/></svg></div>
+        <h3>Communauté vérifiée</h3>
+        <p>KYC, vérification broker, modération, anti-fraude. Moins de faux comptes, plus de sérieux.</p>
+        <div class="pill-row" style="margin-top:12px"><span class="pill">KYC</span><span class="pill">Broker</span><span class="pill">Modération</span></div>
+        <div class="small" style="margin-top:auto;padding-top:12px;border-top:1px solid var(--line)">Un cadre vérifié, pas une promesse.</div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Une question ? Un doute ? Un bug ?</strong> Tu as un canal clair.</div></div>
+  </section>
+
+  <!-- 11 — CONTROL -->
+  <section class="slide" data-title="Tu gardes le contrôle" style="--glow:rgba(96,165,250,.10)">
+    <div class="kicker">Ton contrôle</div>
+    <h2 class="h2">Tes signaux, ton compte,<br><em>tes règles.</em></h2>
+    <p class="lead">Tu décides de ce que tu reçois, de qui peut accéder à ton compte et de ce que tu partages.</p>
+    <div class="cards cards-4" style="margin-top:24px">
+      <div class="card">
+        <div class="icon-box"><svg class="icon"><use href="#i-bell"/></svg></div>
+        <h3>Notifications</h3>
+        <p>Préférences par type, heures silencieuses, son personnalisé, volume.</p>
+        <div style="display:flex;align-items:center;gap:6px;margin-top:10px"><span class="toggle"></span><span class="small">Signaux</span><span class="toggle off" style="margin-left:auto"></span><span class="small">Messages</span></div>
+      </div>
+      <div class="card">
+        <div class="icon-box blue"><svg class="icon"><use href="#i-device"/></svg></div>
+        <h3>Appareils</h3>
+        <p>Sessions actives, révocation, vérification d'un nouvel appareil.</p>
+        <div class="device" style="margin-top:10px"><svg class="icon"><use href="#i-device"/></svg><span class="t">MacBook · Paris</span><span class="s">actif</span></div>
+      </div>
+      <div class="card">
+        <div class="icon-box gold"><svg class="icon"><use href="#i-lock"/></svg></div>
+        <h3>Données</h3>
+        <p>Export de tes données, suppression de compte, nettoyage KYC après 7 jours.</p>
+        <div class="pill-row" style="margin-top:10px"><span class="pill">Export</span><span class="pill">Suppression</span></div>
+      </div>
+      <div class="card">
+        <div class="icon-box violet"><svg class="icon"><use href="#i-shield"/></svg></div>
+        <h3>Sécurité</h3>
+        <p>Alertes nouvel appareil, historique, anti-fraude, sessions contrôlées.</p>
+        <div class="pill-row" style="margin-top:10px"><span class="pill">Alertes</span><span class="pill">Historique</span></div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Tu gardes la main,</strong> même quand tu n'es pas devant l'écran.</div></div>
+  </section>
+
+  <!-- 12 — WEEK -->
+  <section class="slide" data-title="Une semaine avec SignauxX" style="--glow:rgba(16,185,129,.11)">
+    <div class="kicker">Une semaine avec SignauxX</div>
+    <h2 class="h2">Du premier push<br><em>au bilan du dimanche.</em></h2>
+    <div class="week" style="margin-top:12px;margin-bottom:10px">
+      <div class="day hot"><div class="d">Lundi</div><div class="n">Recevoir</div><div class="txt">Push Forex. Ouverture du détail, lecture, copie.</div><div class="mini"><span>Push reçu</span><span>Fiche ouverte</span><span>Contenu copié</span></div><div class="res">→ Signal lu en 2 min</div><div class="dot"></div></div>
+      <div class="day"><div class="d">Mardi</div><div class="n">Exécuter</div><div class="txt">Trade chez le broker, puis saisie dans le journal.</div><div class="mini"><span>Trade exécuté</span><span>Trade saisi</span><span>PnL calculé</span></div><div class="res">→ PnL +72 €</div><div class="dot"></div></div>
+      <div class="day"><div class="d">Mercredi</div><div class="n">Échanger</div><div class="txt">Message au coach pour valider un setup.</div><div class="mini"><span>Question envoyée</span><span>Setup validé</span><span>Note ajoutée</span></div><div class="res">→ Setup validé</div><div class="dot"></div></div>
+      <div class="day"><div class="d">Jeudi</div><div class="n">Analyser</div><div class="txt">Trade perdant. Le journal montre un R:R trop faible.</div><div class="mini"><span>Trade perdant</span><span>R:R détecté</span><span>Leçon notée</span></div><div class="res">→ R:R 1:1,2 détecté</div><div class="dot"></div></div>
+      <div class="day"><div class="d">Vendredi</div><div class="n">Mesurer</div><div class="txt">Stats : win rate, profit factor, drawdown.</div><div class="mini"><span>Stats ouvertes</span><span>Fuites repérées</span><span>Plan ajusté</span></div><div class="res">→ Profit factor 1,32</div><div class="dot"></div></div>
+      <div class="day"><div class="d">Samedi</div><div class="n">Bilan</div><div class="txt">Rapport hebdomadaire par email.</div><div class="mini"><span>Rapport reçu</span><span>Bilan lu</span><span>Objectif fixé</span></div><div class="res">→ Bilan reçu</div><div class="dot"></div></div>
+      <div class="day hot"><div class="d">Dimanche</div><div class="n">Préparer</div><div class="txt">Archives, favoris, préparation de la semaine.</div><div class="mini"><span>Archives triées</span><span>Favoris revus</span><span>Semaine prête</span></div><div class="res">→ Semaine prête</div><div class="dot"></div></div>
+    </div>
+    <div class="cards cards-3" style="margin-top:2px;gap:10px">
+      <div class="card" style="padding:14px;border-color:rgba(251,113,133,.18)">
+        <div class="small" style="color:var(--rose);letter-spacing:.14em;text-transform:uppercase">Avant</div>
+        <div style="font-size:13px;font-weight:750;margin-top:4px">5 apps, 200 messages, zéro suivi.</div>
+      </div>
+      <div class="card" style="padding:14px;border-color:rgba(16,185,129,.22)">
+        <div class="small" style="color:var(--mint);letter-spacing:.14em;text-transform:uppercase">Après</div>
+        <div style="font-size:13px;font-weight:750;margin-top:4px">1 espace, 1 flux, des données.</div>
+      </div>
+      <div class="card" style="padding:14px;border-color:rgba(245,196,107,.22)">
+        <div class="small" style="color:var(--gold);letter-spacing:.14em;text-transform:uppercase">Résultat</div>
+        <div style="font-size:13px;font-weight:750;margin-top:4px">Moins de bruit. Plus de décisions.</div>
+      </div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Moins de dispersion. Plus de décisions.</strong> Une routine, pas une accumulation d'applications.</div></div>
+  </section>
+
+  <!-- 13 — ADVANTAGES -->
+  <section class="slide" data-title="Pourquoi ça change tout" style="--glow:rgba(16,185,129,.14)">
+    <div class="kicker">Pourquoi ça change tout</div>
+    <h2 class="h2">8 raisons de ne plus<br><em>revenir en arrière.</em></h2>
+    <div class="cards cards-4" style="margin-top:22px">
+      <div class="card"><div class="icon-box"><svg class="icon"><use href="#i-radio"/></svg></div><h3>Ne plus rater un signal</h3><p>Temps réel + email + push + in-app.</p></div>
+      <div class="card"><div class="icon-box blue"><svg class="icon"><use href="#i-clock"/></svg></div><h3>Gagner du temps</h3><p>Un flux, une recherche, des filtres.</p></div>
+      <div class="card"><div class="icon-box gold"><svg class="icon"><use href="#i-search"/></svg></div><h3>Comprendre chaque signal</h3><p>Contexte, images, section, fiche claire.</p></div>
+      <div class="card"><div class="icon-box"><svg class="icon"><use href="#i-chart"/></svg></div><h3>Mesurer ses performances</h3><p>PnL, win rate, drawdown, expectancy.</p></div>
+      <div class="card"><div class="icon-box violet"><svg class="icon"><use href="#i-target"/></svg></div><h3>Corriger sa discipline</h3><p>Réflexions, séries, missions, coaching.</p></div>
+      <div class="card"><div class="icon-box"><svg class="icon"><use href="#i-shield"/></svg></div><h3>Communauté vérifiée</h3><p>KYC, broker, modération, anti-fraude.</p></div>
+      <div class="card"><div class="icon-box rose"><svg class="icon"><use href="#i-lock"/></svg></div><h3>Protéger son compte</h3><p>Sessions, appareils, alertes, export.</p></div>
+      <div class="card"><div class="icon-box"><svg class="icon"><use href="#i-book"/></svg></div><h3>Progresser sur la durée</h3><p>Historique, archives, stats, coaching.</p></div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Le même signal. Pas le même système.</strong></div></div>
+  </section>
+
+  <!-- 14 — COMPARISON -->
+  <section class="slide" data-title="Le comparatif" style="--glow:rgba(245,196,107,.09)">
+    <div class="kicker">Le comparatif</div>
+    <h2 class="h2">Telegram t'informe.<br><em>SignauxX t'accompagne.</em></h2>
+    <table class="compare">
+      <thead><tr><th>Ce qui compte pour toi</th><th>Groupe Telegram / Discord</th><th>SignauxX</th></tr></thead>
+      <tbody>
+        <tr><td>Organisation</td><td>Flux chronologique, bruit</td><td class="yes">Inbox filtrable, recherche, favoris, archives</td></tr>
+        <tr><td>Structure du signal</td><td>Message libre</td><td class="yes">Fiche avec images, section, contenu enrichi</td></tr>
+        <tr><td>Preuve de réception</td><td class="no">Aucune</td><td class="yes">Suivi par canal et par membre</td></tr>
+        <tr><td>Historique</td><td class="no">Difficile à remonter</td><td class="yes">Historique complet, versions, archives</td></tr>
+        <tr><td>Lecture</td><td class="no">Impossible à prouver</td><td class="yes">SignalRead, accusés, compteurs</td></tr>
+        <tr><td>Segmentation</td><td class="no">Un groupe = un tout</td><td class="yes">Audience par plan : Forex / Deriv / Pro</td></tr>
+        <tr><td>Abonnement</td><td class="no">Gestion manuelle</td><td class="yes">Demandes, approbation, échéances, emails</td></tr>
+        <tr><td>KYC / broker</td><td class="no">Aucun</td><td class="yes">Vérification d'identité et de compte</td></tr>
+        <tr><td>Journal & stats</td><td class="no">Excel ou rien</td><td class="yes">PnL, win rate, drawdown, coaching</td></tr>
+        <tr><td>Support</td><td class="no">Message perdu</td><td class="yes">Tickets, suivi, historique</td></tr>
+        <tr><td>Sécurité</td><td class="no">Compte Telegram</td><td class="yes">Sessions, appareils, révocation, audit</td></tr>
+        <tr><td>Multi-appareil</td><td class="no">Oui, mais informel</td><td class="yes">Web/PWA, sessions contrôlées</td></tr>
+        <tr><td>Conformité</td><td class="no">Faible</td><td class="yes">CGU, confidentialité, RGPD, audit</td></tr>
+        <tr><td>Marque</td><td class="no">Dépend de la plateforme</td><td class="yes">Expérience branded, domaine propre</td></tr>
+      </tbody>
+    </table>
+    <div class="quote"><div class="quote-line"></div><div><strong>Ce n'est pas un autre groupe.</strong> C'est un autre niveau d'expérience.</div></div>
+  </section>
+
+  <!-- 15 — ACCESS -->
+  <section class="slide" data-title="Ton accès" style="--glow:rgba(96,165,250,.10)">
+    <div class="kicker">Ton accès</div>
+    <h2 class="h2">Trois étapes.<br><em>Un espace qui t'est propre.</em></h2>
+    <div class="steps">
+      <div class="step"><div class="num">ÉTAPE 01</div><h3>Vérifie ton email</h3><p>Un code à 6 chiffres. Ton compte est confirmé.</p></div>
+      <div class="step"><div class="num">ÉTAPE 02</div><h3>Complète ton KYC</h3><p>Pièce d'identité. Tes documents sont protégés et nettoyés après 7 jours.</p></div>
+      <div class="step"><div class="num">ÉTAPE 03</div><h3>Vérifie ton broker</h3><p>Compte de trading + courte vidéo. Un cadre sérieux pour tous.</p></div>
+    </div>
+    <div style="margin-top:16px;display:flex;align-items:center;justify-content:space-between">
+      <div><div class="small" style="letter-spacing:.14em;text-transform:uppercase;color:var(--muted-2)">Puis choisis ton plan</div><div style="font-size:13px;font-weight:700;margin-top:3px">Forex · Deriv · Combiné · Pro</div></div>
+      <div class="pill-row" style="margin:0"><span class="pill">Signals X Forex</span><span class="pill">Signals X Deriv</span><span class="pill">Forex + Deriv</span><span class="pill">Pro</span></div>
+    </div>
+    <div class="plans">
+      <div class="plan"><div class="p">Forex</div><div class="n">Signals X Forex</div><div class="m">Signaux Forex, section dédiée</div></div>
+      <div class="plan"><div class="p">Deriv</div><div class="n">Signals X Deriv</div><div class="m">Indices et marchés Deriv</div></div>
+      <div class="plan"><div class="p">Combiné</div><div class="n">Forex + Deriv</div><div class="m">Les deux marchés, un seul accès</div></div>
+      <div class="plan"><div class="p">Pro Forex</div><div class="n">Signals X Pro Forex</div><div class="m">Niveau avancé, Forex</div></div>
+      <div class="plan"><div class="p">Pro Deriv</div><div class="n">Signals X Pro Deriv</div><div class="m">Niveau avancé, Deriv</div></div>
+      <div class="plan"><div class="p">Pro Combiné</div><div class="n">Pro Forex + Deriv</div><div class="m">Le niveau le plus complet</div></div>
+    </div>
+    <div class="cards cards-4" style="margin-top:10px;gap:8px">
+      <div class="card" style="padding:10px"><div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Dès ton accès</div><div style="font-size:11px;font-weight:750;margin-top:3px">Signaux de ton plan</div></div>
+      <div class="card" style="padding:10px"><div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Dès ton accès</div><div style="font-size:11px;font-weight:750;margin-top:3px">Journal & statistiques</div></div>
+      <div class="card" style="padding:10px"><div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Dès ton accès</div><div style="font-size:11px;font-weight:750;margin-top:3px">Messagerie & support</div></div>
+      <div class="card" style="padding:10px"><div class="small" style="letter-spacing:.12em;text-transform:uppercase;color:var(--muted-2)">Dès ton accès</div><div style="font-size:11px;font-weight:750;margin-top:3px">Notifications temps réel</div></div>
+    </div>
+    <div class="quote"><div class="quote-line"></div><div><strong>Chaque accès est validé par l'équipe.</strong> Tu reçois une notification à chaque étape.</div></div>
+  </section>
+
+  <!-- 16 — CTA -->
+  <section class="slide" data-title="Le dernier mot" style="--glow:rgba(16,185,129,.16)">
+    <div class="split-wide" style="height:100%">
+      <div class="cta" style="height:auto">
+        <div class="kicker">Le dernier mot</div>
+        <h1 class="h1">Arrête de courir après l'information.<br><em>Commence à la maîtriser.</em></h1>
+        <p class="lead">SignauxX ne te promet pas de gains. Il te donne un système pour recevoir, comprendre, exécuter et mesurer — avec des données, pas des impressions.</p>
+        <div class="cta-outcomes">
+          <span class="cta-outcome"><svg class="icon"><use href="#i-radio"/></svg> Tu reçois mieux</span>
+          <span class="cta-outcome"><svg class="icon"><use href="#i-search"/></svg> Tu comprends mieux</span>
+          <span class="cta-outcome"><svg class="icon"><use href="#i-chart"/></svg> Tu mesures mieux</span>
+        </div>
+        <button class="cta-button"><svg class="icon"><use href="#i-play"/></svg> Rejoindre SignauxX</button>
+      </div>
+      <div class="stack" style="justify-content:center;gap:10px">
+        <div class="card" style="padding:14px;display:flex;align-items:center;gap:12px">
+          <div class="icon-box"><svg class="icon"><use href="#i-radio"/></svg></div>
+          <div><div style="font-size:12px;font-weight:750">01 · Reçois</div><div class="small">Un signal clair, au bon moment.</div></div>
+        </div>
+        <div class="card" style="padding:14px;display:flex;align-items:center;gap:12px">
+          <div class="icon-box blue"><svg class="icon"><use href="#i-search"/></svg></div>
+          <div><div style="font-size:12px;font-weight:750">02 · Comprends</div><div class="small">Une fiche, pas un message qui défile.</div></div>
+        </div>
+        <div class="card" style="padding:14px;display:flex;align-items:center;gap:12px">
+          <div class="icon-box gold"><svg class="icon"><use href="#i-target"/></svg></div>
+          <div><div style="font-size:12px;font-weight:750">03 · Exécute</div><div class="small">Copie, trade, journalise.</div></div>
+        </div>
+        <div class="card" style="padding:14px;display:flex;align-items:center;gap:12px">
+          <div class="icon-box violet"><svg class="icon"><use href="#i-chart"/></svg></div>
+          <div><div style="font-size:12px;font-weight:750">04 · Mesure</div><div class="small">Stats, discipline, progression.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="disclaimer">SignauxX est une plateforme de signaux et d'accompagnement. Elle ne passe aucun ordre, ne garantit aucun gain et ne remplace pas un conseil en investissement. Le trading comporte un risque de perte. Les performances passées ne préjugent pas des performances futures.</div>
+  </section>
+
+</div>
+</div>
+
+<div class="hud" role="navigation" aria-label="Navigation de la présentation">
+  <div class="hud-brand"><img src="public/logo.svg" alt=""> SignauxX</div>
+  <span class="hud-sep">/</span>
+  <span class="hud-label" id="hudLabel">L'expérience trader</span>
+  <button id="prevBtn" aria-label="Diapositive précédente" title="Précédent (←)">←</button>
+  <span class="hud-count" id="hudCount">01 / 16</span>
+  <button id="nextBtn" aria-label="Diapositive suivante" title="Suivant (→)">→</button>
+  <button class="wide" id="fullBtn" aria-label="Plein écran" title="Plein écran (F)"><svg class="icon"><use href="#i-device"/></svg> Plein écran</button>
+  <button class="wide" id="printBtn" aria-label="Imprimer ou exporter en PDF" title="Imprimer / PDF (P)"><svg class="icon"><use href="#i-download"/></svg> PDF</button>
+</div>
+
+<script>
+(function(){
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  const stage = document.getElementById('stage');
+  const hudCount = document.getElementById('hudCount');
+  const hudLabel = document.getElementById('hudLabel');
+  const progressBar = document.getElementById('progressBar');
+  let current = 0;
+
+  const pad = n => String(n).padStart(2,'0');
+
+  function fit(){
+    const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    stage.style.transform = 'scale(' + scale + ')';
+  }
+
+  function render(){
+    slides.forEach((s, i) => s.classList.toggle('active', i === current));
+    hudCount.textContent = pad(current + 1) + ' / ' + pad(total);
+    hudLabel.textContent = slides[current].dataset.title || 'SignauxX';
+    progressBar.style.width = ((current + 1) / total * 100) + '%';
+    const hash = '#slide-' + (current + 1);
+    if (location.hash !== hash) history.replaceState(null, '', hash);
+  }
+
+  function go(n){
+    current = Math.max(0, Math.min(total - 1, n));
+    render();
+  }
+
+  function next(){ go(current + 1); }
+  function prev(){ go(current - 1); }
+
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+
+  document.getElementById('fullBtn').addEventListener('click', () => {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+    else document.exitFullscreen().catch(()=>{});
+  });
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    else if (e.key === 'Home') { e.preventDefault(); go(0); }
+    else if (e.key === 'End') { e.preventDefault(); go(total - 1); }
+    else if (e.key === 'f' || e.key === 'F') { e.preventDefault(); document.getElementById('fullBtn').click(); }
+    else if (e.key === 'p' || e.key === 'P') { e.preventDefault(); window.print(); }
+  });
+
+  // Deep-link: #slide-7
+  function fromHash(){
+    const m = location.hash.match(/slide-(\d+)/);
+    if (m) {
+      const n = parseInt(m[1], 10) - 1;
+      if (!Number.isNaN(n) && n >= 0 && n < total) current = n;
+    }
+  }
+
+  window.addEventListener('resize', fit);
+  window.addEventListener('hashchange', () => { fromHash(); render(); });
+  fromHash(); fit(); render();
+})();
+</script>
+</body>
+</html>
