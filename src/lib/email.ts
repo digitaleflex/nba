@@ -51,6 +51,25 @@ export function getFirstName(name: string): string {
   return name?.split(" ")[0] ?? "Utilisateur"
 }
 
+/**
+ * Échappe les valeurs contrôlées par l'utilisateur avant injection dans un
+ * template HTML d'email. Empêche l'injection de balises (phishing, liens,
+ * images) dans les emails envoyés aux admins ou aux membres.
+ */
+export function escapeHtml(value: string): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+}
+
+/** Supprime les retours à la ligne pour éviter l'injection d'en-têtes email. */
+export function sanitizeEmailSubject(value: string, maxLength = 180): string {
+  return String(value ?? "").replace(/[\r\n]+/g, " ").slice(0, maxLength)
+}
+
 // ── Layout ──
 
 export function layout(body: string): string {
@@ -453,7 +472,7 @@ export function kycRejectedEmail(user: TemplateUser, reason: string): { subject:
 
       ${sectionTitle("Motif du rejet")}
       <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${escapeHtml(reason)}</p>
       </div>
 
       ${sectionTitle("Que faire ?")}
@@ -518,7 +537,7 @@ export function brokerRejectedEmail(user: TemplateUser, reason: string): { subje
 
       ${sectionTitle("Motif du rejet")}
       <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${escapeHtml(reason)}</p>
       </div>
 
       ${sectionTitle("Que faire ?")}
@@ -538,13 +557,13 @@ export function brokerRejectedEmail(user: TemplateUser, reason: string): { subje
 export function accessApprovedEmail(user: TemplateUser, planName: string): { subject: string; html: string } {
   const prenom = getFirstName(user.name)
   return {
-    subject: `🎉 Accès au groupe "${planName}" accordé — ${APP_NAME}`,
+    subject: `🎉 Accès au groupe "${sanitizeEmailSubject(planName)}" accordé — ${APP_NAME}`,
     html: layout(`
       <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Bienvenue, ${prenom} 🎉
       </p>
       <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
-        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#10AF6E">approuvée</strong>.
+        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${escapeHtml(planName)} »</strong> a été <strong style="color:#10AF6E">approuvée</strong>.
       </p>
 
       ${divider()}
@@ -572,14 +591,14 @@ export function accessRejectedEmail(user: TemplateUser, planName: string, reason
         Bonjour ${prenom}
       </p>
       <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
-        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#DC3545">refusée</strong>.
+        Votre demande d'accès au groupe <strong style="color:#283B5D">« ${escapeHtml(planName)} »</strong> a été <strong style="color:#DC3545">refusée</strong>.
       </p>
 
       ${divider()}
 
       ${sectionTitle("Motif du refus")}
       <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${escapeHtml(reason)}</p>
       </div>
 
       ${sectionTitle("Que faire ?")}
@@ -601,7 +620,7 @@ export function planChangedEmail(user: TemplateUser, planName: string): { subjec
         Bonjour ${prenom}
       </p>
       <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
-        L'administration a modifié votre plan d'accès vers <strong style="color:#283B5D">« ${planName} »</strong>.
+        L'administration a modifié votre plan d'accès vers <strong style="color:#283B5D">« ${escapeHtml(planName)} »</strong>.
       </p>
 
       ${divider()}
@@ -656,7 +675,7 @@ export function emailChangedEmail(user: TemplateUser, newEmail: string): { subje
       </p>
 
       <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0;text-align:center">
-        <span style="font-size:16px;font-weight:600;color:#283B5D">${newEmail}</span>
+        <span style="font-size:16px;font-weight:600;color:#283B5D">${escapeHtml(newEmail)}</span>
       </div>
 
       ${divider()}
@@ -749,14 +768,14 @@ export function accessRevokedEmail(user: TemplateUser, planName: string, reason:
         Bonjour ${prenom}
       </p>
       <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
-        Votre accès au groupe <strong style="color:#283B5D">« ${planName} »</strong> a été <strong style="color:#DC3545">révoqué</strong>.
+        Votre accès au groupe <strong style="color:#283B5D">« ${escapeHtml(planName)} »</strong> a été <strong style="color:#DC3545">révoqué</strong>.
       </p>
 
       ${divider()}
 
       ${sectionTitle("Motif")}
       <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${escapeHtml(reason)}</p>
       </div>
 
       ${sectionTitle("Que faire ?")}
@@ -785,7 +804,7 @@ export function accountSuspendedEmail(user: TemplateUser, reason: string): { sub
 
       ${sectionTitle("Motif")}
       <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${reason}</p>
+        <p style="margin:0;font-size:14px;color:#991B1B;line-height:1.5">${escapeHtml(reason)}</p>
       </div>
 
       ${sectionTitle("Contester cette décision")}
@@ -861,7 +880,7 @@ export function newAccessRequestAdminEmail(
     subject: `📋 Nouvelle demande d'accès — ${APP_NAME}`,
     html: layout(`
       <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
-        Bonjour ${getFirstName(admin.name)}
+        Bonjour ${escapeHtml(getFirstName(admin.name))}
       </p>
       <p style="margin:0 0 24px 0;font-size:15px;color:#6A758B;line-height:1.6">
         Un utilisateur a soumis une nouvelle demande d'accès.
@@ -873,15 +892,15 @@ export function newAccessRequestAdminEmail(
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Utilisateur</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${requester.name}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(requester.name)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024">${requester.email}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${escapeHtml(requester.email)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Groupe</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${planName}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(planName)}</td>
         </tr>
       </table>
 
@@ -930,7 +949,7 @@ export function supportTicketEmail(
   message: string
 ): { subject: string; html: string } {
   return {
-    subject: `[Support NBA] ${subject}`,
+    subject: `[Support NBA] ${sanitizeEmailSubject(subject)}`,
     html: layout(`
       <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Nouveau ticket support
@@ -942,15 +961,15 @@ export function supportTicketEmail(
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Nom</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(user.name)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024">${user.email}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${escapeHtml(user.email)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Sujet</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${subject}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(subject)}</td>
         </tr>
       </table>
 
@@ -958,7 +977,7 @@ export function supportTicketEmail(
 
       ${sectionTitle("Message")}
       <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${message}</p>
+        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${escapeHtml(message)}</p>
       </div>
 
       ${ctaButton({ url: `${APP_DOMAIN}/admin/support`, text: "Voir dans le dashboard" })}
@@ -987,14 +1006,14 @@ export function bugReportEmail(
     .map(
       ([k, v]) => `
         <tr>
-          <td style="padding:6px 0;font-size:13px;color:#6A758B;width:140px">${k}</td>
-          <td style="padding:6px 0;font-size:13px;color:#1E2024">${v}</td>
+          <td style="padding:6px 0;font-size:13px;color:#6A758B;width:140px">${escapeHtml(k)}</td>
+          <td style="padding:6px 0;font-size:13px;color:#1E2024">${escapeHtml(v ?? "")}</td>
         </tr>`
     )
     .join("")
 
   return {
-    subject: `[Bug] ${report.severity ? `(${SEVERITY_LABEL[report.severity]}) ` : ""}${report.title}`,
+    subject: `[Bug] ${report.severity ? `(${SEVERITY_LABEL[report.severity]}) ` : ""}${sanitizeEmailSubject(report.title)}`,
     html: layout(`
       <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Rapport de bug
@@ -1006,15 +1025,15 @@ export function bugReportEmail(
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B;width:100px">Nom</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(user.name)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Email</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024">${user.email}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024">${escapeHtml(user.email)}</td>
         </tr>
         <tr>
           <td style="padding:8px 0;font-size:13px;color:#6A758B">Titre</td>
-          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${report.title}</td>
+          <td style="padding:8px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(report.title)}</td>
         </tr>
         ${report.severity ? `<tr><td style="padding:8px 0;font-size:13px;color:#6A758B">Sévérité</td><td style="padding:8px 0;font-size:14px;color:#1E2024">${SEVERITY_LABEL[report.severity] ?? report.severity}</td></tr>` : ""}
       </table>
@@ -1023,13 +1042,13 @@ export function bugReportEmail(
 
       ${sectionTitle("Description")}
       <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
-        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${report.description}</p>
+        <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${escapeHtml(report.description)}</p>
       </div>
 
       ${report.steps ? `
         ${sectionTitle("Étapes pour reproduire")}
         <div style="background-color:#F4F5F7;border:1px solid #E4E7EC;border-radius:8px;padding:16px;margin:16px 0">
-          <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${report.steps}</p>
+          <p style="margin:0;font-size:14px;color:#1E2024;line-height:1.6;white-space:pre-wrap">${escapeHtml(report.steps)}</p>
         </div>
       ` : ""}
 
@@ -1160,7 +1179,7 @@ export function securityAlertAdminEmail(
         <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Type</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${eventType}</td></tr>
         <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Severite</td><td style="padding:4px 0;font-size:14px;color:${color};font-weight:600">${severity}</td></tr>
         ${details.userEmail ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Utilisateur</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.userEmail}</td></tr>` : ""}
-        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.ipAddress}</td></tr>` : ""}
+        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(details.ipAddress)}</td></tr>` : ""}
         ${details.riskScore !== undefined ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Score risque</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.riskScore}</td></tr>` : ""}
         ${details.description ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Description</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.description}</td></tr>` : ""}
       </table>
@@ -1204,7 +1223,7 @@ export function newUserRegisteredAdminEmail(
   user: { name: string; email: string },
 ): { subject: string; html: string } {
   return {
-    subject: `👤 Nouvel utilisateur inscrit — ${user.name} — ${APP_NAME}`,
+    subject: `👤 Nouvel utilisateur inscrit — ${sanitizeEmailSubject(user.name)} — ${APP_NAME}`,
     html: layout(`
       <p style="margin:0 0 4px 0;font-size:24px;font-weight:700;color:#1E2024;letter-spacing:-0.5px">
         Nouvel utilisateur
@@ -1212,8 +1231,8 @@ export function newUserRegisteredAdminEmail(
       ${divider()}
       ${sectionTitle("Details")}
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
-        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${user.name}</td></tr>
-        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Email</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${user.email}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${escapeHtml(user.name)}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Email</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(user.email)}</td></tr>
       </table>
       ${ctaButton({ url: `${APP_DOMAIN}/admin?tab=membres`, text: "Voir les membres" })}
     `),
@@ -1254,11 +1273,11 @@ export function securityAlertNewDeviceEmail(user: TemplateUser, device: DeviceDe
 
       ${sectionTitle("Appareil")}
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
-        ${device.name ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.name}</td></tr>` : ""}
-        ${device.browser ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Navigateur</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.browser}</td></tr>` : ""}
-        ${device.os ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">OS</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.os}</td></tr>` : ""}
-        ${device.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.ipAddress}</td></tr>` : ""}
-        ${device.location ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Localisation</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${device.location}</td></tr>` : ""}
+        ${device.name ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Nom</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(device.name)}</td></tr>` : ""}
+        ${device.browser ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Navigateur</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(device.browser)}</td></tr>` : ""}
+        ${device.os ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">OS</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(device.os)}</td></tr>` : ""}
+        ${device.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(device.ipAddress)}</td></tr>` : ""}
+        ${device.location ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Localisation</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(device.location)}</td></tr>` : ""}
       </table>
 
       <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
@@ -1285,9 +1304,9 @@ export function securityAlertNewLocationEmail(user: TemplateUser, location: { co
 
       ${sectionTitle("Localisation")}
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
-        ${location.country ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Pays</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.country}</td></tr>` : ""}
-        ${location.city ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Ville</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.city}</td></tr>` : ""}
-        ${location.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${location.ipAddress}</td></tr>` : ""}
+        ${location.country ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Pays</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(location.country)}</td></tr>` : ""}
+        ${location.city ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Ville</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(location.city)}</td></tr>` : ""}
+        ${location.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(location.ipAddress)}</td></tr>` : ""}
       </table>
 
       <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">
@@ -1316,8 +1335,8 @@ export function securityAlertSuspiciousEmail(user: TemplateUser, details: { risk
       ${sectionTitle("Details")}
       <table cellpadding="0" cellspacing="0" style="margin:16px 0;width:100%">
         <tr><td style="padding:4px 0;font-size:13px;color:#6A758B;width:100px">Risque</td><td style="padding:4px 0;font-size:14px;color:#1E2024;font-weight:600">${riskLabel} (${details.riskScore ?? "N/A"})</td></tr>
-        ${details.reason ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Raison</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.reason}</td></tr>` : ""}
-        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${details.ipAddress}</td></tr>` : ""}
+        ${details.reason ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">Raison</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(details.reason)}</td></tr>` : ""}
+        ${details.ipAddress ? `<tr><td style="padding:4px 0;font-size:13px;color:#6A758B">IP</td><td style="padding:4px 0;font-size:14px;color:#1E2024">${escapeHtml(details.ipAddress)}</td></tr>` : ""}
       </table>
 
       <p style="margin:0 0 8px 0;font-size:14px;color:#6A758B;line-height:1.5">

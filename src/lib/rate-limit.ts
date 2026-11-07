@@ -79,6 +79,8 @@ export interface RateLimitResult {
   remaining: number
   resetIn: number
   headers: Record<string, string>
+  /** true si le limiteur n'a pas pu joindre Redis : on refuse la requête (503). */
+  unavailable?: boolean
 }
 
 /**
@@ -90,9 +92,27 @@ export async function checkRateLimit(
   key: string,
   config: RateLimitConfig,
 ): Promise<RateLimitResult> {
+  const configured = !!process.env.REDIS_URL?.trim()
   const redis = getRedis()
   if (!redis) {
-    log.warn({ key: key, errorCode: "RATE_LIMIT_REDIS_UNAVAILABLE" }, "Redis indisponible — rate limit desactive")
+    // Pas de Redis configuré (dev/tests) : on ne bloque pas.
+    // Redis configuré mais indisponible : on échoue fermé (503) pour ne pas
+    // désactiver silencieusement la protection contre le brute-force.
+    if (configured) {
+      log.error({ key, errorCode: "RATE_LIMIT_REDIS_UNAVAILABLE" }, "Redis indisponible — rate limit fail-closed")
+      return {
+        allowed: false,
+        remaining: 0,
+        resetIn: 30,
+        unavailable: true,
+        headers: {
+          "X-RateLimit-Limit": config.max.toString(),
+          "X-RateLimit-Remaining": "0",
+          "X-RateLimit-Reset": "30",
+        },
+      }
+    }
+    log.warn({ key, errorCode: "RATE_LIMIT_REDIS_UNAVAILABLE" }, "Redis non configuré — rate limit désactivé")
     return {
       allowed: true,
       remaining: config.max,
@@ -132,15 +152,16 @@ export async function checkRateLimit(
     }
   } catch (err) {
     markUnavailable()
-    log.warn({ err, key: rkey, errorCode: "RATE_LIMIT_REDIS_ERROR" }, "Erreur Redis — rate limit desactive")
+    log.error({ err, key: rkey, errorCode: "RATE_LIMIT_REDIS_ERROR" }, "Erreur Redis — rate limit fail-closed")
     return {
-      allowed: true,
-      remaining: config.max,
-      resetIn: config.window,
+      allowed: false,
+      remaining: 0,
+      resetIn: 30,
+      unavailable: true,
       headers: {
         "X-RateLimit-Limit": config.max.toString(),
-        "X-RateLimit-Remaining": config.max.toString(),
-        "X-RateLimit-Reset": config.window.toString(),
+        "X-RateLimit-Remaining": "0",
+        "X-RateLimit-Reset": "30",
       },
     }
   }
@@ -161,7 +182,7 @@ export async function rateLimitOrDeny(
   const result = await checkRateLimit(`${name}:${identifier}`, config)
 
   if (!result.allowed) {
-    const status = result.remaining === 0 ? 429 : 503
+    const status = result.unavailable ? 503 : 429
     log.warn({ name, identifier, ip, status, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
     return new Response(
       JSON.stringify({
@@ -192,7 +213,7 @@ export function rateLimitMiddleware(config: RateLimitConfig) {
     const key = `${identifier}:${ip}`
     const result = await checkRateLimit(key, config)
     if (!result.allowed) {
-      const status = result.remaining === 0 ? 429 : 503
+      const status = result.unavailable ? 503 : 429
       log.warn({ key, ip, identifier, status, errorCode: "BUSINESS_RATE_LIMIT" }, "Rate limit exceeded")
       return new Response(JSON.stringify({ error: status === 503 ? "Service de limite de taux indisponible. Réessayez plus tard." : "Trop de requêtes. Réessayez plus tard." }), {
         status,

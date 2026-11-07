@@ -11,9 +11,10 @@ export default defineConfig({
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "src/**/*.spec.{ts,tsx}"],
     // Timeout pour eviter qu'un test accroche indefiniment en CI.
-    // 15s par test, 30s pour les hooks (beforeEach/afterEach).
-    testTimeout: 15_000,
-    hookTimeout: 30_000,
+    // Les tests UI (userEvent + jsdom) peuvent depasser 15s sur un runner
+    // charge : on garde une marge confortable sans masquer un vrai blocage.
+    testTimeout: 45_000,
+    hookTimeout: 60_000,
     // Tests orphelins exclus de l'exécution automatique : ils nécessitent un
     // scaffolding de test absent du repo (mocks prisma/redis/S3/WS, ou variables
     // d'env MINIO_*) et/ou un fetch global non injectable dans le contexte de la

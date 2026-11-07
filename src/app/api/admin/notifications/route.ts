@@ -4,6 +4,7 @@ import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { logger } from "@nba/lib/logger"
 import { notify } from "@nba/lib/services/notifications"
+import { escapeHtml, sanitizeEmailSubject } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 import { publishNotification } from "@nba/lib/redis-pubsub"
 import { sendPushToUser } from "@nba/lib/services/push"
@@ -64,8 +65,8 @@ export async function POST(request: NextRequest) {
         body: content,
         email: {
           to: targetUser.email,
-          subject: title,
-          html: `<p>Bonjour ${targetUser.name},</p><p>${content}</p>`,
+          subject: sanitizeEmailSubject(title),
+          html: `<p>Bonjour ${escapeHtml(targetUser.name)},</p><p>${escapeHtml(content)}</p>`,
         },
       })
 
@@ -135,8 +136,8 @@ export async function POST(request: NextRequest) {
           data: {
             deliveryId: delivery.id,
             to: user.email,
-            subject: title,
-            html: `<p>Bonjour ${user.name},</p><p>${content}</p>`,
+            subject: sanitizeEmailSubject(title),
+            html: `<p>Bonjour ${escapeHtml(user.name)},</p><p>${escapeHtml(content)}</p>`,
           },
           opts: { attempts: 3, backoff: { type: "exponential" as const, delay: 5000 } },
         }

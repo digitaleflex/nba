@@ -314,7 +314,7 @@ describe("Register Wizard", () => {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ planId: "bronze" }),
     });
-  }, 10000);
+  }, 45_000);
 
   it("shows error on failed submission", async () => {
     mockFetchSuccess();

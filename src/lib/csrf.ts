@@ -4,7 +4,6 @@ import { NextRequest, NextResponse } from "next/server"
 const ALLOWED_ORIGINS = [
   process.env.NEXT_PUBLIC_APP_URL,
   "https://access.signauxx.com",
-  "https://access.signaux.com",
   process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null,
 ].filter(Boolean) as string[]
 

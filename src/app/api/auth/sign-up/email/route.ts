@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { auth } from "@nba/lib/auth"
 import { prisma } from "@nba/lib/db"
 import { recordAuthAttempt } from "@nba/lib/security/auth-attempt-recorder"
+import { rateLimitMiddleware } from "@nba/lib/rate-limit"
+
+const signUpRateLimit = rateLimitMiddleware({ window: 3600, max: 10 })
 
 /**
  * Remplace l'endpoint natif better-auth `/api/auth/sign-up/email` pour
@@ -16,6 +19,9 @@ export async function POST(req: NextRequest) {
   let userAgent: string | undefined
 
   try {
+    const rateLimitRes = await signUpRateLimit(req, "sign-up")
+    if (rateLimitRes) return rateLimitRes
+
     const body = await req.json().catch(() => ({}))
     email = typeof body.email === "string" ? body.email.trim().toLowerCase() : ""
 
