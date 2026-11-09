@@ -10,6 +10,7 @@ import { toast } from "sonner"
 
 import { TradeList } from "./components/trade-list"
 import { StatsDashboard } from "./components/stats-dashboard"
+import { JournalInsights } from "./components/journal-insights"
 import { ReflectionsTab } from "./components/reflections-tab"
 import { TradeForm } from "./components/trade-form"
 import { useDetectTimezone } from "@nba/hooks/use-detect-timezone"
@@ -195,6 +196,7 @@ export default function JournalPage() {
       <ReflectionGuide />
       <MilestoneModal />
       <SessionBanner />
+      <JournalInsights />
 
       <div className="flex gap-1 rounded-lg bg-muted/50 p-1 w-fit">
         {TABS.map((tab) => (

@@ -31,6 +31,7 @@ export async function GET() {
     return NextResponse.json({
       sound: user?.notificationSound ?? "default",
       sounds: SOUNDS,
+      soundsByType: (meta.notificationPrefs as Record<string, unknown> | undefined)?.soundsByType ?? {},
       prefs: meta.notificationPrefs || DEFAULT_PREFS,
       quietHours: meta.notificationPrefs?.quietHours || null,
     })
@@ -45,7 +46,12 @@ export async function PUT(req: NextRequest) {
 
     const body = await req.json()
     const input = validateOrThrow(notificationPrefsSchema, body)
-    const { sound, prefs, quietHours } = input
+    const { sound, soundsByType, prefs, quietHours } = input as {
+      sound?: string
+      soundsByType?: Record<string, string>
+      prefs?: Record<string, boolean>
+      quietHours?: { start: string; end: string } | null
+    }
 
     const data: Record<string, any> = {}
 
@@ -56,13 +62,21 @@ export async function PUT(req: NextRequest) {
       data.notificationSound = sound
     }
 
-    if (prefs || quietHours !== undefined) {
+    if (soundsByType || prefs || quietHours !== undefined) {
       const existing = await prisma.user.findUnique({
         where: { id: session.user.id },
         select: { metadata: true },
       })
       const meta = (existing?.metadata || {}) as Record<string, any>
-      let np = { ...DEFAULT_PREFS, ...(meta.notificationPrefs || {}), ...(prefs || {}) }
+      const prevNp = (meta.notificationPrefs || {}) as Record<string, any>
+      let np: Record<string, any> = { ...DEFAULT_PREFS, ...prevNp, ...(prefs || {}) }
+      if (soundsByType) {
+        const clean: Record<string, string> = {}
+        for (const [k, v] of Object.entries(soundsByType)) {
+          if (typeof v === "string" && SOUNDS.includes(v)) clean[k] = v
+        }
+        np = { ...np, soundsByType: { ...(prevNp.soundsByType || {}), ...clean } }
+      }
       if (quietHours !== undefined) {
         np = { ...np, quietHours: quietHours || undefined }
       }

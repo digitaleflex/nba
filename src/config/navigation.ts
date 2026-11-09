@@ -6,6 +6,7 @@ import {
   CreditCard,
   Database,
   FileCheck,
+  Flame,
   Gauge,
   GraduationCap,
   LayoutDashboard,
@@ -79,6 +80,13 @@ const dashboardMobile: NavItem[] = [
     isActive: (pathname) => pathname.startsWith("/dashboard/journal"),
   },
   {
+    id: "lot",
+    href: "/dashboard/lot",
+    label: "Calculateur",
+    icon: LineChart,
+    isActive: (pathname) => pathname.startsWith("/dashboard/lot"),
+  },
+  {
     id: "verification",
     href: "/dashboard/verification",
     label: "Onboarding",
@@ -147,6 +155,20 @@ const dashboardSidebar: NavItem[] = [
     label: "Journal",
     icon: BookOpen,
     isActive: (pathname) => pathname.startsWith("/dashboard/journal"),
+  },
+  {
+    id: "lot",
+    href: "/dashboard/lot",
+    label: "Calculateur de lot",
+    icon: LineChart,
+    isActive: (pathname) => pathname.startsWith("/dashboard/lot"),
+  },
+  {
+    id: "redpills",
+    href: "/dashboard/redpills",
+    label: "Redpills",
+    icon: Flame,
+    isActive: (pathname) => pathname.startsWith("/dashboard/redpills"),
   },
   {
     id: "verification",
@@ -268,6 +290,14 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
       icon: BookOpen,
       section: "communiquer",
       isActive: (pathname) => pathname === "/admin/coaching",
+    },
+    {
+      id: "redpills",
+      href: "/admin/redpills",
+      label: "Redpills",
+      icon: Flame,
+      section: "communiquer",
+      isActive: (pathname) => pathname === "/admin/redpills",
     },
   ],
   auditer: [

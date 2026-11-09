@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Star, Archive, Share2, Printer, Check, Loader2, Copy } from "lucide-react"
+import { Star, Archive, Share2, Printer, Check, Loader2, Copy, TrendingUp } from "lucide-react"
 import { Button, cn } from "@nba/design-system"
 
 interface SignalActionsProps {
@@ -9,13 +9,16 @@ interface SignalActionsProps {
   signalContent: string
   initialFavorited: boolean
   initialArchived: boolean
+  initialTaken?: boolean
 }
 
-export function SignalActions({ signalId, signalContent, initialFavorited, initialArchived }: SignalActionsProps) {
+export function SignalActions({ signalId, signalContent, initialFavorited, initialArchived, initialTaken = false }: SignalActionsProps) {
   const [favorited, setFavorited] = useState(initialFavorited)
   const [archived, setArchived] = useState(initialArchived)
+  const [taken, setTaken] = useState(initialTaken)
   const [isLiking, setIsLiking] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [isTaking, setIsTaking] = useState(false)
   const [copied, setCopied] = useState(false)
   const [contentCopied, setContentCopied] = useState(false)
 
@@ -66,8 +69,40 @@ export function SignalActions({ signalId, signalContent, initialFavorited, initi
     window.print()
   }
 
+  async function toggleTaken() {
+    setIsTaking(true)
+    try {
+      const res = await fetch(`/api/dashboard/signals/${signalId}/taken`, { method: "POST" })
+      if (res.ok) {
+        const data = await res.json()
+        setTaken(!!data.taken)
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsTaking(false)
+    }
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2 border-t border-b py-3 my-4 border-border/40 select-none">
+      <Button
+        variant={taken ? "default" : "outline"}
+        size="sm"
+        disabled={isTaking}
+        onClick={toggleTaken}
+        className={cn(
+          "h-9 text-xs rounded-xl flex items-center gap-1.5 cursor-pointer font-semibold transition-colors",
+          taken ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "border-emerald-600/30 text-emerald-700 hover:bg-emerald-50"
+        )}
+      >
+        {isTaking ? (
+          <Loader2 className="size-4 animate-spin" />
+        ) : (
+          <TrendingUp className="size-4" />
+        )}
+        <span>{taken ? "Tradé ✓" : "J'ai tradé ce signal"}</span>
+      </Button>
       <Button
         variant="ghost"
         size="sm"

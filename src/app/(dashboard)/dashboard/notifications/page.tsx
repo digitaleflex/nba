@@ -64,7 +64,7 @@ function formatTimeAgo(dateStr: string): string {
 }
 
 export default function NotificationsPage() {
-  const { play: playSound, changeVolume: changeVolumeNofit, changeSound } = useNotificationSound()
+  const { play: playSound, changeVolume: changeVolumeNofit, changeSound, changeSoundForType } = useNotificationSound()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
@@ -76,6 +76,7 @@ export default function NotificationsPage() {
   const pageRef = useRef(1)
 
   const [selectedSound, setSelectedSound] = useState("default")
+  const [soundsByType, setSoundsByType] = useState<Record<string, string>>({})
   const [volume, setVolume] = useState(0.5)
   const [soundLoaded, setSoundLoaded] = useState(false)
   const [soundSaved, setSoundSaved] = useState(false)
@@ -93,6 +94,7 @@ export default function NotificationsPage() {
       .then((r) => { if (!r.ok) throw new Error("Erreur"); return r.json() })
       .then((data) => {
         setSelectedSound(data.sound)
+        setSoundsByType(data.soundsByType || {})
         setPrefs(data.prefs || {})
         setSoundLoaded(true)
         setPrefsLoaded(true)
@@ -122,7 +124,7 @@ export default function NotificationsPage() {
       const res = await fetch("/api/dashboard/notification-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sound: selectedSound }),
+        body: JSON.stringify({ sound: selectedSound, soundsByType }),
       })
       if (!res.ok) {
         setSoundError(true)
@@ -131,10 +133,16 @@ export default function NotificationsPage() {
       setSoundSaved(true)
       // Applique le son en direct (sinon le hook reste sur l'ancienne valeur jusqu'au reload)
       changeSound(selectedSound)
+      for (const [t, s] of Object.entries(soundsByType)) changeSoundForType(t, s)
       setTimeout(() => setSoundSaved(false), 2000)
     } catch {
       setSoundError(true)
     }
+  }
+
+  function pickTypeSound(type: string, soundId: string) {
+    setSoundsByType((prev) => ({ ...prev, [type]: soundId }))
+    playSound(soundId)
   }
 
   function togglePref(key: string) {
@@ -510,6 +518,35 @@ export default function NotificationsPage() {
                       <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
                     </div>
                   </button>
+                ))}
+              </div>
+
+              <div className="space-y-2 border-t pt-3">
+                <p className="text-xs font-semibold text-muted-foreground">
+                  Sonneries personnalisées par alerte — chaque notification génère sa sonnerie sur ton appareil
+                </p>
+                {[
+                  { key: "signal", label: "📈 Signaux", desc: "Nouveau signal publié" },
+                  { key: "redpill", label: "🔥 Redpills", desc: "Nouvelle pilule d'Emerson" },
+                ].map(({ key, label, desc }) => (
+                  <div key={key} className="flex items-center justify-between gap-2 py-1.5">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium">{label}</p>
+                      <p className="text-[10px] text-muted-foreground">{desc}</p>
+                    </div>
+                    <select
+                      value={soundsByType[key] ?? selectedSound}
+                      onChange={(e) => pickTypeSound(key, e.target.value)}
+                      className="h-9 rounded-lg border border-input bg-background px-2 text-xs font-medium max-w-[150px]"
+                      aria-label={`Sonnerie ${label}`}
+                    >
+                      {NOTIFICATION_SOUNDS.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 ))}
               </div>
             </div>

@@ -56,7 +56,15 @@ export function NotificationBell() {
   const wsActiveRef = useRef(false);
   const cacheRef = useRef<{ time: number; data: { notifications: Notification[]; unreadCount: number } } | null>(null);
 
-  const { play: playSound, changeSound } = useNotificationSound()
+  const { play: playSound, playForType, changeSound } = useNotificationSound()
+
+  function soundTypeFor(type: string): string {
+    const t = type.toUpperCase()
+    if (t.includes("SIGNAL")) return "signal"
+    if (t.includes("REDPILL") || t.includes("PILL")) return "redpill"
+    if (t.includes("MESSAGE")) return "message"
+    return "system"
+  }
 
   // ── WebSocket : notifs temps réel ──
   const { status: wsStatus } = useSocket({
@@ -73,7 +81,7 @@ export function NotificationBell() {
       })
       if (cacheRef.current) cacheRef.current = null
       setUnreadCount((c) => c + 1)
-      playSound()
+      playForType(soundTypeFor(n.type))
       toast(n.title, {
         description: n.body,
         duration: 5000,
@@ -115,8 +123,8 @@ export function NotificationBell() {
         prevTop &&
         topId !== prevTop
       ) {
-        playSound()
         const newNotif = data.notifications[0]
+        playForType(soundTypeFor(newNotif?.type ?? "system"))
         if (newNotif) {
           toast(newNotif.title, {
             description: newNotif.body,

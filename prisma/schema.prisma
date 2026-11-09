@@ -4,69 +4,72 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
+  provider = "postgresql"
 }
 
 // ── Better Auth Core Models ──
 
 model User {
-  id            String    @id @default(uuid()) @db.Uuid
+  id            String   @id @default(uuid()) @db.Uuid
   name          String
-  email         String    @unique
-  emailVerified Boolean   @default(false) @map("email_verified")
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
   image         String?
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // NBA custom fields
-  phone             String?
-  whatsapp          String?           @map("whatsapp")
-  roleId            String            @map("role_id") @db.Uuid
-  country           String?
-  language          String            @default("fr")
-  timezone          String            @default("Europe/Paris") @map("timezone")
-  onboardingStatus  OnboardingStatus  @default(REGISTERED) @map("onboarding_status")
-  isActive          Boolean           @default(true) @map("is_active")
-  suspendedAt       DateTime?         @map("suspended_at")
-  signalsAccessOverride Boolean       @default(false) @map("signals_access_override")
-  metadata          Json?             @db.JsonB
-  deletedAt         DateTime?         @map("deleted_at")
-  notificationSound String           @default("default") @map("notification_sound")
-  emailStatus       EmailStatus       @default(OK) @map("email_status")
-  emailStatusAt     DateTime?         @map("email_status_at")
+  phone                 String?
+  whatsapp              String?          @map("whatsapp")
+  roleId                String           @map("role_id") @db.Uuid
+  country               String?
+  language              String           @default("fr")
+  timezone              String           @default("Europe/Paris") @map("timezone")
+  onboardingStatus      OnboardingStatus @default(REGISTERED) @map("onboarding_status")
+  isActive              Boolean          @default(true) @map("is_active")
+  suspendedAt           DateTime?        @map("suspended_at")
+  signalsAccessOverride Boolean          @default(false) @map("signals_access_override")
+  metadata              Json?            @db.JsonB
+  deletedAt             DateTime?        @map("deleted_at")
+  notificationSound     String           @default("default") @map("notification_sound")
+  emailStatus           EmailStatus      @default(OK) @map("email_status")
+  emailStatusAt         DateTime?        @map("email_status_at")
 
-  sessions            Session[]
-  accounts            Account[]
-  role                Role                  @relation(fields: [roleId], references: [id])
-  accessRequests      AccessRequest[]
-  kycDocuments        KycDocument[]         @relation("KycDocuments")
-  kycReviews          KycDocument[]         @relation("KycReviews")
-  accessReviews       AccessRequest[]       @relation("AccessReviews")
-  brokerVerifications BrokerVerification[]  @relation("BrokerVerifications")
-  brokerReviews       BrokerVerification[]  @relation("BrokerReviews")
-  signals             Signal[]
-  signalVersions      SignalVersion[]
-  signalReads         SignalRead[]
-  notifications       Notification[]
-  pushSubscriptions   PushSubscription[]
-  auditLogs           AuditLog[]
-  settings            Setting[]
-  devices             Device[]
-  deviceVerifications DeviceVerification[]
-  signalFavorites     SignalFavorite[]
-  signalArchives      SignalArchive[]
-  trades              Trade[]
-  dailyReflections    DailyReflection[]
-  journalSessions     JournalSession[]
-  streaks             Streak[]
-  conversations       ConversationParticipant[]
-  messages            Message[]           @relation("SentMessages")
-  reactions           MessageReaction[]
-  reports             MessageReport[]
-  securityEvents      SecurityEvent[]
-  loginAttempts       LoginAttempt[]
+  sessions             Session[]
+  accounts             Account[]
+  role                 Role                      @relation(fields: [roleId], references: [id])
+  accessRequests       AccessRequest[]
+  kycDocuments         KycDocument[]             @relation("KycDocuments")
+  kycReviews           KycDocument[]             @relation("KycReviews")
+  accessReviews        AccessRequest[]           @relation("AccessReviews")
+  brokerVerifications  BrokerVerification[]      @relation("BrokerVerifications")
+  brokerReviews        BrokerVerification[]      @relation("BrokerReviews")
+  signals              Signal[]
+  signalVersions       SignalVersion[]
+  signalReads          SignalRead[]
+  notifications        Notification[]
+  pushSubscriptions    PushSubscription[]
+  auditLogs            AuditLog[]
+  settings             Setting[]
+  devices              Device[]
+  deviceVerifications  DeviceVerification[]
+  signalFavorites      SignalFavorite[]
+  signalArchives       SignalArchive[]
+  signalTakens         SignalTaken[]
+  redpills             Redpill[]             @relation("RedpillCreator")
+  redpillReads         RedpillRead[]
+  trades               Trade[]
+  dailyReflections     DailyReflection[]
+  journalSessions      JournalSession[]
+  streaks              Streak[]
+  conversations        ConversationParticipant[]
+  messages             Message[]                 @relation("SentMessages")
+  reactions            MessageReaction[]
+  reports              MessageReport[]
+  securityEvents       SecurityEvent[]
+  loginAttempts        LoginAttempt[]
   twoFactorBackupCodes TwoFactorBackupCode[]
-  securityPolicy      SecurityPolicy?
+  securityPolicy       SecurityPolicy?
 
   @@index([roleId])
   @@index([isActive])
@@ -90,9 +93,9 @@ model Conversation {
 }
 
 model ConversationParticipant {
-  conversationId String       @map("conversation_id") @db.Uuid
-  userId        String       @map("user_id") @db.Uuid
-  createdAt     DateTime     @default(now()) @map("created_at")
+  conversationId String   @map("conversation_id") @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  createdAt      DateTime @default(now()) @map("created_at")
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -104,25 +107,25 @@ model ConversationParticipant {
 }
 
 model Message {
-  id             String    @id @default(uuid()) @db.Uuid
-  conversationId String    @map("conversation_id") @db.Uuid
-  senderId       String    @map("sender_id") @db.Uuid
-  type           String    @default("TEXT") @map("type")
-  content        String
-  attachmentUrl  String?   @map("attachment_url")
-  attachmentMime String?   @map("attachment_mime")
-  attachmentName String?   @map("attachment_name")
-  attachmentSize Int?      @map("attachment_size")
-  readAt         DateTime? @map("read_at")
-  editedAt       DateTime? @map("edited_at")
-  deletedAt      DateTime? @map("deleted_at")
-  quotedMessageId String?  @map("quoted_message_id") @db.Uuid
-  createdAt      DateTime  @default(now()) @map("created_at")
+  id              String    @id @default(uuid()) @db.Uuid
+  conversationId  String    @map("conversation_id") @db.Uuid
+  senderId        String    @map("sender_id") @db.Uuid
+  type            String    @default("TEXT") @map("type")
+  content         String
+  attachmentUrl   String?   @map("attachment_url")
+  attachmentMime  String?   @map("attachment_mime")
+  attachmentName  String?   @map("attachment_name")
+  attachmentSize  Int?      @map("attachment_size")
+  readAt          DateTime? @map("read_at")
+  editedAt        DateTime? @map("edited_at")
+  deletedAt       DateTime? @map("deleted_at")
+  quotedMessageId String?   @map("quoted_message_id") @db.Uuid
+  createdAt       DateTime  @default(now()) @map("created_at")
 
-  conversation  Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender        User         @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-  quotedMessage Message?     @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
-  quotedBy      Message[]    @relation("MessageQuote")
+  conversation  Conversation      @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender        User              @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  quotedMessage Message?          @relation("MessageQuote", fields: [quotedMessageId], references: [id], onDelete: SetNull)
+  quotedBy      Message[]         @relation("MessageQuote")
   reactions     MessageReaction[]
   reports       MessageReport[]
 
@@ -149,12 +152,12 @@ model MessageReaction {
 }
 
 model MessageReport {
-  id         String   @id @default(uuid()) @db.Uuid
-  messageId  String   @map("message_id") @db.Uuid
-  reporterId String   @map("reporter_id") @db.Uuid
+  id         String    @id @default(uuid()) @db.Uuid
+  messageId  String    @map("message_id") @db.Uuid
+  reporterId String    @map("reporter_id") @db.Uuid
   reason     String
   handledAt  DateTime? @map("handled_at")
-  createdAt  DateTime @default(now()) @map("created_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
 
   message  Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
   reporter User    @relation(fields: [reporterId], references: [id], onDelete: Cascade)
@@ -175,17 +178,17 @@ model Session {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // ── NEW SECURITY FIELDS ──
-  deviceId      String?  @map("device_id") @db.Uuid
-  riskScore     Int      @default(0) @map("risk_score")
-  riskLevel     String   @default("LOW") @map("risk_level")
-  country       String?  @map("country")
-  city          String?  @map("city")
-  latitude      Float?   @map("latitude")
-  longitude     Float?   @map("longitude")
-  isHighRisk    Boolean  @default(false) @map("is_high_risk")
-  riskReason    String?  @map("risk_reason")
-  fingerprint   String?  @map("fingerprint")
-  lastRotation  DateTime? @map("last_rotation")
+  deviceId     String?   @map("device_id") @db.Uuid
+  riskScore    Int       @default(0) @map("risk_score")
+  riskLevel    String    @default("LOW") @map("risk_level")
+  country      String?   @map("country")
+  city         String?   @map("city")
+  latitude     Float?    @map("latitude")
+  longitude    Float?    @map("longitude")
+  isHighRisk   Boolean   @default(false) @map("is_high_risk")
+  riskReason   String?   @map("risk_reason")
+  fingerprint  String?   @map("fingerprint")
+  lastRotation DateTime? @map("last_rotation")
 
   user   User    @relation(fields: [userId], references: [id])
   device Device? @relation(fields: [deviceId], references: [id])
@@ -198,19 +201,19 @@ model Session {
 }
 
 model Account {
-  id                      String    @id @default(uuid()) @db.Uuid
-  userId                  String    @map("user_id") @db.Uuid
-  accountId               String    @map("account_id")
-  providerId              String    @map("provider_id")
-  accessToken             String?   @map("access_token")
-  refreshToken            String?   @map("refresh_token")
-  accessTokenExpiresAt    DateTime? @map("access_token_expires_at")
-  refreshTokenExpiresAt   DateTime? @map("refresh_token_expires_at")
-  scope                   String?
-  idToken                 String?   @map("id_token")
-  password                String?
-  createdAt               DateTime  @default(now()) @map("created_at")
-  updatedAt               DateTime  @updatedAt @map("updated_at")
+  id                    String    @id @default(uuid()) @db.Uuid
+  userId                String    @map("user_id") @db.Uuid
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @map("access_token")
+  refreshToken          String?   @map("refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  idToken               String?   @map("id_token")
+  password              String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id])
 
@@ -270,22 +273,22 @@ model RolePermission {
 }
 
 model SubscriptionPlan {
-  id           String   @id @default(uuid()) @db.Uuid
-  name         String   @unique
+  id           String    @id @default(uuid()) @db.Uuid
+  name         String    @unique
   description  String?
-  price        Decimal  @db.Decimal(10, 2)
+  price        Decimal   @db.Decimal(10, 2)
   currency     String
-  durationDays Int      @map("duration_days")
-  features     Json     @default("[]") @db.JsonB
-  isActive     Boolean  @default(true) @map("is_active")
-  sortOrder    Int      @default(0) @map("sort_order")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  durationDays Int       @map("duration_days")
+  features     Json      @default("[]") @db.JsonB
+  isActive     Boolean   @default(true) @map("is_active")
+  sortOrder    Int       @default(0) @map("sort_order")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
   deletedAt    DateTime? @map("deleted_at")
 
   // ── NEW SECURITY FIELDS ──
-  maxSessions Int @default(5) @map("max_sessions")
-  maxDevices  Int @default(3) @map("max_devices")
+  maxSessions Int     @default(5) @map("max_sessions")
+  maxDevices  Int     @default(3) @map("max_devices")
   require2fa  Boolean @default(false) @map("require_2fa")
 
   accessRequests AccessRequest[]
@@ -296,15 +299,15 @@ model SubscriptionPlan {
 }
 
 model AccessRequest {
-  id            String       @id @default(uuid()) @db.Uuid
-  userId        String       @map("user_id") @db.Uuid
-  planId        String       @map("plan_id") @db.Uuid
-  status        AccessStatus @default(PENDING)
-  reviewedBy    String?      @map("reviewed_by") @db.Uuid
-  reviewedAt    DateTime?    @map("reviewed_at")
-  notes         String?
-  createdAt     DateTime     @default(now()) @map("created_at")
-  updatedAt     DateTime     @updatedAt @map("updated_at")
+  id         String       @id @default(uuid()) @db.Uuid
+  userId     String       @map("user_id") @db.Uuid
+  planId     String       @map("plan_id") @db.Uuid
+  status     AccessStatus @default(PENDING)
+  reviewedBy String?      @map("reviewed_by") @db.Uuid
+  reviewedAt DateTime?    @map("reviewed_at")
+  notes      String?
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
 
   user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
   plan     SubscriptionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
@@ -319,21 +322,21 @@ model AccessRequest {
 }
 
 model Device {
-  id           String   @id @default(uuid()) @db.Uuid
-  userId       String   @map("user_id") @db.Uuid
-  name         String?
-  fingerprint  String   @map("fingerprint")
-  ipAddress    String?  @map("ip_address")
-  userAgent    String?  @map("user_agent")
-  deviceType   String?  @map("device_type")
-  brand        String?  @map("brand")
-  model        String?  @map("model")
-  os           String?  @map("os")
-  browser      String?  @map("browser")
-  lastSeenAt   DateTime @default(now()) @map("last_seen_at")
-  trusted      Boolean  @default(true) @map("trusted")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  name        String?
+  fingerprint String   @map("fingerprint")
+  ipAddress   String?  @map("ip_address")
+  userAgent   String?  @map("user_agent")
+  deviceType  String?  @map("device_type")
+  brand       String?  @map("brand")
+  model       String?  @map("model")
+  os          String?  @map("os")
+  browser     String?  @map("browser")
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at")
+  trusted     Boolean  @default(true) @map("trusted")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
 
   // ── NEW SECURITY FIELDS ──
   trustLevel    DeviceTrustLevel @default(UNKNOWN) @map("trust_level")
@@ -343,15 +346,15 @@ model Device {
   trustedUntil  DateTime?        @map("trusted_until")
   lastCountry   String?          @map("last_country")
 
-  flagVpn       Boolean @default(false) @map("flag_vpn")
-  flagProxy     Boolean @default(false) @map("flag_proxy")
-  flagTor       Boolean @default(false) @map("flag_tor")
+  flagVpn        Boolean @default(false) @map("flag_vpn")
+  flagProxy      Boolean @default(false) @map("flag_proxy")
+  flagTor        Boolean @default(false) @map("flag_tor")
   flagDatacenter Boolean @default(false) @map("flag_datacenter")
 
   sessions       Session[]
   securityEvents SecurityEvent[]
   loginAttempts  LoginAttempt[]
-  user           User           @relation(fields: [userId], references: [id])
+  user           User            @relation(fields: [userId], references: [id])
 
   @@unique([userId, fingerprint])
   @@index([userId])
@@ -385,18 +388,18 @@ model DeviceVerification {
 }
 
 model KycDocument {
-  id             String             @id @default(uuid()) @db.Uuid
-  userId         String             @map("user_id") @db.Uuid
-  documentType   DocumentType       @map("document_type")
-  status         VerificationStatus @default(PENDING)
-  frontFilePath  String             @map("front_file_path")
-  backFilePath   String?            @map("back_file_path")
-  reviewedBy     String?            @map("reviewed_by") @db.Uuid
-  reviewNotes    String?            @map("review_notes")
-  reviewedAt     DateTime?          @map("reviewed_at")
-  submittedAt    DateTime           @default(now()) @map("submitted_at")
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
+  id            String             @id @default(uuid()) @db.Uuid
+  userId        String             @map("user_id") @db.Uuid
+  documentType  DocumentType       @map("document_type")
+  status        VerificationStatus @default(PENDING)
+  frontFilePath String             @map("front_file_path")
+  backFilePath  String?            @map("back_file_path")
+  reviewedBy    String?            @map("reviewed_by") @db.Uuid
+  reviewNotes   String?            @map("review_notes")
+  reviewedAt    DateTime?          @map("reviewed_at")
+  submittedAt   DateTime           @default(now()) @map("submitted_at")
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
 
   user     User  @relation("KycDocuments", fields: [userId], references: [id])
   reviewer User? @relation("KycReviews", fields: [reviewedBy], references: [id])
@@ -445,12 +448,13 @@ model Signal {
   updatedAt           DateTime     @updatedAt @map("updated_at")
   deletedAt           DateTime?    @map("deleted_at")
 
-  creator   User           @relation(fields: [createdBy], references: [id])
+  creator   User             @relation(fields: [createdBy], references: [id])
   audience  SignalAudience[]
   versions  SignalVersion[]
   reads     SignalRead[]
   favorites SignalFavorite[]
   archives  SignalArchive[]
+  takens    SignalTaken[]
   trades    Trade[]
 
   @@index([status])
@@ -478,17 +482,17 @@ model SignalAudience {
 }
 
 model Notification {
-  id        String   @id @default(uuid()) @db.Uuid
-  userId    String   @map("user_id") @db.Uuid
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
   type      String
   title     String
   body      String
-  data      Json?    @db.JsonB
-  isRead    Boolean  @default(false) @map("is_read")
+  data      Json?     @db.JsonB
+  isRead    Boolean   @default(false) @map("is_read")
   readAt    DateTime? @map("read_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
-  user     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
   deliveries NotificationDelivery[]
 
   @@index([userId])
@@ -499,16 +503,16 @@ model Notification {
 }
 
 model NotificationDelivery {
-  id             String             @id @default(uuid()) @db.Uuid
-  notificationId String             @map("notification_id") @db.Uuid
+  id             String              @id @default(uuid()) @db.Uuid
+  notificationId String              @map("notification_id") @db.Uuid
   channel        NotificationChannel
-  status         DeliveryStatus     @default(PENDING)
-  externalId     String?            @map("external_id")
-  errorMessage   String?            @map("error_message")
-  sentAt         DateTime?          @map("sent_at")
-  lastEventAt    DateTime?          @map("last_event_at") // timestamp Resend du dernier event applique
-  createdAt      DateTime           @default(now()) @map("created_at")
-  updatedAt      DateTime           @updatedAt @map("updated_at")
+  status         DeliveryStatus      @default(PENDING)
+  externalId     String?             @map("external_id")
+  errorMessage   String?             @map("error_message")
+  sentAt         DateTime?           @map("sent_at")
+  lastEventAt    DateTime?           @map("last_event_at") // timestamp Resend du dernier event applique
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
 
   notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
 
@@ -526,7 +530,7 @@ model NotificationDelivery {
 model EmailReputationHistory {
   id            String   @id @default(uuid()) @db.Uuid
   date          DateTime @db.Date
-  window        String   // "24h" | "7d" | "30d"
+  window        String // "24h" | "7d" | "30d"
   sent          Int
   delivered     Int
   opened        Int
@@ -534,7 +538,7 @@ model EmailReputationHistory {
   bounced       Int
   complained    Int
   failed        Int
-  bounceRate    Float    // bounced / sent * 100
+  bounceRate    Float // bounced / sent * 100
   complaintRate Float    @map("complaint_rate")
   openRate      Float    @map("open_rate")
   clickRate     Float    @map("click_rate")
@@ -551,22 +555,22 @@ model EmailReputationHistory {
 // ════════════════════════════════════════
 
 model EmailStatsMonthly {
-  id          String   @id @default(uuid()) @db.Uuid
-  year        Int
-  month       Int      // 1-12
-  totalEvents Int      @default(0) @map("total_events")
-  delivered   Int      @default(0)
-  opened      Int      @default(0)
-  clicked     Int      @default(0)
-  bounced     Int      @default(0)
-  complained  Int      @default(0)
-  failed      Int      @default(0)
-  deliveryDelayed Int  @default(0) @map("delivery_delayed")
-  suppressed  Int      @default(0)
-  openRate    Float    @default(0) @map("open_rate")
-  clickRate   Float    @default(0) @map("click_rate")
-  bounceRate  Float    @default(0) @map("bounce_rate")
-  createdAt   DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid()) @db.Uuid
+  year            Int
+  month           Int // 1-12
+  totalEvents     Int      @default(0) @map("total_events")
+  delivered       Int      @default(0)
+  opened          Int      @default(0)
+  clicked         Int      @default(0)
+  bounced         Int      @default(0)
+  complained      Int      @default(0)
+  failed          Int      @default(0)
+  deliveryDelayed Int      @default(0) @map("delivery_delayed")
+  suppressed      Int      @default(0)
+  openRate        Float    @default(0) @map("open_rate")
+  clickRate       Float    @default(0) @map("click_rate")
+  bounceRate      Float    @default(0) @map("bounce_rate")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   @@unique([year, month])
   @@map("email_stats_monthly")
@@ -577,21 +581,21 @@ model EmailStatsMonthly {
 // ════════════════════════════════════════
 
 model WebhookDlq {
-  id           String   @id @default(uuid()) @db.Uuid
-  source       String   @default("resend") // future-proof: autres providers
-  eventType    String   @map("event_type")
-  svixId       String?  @map("svix_id")
-  externalId   String?  @map("external_id")
-  payload      Json     @db.JsonB
-  rawBody      String?  @map("raw_body") // payload brut (pour replay)
-  attempts     Int      @default(0)
+  id            String    @id @default(uuid()) @db.Uuid
+  source        String    @default("resend") // future-proof: autres providers
+  eventType     String    @map("event_type")
+  svixId        String?   @map("svix_id")
+  externalId    String?   @map("external_id")
+  payload       Json      @db.JsonB
+  rawBody       String?   @map("raw_body") // payload brut (pour replay)
+  attempts      Int       @default(0)
   lastAttemptAt DateTime? @map("last_attempt_at")
-  lastError    String?  @map("last_error")
-  status       DlqStatus @default(PENDING)
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
-  replayedAt   DateTime? @map("replayed_at")
-  abandonedAt  DateTime? @map("abandoned_at")
+  lastError     String?   @map("last_error")
+  status        DlqStatus @default(PENDING)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  replayedAt    DateTime? @map("replayed_at")
+  abandonedAt   DateTime? @map("abandoned_at")
 
   @@index([status])
   @@index([source, eventType])
@@ -686,13 +690,13 @@ model Setting {
 // ════════════════════════════════════════
 
 model SecurityPolicy {
-  id              String   @id @default(uuid()) @db.Uuid
-  userId          String?  @unique @map("user_id") @db.Uuid
-  maxSessions     Int      @default(5) @map("max_sessions")
-  maxDevices      Int      @default(3) @map("max_devices")
-  require2fa      Boolean  @default(false) @map("require_2fa")
-  enforceEmailOTP Boolean  @default(false) @map("enforce_email_otp")
-  deviceTrustDays Int      @default(30) @map("device_trust_days")
+  id              String  @id @default(uuid()) @db.Uuid
+  userId          String? @unique @map("user_id") @db.Uuid
+  maxSessions     Int     @default(5) @map("max_sessions")
+  maxDevices      Int     @default(3) @map("max_devices")
+  require2fa      Boolean @default(false) @map("require_2fa")
+  enforceEmailOTP Boolean @default(false) @map("enforce_email_otp")
+  deviceTrustDays Int     @default(30) @map("device_trust_days")
 
   allowedCountries String[] @default([]) @map("allowed_countries")
   blockedCountries String[] @default([]) @map("blocked_countries")
@@ -891,8 +895,6 @@ enum AccessStatus {
   REVOKED
 }
 
-
-
 enum SignalStatus {
   DRAFT
   PUBLISHED
@@ -984,6 +986,23 @@ model SignalArchive {
   @@map("signal_archives")
 }
 
+model SignalTaken {
+  id        String   @id @default(uuid()) @db.Uuid
+  signalId  String   @map("signal_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  tradedAt  DateTime @default(now()) @map("traded_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  signal Signal @relation(fields: [signalId], references: [id], onDelete: Cascade)
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([signalId, userId])
+  @@index([signalId])
+  @@index([userId])
+  @@index([userId, tradedAt])
+  @@map("signal_takens")
+}
+
 // ════════════════════════════════════════
 //  Trading Journal (PlanCanna-like)
 // ════════════════════════════════════════
@@ -1031,36 +1050,36 @@ enum TradeSetup {
 }
 
 model Trade {
-  id          String      @id @default(uuid()) @db.Uuid
-  userId      String      @map("user_id") @db.Uuid
-  signalId    String?     @map("signal_id") @db.Uuid
-  sessionId   String?     @map("session_id") @db.Uuid
+  id        String  @id @default(uuid()) @db.Uuid
+  userId    String  @map("user_id") @db.Uuid
+  signalId  String? @map("signal_id") @db.Uuid
+  sessionId String? @map("session_id") @db.Uuid
 
-  pair        String
-  direction   Direction
-  result      TradeResult
-  entryPrice  Decimal     @map("entry_price") @db.Decimal(12, 5)
-  exitPrice   Decimal     @map("exit_price") @db.Decimal(12, 5)
-  stopLoss    Decimal?    @map("stop_loss") @db.Decimal(12, 5)
-  takeProfit  Decimal?    @map("take_profit") @db.Decimal(12, 5)
-  lotSize     Decimal     @map("lot_size") @db.Decimal(10, 2) @default(0.01)
-  pnl         Decimal     @db.Decimal(12, 2) @default(0)
-  spread      Decimal?    @db.Decimal(12, 2) @default(0)
-  commission  Decimal?    @db.Decimal(12, 2) @default(0)
-  swap        Decimal?    @db.Decimal(12, 2) @default(0)
+  pair       String
+  direction  Direction
+  result     TradeResult
+  entryPrice Decimal     @map("entry_price") @db.Decimal(12, 5)
+  exitPrice  Decimal     @map("exit_price") @db.Decimal(12, 5)
+  stopLoss   Decimal?    @map("stop_loss") @db.Decimal(12, 5)
+  takeProfit Decimal?    @map("take_profit") @db.Decimal(12, 5)
+  lotSize    Decimal     @default(0.01) @map("lot_size") @db.Decimal(10, 2)
+  pnl        Decimal     @default(0) @db.Decimal(12, 2)
+  spread     Decimal?    @default(0) @db.Decimal(12, 2)
+  commission Decimal?    @default(0) @db.Decimal(12, 2)
+  swap       Decimal?    @default(0) @db.Decimal(12, 2)
 
-  mood        Mood?
-  confidence  Int?
-  note        String?
-  tags        String[]    @default([])
+  mood       Mood?
+  confidence Int?
+  note       String?
+  tags       String[] @default([])
 
-  strategy    TradeStrategy?
-  setupType   TradeSetup?
+  strategy  TradeStrategy?
+  setupType TradeSetup?
 
-  tradedAt    DateTime    @map("traded_at") @default(now())
-  createdAt   DateTime    @map("created_at") @default(now())
-  updatedAt   DateTime    @updatedAt @map("updated_at")
-  deletedAt   DateTime?   @map("deleted_at")
+  tradedAt  DateTime  @default(now()) @map("traded_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
 
   user    User            @relation(fields: [userId], references: [id])
   signal  Signal?         @relation(fields: [signalId], references: [id])
@@ -1073,15 +1092,15 @@ model Trade {
 }
 
 model JournalSession {
-  id        String    @id @default(uuid()) @db.Uuid
-  userId    String    @map("user_id") @db.Uuid
-  planId    String?   @map("plan_id") @db.Uuid
+  id     String  @id @default(uuid()) @db.Uuid
+  userId String  @map("user_id") @db.Uuid
+  planId String? @map("plan_id") @db.Uuid
 
-  startedAt DateTime  @map("started_at") @default(now())
+  startedAt DateTime  @default(now()) @map("started_at")
   endedAt   DateTime? @map("ended_at")
   isActive  Boolean   @default(true) @map("is_active")
 
-  createdAt DateTime  @map("created_at") @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   user   User              @relation(fields: [userId], references: [id])
   plan   SubscriptionPlan? @relation(fields: [planId], references: [id])
@@ -1092,19 +1111,19 @@ model JournalSession {
 }
 
 model DailyReflection {
-  id         String    @id @default(uuid()) @db.Uuid
-  userId     String    @map("user_id") @db.Uuid
-  date       DateTime  @db.Date
+  id     String   @id @default(uuid()) @db.Uuid
+  userId String   @map("user_id") @db.Uuid
+  date   DateTime @db.Date
 
-  rating     Int       // 1-10
+  rating     Int // 1-10
   mood       Mood?
-  tradeCount Int       @map("trade_count") @default(0)
-  wins       Int       @default(0)
-  losses     Int       @default(0)
-  totalPnl   Decimal?  @map("total_pnl") @db.Decimal(12, 2)
+  tradeCount Int      @default(0) @map("trade_count")
+  wins       Int      @default(0)
+  losses     Int      @default(0)
+  totalPnl   Decimal? @map("total_pnl") @db.Decimal(12, 2)
   note       String?
 
-  createdAt  DateTime  @map("created_at") @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id])
 
@@ -1113,17 +1132,57 @@ model DailyReflection {
 }
 
 model Streak {
-  id         String     @id @default(uuid()) @db.Uuid
-  userId     String     @map("user_id") @db.Uuid
-  type       StreakType
-  count      Int        @default(0)
-  bestCount  Int        @map("best_count") @default(0)
-  lastDisciplineDay DateTime? @map("last_discipline_day")
-  startedAt  DateTime   @map("started_at") @default(now())
-  updatedAt  DateTime   @updatedAt @map("updated_at")
+  id                String     @id @default(uuid()) @db.Uuid
+  userId            String     @map("user_id") @db.Uuid
+  type              StreakType
+  count             Int        @default(0)
+  bestCount         Int        @default(0) @map("best_count")
+  lastDisciplineDay DateTime?  @map("last_discipline_day")
+  startedAt         DateTime   @default(now()) @map("started_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, type])
   @@map("streaks")
+}
+
+// ════════════════════════════════════════
+//  Redpills d'Emerson — pilule motivation du jour (texte + audio + image, vidéo plus tard)
+// ════════════════════════════════════════
+
+model Redpill {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  content     String?
+  audioUrl    String?  @map("audio_url")
+  imageUrl    String?  @map("image_url")
+  videoUrl    String?  @map("video_url")
+  isPublished Boolean  @default(true) @map("is_published")
+  publishedAt DateTime @default(now()) @map("published_at")
+  createdBy   String   @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  creator User         @relation("RedpillCreator", fields: [createdBy], references: [id])
+  reads   RedpillRead[]
+
+  @@index([isPublished, publishedAt])
+  @@index([createdBy])
+  @@map("redpills")
+}
+
+model RedpillRead {
+  id        String   @id @default(uuid()) @db.Uuid
+  redpillId String   @map("redpill_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  readAt    DateTime @default(now()) @map("read_at")
+
+  redpill Redpill @relation(fields: [redpillId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([redpillId, userId])
+  @@index([redpillId])
+  @@index([userId])
+  @@map("redpill_reads")
 }

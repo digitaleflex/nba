@@ -30,6 +30,7 @@ export const profileSchema = z.object({
 
 export const notificationPrefsSchema = z.object({
   sound: z.string().max(30).optional(),
+  soundsByType: z.record(z.string(), z.string().max(30)).optional(),
   prefs: z.record(z.string(), z.boolean()).optional(),
   quietHours: z.object({
     start: z.string(),

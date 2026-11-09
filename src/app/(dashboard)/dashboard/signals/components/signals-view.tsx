@@ -20,6 +20,7 @@ import {
 } from "lucide-react"
 import { MarkdownMessage } from "@nba/lib/markdown"
 import { useSocket } from "@nba/lib/hooks/use-socket"
+import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
 import { MobileFilterSheet } from "./mobile-filter-sheet"
 
 interface SignalData {
@@ -35,6 +36,7 @@ interface SignalData {
   viewCount: number
   favorited: boolean
   archived: boolean
+  taken: boolean
 }
 
 interface Pagination {
@@ -58,11 +60,12 @@ interface ApiResponse {
   summary: Summary
 }
 
-type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive"
+type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive" | "taken"
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Tous" },
   { key: "unread", label: "Non lus" },
+  { key: "taken", label: "Tradés ✓" },
   { key: "favorite", label: "Favoris ⭐" },
   { key: "archive", label: "Archives 📂" },
   { key: "today", label: "Aujourd'hui" },
@@ -133,6 +136,11 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
               {!signal.read && <span className="size-1.5 rounded-full bg-primary shrink-0" aria-hidden="true" />}
             </div>
             <div className="flex items-center gap-1.5">
+              {signal.taken && (
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5">
+                  Tradé ✓
+                </span>
+              )}
               {signal.favorited && <Star className="size-3.5 fill-amber-400 text-amber-400" />}
               {signal.archived && <Archive className="size-3.5 text-primary" />}
             </div>
@@ -207,6 +215,7 @@ export function SignalsView() {
   const debouncedSearch = useDebouncedValue(searchQuery, 300)
   const [liveArrivals, setLiveArrivals] = useState<Set<string>>(new Set())
   const liveArrivalsRef = useRef<Set<string>>(new Set())
+  const { playForType } = useNotificationSound()
 
   // Temps réel : un signal publié déclenche un refresh instantané et synchronisé
   // pour tous les abonnés connectés (canal 'signal' du serveur WebSocket).
@@ -287,18 +296,22 @@ export function SignalsView() {
       if (payload?.signalId) {
         liveArrivalsRef.current.add(payload.signalId)
         setLiveArrivals(new Set(liveArrivalsRef.current))
+        // Chaque nouveau signal génère sa sonnerie sur l'appareil.
+        playForType("signal")
         // Nettoie le flag d'animation après la transition visuelle
         setTimeout(() => {
           liveArrivalsRef.current.delete(payload.signalId as string)
           setLiveArrivals(new Set(liveArrivalsRef.current))
         }, 1600)
+      } else {
+        playForType("signal")
       }
       // Refresh la vue courante ; le nouveau signal apparaîtra s'il correspond
       // au filtre actif (un signal fraîchement publié est "non lu").
       fetchSignals(1, false)
     })
     return off
-  }, [subscribe, fetchSignals])
+  }, [subscribe, fetchSignals, playForType])
 
   // Replay au (re)connect : comblé la fenêtre de perte d'event (worker WS
   // indisponible au moment d'un PUBLISH Redis). On demande les signaux
@@ -340,8 +353,9 @@ export function SignalsView() {
   }
 
   const filteredSignals = useMemo(() => {
-    if (activeFilter !== "unread") return signals
-    return signals.filter((s) => !s.read)
+    if (activeFilter === "unread") return signals.filter((s) => !s.read)
+    if (activeFilter === "taken") return signals.filter((s) => s.taken)
+    return signals
   }, [signals, activeFilter])
 
   const groupedFiltered = useMemo(() => {

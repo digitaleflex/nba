@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.1.0";
+const SW_VERSION = "2.2.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -81,6 +81,7 @@ self.addEventListener("push", (event) => {
       data: { url: payload.url },
       tag: payload.tag,
       requireInteraction: false,
+      silent: false,
       vibrate: [200, 100, 200],
     }),
   );

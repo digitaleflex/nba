@@ -17,8 +17,8 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
     redirect("/login")
   }
 
-  // Fetch the signal, favorite/archive status and approved access requests in parallel
-  const [signal, favorite, archive, approvedRequests, userDb] = await Promise.all([
+  // Fetch the signal, favorite/archive/taken status and approved access requests in parallel
+  const [signal, favorite, archive, taken, approvedRequests, userDb] = await Promise.all([
     prisma.signal.findUnique({
       where: { id },
       include: {
@@ -35,6 +35,14 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
       }
     }),
     prisma.signalArchive.findUnique({
+      where: {
+        signalId_userId: {
+          signalId: id,
+          userId: session.user.id
+        }
+      }
+    }),
+    prisma.signalTaken.findUnique({
       where: {
         signalId_userId: {
           signalId: id,
@@ -134,17 +142,26 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
             signalId={signal.id}
             signalContent={signal.content}
             initialFavorited={!!favorite} 
-            initialArchived={!!archive} 
+            initialArchived={!!archive}
+            initialTaken={!!taken}
           />
 
-          {/* Journal : lien rapide vers le formulaire de trade */}
-          <Link
-            id="journal-from-signal-btn"
-            href={`/dashboard/journal?tab=trades&signalId=${signal.id}`}
-            className="flex items-center justify-center gap-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 text-sm font-medium text-primary transition-colors min-h-[44px] animate-[pulse_3s_ease-in-out_infinite]"
-          >
-            📓 J'ai tradé ce signal
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-2">
+            {/* Journal : lien rapide vers le formulaire de trade */}
+            <Link
+              id="journal-from-signal-btn"
+              href={`/dashboard/journal?tab=trades&signalId=${signal.id}`}
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 hover:bg-primary/20 border border-primary/20 py-3 text-sm font-medium text-primary transition-colors min-h-[44px]"
+            >
+              📓 Journaliser en détail
+            </Link>
+            <Link
+              href="/dashboard/signals/tracking"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-muted hover:bg-muted/80 border border-border py-3 text-sm font-medium text-muted-foreground transition-colors min-h-[44px]"
+            >
+              📈 Mon tracking
+            </Link>
+          </div>
 
           {/* Graphics Gallery */}
           {Array.isArray(signal.imageUrls) && (signal.imageUrls as string[]).length > 0 ? (

@@ -148,6 +148,23 @@ export async function GET(
         }
       }
     }
+  } else if (category === "redpills") {
+    if (!isAdmin) {
+      const matching = await prisma.redpill.findFirst({
+        where: {
+          OR: [
+            { imageUrl: filePath },
+            { audioUrl: filePath },
+            { videoUrl: filePath },
+          ],
+        },
+        select: { id: true, isPublished: true },
+      })
+      // Pilule publiée → tout membre actif. Brouillon/introuvable → admin uniquement.
+      if (!matching?.isPublished && !hasPermission("signals.create")) {
+        return new NextResponse("Accès refusé", { status: 403 })
+      }
+    }
   } else if (category === "avatars") {
     if (!isAdmin && decodedSegments[1] !== session.user.id) {
       return new NextResponse("Accès refusé", { status: 403 })
@@ -188,6 +205,10 @@ export async function GET(
       else if (actualFilePath.endsWith(".pdf")) contentType = "application/pdf"
       else if (actualFilePath.endsWith(".mp4")) contentType = "video/mp4"
       else if (actualFilePath.endsWith(".webm")) contentType = "video/webm"
+      else if (actualFilePath.endsWith(".mp3")) contentType = "audio/mpeg"
+      else if (actualFilePath.endsWith(".wav")) contentType = "audio/wav"
+      else if (actualFilePath.endsWith(".ogg") || actualFilePath.endsWith(".oga")) contentType = "audio/ogg"
+      else if (actualFilePath.endsWith(".m4a")) contentType = "audio/mp4"
     }
 
     return new NextResponse(stream, {

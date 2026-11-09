@@ -26,6 +26,7 @@ interface SignalListItem {
   viewCount: number
   favorited: boolean
   archived: boolean
+  taken: boolean
 }
 
 interface GetSignalsResponse {
@@ -189,7 +190,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
 
   const signalIds = signals.map((s) => s.id)
 
-  const [reads, favorites, archives] = await Promise.all([
+  const [reads, favorites, archives, takens] = await Promise.all([
     prisma.signalRead.findMany({
       where: { signalId: { in: signalIds }, userId: session.user.id },
     }),
@@ -199,10 +200,15 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     prisma.signalArchive.findMany({
       where: { signalId: { in: signalIds }, userId: session.user.id },
     }),
+    prisma.signalTaken.findMany({
+      where: { signalId: { in: signalIds }, userId: session.user.id },
+      select: { signalId: true },
+    }),
   ])
   const readMap = new Map(reads.map((r) => [r.signalId, r]))
   const favoriteSet = new Set(favorites.map((f) => f.signalId))
   const archiveSet = new Set(archives.map((a) => a.signalId))
+  const takenSet = new Set(takens.map((t) => t.signalId))
 
   const allAccessibleWhere: Record<string, unknown> = { deletedAt: null, status: "PUBLISHED" }
   if (!isAdmin && !user.signalsAccessOverride) {
@@ -229,6 +235,7 @@ export async function getSignalsApi(params: GetSignalsParams): Promise<GetSignal
     viewCount: readMap.get(sig.id)?.viewCount ?? 0,
     favorited: favoriteSet.has(sig.id),
     archived: archiveSet.has(sig.id),
+    taken: takenSet.has(sig.id),
   }))
 
   const lastSignal = signals[0]
