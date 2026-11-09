@@ -8,7 +8,7 @@ export interface LotCalculatorResult {
   lot: number
   riskAmount: number
   slDistance: number
-  rr: string | null
+  rr: number | null
   lossIfSl: number
   gainIfTp: number
 }

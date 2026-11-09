@@ -11,7 +11,7 @@ import {
 } from "@nba/design-system"
 import { SlidersHorizontal, X } from "lucide-react"
 
-type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive"
+type FilterKey = "all" | "unread" | "today" | "week" | "forex" | "indices" | "forex+indices" | "favorite" | "archive" | "taken"
 
 interface FilterGroup {
   label: string
@@ -24,6 +24,7 @@ const FILTER_GROUPS: FilterGroup[] = [
     filters: [
       { key: "all", label: "Tous" },
       { key: "unread", label: "Non lus" },
+      { key: "taken", label: "Tradés" },
       { key: "favorite", label: "Favoris" },
       { key: "archive", label: "Archives" },
     ],
