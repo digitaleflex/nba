@@ -35,6 +35,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { unreadTotal } = useMessagingUnread()
   const reduce = useReducedMotion()
   const [pendingRequests, setPendingRequests] = useState(0)
+  const [pendingReview, setPendingReview] = useState(0)
   useEffect(() => {
     if (space !== "admin") return
     const controller = new AbortController()
@@ -45,6 +46,12 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
         if (Array.isArray(d)) { setPendingRequests(d.length); return }
         if (d.total != null) setPendingRequests(d.total)
         else if (Array.isArray(d.requests)) setPendingRequests(d.requests.length)
+      })
+      .catch(() => {})
+    fetch("/api/admin/review/summary", { signal: controller.signal })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { total?: number } | null) => {
+        if (d?.total != null) setPendingReview(d.total)
       })
       .catch(() => {})
     return () => controller.abort()
@@ -60,6 +67,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   function badgeFor(item: (typeof links)[number]): string | null {
     if (item.badge === "messages" && messagesBadge) return messagesBadge
     if (item.badge === "pendingRequests" && requestsBadge) return requestsBadge
+    if (item.badge === "pendingReview" && pendingReview > 0) return pendingReview > 9 ? "9+" : String(pendingReview)
     return null
   }
 

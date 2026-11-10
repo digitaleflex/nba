@@ -9,6 +9,7 @@ import {
   Flame,
   Gauge,
   GraduationCap,
+  Inbox,
   LayoutDashboard,
   LineChart,
   Link2,
@@ -29,7 +30,7 @@ import {
   Webhook,
   Bug,
 } from "lucide-react"
-import { ADMIN_CONTEXTS, getContextForTab, type AdminContextDef, type AdminTabDef } from "@nba/app/(admin)/admin/admin-context"
+import { ADMIN_CONTEXTS } from "@nba/app/(admin)/admin/admin-context"
 
 export type NavSpace = "dashboard" | "admin"
 export type UserRole = "ADMIN" | "SUPER_ADMIN" | "USER" | string
@@ -42,7 +43,7 @@ export interface NavItem {
   /** Rôles requis pour afficher l'item. Si vide, visible par tous. */
   requiredRoles?: UserRole[]
   /** Clé de badge à afficher (géré par les composants consommateurs). */
-  badge?: "messages" | "pendingKyc" | "pendingRequests"
+  badge?: "messages" | "pendingKyc" | "pendingRequests" | "pendingReview"
   /** Fonction personnalisée pour déterminer si l'item est actif. */
   isActive?: (pathname: string, searchParams: URLSearchParams) => boolean
   /** Identifiant de section pour le regroupement (sidebar/menu). */
@@ -214,29 +215,7 @@ const dashboardMenu: NavItem[] = [
   })),
 ]
 
-// Mapping des icônes pour les onglets admin
-const adminTabIconMap: Record<string, LucideIcon> = {
-  dashboard: LayoutDashboard,
-  analytics: LineChart,
-  revenue: CreditCard,
-  requests: ListTodo,
-  membres: Users,
-  users: Contact,
-  kyc: FileCheck,
-  broker: Link2,
-  signals: Radio,
-  emails: Mail,
-  notifications: Bell,
-  bugs: Bug,
-  moderation: ShieldAlert,
-  security: ShieldCheck,
-  fraud: Siren,
-  settings: Settings,
-  devices: MonitorSmartphone,
-  crons: Timer,
-  formation: GraduationCap,
-}
-
+// Liens standalone par ancienne section (conservés pour getSuperAdminSections).
 const adminStandaloneLinks: Record<string, NavItem[]> = {
   surveiller: [
     {
@@ -347,67 +326,178 @@ const adminStandaloneLinks: Record<string, NavItem[]> = {
   ],
 }
 
-const adminMobile: NavItem[] = ADMIN_CONTEXTS.map((context) => {
-  const repr = context.tabs[0]
-  return {
-    id: context.id,
-    href: `/admin?tab=${repr.value}`,
-    label: context.label,
-    icon: context.icon,
-    section: context.id,
-    badge: context.id === "decider" ? "pendingRequests" : undefined,
-    requiredRoles: context.requiredRole ? ([context.requiredRole] as UserRole[]) : undefined,
-    isActive: (pathname: string, searchParams: URLSearchParams) => {
-      const activeTab = searchParams.get("tab") || ""
-      return pathname.startsWith("/admin") && getContextForTab(activeTab) === context.id
-    },
-  }
-})
-
 /**
- * Fabrique unique : transforme un onglet admin en item de navigation.
- * Utilisée par la sidebar ADMIN standard ET les sections SUPER_ADMIN.
+ * Nouvelle organisation par métier (phase 1) : mêmes écrans, nouveaux rayons.
+ * Les onglets `?tab=` existants sont inchangés — seul le regroupement sidebar change.
+ * ADMIN_CONTEXTS reste la référence pour le mobile bottom-nav et getContextForTab.
  */
-function tabToNavItem(tab: AdminTabDef, context: AdminContextDef): NavItem {
+
+function adminTabLabel(value: string): string {
+  for (const c of ADMIN_CONTEXTS) {
+    const t = c.tabs.find((t) => t.value === value)
+    if (t) return t.label
+  }
+  return value
+}
+
+function adminTabLink(value: string, icon: LucideIcon, section: string): NavItem {
   return {
-    id: tab.value,
-    href: `/admin?tab=${tab.value}`,
-    label: tab.label,
-    icon: adminTabIconMap[tab.value] || context.icon,
-    section: context.id,
+    id: value,
+    href: `/admin?tab=${value}`,
+    label: adminTabLabel(value),
+    icon,
+    section,
     isActive: (pathname: string, searchParams: URLSearchParams) =>
-      pathname === "/admin" && (searchParams.get("tab") ?? "dashboard") === tab.value,
+      pathname === "/admin" && (searchParams.get("tab") ?? "dashboard") === value,
   }
 }
 
-const adminSidebarSections: NavSection[] = ADMIN_CONTEXTS
-  .filter((context) => !context.requiredRole) // Sections réservées SUPER_ADMIN filtrées côté composant
-  .map((context) => ({
-    id: context.id,
-    label: context.label,
+function adminPageLink(
+  id: string,
+  href: string,
+  label: string,
+  icon: LucideIcon,
+  section: string,
+  match: (pathname: string, searchParams: URLSearchParams) => boolean,
+  badge?: NavItem["badge"],
+): NavItem {
+  return { id, href, label, icon, section, isActive: match, badge }
+}
+
+const adminSidebarSections: NavSection[] = [
+  {
+    id: "a-traiter",
+    label: "À traiter",
     items: [
-      ...context.tabs
-        .filter((tab) => !tab.requiredRole) // Tabs SUPER_ADMIN filtrées
-        .map((tab) => tabToNavItem(tab, context)),
-      ...(adminStandaloneLinks[context.id] || []),
+      adminPageLink("review", "/admin/a-traiter", "Vue d'ensemble", Inbox, "a-traiter",
+        (pathname) => pathname === "/admin/a-traiter", "pendingReview"),
+      adminTabLink("requests", ListTodo, "a-traiter"),
+      adminTabLink("kyc", FileCheck, "a-traiter"),
+      adminTabLink("broker", Link2, "a-traiter"),
+      adminTabLink("bugs", Bug, "a-traiter"),
+      adminPageLink("support", "/admin/support", "Support", MessageCircle, "a-traiter",
+        (pathname) => pathname === "/admin/support", "messages"),
     ],
-  }))
+  },
+  {
+    id: "membres",
+    label: "Membres",
+    items: [
+      adminTabLink("membres", Users, "membres"),
+      adminTabLink("users", Contact, "membres"),
+    ],
+  },
+  {
+    id: "contenus",
+    label: "Contenus",
+    items: [
+      adminTabLink("signals", Radio, "contenus"),
+      adminPageLink("redpills", "/admin/redpills", "Redpills", Flame, "contenus",
+        (pathname) => pathname === "/admin/redpills"),
+      adminTabLink("formation", GraduationCap, "contenus"),
+      adminTabLink("notifications", Bell, "contenus"),
+      adminTabLink("emails", Mail, "contenus"),
+      adminPageLink("messages", "/admin/messages", "Messages", MessageCircle, "contenus",
+        (pathname) => pathname.startsWith("/admin/messages"), "messages"),
+      adminPageLink("bulk-message", "/admin/bulk-message", "Message groupé", Mail, "contenus",
+        (pathname) => pathname === "/admin/bulk-message"),
+    ],
+  },
+  {
+    id: "pilotage",
+    label: "Pilotage",
+    items: [
+      adminTabLink("dashboard", LayoutDashboard, "pilotage"),
+      adminPageLink("control-room", "/admin/control-room", "Control Room", Gauge, "pilotage",
+        (pathname) => pathname === "/admin/control-room"),
+      adminPageLink("tracker", "/admin/tracker", "Tracker", Radar, "pilotage",
+        (pathname) => pathname.startsWith("/admin/tracker")),
+      adminPageLink("coaching", "/admin/coaching", "Coaching", BookOpen, "pilotage",
+        (pathname) => pathname === "/admin/coaching"),
+      adminTabLink("analytics", LineChart, "pilotage"),
+      adminTabLink("revenue", CreditCard, "pilotage"),
+    ],
+  },
+  {
+    id: "securite",
+    label: "Sécurité",
+    items: [
+      adminTabLink("security", ShieldCheck, "securite"),
+      adminTabLink("fraud", Siren, "securite"),
+      adminTabLink("devices", MonitorSmartphone, "securite"),
+      adminTabLink("moderation", ShieldAlert, "securite"),
+      adminPageLink("audit", "/admin/audit", "Journal d'audit", FileCheck, "securite",
+        (pathname) => pathname === "/admin/audit"),
+    ],
+  },
+]
+
+const adminMobile: NavItem[] = [
+  {
+    id: "a-traiter",
+    href: "/admin/a-traiter",
+    label: "À traiter",
+    icon: Inbox,
+    section: "a-traiter",
+    badge: "pendingReview",
+    isActive: (pathname) => pathname.startsWith("/admin/a-traiter"),
+  },
+  {
+    id: "membres",
+    href: "/admin?tab=membres",
+    label: "Membres",
+    icon: Users,
+    section: "membres",
+    isActive: (pathname, searchParams) => pathname === "/admin" && (searchParams.get("tab") ?? "") === "membres",
+  },
+  {
+    id: "contenus",
+    href: "/admin?tab=signals",
+    label: "Contenus",
+    icon: Radio,
+    section: "contenus",
+    isActive: (pathname, searchParams) =>
+      pathname === "/admin" && ["signals", "formation", "notifications", "emails"].includes(searchParams.get("tab") ?? "") ||
+      ["/admin/redpills", "/admin/messages", "/admin/bulk-message"].some((p) => pathname.startsWith(p)),
+  },
+  {
+    id: "pilotage",
+    href: "/admin?tab=dashboard",
+    label: "Pilotage",
+    icon: LayoutDashboard,
+    section: "pilotage",
+    isActive: (pathname, searchParams) =>
+      pathname === "/admin" && ["dashboard", "analytics", "revenue"].includes(searchParams.get("tab") ?? "dashboard") ||
+      ["/admin/control-room", "/admin/tracker", "/admin/coaching"].some((p) => pathname.startsWith(p)),
+  },
+  {
+    id: "securite",
+    href: "/admin?tab=security",
+    label: "Sécurité",
+    icon: ShieldCheck,
+    section: "securite",
+    isActive: (pathname, searchParams) =>
+      pathname === "/admin" && ["security", "fraud", "devices", "moderation"].includes(searchParams.get("tab") ?? "") ||
+      pathname.startsWith("/admin/audit"),
+  },
+]
 
 /**
  * Sections réservées SUPER_ADMIN (Systeme).
  * Injectées séparément dans la sidebar selon le rôle.
  */
 export function getSuperAdminSections(): NavSection[] {
-  return ADMIN_CONTEXTS
-    .filter((context) => context.requiredRole === "SUPER_ADMIN")
-    .map((context) => ({
-      id: context.id,
-      label: context.label,
+  return [
+    {
+      id: "systeme",
+      label: "Système",
       items: [
-        ...context.tabs.map((tab) => tabToNavItem(tab, context)),
-        ...(adminStandaloneLinks[context.id] || []),
+        adminTabLink("settings", Settings, "systeme"),
+        adminTabLink("crons", Timer, "systeme"),
+        ...(adminStandaloneLinks["systeme"] || []),
       ],
-    }))
+    },
+  ]
 }
 
 const adminMenu: NavItem[] = adminSidebarSections.flatMap((section) =>

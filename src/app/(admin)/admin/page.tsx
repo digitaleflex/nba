@@ -33,7 +33,8 @@ import { CronsTab } from "./features/CronsTab"
 import { AdminTools } from "./components/admin-tools"
 
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
-import { ADMIN_CONTEXTS, getContextForTab, getTabLabel } from "./admin-context"
+import { getTabLabel } from "./admin-context"
+import { getSidebarSections } from "@nba/config/navigation"
 
 const AdminContextPanel = dynamic(
   () => import("./components/admin-context-panel").then((mod) => mod.AdminContextPanel),
@@ -99,6 +100,7 @@ function AdminConsoleContent() {
   const searchParams = useSearchParams()
   const activeTab = searchParams.get("tab") || "dashboard"
   const { isSuperAdmin } = useAdminRole()
+  const adminSections = getSidebarSections("admin", isSuperAdmin ? "SUPER_ADMIN" : "ADMIN")
   const SYSTEM_TABS = ["settings", "crons"]
 
   // Context Panel State
@@ -444,26 +446,22 @@ function AdminConsoleContent() {
         <div className="relative md:hidden">
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
             <div className="shrink-0 w-1" />
-            {ADMIN_CONTEXTS.flatMap((context, gi) => {
-              if (context.requiredRole === "SUPER_ADMIN" && !isSuperAdmin) return []
-              const visibleTabs = context.tabs.filter((t) => !(t.requiredRole === "SUPER_ADMIN" && !isSuperAdmin))
-              if (visibleTabs.length === 0) return []
+            {adminSections.flatMap((section, gi) => {
               const items: React.ReactNode[] = []
-              const isContextActive = getContextForTab(activeTab) === context.id
               if (gi > 0) {
                 items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
               }
-              items.push(
-                <span key={`gl-${gi}`} className={cn("shrink-0 text-xs font-semibold uppercase tracking-wider select-none", isContextActive ? "text-primary" : "text-muted-foreground/70")}>
-                  {context.label}
-                </span>
-              )
-              visibleTabs.forEach((tab) => {
+              section.items.forEach((item) => {
+                const isActive = item.id === "review"
+                  ? false
+                  : item.href.startsWith("/admin?tab=")
+                    ? activeTab === item.href.split("tab=")[1]
+                    : false
                 items.push(
-                  <button key={tab.value} onClick={() => router.push(`/admin?tab=${tab.value}`)}
-                    className={cn("text-xs px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", activeTab === tab.value ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
+                  <button key={item.id} onClick={() => router.push(item.href)}
+                    className={cn("text-xs px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", isActive ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
                   >
-                    {tab.label}
+                    {item.label}
                   </button>
                 )
               })
