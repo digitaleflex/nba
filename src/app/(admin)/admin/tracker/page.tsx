@@ -1,12 +1,5 @@
 import { prisma } from "@nba/lib/db"
-import {
-  getResendStatusMap,
-  getLatestEventMap,
-  classifyResendStatus,
-  classifyByEventType,
-  type ResendEmailStatus,
-  type DeliveryBucket,
-} from "@nba/lib/services/resend-delivery"
+import type { Prisma } from "@nba/generated/prisma/client"
 import { LiveRefresh } from "./live-refresh"
 import { SignalTableClient } from "./signal-table-client"
 import { UserTimeline } from "./user-timeline"
@@ -18,8 +11,11 @@ import {
   computeDeliveryRates,
   emptyDeliveryMetrics,
   type DeliveryMetrics,
+  type DeliveryBucket,
 } from "@nba/lib/services/delivery-metrics"
 import { requireRole } from "@nba/lib/auth-utils"
+import { loadRecipients } from "./tracker-data"
+import type { PerUser, SignalRow, UserSignalCompact } from "./types"
 import { logger } from "@nba/lib/logger"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
@@ -27,58 +23,7 @@ import { cn } from "@nba/design-system"
 
 const log = logger.child({ module: "admin-tracker" })
 
-const RECENT_SIGNALS = 12
-
-interface UserSignalCompact {
-  signalId: string
-  signalTitle: string
-  publishedAt: string
-  plans: string
-  plan: string
-  emailBucket: string
-  emailEvent: string | null
-  pushStatus: string | null
-  inAppRead: boolean
-}
-
-interface PerUser {
-  email: string
-  name: string
-  externalId: string | null
-  emailBucket: string
-  emailEvent: string | null
-  /** Un email a-t-il été planifié pour ce destinataire ? */
-  hasEmail: boolean
-  /** Statut DB de la NotificationDelivery (PENDING/SENT/FAILED/BOUNCED). */
-  emailStatus: string | null
-  pushStatus: string | null
-  inAppRead: boolean
-  plan: string
-}
-
-interface SignalRow {
-  id: string
-  title: string
-  content: string
-  author: string
-  publishedAt: Date | null
-  plans: string
-  planBreakdown: { name: string; count: number }[]
-  hasImages: boolean
-  recipients: number
-  inAppRead: number
-  emailsSent: number
-  delivered: number
-  bounced: number
-  complained: number
-  opened: number
-  pending: number
-  failed: number
-  unknown: number
-  pushSent: number
-  pushFailed: number
-  perUser: PerUser[]
-}
+const PAGE_SIZE = 12
 
 function snippet(content: string): string {
   const text = content.replace(/[#*_`>\-]/g, " ").replace(/\s+/g, " ").trim()
@@ -140,7 +85,7 @@ async function getWorkerHealth(): Promise<WorkerHealth> {
 export default async function SignalTrackerPage({
   searchParams: sp,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; range?: string }>
+  searchParams: Promise<{ q?: string; status?: string; range?: string; page?: string }>
 }) {
   const searchParams = await sp
   const query = searchParams.q?.toLowerCase() ?? ""
@@ -149,8 +94,9 @@ export default async function SignalTrackerPage({
     : range === "7d" ? 7 * 24 * 60 * 60 * 1000
     : range === "30d" ? 30 * 24 * 60 * 60 * 1000
     : 0
+  const requestedPage = Math.max(1, Number.parseInt(searchParams.page ?? "1", 10) || 1)
 
-  const where: any = { status: "PUBLISHED", deletedAt: null }
+  const where: Prisma.SignalWhereInput = { status: "PUBLISHED", deletedAt: null }
   if (query) {
     where.content = { contains: query, mode: "insensitive" }
   }
@@ -158,10 +104,17 @@ export default async function SignalTrackerPage({
     where.publishedAt = { gte: new Date(Date.now() - rangeMs) }
   }
 
+  // Le count permet de borner la page demandée (URL ?page=999) sans
+  // renvoyer une page vide.
+  const signalTotal = await prisma.signal.count({ where })
+  const totalPages = Math.max(1, Math.ceil(signalTotal / PAGE_SIZE))
+  const page = Math.min(requestedPage, totalPages)
+
   const signals = await prisma.signal.findMany({
     where,
     orderBy: { publishedAt: "desc" },
-    take: RECENT_SIGNALS,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     select: {
       id: true,
       content: true,
@@ -177,148 +130,48 @@ export default async function SignalTrackerPage({
     },
   })
 
+  // Lien de pagination en conservant les filtres actifs.
+  const pageHref = (target: number) => {
+    const params = new URLSearchParams()
+    if (query) params.set("q", query)
+    if (range !== "7d") params.set("range", range)
+    if (target > 1) params.set("page", String(target))
+    const qs = params.toString()
+    return `/admin/tracker${qs ? `?${qs}` : ""}`
+  }
+
   // Worker health check — via l'API BullMQ, jamais via les clés internes.
   const workerHealth = await getWorkerHealth()
 
+  // Charge les destinataires de tous les signaux de la page en 2 requêtes
+  // (au lieu de 2 par signal) — cf. tracker-data.ts.
+  const recipientsBySignal = await loadRecipients(
+    signals.map((signal) => ({
+      id: signal.id,
+      planIds: signal.audience.map((a) => a.plan.id),
+      planNames: signal.audience.map((a) => a.plan.name),
+    })),
+  )
+
   const rows: SignalRow[] = []
-  const allExternalIds: string[] = []
 
   for (const signal of signals) {
-    const notifications = await prisma.notification.findMany({
-      where: {
-        type: "SIGNAL",
-        data: { path: ["signalId"], equals: signal.id },
-      },
-      select: {
-        isRead: true,
-        userId: true,
-        user: { select: { id: true, email: true, name: true } },
-        deliveries: { select: { channel: true, status: true, externalId: true } },
-      },
-    })
+    const perUser = recipientsBySignal.get(signal.id) ?? []
 
-    const planIds = signal.audience.map((a: any) => a.plan.id ?? a.planId)
-    const userIds = notifications.map((n) => n.userId)
-    const accessRequests = userIds.length > 0
-      ? await prisma.accessRequest.findMany({
-          where: { userId: { in: userIds }, planId: { in: planIds }, status: "APPROVED" },
-          select: { userId: true, plan: { select: { name: true } } },
-        })
-      : []
-    const userPlanMap = new Map<string, string>()
-    for (const ar of accessRequests) {
-      if (!userPlanMap.has(ar.userId)) {
-        userPlanMap.set(ar.userId, ar.plan.name)
-      }
-    }
-
-    const perUser: PerUser[] = []
-    for (const n of notifications) {
-      const emailDelivery = n.deliveries.find((d) => d.channel === "EMAIL")
-      const pushDelivery = n.deliveries.find((d) => d.channel === "PUSH")
-      const externalId = emailDelivery?.externalId ?? null
-      if (externalId) allExternalIds.push(externalId)
-      perUser.push({
-        email: n.user?.email ?? "inconnu",
-        name: n.user?.name ?? "inconnu",
-        externalId,
-        hasEmail: Boolean(emailDelivery),
-        emailStatus: emailDelivery?.status ?? null,
-        plan: userPlanMap.get(n.userId) || signal.audience.map((a: any) => a.plan.name).join(", "),
-        emailBucket: "unknown",
-        emailEvent: null,
-        pushStatus: pushDelivery
-          ? pushDelivery.status === "SENT"
-            ? "envoyé"
-            : pushDelivery.status === "FAILED"
-              ? "échoué"
-              : pushDelivery.status
-          : null,
-        inAppRead: n.isRead,
-      })
-    }
-
-    const pushSent = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "SENT").length,
-      0,
-    )
-    const pushFailed = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "FAILED").length,
-      0,
-    )
+    const pushSent = perUser.filter((u) => u.pushStatus === "envoyé").length
+    const pushFailed = perUser.filter((u) => u.pushStatus === "échoué").length
 
     const planCount = new Map<string, number>()
     for (const u of perUser) {
       planCount.set(u.plan, (planCount.get(u.plan) ?? 0) + 1)
     }
-    const planBreakdown = signal.audience.map((a: any) => ({
+    const planBreakdown = signal.audience.map((a) => ({
       name: a.plan.name,
       count: planCount.get(a.plan.name) ?? 0,
     }))
 
-    rows.push({
-      id: signal.id,
-      title: snippet(signal.content),
-      content: signal.content,
-      author: (signal as any).creator?.name || "Inconnu",
-      publishedAt: signal.publishedAt,
-      plans: signal.audience.map((a: any) => a.plan.name).join(", ") || "—",
-      planBreakdown,
-      hasImages: !!(signal as any).imageUrl || ((signal as any).imageUrls?.length ?? 0) > 0,
-      recipients: notifications.length,
-      inAppRead: notifications.filter((n) => n.isRead).length,
-      // Renseignés après la classification des buckets Resend (voir plus bas).
-      emailsSent: 0,
-      delivered: 0,
-      bounced: 0,
-      complained: 0,
-      opened: 0,
-      pending: 0,
-      failed: 0,
-      unknown: 0,
-      pushSent,
-      pushFailed,
-      perUser,
-    })
-  }
-
-  const eventMap = await getLatestEventMap(allExternalIds)
-  const statusMap = await getResendStatusMap(allExternalIds)
-
-  for (const row of rows) {
-    for (const u of row.perUser) {
-      let bucket: DeliveryBucket
-      let event: string | null
-
-      if (!u.hasEmail) {
-        // Aucun email planifié : ce n'est ni un envoi, ni un échec.
-        bucket = "unknown"
-        event = "pas d'email"
-      } else if (u.emailStatus === "FAILED") {
-        bucket = "failed"
-        event = "échec d'envoi"
-      } else if (u.emailStatus === "PENDING" && !u.externalId) {
-        bucket = "pending"
-        event = "en file d'envoi"
-      } else if (u.externalId && eventMap.has(u.externalId)) {
-        const evt = eventMap.get(u.externalId)
-        bucket = classifyByEventType(evt)
-        event = evt ?? "en attente Resend"
-      } else if (u.externalId) {
-        const status: ResendEmailStatus | null = statusMap.get(u.externalId) ?? null
-        bucket = classifyResendStatus(status)
-        event = status?.last_event ?? "en attente Resend"
-      } else {
-        bucket = "pending"
-        event = "en attente Resend"
-      }
-
-      u.emailBucket = bucket
-      u.emailEvent = event
-    }
-
     const metrics = emptyDeliveryMetrics()
-    for (const u of row.perUser) {
+    for (const u of perUser) {
       addDeliveryMetrics(metrics, {
         hasEmail: u.hasEmail,
         dbStatus: u.emailStatus,
@@ -326,14 +179,30 @@ export default async function SignalTrackerPage({
         bucket: u.emailBucket as DeliveryBucket,
       })
     }
-    row.emailsSent = metrics.sent
-    row.delivered = metrics.delivered
-    row.opened = metrics.opened
-    row.bounced = metrics.bounced
-    row.complained = metrics.complained
-    row.pending = metrics.pending
-    row.failed = metrics.failed
-    row.unknown = metrics.unknown
+
+    rows.push({
+      id: signal.id,
+      title: snippet(signal.content),
+      content: signal.content,
+      author: signal.creator?.name || "Inconnu",
+      publishedAt: signal.publishedAt,
+      plans: signal.audience.map((a) => a.plan.name).join(", ") || "—",
+      planBreakdown,
+      hasImages: !!signal.imageUrl || (Array.isArray(signal.imageUrls) && signal.imageUrls.length > 0),
+      recipients: perUser.length,
+      inAppRead: perUser.filter((u) => u.inAppRead).length,
+      emailsSent: metrics.sent,
+      delivered: metrics.delivered,
+      bounced: metrics.bounced,
+      complained: metrics.complained,
+      opened: metrics.opened,
+      pending: metrics.pending,
+      failed: metrics.failed,
+      unknown: metrics.unknown,
+      pushSent,
+      pushFailed,
+      perUserCount: perUser.length,
+    })
   }
 
   const totals = rows.reduce(
@@ -379,7 +248,7 @@ export default async function SignalTrackerPage({
   // Per-plan aggregate stats — même agrégateur que les lignes et les totaux.
   const planStats = new Map<string, { users: number; metrics: DeliveryMetrics }>()
   for (const row of rows) {
-    for (const u of row.perUser) {
+    for (const u of recipientsBySignal.get(row.id) ?? []) {
       if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, metrics: emptyDeliveryMetrics() })
       const s = planStats.get(u.plan)!
       s.users++
@@ -395,7 +264,7 @@ export default async function SignalTrackerPage({
   // Build per-user timeline data (aggregate all signals per user)
   const userMap = new Map<string, { id: string; name: string; email: string; signals: UserSignalCompact[] }>()
   for (const row of rows) {
-    for (const u of row.perUser) {
+    for (const u of recipientsBySignal.get(row.id) ?? []) {
       const key = u.email
       if (!userMap.has(key)) {
         userMap.set(key, { id: key, name: u.name, email: u.email, signals: [] })
@@ -403,7 +272,7 @@ export default async function SignalTrackerPage({
       userMap.get(key)!.signals.push({
         signalId: row.id,
         signalTitle: row.title,
-        publishedAt: row.publishedAt?.toISOString() ?? "",
+        publishedAt: row.publishedAt instanceof Date ? row.publishedAt.toISOString() : (row.publishedAt ?? ""),
         plans: row.plans,
         plan: u.plan,
         emailBucket: u.emailBucket,
@@ -463,7 +332,7 @@ export default async function SignalTrackerPage({
               <WorkerKpi label="Worker signaux" value={workerHealth.signalWorker} />
               <WorkerKpi label="Worker emails" value={workerHealth.notifWorker} />
               <WorkerKpi label="Jobs en attente" value={String(workerHealth.pendingJobs)} />
-              <WorkerKpi label="Signaux analysés" value={String(rows.length)} />
+              <WorkerKpi label="Signaux analysés" value={String(signalTotal)} />
             </div>
 
             {/* Alerts */}
@@ -489,7 +358,7 @@ export default async function SignalTrackerPage({
             {/* KPIs — top 4 toujours visibles, reste toggleable sur mobile */}
             <MobileKpis
               items={[
-                { label: "Signaux", value: rows.length },
+                { label: "Signaux", value: signalTotal },
                 { label: "Destinataires", value: totals.recipients },
                 { label: "Délivrés", value: totals.delivered, tone: "success" },
                 { label: "Taux délivrabilité", value: deliveryRate, suffix: "%", tone: deliveryRate >= 95 ? "success" : deliveryRate >= 80 ? "info" : "danger" },
@@ -605,9 +474,47 @@ export default async function SignalTrackerPage({
             <SignalTableClient
               rows={rows.map((r) => ({
                 ...r,
-                publishedAt: r.publishedAt?.toISOString() ?? null,
+                publishedAt:
+                  r.publishedAt instanceof Date
+                    ? r.publishedAt.toISOString()
+                    : (r.publishedAt ?? null),
               }))}
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="text-muted-foreground">
+                  Page {page} / {totalPages} · {signalTotal} signaux
+                </span>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={pageHref(page - 1)}
+                    aria-disabled={page <= 1}
+                    className={cn(
+                      "h-8 rounded-lg border border-border px-3 inline-flex items-center",
+                      page <= 1
+                        ? "pointer-events-none opacity-40"
+                        : "hover:bg-muted/50",
+                    )}
+                  >
+                    Précédent
+                  </Link>
+                  <Link
+                    href={pageHref(page + 1)}
+                    aria-disabled={page >= totalPages}
+                    className={cn(
+                      "h-8 rounded-lg border border-border px-3 inline-flex items-center",
+                      page >= totalPages
+                        ? "pointer-events-none opacity-40"
+                        : "hover:bg-muted/50",
+                    )}
+                  >
+                    Suivant
+                  </Link>
+                </div>
+              </div>
+            )}
           </>
         }
         timeline={

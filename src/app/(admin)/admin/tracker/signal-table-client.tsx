@@ -3,52 +3,46 @@
 import { useState } from "react"
 import { cn } from "@nba/design-system"
 import { computeDeliveryRates } from "@nba/lib/services/delivery-metrics"
-import { ChevronDown, ChevronRight, Image, User } from "lucide-react"
-
-interface PerUser {
-  email: string
-  name: string
-  externalId: string | null
-  emailBucket: string
-  emailEvent: string | null
-  pushStatus: string | null
-  inAppRead: boolean
-  plan: string
-}
-
-interface SignalRow {
-  id: string
-  title: string
-  content: string
-  author: string
-  publishedAt: string | null
-  plans: string
-  planBreakdown: { name: string; count: number }[]
-  hasImages: boolean
-  recipients: number
-  emailsSent: number
-  delivered: number
-  bounced: number
-  complained: number
-  opened: number
-  pending: number
-  failed: number
-  unknown: number
-  inAppRead: number
-  pushSent: number
-  pushFailed: number
-  perUser: PerUser[]
-}
+import { ChevronDown, ChevronRight, Image, Loader2, User } from "lucide-react"
+import { loadSignalRecipients } from "./actions"
+import type { PerUser, SignalRow } from "./types"
 
 export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [contentOpenId, setContentOpenId] = useState<string | null>(null)
+  // Destinataires chargés à la demande : le payload initial ne contient que
+  // les agrégats, pas des milliers de lignes à chaque refresh (10 s).
+  const [recipients, setRecipients] = useState<Record<string, PerUser[]>>({})
+  const [loadingId, setLoadingId] = useState<string | null>(null)
+  const [errorId, setErrorId] = useState<string | null>(null)
+
+  async function load(id: string) {
+    setLoadingId(id)
+    setErrorId((current) => (current === id ? null : current))
+    try {
+      const list = await loadSignalRecipients(id)
+      setRecipients((prev) => ({ ...prev, [id]: list }))
+    } catch {
+      setErrorId(id)
+    } finally {
+      setLoadingId((current) => (current === id ? null : current))
+    }
+  }
+
+  function toggle(id: string) {
+    const next = expandedId === id ? null : id
+    setExpandedId(next)
+    // Ne recharge pas à chaque ouverture : le cache local suffit.
+    if (next && recipients[next] === undefined) void load(next)
+  }
 
   return (
     <div className="space-y-3">
       {rows.map((r) => {
         const isExpanded = expandedId === r.id
         const isContentOpen = contentOpenId === r.id
+        const users = recipients[r.id]
+        const isLoading = loadingId === r.id
         // `delivered` inclut déjà les ouverts (cf. delivery-metrics) — ne pas
         // additionner les deux, sinon le taux peut dépasser 100 %.
         const { deliveryRate } = computeDeliveryRates({
@@ -62,14 +56,16 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
         return (
           <div key={r.id} className="rounded-xl border border-border overflow-hidden">
             {/* Main row - clickable header */}
-            <div
-              onClick={() => setExpandedId(isExpanded ? null : r.id)}
-              className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 cursor-pointer transition-colors select-none"
+            <button
+              type="button"
+              onClick={() => toggle(r.id)}
+              aria-expanded={isExpanded}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors select-none text-left"
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-semibold text-sm">{r.title}</span>
-                  {r.hasImages && <Image className="size-3.5 text-muted-foreground" />}
+                  {r.hasImages && <Image className="size-3.5 text-muted-foreground" aria-hidden="true" />}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5 flex-wrap">
                   <span>{r.publishedAt ? new Date(r.publishedAt).toLocaleString("fr-FR") : "—"}</span>
@@ -106,12 +102,13 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
               <div className="shrink-0">
                 {isExpanded ? <ChevronDown className="size-4 text-muted-foreground" /> : <ChevronRight className="size-4 text-muted-foreground" />}
               </div>
-            </div>
+            </button>
 
             {/* Content preview (toggle) */}
             <div className="border-t border-border/50">
               <button
-                onClick={(e) => { e.stopPropagation(); setContentOpenId(isContentOpen ? null : r.id) }}
+                type="button"
+                onClick={() => setContentOpenId(isContentOpen ? null : r.id)}
                 className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/20 transition-colors cursor-pointer"
               >
                 {isContentOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
@@ -171,134 +168,35 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                   </div>
                 </div>
 
-                {/* Per-user detail grouped by plan */}
-                {/* Mobile cards */}
-                <div className="md:hidden divide-y divide-border/50">
-                  {(() => {
-                    const grouped = new Map<string, typeof r.perUser>()
-                    for (const u of r.perUser) {
-                      const list = grouped.get(u.plan) || []
-                      list.push(u)
-                      grouped.set(u.plan, list)
-                    }
-                    const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
-                    if (entries.length === 0) {
-                      return (
-                        <div className="px-4 py-6 text-center text-xs text-muted-foreground">
-                          Aucun destinataire pour ce signal.
-                        </div>
-                      )
-                    }
-                    return entries.flatMap(([plan, users]) => [
-                      <div key={`plan-${plan}`} className="px-4 py-2 bg-muted/20 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
-                        <User className="size-3" />
-                        {plan}
-                        <span className="font-normal text-muted-foreground/60">({users.length})</span>
-                      </div>,
-                      ...users.map((u, i) => (
-                        <div key={`${u.email}-${i}`} className="px-4 py-3 space-y-1.5">
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-medium truncate">{u.name}</span>
-                            <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {u.email}
-                          </div>
-                          <div className="flex flex-wrap items-center gap-3 text-xs">
-                            <span className="inline-flex items-center gap-1">
-                              <span className="size-1.5 rounded-full bg-primary" />
-                              Push&nbsp;: {u.pushStatus ?? "—"}
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <span className={cn("size-1.5 rounded-full", u.inAppRead ? "bg-info" : "bg-muted-foreground")} />
-                              In-app&nbsp;: {u.inAppRead ? "lu" : "non lu"}
-                            </span>
-                          </div>
-                        </div>
-                      )),
-                    ])
-                  })()}
-                </div>
-                {/* Desktop table */}
-                <div className="hidden md:block overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="text-muted-foreground bg-muted/5">
-                      <tr className="text-left">
-                        <th className="px-4 py-2 font-medium text-xs">Utilisateur</th>
-                        <th className="px-4 py-2 font-medium text-xs">Groupe</th>
-                        <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Email</th>
-                        <th className="px-4 py-2 font-medium text-xs">Email (Resend)</th>
-                        <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Push web</th>
-                        <th className="px-4 py-2 font-medium text-xs">In-app</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/50">
-                      {(() => {
-                        const grouped = new Map<string, typeof r.perUser>()
-                        for (const u of r.perUser) {
-                          const list = grouped.get(u.plan) || []
-                          list.push(u)
-                          grouped.set(u.plan, list)
-                        }
-                        const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
-                        return entries.flatMap(([plan, users]) => [
-                          <tr key={`plan-${plan}`} className="bg-muted/20">
-                            <td colSpan={6} className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                              <span className="inline-flex items-center gap-1.5">
-                                <User className="size-3" />
-                                {plan}
-                                <span className="font-normal text-muted-foreground/60">({users.length})</span>
-                              </span>
-                            </td>
-                          </tr>,
-                          ...users.map((u, i) => (
-                            <tr key={`${u.email}-${i}`} className="hover:bg-muted/20">
-                              <td className="px-4 py-2 text-sm">{u.name}</td>
-                              <td className="px-4 py-2">
-                                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
-                                  {u.plan}
-                                </span>
-                              </td>
-                              <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{u.email}</td>
-                              <td className="px-4 py-2">
-                                <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
-                              </td>
-                              <td className="px-4 py-2 hidden md:table-cell">
-                                {u.pushStatus ? (
-                                  <span
-                                    className={
-                                      u.pushStatus === "envoyé"
-                                        ? "inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
-                                        : "inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
-                                    }
-                                  >
-                                    {u.pushStatus}
-                                  </span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">—</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-2">
-                                {u.inAppRead ? (
-                                  <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs font-medium text-info">lu</span>
-                                ) : (
-                                  <span className="text-xs text-muted-foreground">non lu</span>
-                                )}
-                              </td>
-                            </tr>
-                          )),
-                        ])
-                      })()}
-                      {r.perUser.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="px-4 py-6 text-center text-xs text-muted-foreground">
-                            Aucun destinataire pour ce signal.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
+                {isLoading && (
+                  <div className="flex items-center justify-center gap-2 py-6 text-xs text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin" />
+                    Chargement des {r.perUserCount} destinataires…
+                  </div>
+                )}
+
+                {!isLoading && errorId === r.id && (
+                  <div className="flex items-center justify-center gap-3 py-6 text-xs text-destructive">
+                    Impossible de charger les destinataires.
+                    <button
+                      type="button"
+                      onClick={() => void load(r.id)}
+                      className="rounded-lg border border-destructive/40 px-3 py-1 font-medium hover:bg-destructive/10"
+                    >
+                      Réessayer
+                    </button>
+                  </div>
+                )}
+
+                {!isLoading && errorId !== r.id && users && users.length === 0 && (
+                  <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+                    Aucun destinataire pour ce signal.
+                  </div>
+                )}
+
+                {!isLoading && errorId !== r.id && users && users.length > 0 && (
+                  <RecipientDetails users={users} />
+                )}
               </div>
             )}
           </div>
@@ -310,6 +208,117 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
         </div>
       )}
     </div>
+  )
+}
+
+function RecipientDetails({ users }: { users: PerUser[] }) {
+  const grouped = new Map<string, PerUser[]>()
+  for (const u of users) {
+    const list = grouped.get(u.plan) ?? []
+    list.push(u)
+    grouped.set(u.plan, list)
+  }
+  const entries = Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b))
+
+  return (
+    <>
+      {/* Mobile cards */}
+      <div className="md:hidden divide-y divide-border/50">
+        {entries.flatMap(([plan, planUsers]) => [
+          <div key={`plan-${plan}`} className="px-4 py-2 bg-muted/20 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
+            <User className="size-3" />
+            {plan}
+            <span className="font-normal text-muted-foreground/60">({planUsers.length})</span>
+          </div>,
+          ...planUsers.map((u, i) => (
+            <div key={`${u.email}-${i}`} className="px-4 py-3 space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-medium truncate">{u.name}</span>
+                <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
+              </div>
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {u.email}
+              </div>
+              <div className="flex flex-wrap items-center gap-3 text-xs">
+                <span className="inline-flex items-center gap-1">
+                  <span className="size-1.5 rounded-full bg-primary" />
+                  Push&nbsp;: {u.pushStatus ?? "—"}
+                </span>
+                <span className="inline-flex items-center gap-1">
+                  <span className={cn("size-1.5 rounded-full", u.inAppRead ? "bg-info" : "bg-muted-foreground")} />
+                  In-app&nbsp;: {u.inAppRead ? "lu" : "non lu"}
+                </span>
+              </div>
+            </div>
+          )),
+        ])}
+      </div>
+
+      {/* Desktop table */}
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-muted-foreground bg-muted/5">
+            <tr className="text-left">
+              <th className="px-4 py-2 font-medium text-xs">Utilisateur</th>
+              <th className="px-4 py-2 font-medium text-xs">Groupe</th>
+              <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Email</th>
+              <th className="px-4 py-2 font-medium text-xs">Email (Resend)</th>
+              <th className="px-4 py-2 font-medium text-xs hidden md:table-cell">Push web</th>
+              <th className="px-4 py-2 font-medium text-xs">In-app</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border/50">
+            {entries.flatMap(([plan, planUsers]) => [
+              <tr key={`plan-${plan}`} className="bg-muted/20">
+                <td colSpan={6} className="px-4 py-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  <span className="inline-flex items-center gap-1.5">
+                    <User className="size-3" />
+                    {plan}
+                    <span className="font-normal text-muted-foreground/60">({planUsers.length})</span>
+                  </span>
+                </td>
+              </tr>,
+              ...planUsers.map((u, i) => (
+                <tr key={`${u.email}-${i}`} className="hover:bg-muted/20">
+                  <td className="px-4 py-2 text-sm">{u.name}</td>
+                  <td className="px-4 py-2">
+                    <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                      {u.plan}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground hidden md:table-cell">{u.email}</td>
+                  <td className="px-4 py-2">
+                    <BucketBadge bucket={u.emailBucket} event={u.emailEvent} />
+                  </td>
+                  <td className="px-4 py-2 hidden md:table-cell">
+                    {u.pushStatus ? (
+                      <span
+                        className={
+                          u.pushStatus === "envoyé"
+                            ? "inline-flex items-center rounded-full bg-success/10 px-2 py-0.5 text-xs font-medium text-success"
+                            : "inline-flex items-center rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-medium text-destructive"
+                        }
+                      >
+                        {u.pushStatus}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {u.inAppRead ? (
+                      <span className="inline-flex items-center rounded-full bg-info/10 px-2 py-0.5 text-xs font-medium text-info">lu</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">non lu</span>
+                    )}
+                  </td>
+                </tr>
+              )),
+            ])}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }
 
