@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Button, Input, cn } from "@nba/design-system"
 import { getContractSize, getContractInfo, calculateRR, KNOWN_PAIRS } from "@nba/lib/services/pnl"
 
@@ -120,8 +120,20 @@ export function LotCalculator({
   onApply,
   compact = false,
 }: LotCalculatorProps) {
-  const [balance, setBalance] = useState("1000")
-  const [riskPct, setRiskPct] = useState("1")
+  const [balance, setBalance] = useState(() => {
+    if (typeof window === "undefined") return "1000"
+    return localStorage.getItem("nba-lot-balance") || "1000"
+  })
+  const [riskPct, setRiskPct] = useState(() => {
+    if (typeof window === "undefined") return "1"
+    return localStorage.getItem("nba-lot-risk") || "1"
+  })
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    localStorage.setItem("nba-lot-balance", balance)
+    localStorage.setItem("nba-lot-risk", riskPct)
+  }, [balance, riskPct])
 
   const contractInfo = pair ? getContractInfo(pair) : { size: 100000, known: true, category: "forex" as const }
   const size = contractSize ?? contractInfo.size
@@ -203,12 +215,24 @@ export function LotCalculator({
   )
 }
 
-export function LotCalculatorFull() {
-  const [pair, setPair] = useState("EURUSD")
-  const [direction, setDirection] = useState<"BUY" | "SELL">("BUY")
-  const [entry, setEntry] = useState("")
-  const [sl, setSl] = useState("")
-  const [tp, setTp] = useState("")
+export function LotCalculatorFull({
+  initialPair = "EURUSD",
+  initialDirection = "BUY",
+  initialEntry,
+  initialSl,
+  initialTp,
+}: {
+  initialPair?: string
+  initialDirection?: "BUY" | "SELL"
+  initialEntry?: number
+  initialSl?: number
+  initialTp?: number | null
+} = {}) {
+  const [pair, setPair] = useState(initialPair)
+  const [direction, setDirection] = useState<"BUY" | "SELL">(initialDirection)
+  const [entry, setEntry] = useState(initialEntry ? String(initialEntry) : "")
+  const [sl, setSl] = useState(initialSl ? String(initialSl) : "")
+  const [tp, setTp] = useState(initialTp ? String(initialTp) : "")
 
   const entryN = parseFloat(entry) || 0
   const slN = parseFloat(sl) || 0
