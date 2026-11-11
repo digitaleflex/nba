@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { cn } from "@nba/design-system"
+import { computeDeliveryRates } from "@nba/lib/services/delivery-metrics"
 import { ChevronDown, ChevronRight, Image, User } from "lucide-react"
 
 interface PerUser {
@@ -48,8 +49,15 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
       {rows.map((r) => {
         const isExpanded = expandedId === r.id
         const isContentOpen = contentOpenId === r.id
-        const totalOk = r.delivered + r.opened
-        const deliveryRate = r.emailsSent > 0 ? Math.round((totalOk / r.emailsSent) * 100) : 0
+        // `delivered` inclut déjà les ouverts (cf. delivery-metrics) — ne pas
+        // additionner les deux, sinon le taux peut dépasser 100 %.
+        const { deliveryRate } = computeDeliveryRates({
+          sent: r.emailsSent,
+          delivered: r.delivered,
+          opened: r.opened,
+          bounced: r.bounced,
+          complained: r.complained,
+        })
 
         return (
           <div key={r.id} className="rounded-xl border border-border overflow-hidden">

@@ -13,6 +13,12 @@ import { UserTimeline } from "./user-timeline"
 import { RetryButton } from "./retry-button"
 import { TrackerTabs } from "./tracker-tabs"
 import { getRedisConnection, retryFailedJobs, signalDistributionQueue } from "@nba/lib/queue"
+import {
+  addDeliveryMetrics,
+  computeDeliveryRates,
+  emptyDeliveryMetrics,
+  type DeliveryMetrics,
+} from "@nba/lib/services/delivery-metrics"
 import { requireRole } from "@nba/lib/auth-utils"
 import { logger } from "@nba/lib/logger"
 import Link from "next/link"
@@ -41,6 +47,10 @@ interface PerUser {
   externalId: string | null
   emailBucket: string
   emailEvent: string | null
+  /** Un email a-t-il été planifié pour ce destinataire ? */
+  hasEmail: boolean
+  /** Statut DB de la NotificationDelivery (PENDING/SENT/FAILED/BOUNCED). */
+  emailStatus: string | null
   pushStatus: string | null
   inAppRead: boolean
   plan: string
@@ -212,6 +222,8 @@ export default async function SignalTrackerPage({
         email: n.user?.email ?? "inconnu",
         name: n.user?.name ?? "inconnu",
         externalId,
+        hasEmail: Boolean(emailDelivery),
+        emailStatus: emailDelivery?.status ?? null,
         plan: userPlanMap.get(n.userId) || signal.audience.map((a: any) => a.plan.name).join(", "),
         emailBucket: "unknown",
         emailEvent: null,
@@ -226,10 +238,6 @@ export default async function SignalTrackerPage({
       })
     }
 
-    const emailsSent = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "EMAIL").length,
-      0,
-    )
     const pushSent = notifications.reduce(
       (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "SENT").length,
       0,
@@ -259,7 +267,8 @@ export default async function SignalTrackerPage({
       hasImages: !!(signal as any).imageUrl || ((signal as any).imageUrls?.length ?? 0) > 0,
       recipients: notifications.length,
       inAppRead: notifications.filter((n) => n.isRead).length,
-      emailsSent,
+      // Renseignés après la classification des buckets Resend (voir plus bas).
+      emailsSent: 0,
       delivered: 0,
       bounced: 0,
       complained: 0,
@@ -280,7 +289,18 @@ export default async function SignalTrackerPage({
     for (const u of row.perUser) {
       let bucket: DeliveryBucket
       let event: string | null
-      if (u.externalId && eventMap.has(u.externalId)) {
+
+      if (!u.hasEmail) {
+        // Aucun email planifié : ce n'est ni un envoi, ni un échec.
+        bucket = "unknown"
+        event = "pas d'email"
+      } else if (u.emailStatus === "FAILED") {
+        bucket = "failed"
+        event = "échec d'envoi"
+      } else if (u.emailStatus === "PENDING" && !u.externalId) {
+        bucket = "pending"
+        event = "en file d'envoi"
+      } else if (u.externalId && eventMap.has(u.externalId)) {
         const evt = eventMap.get(u.externalId)
         bucket = classifyByEventType(evt)
         event = evt ?? "en attente Resend"
@@ -289,34 +309,65 @@ export default async function SignalTrackerPage({
         bucket = classifyResendStatus(status)
         event = status?.last_event ?? "en attente Resend"
       } else {
-        bucket = "unknown"
-        event = "pas d'email"
+        bucket = "pending"
+        event = "en attente Resend"
       }
+
       u.emailBucket = bucket
       u.emailEvent = event
-      row[bucket] = (row[bucket] ?? 0) + 1
     }
+
+    const metrics = emptyDeliveryMetrics()
+    for (const u of row.perUser) {
+      addDeliveryMetrics(metrics, {
+        hasEmail: u.hasEmail,
+        dbStatus: u.emailStatus,
+        externalId: u.externalId,
+        bucket: u.emailBucket as DeliveryBucket,
+      })
+    }
+    row.emailsSent = metrics.sent
+    row.delivered = metrics.delivered
+    row.opened = metrics.opened
+    row.bounced = metrics.bounced
+    row.complained = metrics.complained
+    row.pending = metrics.pending
+    row.failed = metrics.failed
+    row.unknown = metrics.unknown
   }
 
   const totals = rows.reduce(
     (acc, r) => {
       acc.recipients += r.recipients
       acc.inAppRead += r.inAppRead
-      acc.emailsSent += r.emailsSent
+      acc.sent += r.emailsSent
       acc.delivered += r.delivered
       acc.bounced += r.bounced
       acc.complained += r.complained
       acc.opened += r.opened
+      acc.pending += r.pending
+      acc.failed += r.failed
+      acc.unknown += r.unknown
       acc.pushSent += r.pushSent
       acc.pushFailed += r.pushFailed
       return acc
     },
-    { recipients: 0, inAppRead: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pushSent: 0, pushFailed: 0 },
+    {
+      recipients: 0,
+      inAppRead: 0,
+      ...emptyDeliveryMetrics(),
+      pushSent: 0,
+      pushFailed: 0,
+    },
   )
 
-  const deliveryRate = totals.emailsSent > 0 ? Math.round((totals.delivered / totals.emailsSent) * 100) : 0
-  const bounceRate = totals.emailsSent > 0 ? Math.round((totals.bounced / totals.emailsSent) * 100) : 0
-  const openRate = totals.delivered > 0 ? Math.round((totals.opened / totals.delivered) * 100) : 0
+  const { deliveryRate, openRate, bounceRate } = computeDeliveryRates(totals)
+
+  // Part rapportée au total envoyé — pour que les barres de l'entonnoir soient
+  // comparables entre elles (le taux d'ouverture, lui, reste calculé sur les
+  // délivrés dans les KPI).
+  const shareOfSent = (n: number) =>
+    totals.sent > 0 ? Math.min(100, Math.round((n / totals.sent) * 100)) : 0
 
   // Alerts
   const alerts: { type: "error" | "warning"; message: string }[] = []
@@ -325,17 +376,19 @@ export default async function SignalTrackerPage({
   if (bounceRate > 5) alerts.push({ type: "warning", message: `Taux de bounce élevé (${bounceRate} %) — vérifiez la qualité des emails` })
   if (workerHealth.pendingJobs > 10) alerts.push({ type: "warning", message: `${workerHealth.pendingJobs} jobs en attente dans la file signaux` })
 
-  // Per-plan aggregate stats
-  const planStats = new Map<string, { users: number; delivered: number; bounced: number; opened: number; sent: number }>()
+  // Per-plan aggregate stats — même agrégateur que les lignes et les totaux.
+  const planStats = new Map<string, { users: number; metrics: DeliveryMetrics }>()
   for (const row of rows) {
     for (const u of row.perUser) {
-      if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, delivered: 0, bounced: 0, opened: 0, sent: 0 })
+      if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, metrics: emptyDeliveryMetrics() })
       const s = planStats.get(u.plan)!
       s.users++
-      if (u.emailBucket === "delivered") s.delivered++
-      else if (u.emailBucket === "bounced") s.bounced++
-      else if (u.emailBucket === "opened") s.opened++
-      if (u.emailBucket !== "unknown" && u.emailBucket !== "pas d'email") s.sent++
+      addDeliveryMetrics(s.metrics, {
+        hasEmail: u.hasEmail,
+        dbStatus: u.emailStatus,
+        externalId: u.externalId,
+        bucket: u.emailBucket as DeliveryBucket,
+      })
     }
   }
 
@@ -444,7 +497,7 @@ export default async function SignalTrackerPage({
                 { label: "Bounces", value: totals.bounced, tone: "danger" },
                 { label: "Taux de bounce", value: bounceRate, suffix: "%", tone: bounceRate <= 2 ? "success" : bounceRate <= 5 ? "info" : "danger" },
                 { label: "Plaintes", value: totals.complained, tone: "danger" },
-                { label: "Emails envoyés", value: totals.emailsSent },
+                { label: "Emails envoyés", value: totals.sent },
                 { label: "Ouverts", value: totals.opened, tone: "info" },
                 { label: "In-app lus", value: totals.inAppRead, tone: "info" },
                 { label: "Push envoyés", value: totals.pushSent },
@@ -453,13 +506,13 @@ export default async function SignalTrackerPage({
             />
 
             {/* Delivery funnel */}
-            {totals.emailsSent > 0 && (
+            {totals.sent > 0 && (
               <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <h3 className="text-sm font-semibold">Entonnoir de livraison</h3>
                 <div className="space-y-2">
-                  <FunnelBar label="Emails envoyés" value={totals.emailsSent} pct={100} color="bg-primary" />
+                  <FunnelBar label="Emails envoyés" value={totals.sent} pct={100} color="bg-primary" />
                   <FunnelBar label="Délivrés" value={totals.delivered} pct={deliveryRate} color="bg-success" />
-                  <FunnelBar label="Ouverts" value={totals.opened} pct={openRate} color="bg-info" />
+                  <FunnelBar label="Ouverts" value={totals.opened} pct={shareOfSent(totals.opened)} color="bg-info" />
                   <FunnelBar label="Bounces" value={totals.bounced} pct={bounceRate} color="bg-destructive" />
                 </div>
               </div>
@@ -473,12 +526,12 @@ export default async function SignalTrackerPage({
                 </div>
                 <div className="divide-y divide-border/50">
                   {Array.from(planStats.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([plan, s]) => {
-                    const planDeliveryRate = s.sent > 0 ? Math.round((s.delivered / s.sent) * 100) : 0
+                    const { deliveryRate: planDeliveryRate } = computeDeliveryRates(s.metrics)
                     return (
                       <div key={plan} className="flex items-center justify-between px-4 py-3">
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{plan}</div>
-                          <div className="text-xs text-muted-foreground">{s.users} utilisateurs · {s.sent} emails</div>
+                          <div className="text-xs text-muted-foreground">{s.users} utilisateurs · {s.metrics.sent} emails</div>
                         </div>
                         <div className="flex items-center gap-3 text-xs tabular-nums">
                           <span className={cn("font-semibold", planDeliveryRate >= 95 ? "text-success" : planDeliveryRate >= 80 ? "text-info" : "text-destructive")}>

@@ -1,5 +1,8 @@
 import { Resend } from "resend"
 import { prisma } from "@nba/lib/db"
+import type { DeliveryBucket } from "./delivery-metrics"
+
+export type { DeliveryBucket } from "./delivery-metrics"
 
 // In-memory cache to avoid hammering the Resend API on every Tracker load.
 // Keyed by Resend message id, with a short TTL.
@@ -64,8 +67,6 @@ export async function getResendEmailStatus(
     return null
   }
 }
-
-export type DeliveryBucket = "delivered" | "bounced" | "complained" | "opened" | "pending" | "failed" | "unknown"
 
 /**
  * Classifie un événement Resend (webhook) en bucket de livraison.
