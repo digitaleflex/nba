@@ -39,7 +39,7 @@ function hasSession(request: NextRequest): boolean {
   return request.cookies.getAll().some((c) => SESSION_COOKIES.includes(c.name));
 }
 
-function buildCsp(nonce: string): string {
+export function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
