@@ -5,6 +5,7 @@ import { type ComponentType } from "react"
 import { Loader2, ShieldAlert, Ban, Globe, Users, Play, Unlock, RotateCw, Search } from "lucide-react"
 import { toast } from "sonner"
 import { DuplicatesPanel } from "../../components/duplicates-panel"
+import { Page, PageHeader } from "@nba/design-system"
 
 interface FraudSummary {
   highEvents: number
@@ -114,14 +115,14 @@ export default function FraudDashboard() {
   if (loading && !summary) return <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin" /></div>
 
   return (
-    <div className="max-w-7xl mx-auto p-6 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Anti-Fraude</h1>
-          <p className="text-sm text-muted-foreground mt-1">Centre de lutte contre la fraude et les abus</p>
-        </div>
-        <button onClick={refresh} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border hover:bg-accent transition-colors cursor-pointer"><RotateCw className="size-4" /> Actualiser</button>
-      </div>
+    <Page gap={8} className="p-6">
+      <PageHeader
+        title="Anti-Fraude"
+        description="Centre de lutte contre la fraude et les abus"
+        actions={
+          <button onClick={refresh} className="flex items-center gap-2 px-4 py-2 text-sm rounded-lg border hover:bg-accent transition-colors cursor-pointer"><RotateCw className="size-4" /> Actualiser</button>
+        }
+      />
 
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard icon={ShieldAlert} label="Evenements HAUT" value={summary?.highEvents ?? 0} color="text-red-500" />
@@ -210,7 +211,7 @@ export default function FraudDashboard() {
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   )
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Card, CardContent, Badge, Button, cn } from "@nba/design-system"
+import { Card, CardContent, Badge, Button, cn, Page, PageHeader } from "@nba/design-system"
 import { RefreshCw, Loader2, AlertTriangle, CheckCircle2, XCircle, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 
@@ -67,19 +67,17 @@ export default function DlqPage() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Dead Letter Queue — Webhooks</h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Events Resend qui ont echoue dans le traitement. A rejouer ou abandonner.
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchDlq} disabled={loading} className="gap-1.5">
-          <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
-          Rafraichir
-        </Button>
-      </div>
+    <Page gap={6}>
+      <PageHeader
+        title="Dead Letter Queue — Webhooks"
+        description="Events Resend qui ont echoue dans le traitement. A rejouer ou abandonner."
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchDlq} disabled={loading} className="gap-1.5">
+            <RefreshCw className={cn("size-3.5", loading && "animate-spin")} />
+            Rafraichir
+          </Button>
+        }
+      />
 
       {/* Stats */}
       {stats && (
@@ -210,6 +208,6 @@ export default function DlqPage() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

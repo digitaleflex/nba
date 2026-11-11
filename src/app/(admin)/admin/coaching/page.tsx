@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { Loader2, TrendingUp, TrendingDown, BarChart3, Star, Calendar, ArrowLeft, ChevronDown, ChevronUp, type LucideIcon } from "lucide-react"
-import { Card, CardContent, Input } from "@nba/design-system"
+import { Card, CardContent, Input, Page, PageHeader } from "@nba/design-system"
 
 interface OverviewMember {
   id: string
@@ -183,21 +183,19 @@ export default function CoachingPage() {
   )
 
   return (
-    <div className="max-w-5xl mx-auto p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight">Journaux des membres</h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {members ? `${filtered.length} membre(s) avec au moins un trade` : ""}
-          </p>
-        </div>
-        <Input
-          value={filter}
-          onChange={(e) => setFilter(e.target.value)}
-          placeholder="Filtrer par nom ou email..."
-          className="h-9 max-w-xs text-xs"
-        />
-      </div>
+    <Page maxWidth="6xl" className="p-6" gap={6}>
+      <PageHeader
+        title="Journaux des membres"
+        description={members ? `${filtered.length} membre(s) avec au moins un trade` : ""}
+        actions={
+          <Input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            placeholder="Filtrer par nom ou email..."
+            className="h-9 max-w-xs text-xs"
+          />
+        }
+      />
 
       {loadingList && (
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
@@ -254,7 +252,7 @@ export default function CoachingPage() {
       {loading && (
         <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       )}
-    </div>
+    </Page>
   )
 }
 

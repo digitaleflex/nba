@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Card, CardContent, CardHeader, CardTitle, Button, Badge, cn } from "@nba/design-system"
+import { Card, CardContent, CardHeader, CardTitle, Button, Badge, cn, Page, PageHeader } from "@nba/design-system"
 import { Activity, Loader2, RefreshCw, AlertTriangle, CheckCircle2, RotateCw, Cpu } from "lucide-react"
 
 interface QueueStat {
@@ -68,26 +68,24 @@ export default function AdminQueuesPage() {
   const totalFailed = (queues ?? []).reduce((s, q) => s + (q.failed ?? 0), 0)
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Files BullMQ</h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            Surveillez les files de traitement asynchrone et relancez les jobs en échec.
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          {lastUpdate && (
-            <span className="text-xs text-muted-foreground">
-              MAJ {lastUpdate.toLocaleTimeString("fr-FR")}
-            </span>
-          )}
-          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
-            <RefreshCw className={cn("size-4", loading && "animate-spin")} />
-            Actualiser
-          </Button>
-        </div>
-      </div>
+    <Page gap={6}>
+      <PageHeader
+        title="Files BullMQ"
+        description="Surveillez les files de traitement asynchrone et relancez les jobs en échec."
+        actions={
+          <div className="flex items-center gap-3">
+            {lastUpdate && (
+              <span className="text-xs text-muted-foreground">
+                MAJ {lastUpdate.toLocaleTimeString("fr-FR")}
+              </span>
+            )}
+            <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+              <RefreshCw className={cn("size-4", loading && "animate-spin")} />
+              Actualiser
+            </Button>
+          </div>
+        }
+      />
 
       {totalFailed > 0 && (
         <div className="flex items-center gap-2 rounded-lg border border-rose-500/20 bg-rose-500/5 px-4 py-3 text-sm text-rose-600">
@@ -169,7 +167,7 @@ export default function AdminQueuesPage() {
           })}
         </div>
       )}
-    </div>
+    </Page>
   )
 }
 
