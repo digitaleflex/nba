@@ -24,6 +24,12 @@ interface DayPoint {
   couverture: number
 }
 
+interface TakenSignal {
+  signalId: string
+  tradedAt: string
+  trade: { result: string; pnl: number } | null
+}
+
 interface TrackingData {
   days: number
   totalPris: number
@@ -31,6 +37,7 @@ interface TrackingData {
   joursAvecTrade: number
   couvertureGlobale: number
   series: DayPoint[]
+  takenSignals?: TakenSignal[]
 }
 
 function shortDay(iso: string) {
@@ -44,12 +51,23 @@ export default function SignalTrackingPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const controller = new AbortController()
     setLoading(true)
-    fetch(`/api/dashboard/signals/tracking?days=${days}`)
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false))
+    fetch(`/api/dashboard/signals/tracking?days=${days}`, { signal: controller.signal })
+      .then((r) => {
+        if (!r.ok) throw new Error("fetch failed")
+        return r.json()
+      })
+      .then((d) => {
+        if (!controller.signal.aborted) setData(d)
+      })
+      .catch((err) => {
+        if (err?.name !== "AbortError" && !controller.signal.aborted) setData(null)
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+    return () => controller.abort()
   }, [days])
 
   return (
@@ -159,10 +177,30 @@ export default function SignalTrackingPage() {
                 </ResponsiveContainer>
               </div>
               <p className="text-[11px] text-muted-foreground mt-2 px-1">
-                Simple suivi pris / pas pris. Le détail PnL viendra dans le journal.
+                Simple suivi pris / pas pris. Le détail PnL est affiché ci-dessous.
               </p>
             </CardContent>
           </Card>
+
+          {data.takenSignals && data.takenSignals.length > 0 && (
+            <Card>
+              <CardContent className="py-4 px-3 space-y-2">
+                <h2 className="text-sm font-semibold px-1">Signaux tradés — PnL</h2>
+                <ul className="divide-y divide-border">
+                  {data.takenSignals.map((ts) => (
+                    <li key={ts.signalId} className="flex items-center justify-between py-2 px-1 text-sm">
+                      <span className="text-muted-foreground">{shortDay(ts.tradedAt.slice(0, 10))}</span>
+                      <span className="font-medium">
+                        {ts.trade
+                          ? `${ts.trade.result} · ${ts.trade.pnl.toFixed(2)}`
+                          : "tradé"}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
     </div>
