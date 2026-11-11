@@ -118,10 +118,10 @@ export function Sidebar({ space, user }: SidebarProps) {
           )}
         </div>
 
-        <nav className={isCollapsed ? "space-y-1.5" : "space-y-5"}
+        <nav aria-label="Navigation" className={isCollapsed ? "space-y-1.5" : "space-y-5"}
         >
           {sections.map((section, sectionIdx) => (
-            <div key={section.id} className={cn("space-y-1", sectionIdx > 0 && !isCollapsed && "pt-2")}>
+            <div key={section.id} aria-labelledby={isCollapsed ? undefined : `section-${section.id}`} className={cn("space-y-1", sectionIdx > 0 && !isCollapsed && "pt-2")}>
               {!isCollapsed && section.label && (
                 <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
                   {section.label}
@@ -134,7 +134,6 @@ export function Sidebar({ space, user }: SidebarProps) {
                 return (
                   <Link
                     key={link.id}
-                    id={link.id}
                     href={link.href}
                     aria-current={isActive ? "page" : undefined}
                     className={cn(
@@ -183,12 +182,12 @@ export function Sidebar({ space, user }: SidebarProps) {
           ))}
 
           {superAdminSections.map((section) => (
-            <div key={section.id} className={cn("space-y-1", !isCollapsed && "pt-2")}>
+            <div key={section.id} aria-labelledby={isCollapsed ? undefined : `section-${section.id}`} className={cn("space-y-1", !isCollapsed && "pt-2")}>
               {!isCollapsed && (
-                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-amber-400/60">
+                <h2 id={`section-${section.id}`} className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-warning/60">
                   <Shield className="size-3" />
                   {section.label}
-                </p>
+                </h2>
               )}
               {section.items.map((link) => {
                 const Icon = link.icon
@@ -202,7 +201,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                       "flex items-center px-3 py-2 text-sm font-medium rounded-xl transition duration-200 group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       isCollapsed ? "justify-center" : "gap-3.5",
                       isActive
-                        ? "bg-amber-500/10 text-amber-600 font-semibold"
+                        ? "bg-warning/10 text-warning font-semibold"
                         : "text-muted-foreground hover:text-foreground hover:bg-muted"
                     )}
                     title={isCollapsed ? link.label : undefined}
@@ -211,7 +210,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                       <Icon
                         className={cn(
                           "size-5 transition-transform duration-200 group-hover:scale-105",
-                          isActive ? "text-amber-500" : "text-muted-foreground/85"
+                          isActive ? "text-warning" : "text-muted-foreground/85"
                         )}
                       />
                     </span>

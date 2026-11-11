@@ -49,7 +49,7 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
     tabs: [
       { value: "requests", label: "Demandes" },
       { value: "membres", label: "Membres" },
-      { value: "users", label: "Utilisateurs" },
+      { value: "users", label: "Comptes" },
       { value: "kyc", label: "KYC" },
       { value: "broker", label: "Broker" },
     ],
