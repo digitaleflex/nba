@@ -325,7 +325,19 @@ export default function AdminRedpillsPage() {
                         Démarrer l'enregistrement
                       </Button>
                       {recordedUrl && <audio controls src={recordedUrl} className="w-full h-8" preload="metadata" />}
-                      {form.audioUrl && <p className="text-[11px] text-emerald-600">✓ Note vocale prête : {form.audioUrl}</p>}
+                      {form.audioUrl && (
+                        <div className="space-y-1">
+                          <p className="text-[11px] text-emerald-600">✓ Note vocale prête : {form.audioUrl}</p>
+                          <audio
+                            controls
+                            preload="metadata"
+                            className="w-full h-8"
+                            src={form.audioUrl.startsWith("http") || form.audioUrl.startsWith("/api/files/") ? form.audioUrl : `/api/files/${form.audioUrl}`}
+                          >
+                            Votre navigateur ne supporte pas l&apos;audio.
+                          </audio>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <VoiceRecorder onDone={handleRecorded} onCancel={() => setShowRecorder(false)} />
@@ -338,6 +350,16 @@ export default function AdminRedpillsPage() {
                       placeholder="URL audio ou chemin uploadé"
                       className="h-9 text-xs"
                     />
+                    {form.audioUrl && (
+                      <audio
+                        controls
+                        preload="metadata"
+                        className="w-full h-8"
+                        src={form.audioUrl.startsWith("http") || form.audioUrl.startsWith("/api/files/") ? form.audioUrl : `/api/files/${form.audioUrl}`}
+                      >
+                        Votre navigateur ne supporte pas l&apos;audio.
+                      </audio>
+                    )}
                     <label className="inline-flex items-center gap-1.5 text-xs text-muted-foreground cursor-pointer hover:text-foreground">
                       <Upload className="size-3.5" />
                       {uploading === "audio" ? "Envoi…" : "Uploader un fichier audio"}

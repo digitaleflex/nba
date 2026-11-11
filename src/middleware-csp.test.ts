@@ -5,7 +5,7 @@ describe("buildCsp", () => {
   const originalNodeEnv = process.env.NODE_ENV
 
   afterEach(() => {
-    process.env.NODE_ENV = originalNodeEnv
+    (process.env as any).NODE_ENV = originalNodeEnv
   })
 
   it("inclut le nonce dans script-src", () => {
@@ -31,13 +31,13 @@ describe("buildCsp", () => {
   })
 
   it("ajoute unsafe-eval en développement", () => {
-    process.env.NODE_ENV = "development"
+    (process.env as any).NODE_ENV = "development"
     const csp = buildCsp("abc123")
     expect(csp).toContain("'unsafe-eval'")
   })
 
   it("n'ajoute pas unsafe-eval en production", () => {
-    process.env.NODE_ENV = "production"
+    (process.env as any).NODE_ENV = "production"
     const csp = buildCsp("abc123")
     expect(csp).not.toContain("unsafe-eval")
   })
