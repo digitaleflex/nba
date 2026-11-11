@@ -1,16 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
 import { prisma } from "@nba/lib/db"
-import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
+import { getServerSession } from "@nba/lib/get-session"
+
+// Seuil minimum de trades pour qu'une agrégation (paire, setup, humeur) soit
+// considérée comme fiable. Partagé par tous les insights (cf. TECH-16).
+const MIN_RELIABLE_TRADES = 3
+
+const querySchema = z.object({
+  days: z.coerce.number().int().min(7).max(365).default(30),
+})
 
 // GET /api/dashboard/journal/insights?days=30
 // Coach règle-basé (forme prête pour un LLM plus tard : summary,
 // strengths, warnings, action). N'invente rien : que du calculé.
 export async function GET(req: NextRequest) {
   try {
-    const session = await requireActiveUser()
+    const session = await getServerSession()
+    if (!session) return NextResponse.json({ error: "Non authentifié" }, { status: 401 })
     const userId = session.user.id
+
     const { searchParams } = new URL(req.url)
-    const days = Math.min(180, Math.max(7, parseInt(searchParams.get("days") || "30")))
+    const parsed = querySchema.safeParse({ days: searchParams.get("days") ?? undefined })
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Paramètre 'days' invalide (entier entre 7 et 365)." },
+        { status: 400 },
+      )
+    }
+    const days = parsed.data.days
     const since = new Date()
     since.setDate(since.getDate() - days)
 
@@ -53,10 +71,10 @@ export async function GET(req: NextRequest) {
     }
     let worstMood: { mood: string; count: number; pnl: number } | null = null
     for (const [mood, v] of pnlByMood) {
-      if (v.count >= 2 && (!worstMood || v.pnl < worstMood.pnl)) worstMood = { mood, ...v }
+      if (v.count >= MIN_RELIABLE_TRADES && (!worstMood || v.pnl < worstMood.pnl)) worstMood = { mood, ...v }
     }
 
-    // Paire la plus / moins rentable (min 3 trades)
+    // Paire la plus / moins rentable (min MIN_RELIABLE_TRADES trades)
     const byPair = new Map<string, { count: number; pnl: number; wins: number }>()
     for (const t of trades) {
       const e = byPair.get(t.pair) ?? { count: 0, pnl: 0, wins: 0 }
@@ -68,7 +86,7 @@ export async function GET(req: NextRequest) {
     let bestPair: { pair: string; pnl: number; count: number } | null = null
     let worstPair: { pair: string; pnl: number; count: number } | null = null
     for (const [pair, v] of byPair) {
-      if (v.count < 2) continue
+      if (v.count < MIN_RELIABLE_TRADES) continue
       if (!bestPair || v.pnl > bestPair.pnl) bestPair = { pair, pnl: v.pnl, count: v.count }
       if (!worstPair || v.pnl < worstPair.pnl) worstPair = { pair, pnl: v.pnl, count: v.count }
     }
@@ -85,7 +103,7 @@ export async function GET(req: NextRequest) {
     let bestSetup: string | null = null
     let bestSetupPnl = -Infinity
     for (const [s, v] of bySetup) {
-      if (v.count >= 2 && v.pnl > bestSetupPnl) { bestSetup = s; bestSetupPnl = v.pnl }
+      if (v.count >= MIN_RELIABLE_TRADES && v.pnl > bestSetupPnl) { bestSetup = s; bestSetupPnl = v.pnl }
     }
 
     // Série de pertes en cours
@@ -119,13 +137,13 @@ export async function GET(req: NextRequest) {
     if (lossStreak >= 3) warnings.push(`${lossStreak} pertes d'affilée — fais une pause, pas de revenge trade.`)
     if (bigLots > 0) warnings.push(`${bigLots} trade(s) à plus d'1 lot — vérifie ton risque par trade.`)
     if (worstMood && worstMood.pnl < 0) warnings.push(`Sous ${worstMood.mood}, tu perds ${worstMood.pnl.toFixed(2)}€ en ${worstMood.count} trades — repère ce déclencheur.`)
-    if (worstPair && worstPair.pnl < 0 && worstPair.count >= 3) warnings.push(`${worstPair.pair} te coûte ${worstPair.pnl.toFixed(2)}€ (${worstPair.count} trades) — réduis ou mets en pause cette paire.`)
+    if (worstPair && worstPair.pnl < 0 && worstPair.count >= MIN_RELIABLE_TRADES) warnings.push(`${worstPair.pair} te coûte ${worstPair.pnl.toFixed(2)}€ (${worstPair.count} trades) — réduis ou mets en pause cette paire.`)
 
     // Une action concrète : le pire levier d'abord
     let action: string
     if (noSlRate > 30) action = "Pendant 7 jours : aucun trade sans stop loss. C'est ta seule règle."
     else if (lossStreak >= 3) action = "Pause 24h, puis 1 seul trade avec 0.01 lot pour casser la spirale."
-    else if (worstPair && worstPair.pnl < 0 && worstPair.count >= 3) action = `Pause ${worstPair.pair} cette semaine, concentre-toi sur ${bestPair?.pair ?? "tes setups gagnants"}.`
+    else if (worstPair && worstPair.pnl < 0 && worstPair.count >= MIN_RELIABLE_TRADES) action = `Pause ${worstPair.pair} cette semaine, concentre-toi sur ${bestPair?.pair ?? "tes setups gagnants"}.`
     else if (worstMood && worstMood.pnl < 0) action = "Quand tu ressens cet état, note-le et divise ton lot par 2."
     else action = "Continue : garde le même process, il est rentable. Revois dans 7 jours."
 
@@ -139,6 +157,6 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    return handleAuthError(error)
+    return NextResponse.json({ error: "Erreur interne" }, { status: 500 })
   }
 }
