@@ -8,6 +8,7 @@ type TabId = "dashboard" | "signals" | "timeline"
 
 const TABS = [
   { id: "dashboard" as TabId, label: "Résumé", icon: LayoutDashboard },
+  { id: "signals" as TabId, label: "Signaux", icon: Bell },
   { id: "timeline" as TabId, label: "Membres", icon: Clock },
 ]
 
@@ -22,8 +23,10 @@ export function TrackerTabs({
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("dashboard")
   const [isMobile, setIsMobile] = useState(false)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const mq = window.matchMedia("(max-width: 767px)")
     setIsMobile(mq.matches)
     const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches)
@@ -31,7 +34,7 @@ export function TrackerTabs({
     return () => mq.removeEventListener("change", handler)
   }, [])
 
-  if (!isMobile) {
+  if (!mounted || !isMobile) {
     return (
       <>
         {dashboard}
