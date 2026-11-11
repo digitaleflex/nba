@@ -19,6 +19,14 @@ export function useLogout(options: UseLogoutOptions = {}) {
     }
 
     await authClient.signOut()
+    try {
+      const keys: string[] = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i)
+        if (k?.startsWith("nba_draft_")) keys.push(k)
+      }
+      keys.forEach((k) => localStorage.removeItem(k))
+    } catch { /* silent */ }
     router.push(redirectTo)
     router.refresh()
   }

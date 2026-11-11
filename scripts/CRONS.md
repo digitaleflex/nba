@@ -9,6 +9,7 @@ Crons installes sur le VPS le 2026-07-13 (programme #audit-resend).
 | `0 * * * *` | Toutes les heures | `email-stuck-pending.ts` | Marquer FAILED les livraisons EMAIL PENDING > 1h |
 | `0 2 * * *` | Tous les jours 2h | `email-reputation-check.ts` | Calculer bounce/complaint rate + alerte admin si seuils |
 | `0 3 1 * *` | 1er du mois 3h | `cleanup-ghost-access.ts` | Revoquer les acces APPROVED des users inactifs/supprimes |
+| `30 3 * * *` | Tous les jours 3h30 | `expire-access.ts` | Revoquer les acces APPROVED dont la duree du plan est depassee (#311) |
 | `0 4 * * 0` | Dimanche 4h | `cleanup-email-events.ts` | GDPR : aggreger + supprimer email_events > 6 mois |
 | `0 8 * * *` | Tous les jours 8h | `email-daily-digest.ts` | Digest HTML quotidien envoye a l'admin |
 | `0 9 * * 1` | Lundi 9h | `journal-weekly-report.ts` | Rapport hebdomadaire du journal de trading aux membres |

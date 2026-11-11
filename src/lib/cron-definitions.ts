@@ -44,6 +44,15 @@ export const CRON_DEFINITIONS: CronDefinition[] = [
     enabled: true,
   },
   {
+    name: "expire-access",
+    label: "Expiration des accès",
+    desc: "Révoque les accès APPROVED dont la durée du plan est dépassée",
+    schedule: "30 3 * * *",
+    command: "scripts/expire-access.ts",
+    logFile: "/home/audest/logs/nba-expire.log",
+    enabled: true,
+  },
+  {
     name: "cleanup-ghost-access",
     label: "Cleanup accès fantômes",
     desc: "Révoque les accès APPROVED des inactifs/supprimés",

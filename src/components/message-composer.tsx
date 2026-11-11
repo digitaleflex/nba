@@ -4,6 +4,7 @@ import { useRef, useState, useEffect } from "react"
 import { Button } from "@nba/design-system"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
 import { EmojiPicker } from "@nba/components/emoji-picker"
+import { useFormDraft, getDraft } from "@nba/hooks/use-form-draft"
 import {
   Bold,
   Italic,
@@ -45,6 +46,8 @@ interface MessageComposerProps {
   placeholder?: string
   quotedMessage?: QuotedRef | null
   onClearQuote?: () => void
+  /** Clé de brouillon (localStorage). Si absente, pas de persistance. */
+  draftKey?: string
 }
 
 export function MessageComposer({
@@ -55,8 +58,13 @@ export function MessageComposer({
   placeholder = "Écrivez un message...",
   quotedMessage,
   onClearQuote,
+  draftKey,
 }: MessageComposerProps) {
-  const [text, setText] = useState("")
+  const [text, setText] = useState(() =>
+    draftKey ? (getDraft<{ text: string }>(draftKey)?.text ?? "") : "",
+  )
+  const [restored] = useState(() => Boolean(draftKey && getDraft<{ text: string }>(draftKey)?.text))
+  const { clear: clearDraft } = useFormDraft(draftKey, { text })
   const [uploading, setUploading] = useState(false)
   const [pending, setPending] = useState<AttachmentPayload | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -185,6 +193,7 @@ export function MessageComposer({
     setText("")
     setPending(null)
     setError(null)
+    clearDraft()
     onClearQuote?.()
   }
 
@@ -310,6 +319,9 @@ export function MessageComposer({
         />
       </div>
 
+      {restored && text && (
+        <p className="text-[11px] text-muted-foreground mb-2">Brouillon restauré</p>
+      )}
       <div className="flex items-end gap-2">
         <textarea
           ref={textareaRef}

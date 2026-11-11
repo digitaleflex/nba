@@ -637,6 +637,8 @@ export default function AdminMessagesPage() {
 
                   <div ref={composerRef}>
                     <MessageComposer
+                      key={selected?.id ?? "none"}
+                      draftKey={selected?.id ? `admin-message-${selected.id}` : undefined}
                       uploadUrl="/api/admin/messages/attachment"
                       onSend={handleSend}
                       onTypingChange={handleTyping}

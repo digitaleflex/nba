@@ -13,16 +13,17 @@ export function getDraft<T>(key: string): T | null {
 }
 
 export function useFormDraft<T extends Record<string, unknown>>(
-  key: string,
+  key: string | null | undefined,
   data: T,
   debounceMs = 1000,
 ) {
-  const storageKey = `${DRAFT_PREFIX}${key}`
+  const storageKey = key ? `${DRAFT_PREFIX}${key}` : null
   const [savedAt, setSavedAt] = useState<number | null>(null)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const prevRef = useRef<string>("")
 
   const save = useCallback(() => {
+    if (!storageKey) return
     try {
       const payload = JSON.stringify(data)
       if (payload === prevRef.current) return
@@ -41,7 +42,7 @@ export function useFormDraft<T extends Record<string, unknown>>(
   }, [save, debounceMs])
 
   const clear = useCallback(() => {
-    try { localStorage.removeItem(storageKey) } catch { /* silent */ }
+    try { if (storageKey) localStorage.removeItem(storageKey) } catch { /* silent */ }
     setSavedAt(null)
     prevRef.current = ""
   }, [storageKey])

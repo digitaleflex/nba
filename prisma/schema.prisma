@@ -428,6 +428,8 @@ model BrokerVerification {
   reviewer User? @relation("BrokerReviews", fields: [reviewedBy], references: [id])
 
   @@index([status])
+  @@index([userId])
+  @@index([submittedAt])
   @@map("broker_verifications")
 }
 
@@ -937,6 +939,7 @@ model SignalVersion {
   updater User   @relation(fields: [updatedBy], references: [id])
 
   @@unique([signalId, version])
+  @@index([signalId])
   @@map("signal_versions")
 }
 

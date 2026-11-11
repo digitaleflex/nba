@@ -636,6 +636,8 @@ export default function MessagesPage() {
 
                   <div ref={composerRef}>
                     <MessageComposer
+                      key={selected?.id ?? "none"}
+                      draftKey={selected?.id ? `message-${selected.id}` : undefined}
                       uploadUrl="/api/dashboard/messages/attachment"
                       onSend={handleSend}
                       onTypingChange={handleTyping}
