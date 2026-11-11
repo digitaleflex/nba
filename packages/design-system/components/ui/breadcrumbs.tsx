@@ -36,7 +36,7 @@ export function Breadcrumbs({
             {segment.href && !isLast ? (
               <a
                 href={segment.href}
-                className="text-muted-foreground/70 hover:text-foreground transition-colors underline-offset-2 hover:underline"
+                className="text-muted-foreground/70 hover:text-foreground transition-colors underline-offset-2 hover:underline inline-flex min-h-11 items-center min-h-[44px] md:min-h-0"
               >
                 {segment.label}
               </a>
