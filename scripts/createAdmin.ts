@@ -57,4 +57,14 @@ async function main() {
   console.log(`✅ Admin créé: ${email}`)
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect())
+main()
+  .catch((err) => {
+    console.error(err)
+    process.exitCode = 1
+  })
+  .finally(async () => {
+    await prisma.$disconnect()
+    // Sans sortie explicite, des connexions restées ouvertes (Redis, rate-limit...) empêchent le
+    // processus de se terminer : les scripts de déploiement et d'installation restaient bloqués.
+    process.exit(process.exitCode ?? 0)
+  })

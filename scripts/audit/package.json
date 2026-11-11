@@ -1,0 +1,13 @@
+{
+  "name": "nba-audit-tools",
+  "private": true,
+  "description": "Outils de mesure UI/accessibilité (hors workspace pnpm : n'affecte ni le lockfile racine ni la CI).",
+  "scripts": {
+    "shoot": "node shoot.cjs",
+    "a11y": "node a11y.cjs"
+  },
+  "dependencies": {
+    "axe-core": "4.10.2",
+    "playwright": "^1.50.0"
+  }
+}
