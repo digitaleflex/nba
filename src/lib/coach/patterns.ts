@@ -102,7 +102,7 @@ export function analyzeTrade(trade: TradeEvent, storage: Storage): CoachMessage 
     })
   }
 
-  if (trade.confidence !== null && trade.confidence >= 8 && trade.result === "LOSS") {
+  if (trade.confidence !== null && trade.confidence >= 4 && trade.result === "LOSS") {
     messages.push({
       id: uid(),
       title: "Haute confiance, perte",

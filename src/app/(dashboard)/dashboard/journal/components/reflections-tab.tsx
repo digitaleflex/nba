@@ -9,6 +9,7 @@ const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant" },
   { value: "NEUTRAL", emoji: "😐", label: "Neutre" },
   { value: "ANXIOUS", emoji: "😰", label: "Anxieux" },
+  { value: "STRESSED", emoji: "😟", label: "Stressé" },
   { value: "FEARFUL", emoji: "😨", label: "Peur" },
   { value: "GREEDY", emoji: "🤑", label: "Gourmand" },
   { value: "REVENGE", emoji: "😡", label: "Revenge" },

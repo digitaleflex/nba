@@ -16,6 +16,7 @@ const MOODS = [
   { value: "CONFIDENT", emoji: "😊", label: "Confiant", color: "bg-emerald-500/20 hover:bg-emerald-500/30" },
   { value: "NEUTRAL", emoji: "😐", label: "Neutre", color: "bg-muted hover:bg-muted/80" },
   { value: "ANXIOUS", emoji: "😰", label: "Anxieux", color: "bg-amber-500/20 hover:bg-amber-500/30" },
+  { value: "STRESSED", emoji: "😟", label: "Stressé", color: "bg-amber-500/20 hover:bg-amber-500/30" },
   { value: "FEARFUL", emoji: "😨", label: "Peur", color: "bg-rose-500/20 hover:bg-rose-500/30" },
   { value: "GREEDY", emoji: "🤑", label: "Gourmand", color: "bg-purple-500/20 hover:bg-purple-500/30" },
   { value: "REVENGE", emoji: "😡", label: "Revenge", color: "bg-red-500/20 hover:bg-red-500/30" },
@@ -63,7 +64,8 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
     const d = getDraft<{ tradedAt: string }>("trade")?.tradedAt
     if (d) return d
     const now = new Date()
-    return now.toISOString().slice(0, 16)
+    const pad = (n: number) => String(n).padStart(2, "0")
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
   })
   const [mood, setMood] = useState<string | null>(() => getDraft<{ mood: string | null }>("trade")?.mood ?? null)
   const [confidence, setConfidence] = useState(() => getDraft<{ confidence: number }>("trade")?.confidence ?? 0)

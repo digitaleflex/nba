@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useCallback } from "react"
 import { AnalyticsEvents } from "@nba/lib/analytics"
 import { useCoachEvents } from "@nba/hooks/use-coach-events"
 import { X, Lightbulb, AlertTriangle, Sparkles, BrainCircuit } from "lucide-react"
@@ -34,12 +33,10 @@ export function CoachIA() {
     max: 5,
     onMessage: (msg) => AnalyticsEvents.coachMessageShown(msg.rule ?? "unknown"),
   })
-  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
-  const visible = messages.filter((m) => !dismissed.has(m.id))
-  if (visible.length === 0) return null
+  if (messages.length === 0) return null
 
-  const latest = visible[0]
+  const latest = messages[0]
   const cfg = severityConfig[latest.severity]
 
   return (
