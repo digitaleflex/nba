@@ -519,7 +519,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             Lot
             <Tooltip>
               <TooltipTrigger>
-                <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+                <HelpCircle className="size-3 cursor-help text-muted-foreground hover:text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-48">Taille de votre position. 0.01 = micro lot (1000 unites).</TooltipContent>
             </Tooltip>
@@ -539,7 +539,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             Spread (coût)
             <Tooltip>
               <TooltipTrigger>
-                <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+                <HelpCircle className="size-3 cursor-help text-muted-foreground hover:text-muted-foreground" />
               </TooltipTrigger>
               <TooltipContent side="top" className="max-w-48">Coût total du spread en pips ou en euros. Impact votre PnL final.</TooltipContent>
             </Tooltip>
@@ -629,7 +629,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           Émotion
           <Tooltip>
             <TooltipTrigger>
-              <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+              <HelpCircle className="size-3 cursor-help text-muted-foreground hover:text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-48">L'émotion que vous ressentiez pendant le trade. L'honnêteté est la clé du progrès.</TooltipContent>
           </Tooltip>
@@ -656,7 +656,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           Confiance
           <Tooltip>
             <TooltipTrigger>
-              <HelpCircle className="size-3 cursor-help text-muted-foreground/50 hover:text-muted-foreground" />
+              <HelpCircle className="size-3 cursor-help text-muted-foreground hover:text-muted-foreground" />
             </TooltipTrigger>
             <TooltipContent side="top" className="max-w-48">À quel point étiez-vous confiant ? Comparez avec le résultat pour apprendre.</TooltipContent>
           </Tooltip>
@@ -668,7 +668,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
               onClick={() => setConfidence(confidence === star ? 0 : star)}
               className={cn(
                 "size-10 rounded-lg text-lg transition-colors",
-                star <= confidence ? "text-amber-400" : "text-muted-foreground/30",
+                star <= confidence ? "text-amber-400" : "text-muted-foreground",
                 "hover:text-amber-400",
               )}
             >

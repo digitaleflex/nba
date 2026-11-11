@@ -178,7 +178,7 @@ export default function CacheStatusPage() {
               <p className="text-xl font-bold text-foreground">{totalFailed} échec(s)</p>
               <p className="text-xs text-muted-foreground mt-1">{totalWaiting} en attente</p>
             </div>
-            <Activity className={cn("size-5", anyQueueFailed ? "text-amber-500" : "text-muted-foreground/30")} />
+            <Activity className={cn("size-5", anyQueueFailed ? "text-amber-500" : "text-muted-foreground")} />
           </CardContent>
         </Card>
         <Card className="border-border">
@@ -189,7 +189,7 @@ export default function CacheStatusPage() {
                 {data?.websocket?.startsWith("healthy") ? "OK" : "DOWN"}
               </p>
             </div>
-            <Radio className="size-5 text-muted-foreground/60" />
+            <Radio className="size-5 text-muted-foreground" />
           </CardContent>
         </Card>
         <Card className={cn("border", (issues?.totalFailedDeliveries ?? 0) > 0 ? "border-amber-500/40 bg-amber-500/5" : "border-border")}>
@@ -199,7 +199,7 @@ export default function CacheStatusPage() {
               <p className="text-xl font-bold text-foreground">{issues?.totalFailedDeliveries ?? 0}</p>
               <p className="text-xs text-muted-foreground mt-1">{issues?.affectedUserCount ?? 0} user(s) touché(s)</p>
             </div>
-            <AlertTriangle className={cn("size-5", (issues?.totalFailedDeliveries ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground/30")} />
+            <AlertTriangle className={cn("size-5", (issues?.totalFailedDeliveries ?? 0) > 0 ? "text-amber-500" : "text-muted-foreground")} />
           </CardContent>
         </Card>
       </div>

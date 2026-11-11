@@ -54,12 +54,12 @@ export default async function BlockedPage({ searchParams }: BlockedPageProps) {
           <h1 className="text-2xl font-bold tracking-tight">{copy.title}</h1>
           <p className="text-sm text-muted-foreground">{copy.message}</p>
           {timestamp && (
-            <p className="text-xs text-muted-foreground/80 mt-2 rounded-lg bg-muted/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground mt-2 rounded-lg bg-muted/40 px-3 py-2">
               Intervention effectuée le {timestamp}
             </p>
           )}
           {reason && (
-            <p className="text-xs text-muted-foreground/80 mt-2 rounded-lg bg-muted/40 px-3 py-2">
+            <p className="text-xs text-muted-foreground mt-2 rounded-lg bg-muted/40 px-3 py-2">
               Motif : {reason}
             </p>
           )}

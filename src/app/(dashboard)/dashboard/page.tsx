@@ -140,7 +140,7 @@ export default async function DashboardPage() {
                       month: "long",
                     })}
                   </p>
-                  <p className="text-xs text-muted-foreground/70 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     Note : {lastReflection.rating}/10
                   </p>
                 </div>

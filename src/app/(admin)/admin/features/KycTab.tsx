@@ -102,7 +102,7 @@ export function KycTab({ cachedGet, onOpenPanel, registerRefetch }: KycTabProps)
               const card = (
                 <Card key={doc.id} className="border-border/60 bg-card shadow-sm overflow-hidden">
                   <div className="h-40 bg-card border-b border-border flex items-center justify-center text-muted-foreground relative">
-                    <ImageIcon className="size-8 text-muted-foreground/30" />
+                    <ImageIcon className="size-8 text-muted-foreground" />
                     <Badge
                       variant="outline"
                       className={cn(

@@ -186,7 +186,7 @@ export default function DevicesPage() {
       ) : devices.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <MonitorSmartphone className="size-10 text-muted-foreground/60" />
+            <MonitorSmartphone className="size-10 text-muted-foreground" />
             <p className="font-semibold text-foreground">
               Aucun appareil enregistré
             </p>

@@ -31,8 +31,8 @@ export function DashboardKpis({ kpis, dbUnavailable }: DashboardKpisProps) {
   if (dbUnavailable) {
     return (
       <div className="space-y-3">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground/80 bg-muted/40 rounded-lg px-3 py-2">
-          <Database className="size-4 text-muted-foreground/60" />
+        <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/40 rounded-lg px-3 py-2">
+          <Database className="size-4 text-muted-foreground" />
           <span>Données momentanément inaccessibles</span>
           <AutoRetryCountdown
             onRetry={() => router.refresh()}
@@ -59,7 +59,7 @@ export function DashboardKpis({ kpis, dbUnavailable }: DashboardKpisProps) {
                   —
                   <Tooltip>
                     <TooltipTrigger>
-                      <HelpCircle className="size-3.5 text-muted-foreground/50" />
+                      <HelpCircle className="size-3.5 text-muted-foreground" />
                     </TooltipTrigger>
                     <TooltipContent>
                       Données momentanément inaccessibles — réessai automatique dans quelques secondes

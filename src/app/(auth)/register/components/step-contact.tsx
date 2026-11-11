@@ -50,7 +50,7 @@ export function StepContact({
           <label htmlFor="whatsapp" className="text-sm font-medium text-foreground">WhatsApp</label>
           <Tooltip>
             <TooltipTrigger>
-              <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground cursor-help" />
+              <HelpCircle className="size-3.5 text-muted-foreground hover:text-foreground cursor-help" />
             </TooltipTrigger>
             <TooltipContent>
               Utilisé pour t&apos;envoyer les signaux et alertes importantes. Ton numéro reste privé.

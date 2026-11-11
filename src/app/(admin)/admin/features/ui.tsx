@@ -126,7 +126,7 @@ export function StatCard({ icon: Icon, label, value, sub, tone, className }: Sta
           {sub && <p className="text-xs text-muted-foreground">{sub}</p>
           }
         </div>
-        <Icon className="size-5 text-muted-foreground/40 shrink-0 ml-2" />
+        <Icon className="size-5 text-muted-foreground shrink-0 ml-2" />
       </CardContent>
     </Card>
   )

@@ -360,7 +360,7 @@ export default function AuditCenterPage() {
         )}
 
         {/* Date complète + IP + User-Agent */}
-        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground/50">
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
           <span>{formatDate(log.createdAt)}</span>
           {log.ipAddress && <span>· {log.ipAddress}</span>}
           {log.userAgent && <span className="truncate max-w-[200px]" title={log.userAgent}>· {log.userAgent}</span>}
@@ -412,7 +412,7 @@ export default function AuditCenterPage() {
             <div className="flex items-center gap-2 min-w-0">
               <span className={`size-2 rounded-full shrink-0 ${sev.color}`} />
               {count && count > 1 ? (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground/70 bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded shrink-0">
                   ×{count}
                 </span>
               ) : null}
@@ -428,7 +428,7 @@ export default function AuditCenterPage() {
                 </span>
               )}
             </div>
-            <span className="shrink-0 text-xs text-muted-foreground/50" title={formatDate(log.createdAt)}>
+            <span className="shrink-0 text-xs text-muted-foreground" title={formatDate(log.createdAt)}>
               {timeAgo(log.createdAt)}
             </span>
           </div>
@@ -441,13 +441,13 @@ export default function AuditCenterPage() {
             </span>
             {getResourceUrl(log.resourceType, log.resourceId) ? (
               <a href={getResourceUrl(log.resourceType, log.resourceId)!}
-                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground/70 hover:text-primary transition-colors bg-muted/30"
+                className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground hover:text-primary transition-colors bg-muted/30"
               >
                 <ResourceIcon className="size-3" />
                 {getResourceLabel(log.resourceType)}
               </a>
             ) : (
-              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground/70 bg-muted/30">
+              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs text-muted-foreground bg-muted/30">
                 <ResourceIcon className="size-3" />
                 {getResourceLabel(log.resourceType)}
               </span>
@@ -462,7 +462,7 @@ export default function AuditCenterPage() {
           )}
 
           {/* Footer: IP + expand */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground/50">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
             {log.ipAddress && (
               <span className="inline-flex items-center gap-1 font-mono">
                 <Globe className="size-3" />
@@ -609,7 +609,7 @@ export default function AuditCenterPage() {
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
             <input
               type="text"
               placeholder="Rechercher par action, ressource, utilisateur, email, IP, UUID..."
@@ -683,7 +683,7 @@ export default function AuditCenterPage() {
               <span className="size-1.5 rounded-full bg-primary" />
               Connexions
             </button>
-            <span className="text-xs text-muted-foreground/40">|</span>
+            <span className="text-xs text-muted-foreground">|</span>
             <span className="text-xs text-muted-foreground shrink-0">Période :</span>
             <button onClick={() => updateParams({ startDate: new Date().toISOString().slice(0, 10), endDate: null, page: "1" })}
               className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors ${
@@ -801,8 +801,8 @@ export default function AuditCenterPage() {
         </div>
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Shield className="size-12 text-muted-foreground/20" />
-          <p className="text-sm text-muted-foreground/60">
+          <Shield className="size-12 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">
             {query || actionFilter || resourceTypeFilter || resourceId || severityFilter || startDate || endDate
               ? "Aucun événement ne correspond aux filtres."
               : "Aucun événement d'audit pour le moment."}
@@ -834,7 +834,7 @@ export default function AuditCenterPage() {
                       <span className="text-sm font-medium">{user?.name ?? user?.email ?? "Système"}</span>
                     </>
                   )}
-                  <span className="text-xs text-muted-foreground/50">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
+                  <span className="text-xs text-muted-foreground">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
                 </div>
                 <div className="space-y-2">
                   {groupLogs.map((log) => <AuditCard key={log.id} log={log} />)}
@@ -848,10 +848,10 @@ export default function AuditCenterPage() {
           {groupedByResource.map(({ key, resourceType, resourceId: rid, resourceLabel: rl, logs: groupLogs }) => (
             <div key={key}>
               <div className="flex items-center gap-2 mb-3">
-                <FileText className="size-4 text-muted-foreground/70" />
+                <FileText className="size-4 text-muted-foreground" />
                 <span className="text-sm font-medium">{rl ?? getResourceLabel(resourceType)}</span>
-                {rid && rl && <span className="text-xs text-muted-foreground/50 font-mono">{rid.slice(0, 8)}</span>}
-                <span className="text-xs text-muted-foreground/50">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
+                {rid && rl && <span className="text-xs text-muted-foreground font-mono">{rid.slice(0, 8)}</span>}
+                <span className="text-xs text-muted-foreground">{groupLogs.length} action{groupLogs.length > 1 ? "s" : ""}</span>
               </div>
               <div className="space-y-2">
                 {groupLogs.map((log) => <AuditCard key={log.id} log={log} />)}
@@ -889,7 +889,7 @@ export default function AuditCenterPage() {
       {/* Pagination */}
       {!loading && totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-border/30">
-          <p className="text-xs text-muted-foreground/50 order-2 sm:order-1">
+          <p className="text-xs text-muted-foreground order-2 sm:order-1">
             Page {page} sur {totalPages} ({total} résultat{total > 1 ? "s" : ""})
           </p>
           <div className="flex items-center gap-2 order-1 sm:order-2">
@@ -900,7 +900,7 @@ export default function AuditCenterPage() {
             >
               <ChevronLeft className="size-3.5" /> Précédent
             </button>
-            {page > 3 && <span className="text-xs text-muted-foreground/50">...</span>}
+            {page > 3 && <span className="text-xs text-muted-foreground">...</span>}
             {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
               let pg: number
               if (totalPages <= 5) pg = i + 1
@@ -919,7 +919,7 @@ export default function AuditCenterPage() {
                 </button>
               )
             })}
-            {page < totalPages - 2 && <span className="text-xs text-muted-foreground/50">...</span>}
+            {page < totalPages - 2 && <span className="text-xs text-muted-foreground">...</span>}
             <button
               onClick={() => updateParams({ page: String(page + 1) })}
               disabled={page >= totalPages}
@@ -941,7 +941,7 @@ export default function AuditCenterPage() {
               </div>
               <div>
                 <h3 className="font-semibold text-sm">Confirmer la purge</h3>
-                <p className="text-xs text-muted-foreground/70">Cette action est irréversible.</p>
+                <p className="text-xs text-muted-foreground">Cette action est irréversible.</p>
               </div>
             </div>
             <p className="text-sm text-muted-foreground mb-6">

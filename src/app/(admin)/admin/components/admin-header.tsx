@@ -123,7 +123,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           onClick={() => setIsOpen(true)}
           className="flex items-center gap-2.5 px-3 py-1.5 w-64 text-left text-xs text-muted-foreground rounded-lg border border-border/60 bg-muted/30 hover:bg-muted/50 hover:border-border transition-all select-none cursor-pointer"
         >
-          <Search className="size-3.5 text-muted-foreground/70" />
+          <Search className="size-3.5 text-muted-foreground" />
           <span>Rechercher...</span>
           <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-[9px] font-medium text-muted-foreground shadow-sm">
             <span className="text-xs">⌘</span>K
@@ -176,7 +176,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                 value={query}
                 onChange={(e) => { setQuery(e.target.value); setFocusedIndex(-1) }}
                 onKeyDown={handleInputKeyDown}
-                className="w-full h-12 bg-transparent text-sm border-0 focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground/50"
+                className="w-full h-12 bg-transparent text-sm border-0 focus:outline-none focus:ring-0 text-foreground placeholder:text-muted-foreground"
                 role="combobox"
                 aria-expanded={!!results}
                 aria-controls="search-results"
@@ -203,7 +203,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                               <p className="font-semibold">{u.name}</p>
                               <p className="text-xs text-muted-foreground">{u.email}</p>
                             </div>
-                            <ArrowRight className="size-3.5 text-muted-foreground/40" />
+                            <ArrowRight className="size-3.5 text-muted-foreground" />
                           </button>
                         ))}
                       </div>
@@ -236,7 +236,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                               <p className="font-semibold">{k.user.name}</p>
                               <p className="text-xs text-muted-foreground">{k.documentType} • {k.status}</p>
                             </div>
-                            <ArrowRight className="size-3.5 text-muted-foreground/40" />
+                            <ArrowRight className="size-3.5 text-muted-foreground" />
                           </button>)
                         })}
                       </div>

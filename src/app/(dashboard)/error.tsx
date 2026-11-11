@@ -19,7 +19,7 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
             Une erreur est survenue sur votre tableau de bord.
           </p>
           {error.digest && (
-            <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+            <p className="text-xs text-muted-foreground mt-3 font-mono">
               Code d&rsquo;erreur : {error.digest}
             </p>
           )}

@@ -43,7 +43,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
         <div>
           <h4 className="text-sm font-bold text-foreground">{data.name}</h4>
           <p className="text-muted-foreground">{data.email}</p>
-          <p className="text-xs text-muted-foreground/80 mt-0.5">ID: {data.id}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">ID: {data.id}</p>
         </div>
       </div>
 

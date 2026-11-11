@@ -23,7 +23,7 @@ function MissionItem({ mission }: { mission: Mission }) {
       {mission.completed ? (
         <CheckCircle2 className="size-5 text-emerald-500 shrink-0 mt-0.5" />
       ) : (
-        <Circle className="size-5 text-muted-foreground/40 shrink-0 mt-0.5" />
+        <Circle className="size-5 text-muted-foreground shrink-0 mt-0.5" />
       )}
       <div className="flex-1 min-w-0">
         <p className={cn(

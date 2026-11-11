@@ -127,7 +127,7 @@ export function CronsTab() {
             : HelpCircle
           const statusColor = job.lastStatus === "success" ? "text-emerald-500"
             : job.lastStatus === "failed" ? "text-rose-500"
-            : "text-muted-foreground/50"
+            : "text-muted-foreground"
 
           return (
             <Card key={idx} className="border-border/60 bg-card shadow-sm">
@@ -159,18 +159,18 @@ export function CronsTab() {
                         </span>
                       )}
                       {job.logFile && (
-                        <span className="flex items-center gap-1 text-muted-foreground/60" title={job.logFile}>
+                        <span className="flex items-center gap-1 text-muted-foreground" title={job.logFile}>
                           <FileText className="size-3" /> {job.logFile.split("/").pop()}
                         </span>
                       )}
                     </div>
                     {job.lastMessage && (
-                      <p className="text-xs text-muted-foreground/60 mt-1.5 font-mono truncate" title={job.lastMessage}>
+                      <p className="text-xs text-muted-foreground mt-1.5 font-mono truncate" title={job.lastMessage}>
                         {job.lastMessage}
                       </p>
                     )}
                   </div>
-                  <div className="text-xs text-muted-foreground/40 font-mono shrink-0 pt-0.5">
+                  <div className="text-xs text-muted-foreground font-mono shrink-0 pt-0.5">
                     {job.schedule}
                   </div>
                 </div>

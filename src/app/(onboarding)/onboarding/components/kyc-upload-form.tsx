@@ -175,7 +175,7 @@ export function KycUploadForm({
                   </li>
                 ))}
               </ul>
-              <p className="text-xs text-muted-foreground/70 mt-1">Taille max : 50 Mo par fichier</p>
+              <p className="text-xs text-muted-foreground mt-1">Taille max : 50 Mo par fichier</p>
             </div>
 
             <div className="space-y-1.5">

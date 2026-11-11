@@ -140,13 +140,13 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
               <span className="font-semibold text-foreground/80">{reporterName}</span>
               {reporterEmail && (
                 <>
-                  <span className="text-muted-foreground/60">·</span>
+                  <span className="text-muted-foreground">·</span>
                   <a href={`/admin?tab=members&search=${reporterEmail}`} className="hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted">
                     {reporterEmail}
                   </a>
                 </>
               )}
-              <span className="text-muted-foreground/60">·</span>
+              <span className="text-muted-foreground">·</span>
               <span>{formatDate(selected.createdAt)}</span>
             </p>
           </div>
@@ -296,7 +296,7 @@ export function BugsTab({ cachedGet }: { cachedGet: CachedGet }) {
                         </div>
                         <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
                           <span className="font-medium">{reporterName}</span>
-                          <span className="text-muted-foreground/50">·</span>
+                          <span className="text-muted-foreground">·</span>
                           <span>{d.userEmail || bug.user?.email || ""}</span>
                         </p>
                         <p className="text-xs text-foreground/70 mt-1 line-clamp-2">{d.message || bug.body}</p>
