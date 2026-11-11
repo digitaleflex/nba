@@ -117,7 +117,6 @@ export function NotificationBell() {
       setRecentNotifications(data.notifications);
 
       if (
-        !silent &&
         !wsActiveRef.current &&
         data.unreadCount > unreadCount &&
         prevTop &&

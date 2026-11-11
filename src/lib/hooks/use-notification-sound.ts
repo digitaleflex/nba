@@ -47,6 +47,7 @@ if (typeof window !== "undefined") {
     window.removeEventListener("keydown", unlockOnce)
   }
   window.addEventListener("pointerdown", unlockOnce, { passive: true })
+  window.addEventListener("touchend", unlockOnce, { passive: true })
   window.addEventListener("keydown", unlockOnce)
 }
 
@@ -76,18 +77,32 @@ export function useNotificationSound() {
     const v = localStorage.getItem(VOLUME_KEY)
     if (v) volumeRef.current = parseFloat(v)
 
-    fetch("/api/dashboard/notification-preferences")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.sound) soundRef.current = data.sound
-        if (data.soundsByType) soundsByTypeRef.current = data.soundsByType
-        if (data.quietHours) quietHoursRef.current = data.quietHours
-      })
-      .catch(() => {})
+    const reloadPrefs = () => {
+      fetch("/api/dashboard/notification-preferences")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.sound) soundRef.current = data.sound
+          if (data.soundsByType) soundsByTypeRef.current = data.soundsByType
+          if (data.quietHours) quietHoursRef.current = data.quietHours
+        })
+        .catch(() => {})
+    }
+    reloadPrefs()
+
+    const onSoundChanged = () => reloadPrefs()
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "nba-sound-changed" || e.key === VOLUME_KEY) reloadPrefs()
+    }
+    window.addEventListener("nba:sound-changed", onSoundChanged)
+    window.addEventListener("storage", onStorage)
 
     return () => {
       if (howlRef.current) howlRef.current.unload()
+      window.removeEventListener("nba:sound-changed", onSoundChanged)
+      window.removeEventListener("storage", onStorage)
     }
+
+
   }, [])
 
   const shouldRing = useCallback(() => {
@@ -96,20 +111,27 @@ export function useNotificationSound() {
     return true
   }, [])
 
-  const play = useCallback((soundId?: string) => {
+  const play = useCallback((soundId?: string, attemptedDefault = false) => {
     unlockAudio()
     if (!shouldRing()) return
     const id = soundId ?? soundRef.current
     try {
       if (howlRef.current) howlRef.current.unload()
-      howlRef.current = new Howl({
+      const howl = new Howl({
         src: [`/sounds/${id}.wav`],
         volume: volumeRef.current,
         html5: false,
+        onloaderror: () => {
+          // Repli sur "default" si le fichier est absent/corrompu.
+          if (id !== "default" && !attemptedDefault) {
+            play("default", true)
+          }
+        },
       })
-      howlRef.current.play()
+      howlRef.current = howl
+      howl.play()
     } catch {
-      // silencieux
+      if (id !== "default" && !attemptedDefault) play("default", true)
     }
   }, [shouldRing])
 
@@ -129,14 +151,20 @@ export function useNotificationSound() {
   const changeSound = useCallback((sound: string) => {
     soundRef.current = sound
     if (howlRef.current) howlRef.current.unload()
-    howlRef.current = new Howl({
-      src: [`/sounds/${sound}.wav`],
-      volume: volumeRef.current,
-    })
+    howlRef.current = null
+    // Propage aux autres instances (cloche, réglages) sans reload.
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("nba:sound-changed"))
+      try { localStorage.setItem("nba-sound-changed", String(Date.now())) } catch {}
+    }
   }, [])
 
   const changeSoundForType = useCallback((type: string, sound: string) => {
     soundsByTypeRef.current = { ...soundsByTypeRef.current, [type]: sound }
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("nba:sound-changed"))
+      try { localStorage.setItem("nba-sound-changed", String(Date.now())) } catch {}
+    }
   }, [])
 
   return { play, playForType, changeVolume, changeSound, changeSoundForType, volume: volumeRef.current }

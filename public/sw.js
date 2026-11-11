@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.2.0";
+const SW_VERSION = "2.3.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -9,6 +9,11 @@ const PRECACHE_URLS = [
   "/logo.png",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
+  "/sounds/default.wav",
+  "/sounds/chime.wav",
+  "/sounds/pop.wav",
+  "/sounds/signal.wav",
+  "/sounds/urgent.wav",
 ];
 
 // Installation : précache des icônes et du manifest

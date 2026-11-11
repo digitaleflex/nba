@@ -28,13 +28,15 @@ export const profileSchema = z.object({
   timezone: z.string().max(50).optional(),
 }).strict()
 
+const SOUND_TYPE_KEYS = ["signal", "redpill", "message", "system", "kyc", "broker", "access", "security"]
+
 export const notificationPrefsSchema = z.object({
   sound: z.string().max(30).optional(),
-  soundsByType: z.record(z.string(), z.string().max(30)).optional(),
-  prefs: z.record(z.string(), z.boolean()).optional(),
+  soundsByType: z.record(z.enum(SOUND_TYPE_KEYS as [string, ...string[]]), z.string().max(30)).optional(),
+  prefs: z.record(z.string().max(30), z.boolean()).optional(),
   quietHours: z.object({
-    start: z.string(),
-    end: z.string(),
+    start: z.string().regex(/^\d{2}:\d{2}$/),
+    end: z.string().regex(/^\d{2}:\d{2}$/),
   }).nullable().optional(),
 })
 

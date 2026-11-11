@@ -71,9 +71,10 @@ export async function PUT(req: NextRequest) {
       const prevNp = (meta.notificationPrefs || {}) as Record<string, any>
       let np: Record<string, any> = { ...DEFAULT_PREFS, ...prevNp, ...(prefs || {}) }
       if (soundsByType) {
+        const ALLOWED_KEYS = new Set(["signal", "redpill", "message", "system", "kyc", "broker", "access", "security"])
         const clean: Record<string, string> = {}
         for (const [k, v] of Object.entries(soundsByType)) {
-          if (typeof v === "string" && SOUNDS.includes(v)) clean[k] = v
+          if (ALLOWED_KEYS.has(k) && typeof v === "string" && SOUNDS.includes(v)) clean[k] = v
         }
         np = { ...np, soundsByType: { ...(prevNp.soundsByType || {}), ...clean } }
       }
