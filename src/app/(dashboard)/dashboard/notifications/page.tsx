@@ -523,7 +523,7 @@ export default function NotificationsPage() {
 
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Sonneries personnalisées par alerte — chaque notification génère sa sonnerie sur ton appareil
+                  Sonneries personnalisées par alerte — sonnerie personnalisée quand l'application est ouverte
                 </p>
                 {[
                   { key: "signal", label: "📈 Signaux", desc: "Nouveau signal publié" },
