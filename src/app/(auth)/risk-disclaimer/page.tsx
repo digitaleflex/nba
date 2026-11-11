@@ -13,7 +13,7 @@ export default function RiskDisclaimerPage() {
           <TriangleAlert className="size-5 text-warning" />
           <h1 className="text-2xl font-bold tracking-tight">Avertissement sur les risques</h1>
         </div>
-        <Badge variant="outline" className="ml-2 text-[10px]">Informations importantes</Badge>
+        <Badge variant="outline" className="ml-2 text-xs">Informations importantes</Badge>
       </div>
 
       <Card className="border-border/50">

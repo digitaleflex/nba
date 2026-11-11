@@ -147,14 +147,14 @@ export function LotCalculator({
   if (!compact && result.riskAmount <= 0) {
     return (
       <div className="rounded-lg border border-dashed border-primary/20 bg-primary/5 p-3">
-        <p className="text-[11px] font-medium text-primary mb-2">Calculateur de lot</p>
+        <p className="text-xs font-medium text-primary mb-2">Calculateur de lot</p>
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="text-[10px] text-muted-foreground block">Solde ({currency})</label>
+            <label className="text-xs text-muted-foreground block">Solde ({currency})</label>
             <Input value={balance} onChange={(e) => setBalance(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
           </div>
           <div>
-            <label className="text-[10px] text-muted-foreground block">Risk (%)</label>
+            <label className="text-xs text-muted-foreground block">Risk (%)</label>
             <Input value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
           </div>
         </div>
@@ -164,42 +164,42 @@ export function LotCalculator({
 
   return (
     <div className="rounded-lg border border-dashed border-primary/20 bg-primary/5 p-3 space-y-2">
-      {!compact && <p className="text-[11px] font-medium text-primary">Calculateur de lot</p>}
+      {!compact && <p className="text-xs font-medium text-primary">Calculateur de lot</p>}
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="text-[10px] text-muted-foreground block">Solde ({currency})</label>
+          <label className="text-xs text-muted-foreground block">Solde ({currency})</label>
           <Input value={balance} onChange={(e) => setBalance(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
         </div>
         <div>
-          <label className="text-[10px] text-muted-foreground block">Risk (%)</label>
+          <label className="text-xs text-muted-foreground block">Risk (%)</label>
           <Input value={riskPct} onChange={(e) => setRiskPct(e.target.value)} className="h-8 text-xs font-mono" inputMode="decimal" />
         </div>
       </div>
       {result.issues.length > 0 && (
         <div className="space-y-1">
           {result.issues.map((msg, i) => (
-            <p key={i} className="text-[10px] text-amber-600 dark:text-amber-400 leading-snug">⚠ {msg}</p>
+            <p key={i} className="text-xs text-amber-600 dark:text-amber-400 leading-snug">⚠ {msg}</p>
           ))}
         </div>
       )}
-      <p className="text-[9px] text-muted-foreground">
+      <p className="text-xs text-muted-foreground">
         Taille de contrat : {size.toLocaleString("fr-FR")} · {contractInfo.known ? contractInfo.category : "inconnue"}
       </p>
       <div className="grid grid-cols-3 gap-2 text-center">
         <div className="rounded bg-background/60 p-1.5">
-          <div className="text-[9px] uppercase text-muted-foreground">Risk</div>
+          <div className="text-xs uppercase text-muted-foreground">Risk</div>
           <div className="text-xs font-mono font-bold">{result.riskAmount.toFixed(2)}{currency}</div>
         </div>
         <div className="rounded bg-background/60 p-1.5">
-          <div className="text-[9px] uppercase text-muted-foreground">Perte SL</div>
+          <div className="text-xs uppercase text-muted-foreground">Perte SL</div>
           <div className="text-xs font-mono font-bold text-rose-500">-{result.lossIfSl.toFixed(2)}{currency}</div>
         </div>
         <div className="rounded bg-background/60 p-1.5">
-          <div className="text-[9px] uppercase text-muted-foreground">R:R</div>
+          <div className="text-xs uppercase text-muted-foreground">R:R</div>
           <div className="text-xs font-mono font-bold">{result.rr ?? "—"}</div>
         </div>
       </div>
-      <div className="flex items-center justify-between text-[11px]">
+      <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">
           {result.gainIfTp > 0 ? <>Gain TP : <span className="text-emerald-500 font-mono">+{result.gainIfTp.toFixed(2)}{currency}</span> · </> : null}
           Lot suggéré
@@ -207,7 +207,7 @@ export function LotCalculator({
         <span className="font-mono font-bold text-primary">→ {result.lot.toFixed(2)}</span>
       </div>
       {onApply && (
-        <Button size="sm" variant="outline" className="w-full h-7 text-[11px]" onClick={() => onApply(result.lot.toFixed(2))}>
+        <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => onApply(result.lot.toFixed(2))}>
           Appliquer {result.lot.toFixed(2)} lots
         </Button>
       )}

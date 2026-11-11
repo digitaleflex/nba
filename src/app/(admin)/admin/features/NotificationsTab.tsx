@@ -160,7 +160,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs font-semibold text-foreground">{notif.title}</span>
-                    <span className="text-[9px] text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                       {new Date(notif.createdAt).toLocaleString()}
                     </span>
                   </div>

@@ -234,7 +234,7 @@ export default function SubscriptionPage() {
               {/* Dates */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm pt-3 border-t border-border/50">
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Approuvé le</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Approuvé le</p>
                   <p className="font-semibold text-foreground">
                     {currentPlan.reviewedAt
                       ? new Date(currentPlan.reviewedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
@@ -242,7 +242,7 @@ export default function SubscriptionPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Expire le</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-0.5">Expire le</p>
                   <p className="font-semibold text-foreground">
                     {currentPlanEnd
                       ? currentPlanEnd.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
@@ -250,7 +250,7 @@ export default function SubscriptionPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-0.5">
                     {isCurrentExpired ? "Expiré depuis" : "Jours restants"}
                   </p>
                   <p className={cn(
@@ -269,7 +269,7 @@ export default function SubscriptionPage() {
               {/* Features */}
               {features.length > 0 && (
                 <div className="pt-3 border-t border-border/50">
-                  <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mb-2">Inclus dans ce plan</p>
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold mb-2">Inclus dans ce plan</p>
                   <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {features.map((f, i) => (
                       <li key={i} className="flex items-center gap-1.5 text-sm text-foreground">

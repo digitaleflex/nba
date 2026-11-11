@@ -259,9 +259,9 @@ export function FraudTab() {
                       <CardContent className="p-4 space-y-2">
                         <div className="flex items-start justify-between gap-2">
                           <p className="text-sm font-semibold break-words">{e.type}</p>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span>
+                          <span className={`px-2 py-0.5 rounded text-xs font-bold shrink-0 ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span>
                         </div>
-                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                        <div className="text-xs text-muted-foreground space-y-0.5">
                           <p>{new Date(e.createdAt).toLocaleString("fr-FR")}</p>
                           <p className="truncate">{e.user ? e.user.email : "—"}{e.ipAddress ? ` · ${e.ipAddress}` : ""}</p>
                         </div>

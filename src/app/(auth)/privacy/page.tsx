@@ -13,7 +13,7 @@ export default function PrivacyPage() {
           <Shield className="size-5 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">Politique de confidentialité</h1>
         </div>
-        <Badge variant="outline" className="ml-2 text-[10px]">Dernière mise à jour : juillet 2026</Badge>
+        <Badge variant="outline" className="ml-2 text-xs">Dernière mise à jour : juillet 2026</Badge>
       </div>
 
       <Card className="border-border/50">

@@ -184,7 +184,7 @@ export function DeveloperConsole() {
                     <div className="flex items-center gap-2">
                       <span className={`size-2 rounded-full ${state === "open" ? "bg-red-500" : state === "half-open" ? "bg-amber-500" : "bg-emerald-500"}`} />
                       <span className="font-medium">{name}</span>
-                      <Badge variant="outline" className={`text-[9px] ${state === "open" ? "text-red-500" : "text-emerald-500"}`}>{state}</Badge>
+                      <Badge variant="outline" className={`text-xs ${state === "open" ? "text-red-500" : "text-emerald-500"}`}>{state}</Badge>
                     </div>
                     {state !== "closed" && (
                       <button onClick={() => resetCircuit(name)} className="text-xs text-primary hover:underline cursor-pointer">Reset</button>

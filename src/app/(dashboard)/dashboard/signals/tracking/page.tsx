@@ -115,19 +115,19 @@ export default function SignalTrackingPage() {
             <Card>
               <CardContent className="py-3 px-3 text-center">
                 <div className="text-2xl font-extrabold text-emerald-600">{data.totalPris}</div>
-                <div className="text-[11px] text-muted-foreground font-medium">signaux tradés</div>
+                <div className="text-xs text-muted-foreground font-medium">signaux tradés</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="py-3 px-3 text-center">
                 <div className="text-2xl font-extrabold">{data.joursAvecTrade}</div>
-                <div className="text-[11px] text-muted-foreground font-medium">jours actifs</div>
+                <div className="text-xs text-muted-foreground font-medium">jours actifs</div>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="py-3 px-3 text-center">
                 <div className="text-2xl font-extrabold text-primary">{data.couvertureGlobale}%</div>
-                <div className="text-[11px] text-muted-foreground font-medium">couverture</div>
+                <div className="text-xs text-muted-foreground font-medium">couverture</div>
               </CardContent>
             </Card>
           </div>
@@ -176,7 +176,7 @@ export default function SignalTrackingPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <p className="text-[11px] text-muted-foreground mt-2 px-1">
+              <p className="text-xs text-muted-foreground mt-2 px-1">
                 Simple suivi pris / pas pris. Le détail PnL est affiché ci-dessous.
               </p>
             </CardContent>

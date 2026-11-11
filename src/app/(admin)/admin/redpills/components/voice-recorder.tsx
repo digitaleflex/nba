@@ -137,7 +137,7 @@ export function VoiceRecorder({ onDone, onCancel }: VoiceRecorderProps) {
             <span className="relative inline-flex size-3 rounded-full bg-rose-500" />
           </span>
           <span className="text-sm font-mono font-bold tabular-nums">{formatTime(seconds)}</span>
-          <span className="text-[11px] text-muted-foreground flex-1">Enregistrement en cours… parle maintenant</span>
+          <span className="text-xs text-muted-foreground flex-1">Enregistrement en cours… parle maintenant</span>
           <Button size="sm" onClick={stop} disabled={!recording}>
             <Square className="size-3.5 mr-1" />
             Stopper

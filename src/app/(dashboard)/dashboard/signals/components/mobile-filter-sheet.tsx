@@ -109,7 +109,7 @@ export function MobileFilterSheet({
             <SlidersHorizontal className="size-4 text-primary" />
             Filtres
             {activeCount > 0 && (
-              <span className="size-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+              <span className="size-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 {activeCount}
               </span>
             )}

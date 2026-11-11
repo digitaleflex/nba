@@ -48,7 +48,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
     return (
       <div style={{ height }} className="flex flex-col items-center justify-center gap-2 text-muted-foreground">
         <span className="size-8 rounded-full bg-muted/60" />
-        <p className="text-[11px]">Encore trop peu de données pour tracer l&apos;évolution</p>
+        <p className="text-xs">Encore trop peu de données pour tracer l&apos;évolution</p>
       </div>
     )
   }
@@ -69,7 +69,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
             key={s.key}
             onClick={() => setActive((a) => ({ ...a, [s.key]: !a[s.key] }))}
             className={cn(
-              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors",
+              "flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
               active[s.key]
                 ? "border-border bg-muted/60 text-foreground"
                 : "border-dashed border-border text-muted-foreground hover:text-foreground",
@@ -83,7 +83,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
       </div>
 
       {!hasData && (
-        <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-6 text-[11px] text-muted-foreground">
+        <div className="flex items-center justify-center rounded-lg border border-dashed border-border py-6 text-xs text-muted-foreground">
           Aucune donnée sur la période sélectionnée.
         </div>
       )}
@@ -97,7 +97,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
 
           return (
             <div key={unit || "default"} className="space-y-1">
-              <div className="flex items-center justify-between text-[10px] text-muted-foreground">
+              <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span className="font-medium uppercase tracking-wide">
                   {UNIT_TITLES[unit] ?? (unit || "Valeurs")}
                 </span>
@@ -144,7 +144,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
         })}
 
       {hasData && (
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
           {labels.slice(legendStart).map((l, offset) => {
             const i = legendStart + offset
             return (

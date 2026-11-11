@@ -42,7 +42,7 @@ export function FilterSheet({ groups, activeCount, onReset, className }: FilterS
         >
           <SlidersHorizontal className="size-3.5" />
           {hasFilters && (
-            <span className="ml-1 flex size-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-primary-foreground">
+            <span className="ml-1 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
               {activeCount}
             </span>
           )}

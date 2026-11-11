@@ -357,13 +357,13 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                         ))}
                       </select>
                     ) : (
-                      <Badge variant="outline" className="text-[9px] border-border">
+                      <Badge variant="outline" className="text-xs border-border">
                         {req.plan.name}
                       </Badge>
                     )}
                     <Badge
                       variant="outline"
-                      className={cn("text-[9px]", REQUEST_STATUS_CLASS[req.status] || REQUEST_STATUS_CLASS.PENDING)}
+                      className={cn("text-xs", REQUEST_STATUS_CLASS[req.status] || REQUEST_STATUS_CLASS.PENDING)}
                     >
                       {REQUEST_STATUS_LABELS[req.status] || req.status}
                     </Badge>

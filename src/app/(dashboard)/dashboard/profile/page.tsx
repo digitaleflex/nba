@@ -312,7 +312,7 @@ export default function ProfilePage() {
             <div className="space-y-0.5">
               <p className="font-semibold text-lg">{profile?.name}</p>
               <p className="text-sm text-muted-foreground">{profile?.email}</p>
-              <Badge variant="outline" className="text-[10px] mt-1">
+              <Badge variant="outline" className="text-xs mt-1">
                 {profile?.role?.name}
               </Badge>
             </div>
@@ -334,7 +334,7 @@ export default function ProfilePage() {
                 />
               </div>
               {profileTouched.name && profileErrors.name && (
-                <p className="text-[11px] text-destructive mt-1" role="alert">{profileErrors.name}</p>
+                <p className="text-xs text-destructive mt-1" role="alert">{profileErrors.name}</p>
               )}
             </div>
 
@@ -539,9 +539,9 @@ export default function ProfilePage() {
                   />
                 </div>
                 {emailTouched && invalidEmail && (
-                  <p className="text-[11px] text-destructive" role="alert">{invalidEmail}</p>
+                  <p className="text-xs text-destructive" role="alert">{invalidEmail}</p>
                 )}
-                <p className="text-[10px] text-muted-foreground">Un email de vérification sera envoyé à la nouvelle adresse</p>
+                <p className="text-xs text-muted-foreground">Un email de vérification sera envoyé à la nouvelle adresse</p>
               </div>
 
               {emailError && (

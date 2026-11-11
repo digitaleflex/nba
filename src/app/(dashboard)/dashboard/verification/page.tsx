@@ -98,7 +98,7 @@ export default function VerificationPage() {
       <Card className="relative overflow-hidden bg-card/40 border border-border/50">
         <CardContent className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="space-y-1">
-            <span className="text-[10px] text-muted-foreground uppercase font-bold tracking-wider">Statut global du compte</span>
+            <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Statut global du compte</span>
             <div className="flex items-center gap-2.5">
               <h2 className="text-lg font-bold">
                 {state.status === "ACTIVE" ? "Compte Entièrement Validé" : "Vérification Recommandée"}

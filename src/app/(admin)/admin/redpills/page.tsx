@@ -254,7 +254,7 @@ export default function AdminRedpillsPage() {
                   >
                     <div className="text-lg">{f.emoji}</div>
                     <div className="text-xs font-bold">{f.label}</div>
-                    <div className="text-[10px] text-muted-foreground">{f.desc}</div>
+                    <div className="text-xs text-muted-foreground">{f.desc}</div>
                   </button>
                 ))}
               </div>
@@ -327,7 +327,7 @@ export default function AdminRedpillsPage() {
                       {recordedUrl && <audio controls src={recordedUrl} className="w-full h-8" preload="metadata" />}
                       {form.audioUrl && (
                         <div className="space-y-1">
-                          <p className="text-[11px] text-emerald-600">✓ Note vocale prête : {form.audioUrl}</p>
+                          <p className="text-xs text-emerald-600">✓ Note vocale prête : {form.audioUrl}</p>
                           <audio
                             controls
                             preload="metadata"
@@ -410,7 +410,7 @@ export default function AdminRedpillsPage() {
                         Démarrer la caméra
                       </Button>
                       {recordedVideoUrl && <video controls src={recordedVideoUrl} className="w-full max-h-48 rounded-lg" preload="metadata" />}
-                      {form.videoUrl && <p className="text-[11px] text-emerald-600">✓ Vidéo prête : {form.videoUrl}</p>}
+                      {form.videoUrl && <p className="text-xs text-emerald-600">✓ Vidéo prête : {form.videoUrl}</p>}
                     </div>
                   ) : (
                     <VideoRecorder onDone={handleRecordedVideo} onCancel={() => setShowVideoRecorder(false)} />
@@ -511,19 +511,19 @@ export default function AdminRedpillsPage() {
                 <div className="space-y-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-semibold text-sm">{p.title}</span>
-                    <Badge variant={p.isPublished ? "default" : "secondary"} className="text-[10px]">
+                    <Badge variant={p.isPublished ? "default" : "secondary"} className="text-xs">
                       {p.isPublished ? "Publié" : "Brouillon"}
                     </Badge>
-                    <Badge variant="outline" className="text-[10px]">
+                    <Badge variant="outline" className="text-xs">
                       {p.format === "TEXT" ? "📝 Texte" : p.format === "IMAGE" ? "🖼️ Image" : p.format === "AUDIO" ? "🎙️ Audio" : p.format === "VIDEO" ? "🎬 Vidéo" : "📦 Mixte"}
                     </Badge>
                     {p.series && (
-                      <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
+                      <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
                         📚 {p.series}{p.episode != null ? ` · ép. ${p.episode}` : ""}
                       </span>
                     )}
                     {!!p._count && (
-                      <span className="text-[11px] text-muted-foreground">{p._count.reads} lecture(s)</span>
+                      <span className="text-xs text-muted-foreground">{p._count.reads} lecture(s)</span>
                     )}
                   </div>
                   <p className="text-xs text-muted-foreground">

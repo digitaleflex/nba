@@ -125,7 +125,7 @@ export default function MaintenancePage() {
           <div className="pointer-events-none absolute inset-0 rounded-[24px] bg-[radial-gradient(600px_200px_at_50%_0%,rgba(255,255,255,0.06),transparent_70%)]" />
 
           {/* Badge */}
-          <div className="animate-slide-up mb-5 inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-3 py-1.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-300">
+          <div className="animate-slide-up mb-5 inline-flex items-center gap-2 rounded-full border border-blue-500/15 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em] text-blue-300">
             <span className="relative size-[7px] rounded-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)]">
               <span className="absolute inset-[-4px] animate-ping rounded-full border border-blue-500/40" />
             </span>
@@ -179,7 +179,7 @@ export default function MaintenancePage() {
                 )}
                 {label}
               </div>
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold tabular-nums text-slate-500">
+              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-xs font-semibold tabular-nums text-slate-500">
                 {Math.round(progress)}%
               </span>
             </div>
@@ -223,7 +223,7 @@ export default function MaintenancePage() {
           </div>
 
           <div className="animate-slide-up stagger-7 mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-white/5 pt-4">
-            <span className="inline-flex items-center gap-1.5 text-[11px] leading-5 text-slate-500">
+            <span className="inline-flex items-center gap-1.5 text-xs leading-5 text-slate-500">
               <Clock className="size-3 opacity-60" />
               Temps estimé : 2 — 5 minutes
             </span>
@@ -237,7 +237,7 @@ export default function MaintenancePage() {
           </div>
         </div>
 
-        <div className="animate-slide-up stagger-8 mt-4 flex items-center justify-center gap-2 text-center text-[11px] font-medium uppercase tracking-[0.06em] text-slate-500/70">
+        <div className="animate-slide-up stagger-8 mt-4 flex items-center justify-center gap-2 text-center text-xs font-medium uppercase tracking-[0.06em] text-slate-500/70">
           <span className="h-px max-w-10 flex-1 bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.08))]" />
           NeverBrokeAgain • Plateforme premium
           <span className="h-px max-w-10 flex-1 bg-[linear-gradient(90deg,rgba(255,255,255,0.08),transparent)]" />

@@ -40,8 +40,8 @@ function DocumentPreview({ file }: { file: File }) {
   return (
     <div className="flex flex-col items-center gap-1 p-2 bg-muted/40 rounded-lg max-w-[160px] mx-auto border border-border/50 shadow-sm animate-in zoom-in-95 duration-200">
       <FileText className="size-6 text-muted-foreground" />
-      <span className="text-[10px] font-medium text-foreground truncate max-w-[120px]">{file.name}</span>
-      <span className="text-[9px] text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} Mo</span>
+      <span className="text-xs font-medium text-foreground truncate max-w-[120px]">{file.name}</span>
+      <span className="text-xs text-muted-foreground">{(file.size / 1024 / 1024).toFixed(1)} Mo</span>
     </div>
   )
 }

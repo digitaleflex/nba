@@ -89,7 +89,7 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
                     <Badge
                       variant="outline"
                       className={cn(
-                        "text-[9px] uppercase",
+                        "text-xs uppercase",
                         doc.status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                         doc.status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
                         doc.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
@@ -101,11 +101,11 @@ export function BrokerTab({ cachedGet, onOpenPanel, registerRefetch }: BrokerTab
 
                   <div className="grid grid-cols-2 gap-3 p-3 rounded-lg bg-muted/40 border border-border/60 text-xs">
                     <div>
-                      <span className="text-[9px] text-muted-foreground block uppercase">Broker</span>
+                      <span className="text-xs text-muted-foreground block uppercase">Broker</span>
                       <span className="font-semibold text-foreground">{doc.brokerName}</span>
                     </div>
                     <div>
-                      <span className="text-[9px] text-muted-foreground block uppercase">Numéro Compte</span>
+                      <span className="text-xs text-muted-foreground block uppercase">Numéro Compte</span>
                       <span className="font-semibold text-foreground">{doc.accountId}</span>
                     </div>
                   </div>

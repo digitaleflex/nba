@@ -122,7 +122,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
                             {new Date(s.publishedAt).toLocaleString("fr-FR")}
                           </p>
                         </div>
-                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary shrink-0">
+                        <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary shrink-0">
                           {s.plan}
                         </span>
                       </div>

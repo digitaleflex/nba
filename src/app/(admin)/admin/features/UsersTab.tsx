@@ -121,7 +121,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                     <td className="px-6 py-4 font-semibold text-muted-foreground">{member.role?.name}</td>
                     <td className="px-6 py-4 text-muted-foreground">{member.phone || "—"}</td>
                     <td className="px-6 py-4">
-                      <Badge variant="outline" className="text-[9px] border-border py-0.5 px-2">
+                      <Badge variant="outline" className="text-xs border-border py-0.5 px-2">
                         {member.onboardingStatus}
                       </Badge>
                     </td>
@@ -181,7 +181,7 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
                       <span className="font-medium">{member.role?.name}</span>
                       <span aria-hidden="true">·</span>
-                      <Badge variant="outline" className="text-[9px] border-border py-0.5 px-2">{member.onboardingStatus}</Badge>
+                      <Badge variant="outline" className="text-xs border-border py-0.5 px-2">{member.onboardingStatus}</Badge>
                     </div>
                     <Button
                       variant="outline"

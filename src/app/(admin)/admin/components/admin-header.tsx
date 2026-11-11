@@ -125,7 +125,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         >
           <Search className="size-3.5 text-muted-foreground" />
           <span>Rechercher...</span>
-          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-[9px] font-medium text-muted-foreground shadow-sm">
+          <kbd className="ml-auto pointer-events-none inline-flex h-5 select-none items-center gap-0.5 rounded border bg-background px-1.5 font-mono text-xs font-medium text-muted-foreground shadow-sm">
             <span className="text-xs">⌘</span>K
           </kbd>
         </button>
@@ -218,7 +218,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                           const idx = results.users.length + i
                           return (<button key={s.id} id={`search-option-${idx}`} onClick={() => navigateTo("signals", `edit=${s.id}`)} role="option" aria-selected={focusedIndex === idx} className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs transition-colors text-left text-foreground cursor-pointer ${focusedIndex === idx ? "bg-muted" : "hover:bg-muted/50"}`}>
                             <span className="truncate pr-4 font-medium">{s.content}</span>
-                            <span className="rounded bg-primary/10 px-1 text-[9px] text-primary uppercase shrink-0">{s.status}</span>
+                            <span className="rounded bg-primary/10 px-1 text-xs text-primary uppercase shrink-0">{s.status}</span>
                           </button>)
                         })}
                       </div>
@@ -254,7 +254,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
                               <p className="font-semibold truncate">{a.action}</p>
                               <p className="text-xs text-muted-foreground">{a.resourceType}</p>
                             </div>
-                            <span className="text-[9px] text-muted-foreground shrink-0">{new Date(a.createdAt).toLocaleDateString()}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{new Date(a.createdAt).toLocaleDateString()}</span>
                           </button>)
                         })}
                       </div>

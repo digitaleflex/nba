@@ -200,7 +200,7 @@ export function NotificationBell() {
             initial={{ scale: reduce ? 1 : 1.5 }}
             animate={{ scale: 1 }}
             transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
-            className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground leading-none"
+            className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-destructive text-xs font-bold text-destructive-foreground leading-none"
           >
             {unreadCount > 9 ? "9+" : unreadCount}
           </motion.span>
@@ -230,12 +230,12 @@ export function NotificationBell() {
             <span className="text-sm font-semibold">Notifications</span>
             <div className="flex items-center gap-3">
               {wsStatus === "connected" ? (
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 flex items-center gap-1" title="Notifications en temps réel">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center gap-1" title="Notifications en temps réel">
                   <Wifi className="size-3" />
                   live
                 </span>
               ) : (
-                <span className="text-[10px] text-muted-foreground flex items-center gap-1" title="Fallback polling 30s">
+                <span className="text-xs text-muted-foreground flex items-center gap-1" title="Fallback polling 30s">
                   <WifiOff className="size-3" />
                   polling
                 </span>

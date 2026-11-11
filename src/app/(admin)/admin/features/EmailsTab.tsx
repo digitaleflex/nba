@@ -100,7 +100,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[9px] uppercase",
+                          "text-xs uppercase",
                           em.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
                           em.status === "SENT" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                           (em.status === "FAILED" || em.status === "BOUNCED") && "bg-rose-500/10 text-rose-600 border-rose-500/20"
@@ -135,7 +135,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                       <Badge
                         variant="outline"
                         className={cn(
-                          "text-[9px] uppercase shrink-0",
+                          "text-xs uppercase shrink-0",
                           em.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
                           em.status === "SENT" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                           (em.status === "FAILED" || em.status === "BOUNCED") && "bg-rose-500/10 text-rose-600 border-rose-500/20"
@@ -148,7 +148,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                       <p className="text-sm font-medium truncate">{em.notification?.title}</p>
                       <p className="text-xs text-muted-foreground line-clamp-2">{em.notification?.body}</p>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
                       <span>{new Date(em.sentAt || em.createdAt).toLocaleDateString("fr-FR")}</span>
                       {em.errorMessage ? <span className="text-rose-600 truncate max-w-[60%]">{em.errorMessage}</span> : null}
                     </div>

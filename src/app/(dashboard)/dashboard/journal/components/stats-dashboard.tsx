@@ -123,7 +123,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
         <div className="rounded-lg border bg-card p-4">
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-semibold">📈 Évolution du trader</h3>
-            <span className="text-[10px] text-muted-foreground">mis à jour en temps réel</span>
+            <span className="text-xs text-muted-foreground">mis à jour en temps réel</span>
           </div>
           <EvolutionChart labels={stats.evolution.labels} series={stats.evolution.series} height={220} />
         </div>

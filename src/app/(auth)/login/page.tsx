@@ -113,7 +113,7 @@ export default function LoginPage() {
                   aria-invalid={touched.email && !!errors.email}
                 />
                 {touched.email && errors.email && (
-                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.email}</p>
+                  <p className="text-xs text-destructive mt-1" role="alert">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-1.5">

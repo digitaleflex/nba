@@ -83,7 +83,7 @@ export function EmptyState({
             {action.label}
           </Button>
           {shortcut && (
-            <kbd className="rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+            <kbd className="rounded border border-border bg-muted/60 px-1.5 py-0.5 text-xs font-semibold text-muted-foreground">
               {shortcut}
             </kbd>
           )}
