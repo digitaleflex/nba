@@ -182,7 +182,7 @@ export function RedpillsView() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Flame className="size-6 text-orange-500" />
-            Pilule du jour
+            Redpills d'Emerson
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             {unreadCount > 0

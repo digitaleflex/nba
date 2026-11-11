@@ -193,7 +193,7 @@ export default function JournalPage() {
     <div id="journal" className="space-y-6 pb-20 md:pb-0">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Journal de trading</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Journal</h1>
           <p className="text-sm text-muted-foreground">Suis tes trades, analyse ta performance, maîtrise tes émotions.</p>
         </div>
         <div className="relative">
