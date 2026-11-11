@@ -147,15 +147,15 @@ export default function FraudDashboard() {
           <div className="flex gap-2">
             <div className="flex-1 flex gap-2">
               <input className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" placeholder="Email" value={searchEmail} onChange={e => setSearchEmail(e.target.value)} />
-              <button onClick={searchUser} className="px-3 py-2 text-sm rounded-lg border hover:bg-accent cursor-pointer"><Search className="size-4" /></button>
+              <button onClick={searchUser} aria-label="Rechercher" className="px-3 py-2 text-sm rounded-lg border hover:bg-accent cursor-pointer"><Search className="size-4" /></button>
             </div>
           </div>
           <div className="flex gap-2">
-            <select className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" value={selectedPlaybook} onChange={e => setSelectedPlaybook(e.target.value)}>
+            <select aria-label="Playbook" className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" value={selectedPlaybook} onChange={e => setSelectedPlaybook(e.target.value)}>
               <option value="">Choisir un playbook...</option>
               {playbooks.map(p => <option key={p.id} value={p.detectType || p.id}>{p.name} ({p.severity})</option>)}
             </select>
-            <button onClick={executePlaybook} className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"><Play className="size-4" /></button>
+            <button onClick={executePlaybook} aria-label="Exécuter le playbook" className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 cursor-pointer"><Play className="size-4" /></button>
           </div>
         </div>
       </div>
@@ -163,7 +163,7 @@ export default function FraudDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 rounded-xl border p-6 space-y-4">
           <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">Evenements recents (HAUT/CRITIQUE)</h2>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto" role="region" aria-label="Contenu défilant">
             <table className="w-full text-xs text-left">
               <thead><tr className="border-b text-muted-foreground uppercase tracking-wider">
                 <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th>

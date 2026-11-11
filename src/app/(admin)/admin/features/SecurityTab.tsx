@@ -174,7 +174,7 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
           {loadingSessions ? (
             <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
           ) : sessions.length > 0 ? (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Contenu défilant">
               <table className="admin-table w-full min-w-[680px] text-xs text-left">
                 <thead>
                   <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">

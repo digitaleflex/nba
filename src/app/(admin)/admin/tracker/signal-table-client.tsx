@@ -272,7 +272,7 @@ function RecipientDetails({ users }: { users: PerUser[] }) {
       </div>
 
       {/* Desktop table */}
-      <div className="hidden md:block overflow-x-auto">
+      <div className="hidden md:block overflow-x-auto" role="region" aria-label="Contenu défilant">
         <table className="w-full text-sm">
           <thead className="text-muted-foreground bg-muted/5">
             <tr className="text-left">

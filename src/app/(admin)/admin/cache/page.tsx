@@ -333,7 +333,7 @@ export default function CacheStatusPage() {
                 {issues.totalFailedDeliveries} échec(s) · {issues.affectedUserCount} user(s)
               </Badge>
             </div>
-            <div className="pt-3 max-h-[300px] overflow-y-auto space-y-2">
+            <div className="pt-3 max-h-[300px] overflow-y-auto space-y-2" role="region" aria-label="Contenu défilant">
               {issues.recentFailedDeliveries.map((d: any) => (
                 <div key={d.id} className="flex items-start gap-2 text-xs p-2 rounded bg-background/50">
                   <XCircle className="size-3.5 text-rose-500 mt-0.5 shrink-0" />
@@ -368,7 +368,7 @@ export default function CacheStatusPage() {
                 Activité récente
               </h2>
             </div>
-            <div className="pt-3 max-h-[250px] overflow-y-auto space-y-1.5">
+            <div className="pt-3 max-h-[250px] overflow-y-auto space-y-1.5" role="region" aria-label="Contenu défilant">
               {issues.recentAuditErrors.slice(0, 15).map((e: any) => (
                 <div key={e.id} className="flex items-center justify-between text-xs py-1">
                   <div className="flex items-center gap-2 min-w-0">

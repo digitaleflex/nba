@@ -347,6 +347,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
                   <div className="flex flex-col items-end gap-1.5">
                     {plans.length > 0 ? (
                       <select
+                        aria-label="Changer de plan"
                         value={req.plan.id}
                         onChange={(e) => handleChangePlan(req.id, e.target.value)}
                         className="text-xs border border-border rounded-md bg-card px-2 py-1 text-foreground cursor-pointer outline-none focus:border-primary/50 max-w-[140px] truncate"
@@ -483,6 +484,7 @@ export function RequestsTab({ cachedGet, invalidate, refreshOps }: RequestsTabPr
               <div className="space-y-1.5">
                 <label className="text-xs text-muted-foreground">Plan</label>
                 <select
+                  aria-label="Plan de réexamen"
                   value={reexaminePlanId}
                   onChange={(e) => setReexaminePlanId(e.target.value)}
                   className="w-full text-xs border border-border rounded-md bg-background px-3 py-2 text-foreground outline-none focus:border-primary/50 cursor-pointer"

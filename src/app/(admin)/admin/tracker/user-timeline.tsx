@@ -58,7 +58,7 @@ export function UserTimeline({ users }: { users: UserInfo[] }) {
             className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-primary"
           />
           {query && filtered.length > 0 && !selectedUserId && (
-            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-background shadow-lg z-10 max-h-48 overflow-y-auto">
+            <div className="absolute top-full left-0 right-0 mt-1 rounded-lg border border-border bg-background shadow-lg z-10 max-h-48 overflow-y-auto" role="region" aria-label="Contenu défilant">
               {filtered.map((u) => (
                 <button
                   key={u.id}

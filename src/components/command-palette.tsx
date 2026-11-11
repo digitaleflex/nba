@@ -98,7 +98,7 @@ function PaletteContent({
         </kbd>
       </div>
 
-      <div ref={listRef} className="max-h-[60dvh] md:max-h-[420px] overflow-y-auto p-1.5">
+      <div ref={listRef} className="max-h-[60dvh] md:max-h-[420px] overflow-y-auto p-1.5" role="region" aria-label="Contenu défilant">
         {!hasResults && !loading && (
           <div className="py-10 text-center text-xs text-muted-foreground">
             {query ? `Aucun résultat pour "${query}"` : "Tapez pour rechercher..."}

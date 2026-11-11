@@ -348,7 +348,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                     : `${cleanupPreview.accessRequestsRevoked} accès à révoquer sur ${cleanupPreview.usersAffected} membre(s) fantôme(s)`}
                 </p>
                 {cleanupPreview.usersAffected > 0 && (
-                  <div className="mt-2 max-h-40 overflow-y-auto rounded-md border bg-background/50 text-xs">
+                  <div className="mt-2 max-h-40 overflow-y-auto rounded-md border bg-background/50 text-xs" role="region" aria-label="Contenu défilant">
                     <table className="w-full">
                       <thead className="bg-muted/40 text-muted-foreground">
                         <tr>
@@ -477,7 +477,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
       <DualRender
         desktop={
           <Card className="border-border/60 bg-card shadow-sm">
-            <div className="overflow-x-auto md:overflow-x-visible">
+            <div className="overflow-x-auto md:overflow-x-visible" role="region" aria-label="Contenu défilant">
               <table className="admin-table w-full min-w-[780px] text-xs text-left">
                 <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
                   <tr className="border-b border-border/40 text-muted-foreground font-bold uppercase tracking-wider text-xs">

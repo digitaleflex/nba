@@ -158,7 +158,7 @@ export default function CoachingPage() {
         {journal.reflections.length > 0 && (
           <Card><CardContent className="p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Reflexions quotidiennes</h3>
-            <div className="space-y-2 max-h-80 overflow-y-auto">
+            <div className="space-y-2 max-h-80 overflow-y-auto" role="region" aria-label="Contenu défilant">
               {journal.reflections.map((r) => (
                 <div key={r.id} className="rounded-lg border p-3 text-xs space-y-1">
                   <div className="flex items-center justify-between">

@@ -102,7 +102,7 @@ export function Sidebar({ space, user }: SidebarProps) {
         {isCollapsed ? <ChevronRight className="size-3.5" /> : <ChevronLeft className="size-3.5" />}
       </button>
 
-      <div className="flex flex-col min-h-0 flex-1 space-y-7 overflow-y-auto">
+      <div className="flex flex-col min-h-0 flex-1 space-y-7 overflow-y-auto" role="region" aria-label="Contenu défilant">
         <div className={cn("flex items-center gap-2 px-2 shrink-0", isCollapsed ? "justify-center" : "justify-between")}>
           <Link href="/dashboard" className="flex items-center gap-2.5 font-bold text-lg tracking-tight shrink-0">
             {isCollapsed ? (

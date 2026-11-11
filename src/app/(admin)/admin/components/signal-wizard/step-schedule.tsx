@@ -54,6 +54,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
             <label className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Date et heure</label>
             <input
               type="datetime-local"
+              aria-label="Date et heure"
               value={scheduledAt}
               min={nowIso}
               onChange={(e) => setScheduledAt(e.target.value)}

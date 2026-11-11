@@ -193,7 +193,7 @@ export function FraudTab() {
             <Button size="sm" variant="outline" onClick={searchUserFn} aria-label="Rechercher"><Search className="size-3.5" /></Button>
           </div>
           <div className="flex gap-2">
-            <select className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" value={selectedPlaybook} onChange={e => setSelectedPlaybook(e.target.value)}>
+            <select aria-label="Playbook" className="flex-1 px-3 py-2 text-sm rounded-lg border bg-background" value={selectedPlaybook} onChange={e => setSelectedPlaybook(e.target.value)}>
               <option value="">Playbook...</option>
               {playbooks.map(p => <option key={p.id} value={p.detectType}>{p.name} ({p.severity})</option>)}
             </select>
@@ -206,7 +206,7 @@ export function FraudTab() {
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Evenements recents (HAUT/CRITIQUE)</h3>
         <DualRender
           desktop={
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" role="region" aria-label="Contenu défilant">
               <table className="admin-table w-full min-w-[680px] text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th><th className="px-3 py-2 text-right">Action</th>
@@ -298,7 +298,7 @@ export function FraudTab() {
           <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Tentatives d&apos;authentification récentes (connexion + inscription)</h3>
           <span className="text-xs text-muted-foreground">{attempts.length} affichées / 100 max</span>
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto" role="region" aria-label="Contenu défilant">
           <table className="admin-table w-full min-w-[680px] text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Raison</th><th className="px-3 py-2">IP</th>

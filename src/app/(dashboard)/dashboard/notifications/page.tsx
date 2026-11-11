@@ -441,7 +441,7 @@ export default function NotificationsPage() {
       </Card>
 
       <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
-        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
           <DialogHeader>
             <DialogTitle>Préférences de notification</DialogTitle>
             <DialogDescription>

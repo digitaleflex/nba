@@ -92,7 +92,7 @@ export function MissionsPanel() {
                   <span className="text-[11px] text-muted-foreground tabular-nums">{progress}%</span>
                 </div>
               </div>
-              <div className="p-3 space-y-2 max-h-80 overflow-y-auto">
+              <div className="p-3 space-y-2 max-h-80 overflow-y-auto" role="region" aria-label="Contenu défilant">
                 {missions.map((mission) => (
                   <MissionItem key={mission.id} mission={mission} />
                 ))}

@@ -594,6 +594,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
         <label className="text-xs font-medium text-muted-foreground mb-1 block">Date du trade</label>
         <Input
           type="datetime-local"
+          aria-label="Date du trade"
           value={tradedAt}
           onChange={(e) => setTradedAt(e.target.value)}
           className="text-sm"
@@ -762,7 +763,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   return (
     <>
       <Dialog open onOpenChange={onClose}>
-        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {signalId ? "Trade depuis un signal" : "Nouveau trade"}

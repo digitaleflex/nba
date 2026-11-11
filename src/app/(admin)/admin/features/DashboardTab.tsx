@@ -206,7 +206,7 @@ export function DashboardTab({ opsData, loadingOps, errorOps, router }: Dashboar
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-5">
               <SectionTitle>Activités récentes</SectionTitle>
-              <div className="pt-3 space-y-3.5 max-h-56 overflow-y-auto">
+              <div className="pt-3 space-y-3.5 max-h-56 overflow-y-auto" role="region" aria-label="Contenu défilant">
                 {(opsData.recentActivities ?? []).length > 0
                   ? opsData.recentActivities.map((act: any, idx: number) => (
                     <div key={idx} className="flex items-start gap-2.5 text-xs">

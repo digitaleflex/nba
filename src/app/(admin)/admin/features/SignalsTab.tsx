@@ -239,7 +239,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
           <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
         ) : signals.length > 0 ? (
           <>
-            <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2">
+            <div className="space-y-3 max-h-[700px] overflow-y-auto pr-2" role="region" aria-label="Contenu défilant">
               {signals.map((sig) => {
                 const meta = STATUS_META[sig.status] ?? STATUS_META.DRAFT
                 const imageCount = sig.imageUrls?.length ?? 0

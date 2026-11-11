@@ -125,7 +125,7 @@ export function MobileFilterSheet({
           </Button>
         </DialogHeader>
 
-        <div className="space-y-5 py-4 max-h-[50vh] overflow-y-auto">
+        <div className="space-y-5 py-4 max-h-[50vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
           {filterGroups.map((group) => (
             <div key={group.label} className="space-y-2.5">
               <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">

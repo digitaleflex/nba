@@ -106,7 +106,7 @@ export function ReportBugDialog({ className, variant = "ghost", size, label, onO
         {label && <span>{label}</span>}
       </Button>
 
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Bug className="size-4 text-primary" /> Signaler un bug

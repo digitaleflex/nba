@@ -522,7 +522,7 @@ export default function AdminMessagesPage() {
                   Non lus uniquement
                 </label>
               </div>
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1" role="region" aria-label="Contenu défilant">
                 {loading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="size-6 animate-spin text-primary" />
@@ -600,7 +600,7 @@ export default function AdminMessagesPage() {
                     </div>
                   </div>
 
-                  <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-3" role="region" aria-label="Contenu défilant">
                     {loadingOlder && (
                       <div className="flex justify-center py-2">
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -673,7 +673,7 @@ export default function AdminMessagesPage() {
               />
             </div>
 
-            <div className="max-h-56 overflow-y-auto space-y-1">
+            <div className="max-h-56 overflow-y-auto space-y-1" role="region" aria-label="Contenu défilant">
               {searching && (
                 <div className="flex justify-center py-4">
                   <Loader2 className="size-5 animate-spin text-primary" />
@@ -737,7 +737,7 @@ export default function AdminMessagesPage() {
           <DialogHeader>
             <DialogTitle>File de modération</DialogTitle>
           </DialogHeader>
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
             {loadingReports && (
               <div className="flex justify-center py-6">
                 <Loader2 className="size-5 animate-spin text-primary" />

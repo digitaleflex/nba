@@ -28,7 +28,7 @@ export function EmojiPicker({ onSelect, onClose }: EmojiPickerProps) {
           ✕
         </button>
       </div>
-      <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto">
+      <div className="grid grid-cols-8 gap-1 max-h-48 overflow-y-auto" role="region" aria-label="Contenu défilant">
         {EMOJIS.map((e, i) => (
           <button
             key={`${e}-${i}`}

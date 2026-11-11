@@ -159,7 +159,7 @@ export function AdminContextPanel({
         </div>
 
         {/* Content Area */}
-        <div className={cn("flex-1 overflow-y-auto space-y-6 text-xs", isFullscreen ? "p-4" : "p-6")}>
+        <div className={cn("flex-1 overflow-y-auto space-y-6 text-xs", isFullscreen ? "p-4" : "p-6")} role="region" aria-label="Contenu défilant">
           {type === "user" && (
             <UserPanelContent data={data} onAction={onAction} />
           )}

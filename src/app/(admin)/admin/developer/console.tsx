@@ -113,7 +113,7 @@ export function DeveloperConsole() {
               {showSecrets ? <EyeOff className="size-3" /> : <Eye className="size-3" />} {showSecrets ? "Masquer" : "Afficher"}
             </button>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto" role="region" aria-label="Contenu défilant">
             <table className="w-full text-xs text-left">
               <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
                 <th className="px-2 py-2">Clé</th><th className="px-2 py-2">Valeur</th><th className="px-2 py-2">Taille</th>
@@ -138,7 +138,7 @@ export function DeveloperConsole() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card><CardContent className="p-5 space-y-3">
             <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Lignes par table</h3>
-            <div className="space-y-1 max-h-96 overflow-y-auto">
+            <div className="space-y-1 max-h-96 overflow-y-auto" role="region" aria-label="Contenu défilant">
               {dbStats?.models && Object.entries(dbStats.models).map(([name, count]: any) => (
                 <div key={name} className="flex items-center justify-between text-xs py-1.5 px-2 rounded hover:bg-accent/30">
                   <span className="font-medium">{name}</span>

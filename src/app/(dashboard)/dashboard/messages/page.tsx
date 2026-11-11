@@ -509,7 +509,7 @@ export default function MessagesPage() {
                   Non lus uniquement
                 </label>
               </div>
-              <div className="overflow-y-auto flex-1">
+              <div className="overflow-y-auto flex-1" role="region" aria-label="Contenu défilant">
                 {loading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="size-6 animate-spin text-primary" />
@@ -600,7 +600,7 @@ export default function MessagesPage() {
                     </div>
                   </div>
 
-                  <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
+                  <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto p-4 space-y-3" role="region" aria-label="Contenu défilant">
                     {loadingOlder && (
                       <div className="flex justify-center py-2">
                         <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -672,7 +672,7 @@ export default function MessagesPage() {
               />
             </div>
 
-            <div className="max-h-56 overflow-y-auto space-y-1">
+            <div className="max-h-56 overflow-y-auto space-y-1" role="region" aria-label="Contenu défilant">
               {searchingAdmins && (
                 <div className="flex justify-center py-4">
                   <Loader2 className="size-5 animate-spin text-primary" />
