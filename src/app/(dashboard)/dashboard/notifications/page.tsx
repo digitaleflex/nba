@@ -184,7 +184,7 @@ export default function NotificationsPage() {
         if (typeof Notification === "undefined") return
         if (Notification.permission === "granted") {
           const n = new Notification("🔔 Notification de test", {
-            body: "Si vous voyez ceci, les notifications fonctionnent parfaitement !",
+            body: "Si tu vois ceci, les notifications fonctionnent parfaitement !",
             icon: "/icon.png",
             badge: "/icons/icon-192x192.png",
             tag: "test-notification",
@@ -322,7 +322,7 @@ export default function NotificationsPage() {
     granted: {
       icon: ShieldCheck,
       title: "Notifications autorisées",
-      desc: "Votre navigateur affichera les notifications système.",
+      desc: "Ton navigateur affichera les notifications système.",
       color: "text-emerald-600 dark:text-emerald-400",
       bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900",
       pulse: false,
@@ -330,7 +330,7 @@ export default function NotificationsPage() {
     denied: {
       icon: ShieldX,
       title: "Notifications bloquées",
-      desc: "Les notifications sont désactivées dans les paramètres de votre navigateur.",
+      desc: "Les notifications sont désactivées dans les paramètres de ton navigateur.",
       color: "text-destructive",
       bg: "bg-destructive/5 border-destructive/20",
       pulse: false,
@@ -346,7 +346,7 @@ export default function NotificationsPage() {
     unsupported: {
       icon: BellOff,
       title: "Non supporté",
-      desc: "Votre navigateur ne supporte pas les notifications système.",
+      desc: "Ton navigateur ne supporte pas les notifications système.",
       color: "text-muted-foreground",
       bg: "bg-muted/50 border-border",
       pulse: false,
@@ -445,7 +445,7 @@ export default function NotificationsPage() {
           <DialogHeader>
             <DialogTitle>Préférences de notification</DialogTitle>
             <DialogDescription>
-              Choisissez le son et les types de notifications que vous souhaitez recevoir.
+              Choisis le son et les types de notifications que tu souhaites recevoir.
             </DialogDescription>
           </DialogHeader>
 
@@ -573,9 +573,9 @@ export default function NotificationsPage() {
               <div className="space-y-0.5">
                 {[
                   { key: "signal", label: "Signaux", desc: "Nouveaux signaux de trading publiés" },
-                  { key: "kyc", label: "KYC", desc: "Validation de vos documents d'identité" },
-                  { key: "broker", label: "Broker", desc: "Validation de votre compte broker" },
-                  { key: "access", label: "Abonnement", desc: "Changements de votre abonnement" },
+                  { key: "kyc", label: "KYC", desc: "Validation de tes documents d'identité" },
+                  { key: "broker", label: "Broker", desc: "Validation de ton compte broker" },
+                  { key: "access", label: "Abonnement", desc: "Changements de ton abonnement" },
                   { key: "security", label: "Sécurité", desc: "Connexions, changements de mot de passe" },
                   { key: "system", label: "Annonces", desc: "Messages de l'équipe NeverBrokeAgain" },
                   { key: "message", label: "Messages", desc: "Nouveaux messages de la communauté" },
@@ -613,7 +613,7 @@ export default function NotificationsPage() {
         <EmptyState
           icon={PartyPopper}
           title="Aucune notification"
-          description="Vous recevrez des notifications lors de la publication de nouveaux signaux, des mises à jour KYC et des messages."
+          description="Tu recevras des notifications lors de la publication de nouveaux signaux, des mises à jour KYC et des messages."
         />
       ) : (
         <div className="space-y-2">

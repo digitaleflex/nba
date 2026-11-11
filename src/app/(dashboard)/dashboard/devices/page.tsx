@@ -144,7 +144,7 @@ export default function DevicesPage() {
             Mes appareils
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Gérez les appareils connectés à votre compte.
+            Gère les appareils connectés à ton compte.
           </p>
         </div>
         {devices.length > 1 && (
@@ -191,7 +191,7 @@ export default function DevicesPage() {
               Aucun appareil enregistré
             </p>
             <p className="text-sm text-muted-foreground">
-              Vos appareils apparaîtront ici une fois vérifiés.
+              Tes appareils apparaîtront ici une fois vérifiés.
             </p>
           </CardContent>
         </Card>

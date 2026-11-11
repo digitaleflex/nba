@@ -226,12 +226,12 @@ export default function ProfilePage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Erreur")
-      toast.success("Votre compte a bien été supprimé.")
+      toast.success("Ton compte a bien été supprimé.")
       // Redirection vers une page explicative plutôt qu'un /login brut.
       router.replace("/blocked?status=deleted")
     } catch (err: any) {
       setDeleteError(err.message)
-      toast.error("La suppression du compte a échoué. Vérifiez votre mot de passe.")
+      toast.error("La suppression du compte a échoué. Vérifie ton mot de passe.")
     } finally {
       setDeleting(false)
     }
@@ -264,7 +264,7 @@ export default function ProfilePage() {
     <div className="space-y-6 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
-        <p className="text-sm text-muted-foreground">Gérez vos informations personnelles et la sécurité de votre compte</p>
+        <p className="text-sm text-muted-foreground">Gère tes informations personnelles et la sécurité de ton compte</p>
       </div>
 
       {/* Profile Info Card */}
@@ -446,7 +446,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="font-semibold text-sm">Changer de mot de passe</p>
-                <p className="text-xs text-muted-foreground">Modifiez votre mot de passe de connexion</p>
+                <p className="text-xs text-muted-foreground">Modifie ton mot de passe de connexion</p>
               </div>
             </div>
             <span className="text-muted-foreground text-xs">{showPasswordSection ? "▲" : "▼"}</span>
@@ -515,7 +515,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="font-semibold text-sm">Changer d'email</p>
-                <p className="text-xs text-muted-foreground">Modifiez votre adresse email de connexion</p>
+                <p className="text-xs text-muted-foreground">Modifie ton adresse email de connexion</p>
               </div>
             </div>
             <span className="text-muted-foreground text-xs">{showEmailSection ? "▲" : "▼"}</span>
@@ -571,7 +571,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="font-semibold text-sm text-destructive">Zone dangereuse</p>
-                <p className="text-xs text-muted-foreground">Supprimer définitivement votre compte</p>
+                <p className="text-xs text-muted-foreground">Supprimer définitivement ton compte</p>
               </div>
             </div>
             <Button
@@ -597,11 +597,11 @@ export default function ProfilePage() {
 
           <div className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Cette action est <strong>irréversible</strong>. Toutes vos données seront supprimées définitivement.
+              Cette action est <strong>irréversible</strong>. Toutes tes données seront supprimées définitivement.
             </p>
 
             <div className="space-y-2">
-              <label htmlFor="delete-password" className="text-sm font-medium">Entrez votre mot de passe pour confirmer</label>
+              <label htmlFor="delete-password" className="text-sm font-medium">Entre ton mot de passe pour confirmer</label>
               <Input
                 id="delete-password"
                 type="password"

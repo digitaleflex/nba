@@ -30,14 +30,14 @@ export function PendingApprovalView({ planName, requestedAt }: PendingApprovalVi
 
           {/* Titre */}
           <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-foreground mb-2">
-            Tout est en ordre, votre demande est bien prise en charge
+            Tout est en ordre, ta demande est bien prise en charge
           </h2>
 
           {/* Message rassurant principal */}
           <p className="text-foreground/80 max-w-md mb-4 text-sm md:text-base leading-relaxed">
-            Un administrateur est en train de vérifier votre dossier.
-            C&apos;est la dernière étape avant l&apos;activation de votre accès —
-            vous y êtes presque.
+            Un administrateur est en train de vérifier ton dossier.
+            C&apos;est la dernière étape avant l&apos;activation de ton accès —
+            tu y es presque.
           </p>
 
           {/* Statut actuel */}
@@ -62,8 +62,8 @@ export function PendingApprovalView({ planName, requestedAt }: PendingApprovalVi
                 <CheckCircle2 className="size-3.5 text-emerald-500" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-foreground">Validation de votre dossier</p>
-                <p className="text-xs text-muted-foreground">Un admin examine votre demande actuellement</p>
+                <p className="text-sm font-semibold text-foreground">Validation de ton dossier</p>
+                <p className="text-xs text-muted-foreground">Un admin examine ta demande actuellement</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-xl bg-primary/5 border border-primary/10">
@@ -71,8 +71,8 @@ export function PendingApprovalView({ planName, requestedAt }: PendingApprovalVi
                 <MessageCircle className="size-3.5 text-primary" />
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-foreground">Message privé dans votre messagerie</p>
-                <p className="text-xs text-muted-foreground">Une confirmation vous sera envoyée par message</p>
+                <p className="text-sm font-semibold text-foreground">Message privé dans ta messagerie</p>
+                <p className="text-xs text-muted-foreground">Une confirmation te sera envoyée par message</p>
               </div>
             </div>
             <div className="flex items-start gap-3 p-3 rounded-xl bg-sky-500/5 border border-sky-500/10">
@@ -81,7 +81,7 @@ export function PendingApprovalView({ planName, requestedAt }: PendingApprovalVi
               </div>
               <div className="text-left">
                 <p className="text-sm font-semibold text-foreground">Email de confirmation</p>
-                <p className="text-xs text-muted-foreground">Un email vous sera envoyé dans la foulée</p>
+                <p className="text-xs text-muted-foreground">Un email te sera envoyé dans la foulée</p>
               </div>
             </div>
           </div>
@@ -90,7 +90,7 @@ export function PendingApprovalView({ planName, requestedAt }: PendingApprovalVi
           <div className="flex items-center gap-2 mb-6 px-4 py-2 rounded-full bg-amber-500/5 border border-amber-500/10">
             <Clock className="size-4 text-amber-500 shrink-0" />
             <p className="text-sm text-amber-600 font-medium">
-              Vous serez notifié par message et par email dans l&apos;heure suivant la validation
+              Tu seras notifié par message et par email dans l&apos;heure suivant la validation
             </p>
           </div>
 

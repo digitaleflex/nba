@@ -16,7 +16,7 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
         <div className="space-y-2">
           <h1 className="text-2xl font-bold tracking-tight">Une erreur est survenue</h1>
           <p className="text-sm text-muted-foreground">
-            Une erreur est survenue sur votre tableau de bord.
+            Une erreur est survenue sur ton tableau de bord.
           </p>
           {error.digest && (
             <p className="text-xs text-muted-foreground mt-3 font-mono">

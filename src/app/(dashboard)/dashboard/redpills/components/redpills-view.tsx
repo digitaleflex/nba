@@ -102,7 +102,7 @@ function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string)
               src={fileSrc(pill.audioUrl)}
               onEnded={handlePlay}
             >
-              Votre navigateur ne supporte pas l&apos;audio.
+              Ton navigateur ne supporte pas l&apos;audio.
             </audio>
           </div>
         )}

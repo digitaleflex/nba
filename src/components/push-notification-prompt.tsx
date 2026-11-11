@@ -54,7 +54,7 @@ export function PushNotificationPrompt() {
 
       const perm = await Notification.requestPermission()
       if (perm !== "granted") {
-        toast.error("Veuillez autoriser les notifications dans les paramètres de votre navigateur.")
+        toast.error("Veuillez autoriser les notifications dans les paramètres de ton navigateur.")
         setLoading(false)
         return
       }
