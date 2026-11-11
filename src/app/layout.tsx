@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { connection } from "next/server";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import Script from "next/script";
@@ -67,6 +68,7 @@ export default async function RootLayout({
   // CSP avec nonce exige un rendu dynamique : attendre la requête courante
   // pour que Next.js puisse injecter le nonce dans les <script>/<style> inline.
   await connection();
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -85,6 +87,7 @@ export default async function RootLayout({
         <Script
           src="/scripts/chunk-reload.js"
           strategy="afterInteractive"
+          nonce={nonce}
         />
         <ThemeProvider>
           <OfflineBanner />

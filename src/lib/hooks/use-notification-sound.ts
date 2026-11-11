@@ -7,11 +7,21 @@ const VOLUME_KEY = "nba-notification-volume"
 
 // Débloque l'audio sur iOS / navigateurs mobiles : le premier geste
 // utilisateur autorise ensuite la lecture programmatique (Howler/WebAudio).
+// Ne crée de AudioContext que lors d'un geste utilisateur pour éviter
+// l'avertissement "AudioContext was not allowed to start".
 let unlocked = false
-function unlockAudio() {
+function unlockAudio(fromGesture = false) {
   if (unlocked || typeof window === "undefined") return
-  unlocked = true
   try {
+    // Howler peut déjà avoir un contexte (créé après geste) : on le reprend.
+    const existing = (Howler as unknown as { ctx?: AudioContext }).ctx
+    if (existing) {
+      if (existing.state === "suspended") void existing.resume()
+      unlocked = true
+      return
+    }
+    // Ne pas instancier de AudioContext hors geste utilisateur.
+    if (!fromGesture) return
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (Ctx) {
       const ctx = new Ctx()
@@ -23,6 +33,7 @@ function unlockAudio() {
       gain.connect(ctx.destination)
       osc.start()
       osc.stop(ctx.currentTime + 0.05)
+      unlocked = true
     }
   } catch {
     // silencieux : le son restera simplement inactif
@@ -31,7 +42,7 @@ function unlockAudio() {
 
 if (typeof window !== "undefined") {
   const unlockOnce = () => {
-    unlockAudio()
+    unlockAudio(true)
     window.removeEventListener("pointerdown", unlockOnce)
     window.removeEventListener("keydown", unlockOnce)
   }
@@ -94,6 +105,7 @@ export function useNotificationSound() {
       howlRef.current = new Howl({
         src: [`/sounds/${id}.wav`],
         volume: volumeRef.current,
+        html5: false,
       })
       howlRef.current.play()
     } catch {
