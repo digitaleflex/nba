@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react"
 import {
   Loader2, ShieldAlert, Ban, Globe, Play, Unlock, RotateCw, Search, AlertTriangle, RefreshCw, CheckCircle2,
 } from "lucide-react"
-import { Card, CardContent, Button, EmptyState, cn } from "@nba/design-system"
+import { Card, CardContent, Button, EmptyState, DualRender, cn } from "@nba/design-system"
 import { toast } from "sonner"
 import { StatCard } from "./ui"
 import { useConfirm } from "@nba/components/confirm-dialog"
@@ -204,8 +204,10 @@ export function FraudTab() {
 
       <Card><CardContent className="p-6 space-y-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Evenements recents (HAUT/CRITIQUE)</h3>
-        <div className="overflow-x-auto">
-          <table className="admin-table w-full min-w-[680px] text-xs text-left">
+        <DualRender
+          desktop={
+            <div className="overflow-x-auto">
+              <table className="admin-table w-full min-w-[680px] text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th><th className="px-3 py-2 text-right">Action</th>
             </tr></thead>
@@ -241,9 +243,54 @@ export function FraudTab() {
                 </tr>
               )})}
             </tbody>
-          </table>
-          {events.length === 0 && <EmptyState icon={ShieldAlert} title="Aucun événement récent" description="Aucun événement à haute sévérité détecté." />}
-        </div>
+              </table>
+              {events.length === 0 && <EmptyState icon={ShieldAlert} title="Aucun événement récent" description="Aucun événement à haute sévérité détecté." />}
+            </div>
+          }
+          mobile={
+            <div className="space-y-3 md:hidden">
+              {events.length === 0 ? (
+                <EmptyState icon={ShieldAlert} title="Aucun événement récent" description="Aucun événement à haute sévérité détecté." />
+              ) : (
+                events.slice(0, 20).map((e) => {
+                  const acknowledged = !!(e.details as any)?.acknowledgedAt
+                  return (
+                    <Card key={e.id} className={cn("border-border/60 bg-card shadow-sm", acknowledged && "opacity-60")}>
+                      <CardContent className="p-4 space-y-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold break-words">{e.type}</p>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${e.severity === "CRITICAL" ? "bg-red-100 text-red-700" : "bg-orange-100 text-orange-700"}`}>{e.severity}</span>
+                        </div>
+                        <div className="text-[11px] text-muted-foreground space-y-0.5">
+                          <p>{new Date(e.createdAt).toLocaleString("fr-FR")}</p>
+                          <p className="truncate">{e.user ? e.user.email : "—"}{e.ipAddress ? ` · ${e.ipAddress}` : ""}</p>
+                        </div>
+                        {acknowledged ? (
+                          <p className="flex items-center gap-1.5 text-xs text-emerald-600"><CheckCircle2 className="size-3.5" /> Traité</p>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            className="w-full min-h-[44px] text-sm"
+                            onClick={async () => {
+                              await fetch(`/api/admin/security/events/${e.id}`, {
+                                method: "PATCH",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({ acknowledged: true }),
+                              })
+                              refresh()
+                            }}
+                          >
+                            Marquer comme traité
+                          </Button>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )
+                })
+              )}
+            </div>
+          }
+        />
       </CardContent></Card>
 
       <Card><CardContent className="p-6 space-y-4">

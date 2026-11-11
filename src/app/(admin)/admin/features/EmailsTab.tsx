@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Loader2, MailQuestion } from "lucide-react"
-import { Card, Badge, cn, EmptyState } from "@nba/design-system"
+import { Card, CardContent, Badge, cn, EmptyState, DualRender } from "@nba/design-system"
 import { useAdminFetch } from "../components/use-admin-fetch"
 import { FilterPills } from "../components/filter-pills"
 import { CachedGet } from "./types"
@@ -71,8 +71,10 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       {loadingEmails ? (
         <div className="py-20 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
       ) : emails.length > 0 ? (
-        <Card className="border-border/60 bg-card shadow-sm">
-          <div className="overflow-x-auto">
+        <DualRender
+          desktop={
+            <Card className="border-border/60 bg-card shadow-sm">
+              <div className="overflow-x-auto">
             <table className="admin-table w-full min-w-[680px] text-xs text-left">
               <thead>
                 <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
@@ -115,10 +117,47 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
                     </td>
                   </tr>
                 ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
+                </tbody>
+              </table>
+            </div>
+          </Card>
+          }
+          mobile={
+            <div className="space-y-3 md:hidden">
+              {emails.map((em) => (
+                <Card key={em.id} className="border-border/60 bg-card shadow-sm">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{em.notification?.user?.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{em.notification?.user?.email || "—"}</p>
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={cn(
+                          "text-[9px] uppercase shrink-0",
+                          em.status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20",
+                          em.status === "SENT" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
+                          (em.status === "FAILED" || em.status === "BOUNCED") && "bg-rose-500/10 text-rose-600 border-rose-500/20"
+                        )}
+                      >
+                        {em.status}
+                      </Badge>
+                    </div>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">{em.notification?.title}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{em.notification?.body}</p>
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <span>{new Date(em.sentAt || em.createdAt).toLocaleDateString("fr-FR")}</span>
+                      {em.errorMessage ? <span className="text-rose-600 truncate max-w-[60%]">{em.errorMessage}</span> : null}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          }
+        />
       ) : (
         <EmptyState
           icon={MailQuestion}

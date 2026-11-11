@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { Loader2, EyeOff, ShieldCheck } from "lucide-react"
 import { toast } from "sonner"
-import { Card, CardContent, Button } from "@nba/design-system"
+import { Card, CardContent, Button, DualRender } from "@nba/design-system"
 import { EmptyState } from "@nba/design-system"
 import { useConfirm } from "@nba/components/confirm-dialog"
 import { CachedGet } from "./types"
@@ -164,6 +164,8 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
       )}
 
       {/* Sessions récentes */}
+      <DualRender
+        desktop={
           <Card className="border-border/60 bg-card shadow-sm">
             <CardContent className="p-5">
               <h3 className="text-xs font-bold uppercase tracking-widest text-muted-foreground pb-3.5 border-b border-border/40">
@@ -214,11 +216,45 @@ export function SecurityTab({ cachedGet, invalidate }: SecurityTabProps) {
                 </tbody>
               </table>
             </div>
-          ) : (
-            <EmptyState icon={EyeOff} title="Aucune session enregistrée" description="L'historique des sessions récentes est vide." />
-          )}
-        </CardContent>
-      </Card>
+            ) : (
+              <EmptyState icon={EyeOff} title="Aucune session enregistrée" description="L'historique des sessions récentes est vide." />
+            )}
+          </CardContent>
+          </Card>
+        }
+        mobile={
+          <div className="space-y-3 md:hidden">
+            {loadingSessions ? (
+              <div className="py-10 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+            ) : sessions.length === 0 ? (
+              <EmptyState icon={EyeOff} title="Aucune session enregistrée" description="L'historique des sessions récentes est vide." />
+            ) : (
+              sessions.map((s) => (
+                <Card key={s.id} className="border-border/60 bg-card shadow-sm">
+                  <CardContent className="p-4 space-y-2">
+                    <div className="min-w-0">
+                      <p className="font-semibold truncate">{s.user?.name || "—"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{s.user?.email || "—"}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-mono">{s.ipAddress || "—"}</span>
+                      <span aria-hidden="true">·</span>
+                      <span>Créée le {new Date(s.createdAt).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      className="w-full min-h-[44px] text-sm"
+                      onClick={() => handleRevokeSession(s.id)}
+                    >
+                      Révoquer
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        }
+      />
       {node}
     </div>
   )
