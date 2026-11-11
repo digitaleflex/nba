@@ -122,11 +122,15 @@ export function Sidebar({ space, user }: SidebarProps) {
               {!isCollapsed && section.label && (
                 <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
                   {section.label}
-                  {section.id === "a-traiter" && pendingReview > 0 ? (
-                    <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
-                      {pendingReview > 9 ? "9+" : pendingReview}
+                  {section.id === "a-traiter" && (
+                    <span className="inline-flex min-w-4 h-4 items-center justify-center">
+                      {pendingReview > 0 && (
+                        <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
+                          {pendingReview > 9 ? "9+" : pendingReview}
+                        </span>
+                      )}
                     </span>
-                  ) : null}
+                  )}
                 </p>
               )}
               {section.items.map((link) => {

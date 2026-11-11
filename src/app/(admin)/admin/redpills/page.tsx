@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { Card, CardContent, Input, Button, Badge } from "@nba/design-system"
-import { Loader2, Plus, Pencil, Trash2, Flame, Upload } from "lucide-react"
+import { Loader2, Plus, Pencil, Trash2, Flame, Upload, Mic } from "lucide-react"
+import { VoiceRecorder } from "./components/voice-recorder"
 
 interface RedpillAdmin {
   id: string
@@ -26,6 +27,8 @@ export default function AdminRedpillsPage() {
   const [uploading, setUploading] = useState<"audio" | "image" | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [showRecorder, setShowRecorder] = useState(false)
+  const [recordedUrl, setRecordedUrl] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
 
   const fetchPills = useCallback(async () => {
@@ -80,6 +83,25 @@ export default function AdminRedpillsPage() {
     }
   }
 
+  async function handleRecorded(blob: Blob) {
+    setShowRecorder(false)
+    const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm"
+    const url = URL.createObjectURL(blob)
+    setRecordedUrl(url)
+    setUploading("audio")
+    try {
+      const fd = new FormData()
+      fd.append("file", new File([blob], `note-vocale.${ext}`, { type: blob.type }))
+      const res = await fetch("/api/admin/redpills/upload", { method: "POST", body: fd })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || "Upload échoué")
+      setForm((f) => ({ ...f, audioUrl: data.path }))
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload échoué")
+    } finally {
+      setUploading(null)
+    }
+  }
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.title.trim()) {
@@ -189,6 +211,25 @@ export default function AdminRedpillsPage() {
                     }}
                   />
                 </label>
+                {!showRecorder ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowRecorder(true)}
+                    disabled={uploading !== null}
+                    className="inline-flex items-center gap-1.5 text-xs font-medium text-rose-600 dark:text-rose-400 cursor-pointer hover:text-rose-700 disabled:opacity-50"
+                  >
+                    <Mic className="size-3.5" />
+                    Enregistrer au micro
+                  </button>
+                ) : (
+                  <VoiceRecorder
+                    onDone={handleRecorded}
+                    onCancel={() => setShowRecorder(false)}
+                  />
+                )}
+                {recordedUrl && !showRecorder && (
+                  <audio controls src={recordedUrl} className="w-full h-8" preload="metadata" />
+                )}
               </div>
               <div className="space-y-1.5">
                 <Input

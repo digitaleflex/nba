@@ -167,7 +167,7 @@ const dashboardSidebar: NavItem[] = [
   {
     id: "redpills",
     href: "/dashboard/redpills",
-    label: "Redpills",
+    label: "Redpills d'Emerson",
     icon: Flame,
     isActive: (pathname) => pathname.startsWith("/dashboard/redpills"),
   },
@@ -216,79 +216,8 @@ const dashboardMenu: NavItem[] = [
 ]
 
 // Liens standalone par ancienne section (conservés pour getSuperAdminSections).
+// Liens standalone SUPER_ADMIN (section Systeme).
 const adminStandaloneLinks: Record<string, NavItem[]> = {
-  surveiller: [
-    {
-      id: "control-room",
-      href: "/admin/control-room",
-      label: "Control Room",
-      icon: Gauge,
-      section: "surveiller",
-      isActive: (pathname) => pathname === "/admin/control-room",
-    },
-    {
-      id: "tracker",
-      href: "/admin/tracker",
-      label: "Tracker",
-      icon: Radar,
-      section: "surveiller",
-      isActive: (pathname) => pathname === "/admin/tracker",
-    },
-  ],
-  decider: [],
-  communiquer: [
-    {
-      id: "messages",
-      href: "/admin/messages",
-      label: "Messages",
-      icon: MessageCircle,
-      section: "communiquer",
-      badge: "messages",
-      isActive: (pathname) => pathname === "/admin/messages",
-    },
-    {
-      id: "bulk-message",
-      href: "/admin/bulk-message",
-      label: "Message groupé",
-      icon: Mail,
-      section: "communiquer",
-      isActive: (pathname) => pathname === "/admin/bulk-message",
-    },
-    {
-      id: "support",
-      href: "/admin/support",
-      label: "Support",
-      icon: MessageCircle,
-      section: "communiquer",
-      isActive: (pathname) => pathname === "/admin/support",
-    },
-    {
-      id: "coaching",
-      href: "/admin/coaching",
-      label: "Coaching",
-      icon: BookOpen,
-      section: "communiquer",
-      isActive: (pathname) => pathname === "/admin/coaching",
-    },
-    {
-      id: "redpills",
-      href: "/admin/redpills",
-      label: "Redpills",
-      icon: Flame,
-      section: "communiquer",
-      isActive: (pathname) => pathname === "/admin/redpills",
-    },
-  ],
-  auditer: [
-    {
-      id: "audit",
-      href: "/admin/audit",
-      label: "Journal d'audit",
-      icon: FileCheck,
-      section: "auditer",
-      isActive: (pathname) => pathname === "/admin/audit",
-    },
-  ],
   systeme: [
     {
       id: "developer",
@@ -392,7 +321,7 @@ const adminSidebarSections: NavSection[] = [
     label: "Contenus",
     items: [
       adminTabLink("signals", Radio, "contenus"),
-      adminPageLink("redpills", "/admin/redpills", "Redpills", Flame, "contenus",
+      adminPageLink("redpills", "/admin/redpills", "Redpills d'Emerson", Flame, "contenus",
         (pathname) => pathname === "/admin/redpills"),
       adminTabLink("formation", GraduationCap, "contenus"),
       adminTabLink("notifications", Bell, "contenus"),
@@ -497,7 +426,7 @@ export function getSuperAdminSections(): NavSection[] {
         ...(adminStandaloneLinks["systeme"] || []),
       ],
     },
-  ]
+  ];
 }
 
 const adminMenu: NavItem[] = adminSidebarSections.flatMap((section) =>
