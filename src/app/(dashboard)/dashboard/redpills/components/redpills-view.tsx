@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { Card, CardContent, Badge, Button, EmptyState } from "@nba/design-system"
 import { Flame, Loader2, Clock, RefreshCw, Volume2 } from "lucide-react"
 
@@ -30,6 +30,13 @@ function fileSrc(url: string): string {
 }
 
 function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string) => void }) {
+  const markedRef = useRef(false)
+  const handlePlay = useCallback(() => {
+    if (pill.read || markedRef.current) return
+    markedRef.current = true
+    onRead(pill.id)
+  }, [pill.read, pill.id, onRead])
+
   return (
     <Card className="relative overflow-hidden border-border/50">
       {!pill.read && (
@@ -93,7 +100,7 @@ function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string)
               playsInline
               className="w-full h-10"
               src={fileSrc(pill.audioUrl)}
-              onPlay={() => onRead(pill.id)}
+              onEnded={handlePlay}
             >
               Votre navigateur ne supporte pas l&apos;audio.
             </audio>
