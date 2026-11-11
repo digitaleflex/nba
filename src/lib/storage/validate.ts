@@ -62,6 +62,10 @@ const EXT_MAP: Record<string, string> = {
   "audio/x-wav": ".wav",
 }
 
+export function getBaseMime(file: File): string {
+  return (file.type || "").split(";")[0].trim().toLowerCase()
+}
+
 function validateMagicBytes(buffer: ArrayBuffer, mimeType: string): boolean {
   const signatures = MAGIC_BYTES[mimeType]
   if (!signatures) return false
@@ -74,8 +78,11 @@ function sanitizeExtension(mime: string): string {
 }
 
 export async function validateUpload(file: File): Promise<void> {
-  if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-    throw new Error(msg.storage.FILE_TYPE_NOT_ALLOWED(file.type, ALLOWED_MIME_TYPES.join(", ")))
+  const rawMime = file.type || ""
+  const mime = getBaseMime(file)
+
+  if (!ALLOWED_MIME_TYPES.includes(mime)) {
+    throw new Error(msg.storage.FILE_TYPE_NOT_ALLOWED(rawMime || mime, ALLOWED_MIME_TYPES.join(", ")))
   }
 
   if (file.size > MAX_FILE_SIZE) {
@@ -87,11 +94,11 @@ export async function validateUpload(file: File): Promise<void> {
   }
 
   const headerBuffer = await file.slice(0, 12).arrayBuffer()
-  if (!validateMagicBytes(headerBuffer, file.type)) {
-    throw new Error(msg.storage.CONTENT_MISMATCH(file.type))
+  if (!validateMagicBytes(headerBuffer, mime)) {
+    throw new Error(msg.storage.CONTENT_MISMATCH(rawMime || mime))
   }
 }
 
 export function safeExtension(file: File): string {
-  return sanitizeExtension(file.type)
+  return sanitizeExtension(getBaseMime(file))
 }

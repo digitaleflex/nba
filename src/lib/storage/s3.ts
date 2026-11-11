@@ -62,6 +62,7 @@ export class S3StorageProvider implements StorageProvider {
     const fileName = `${crypto.randomUUID()}${safeExtension(file)}`
     const key = `${subDir}/${fileName}`
     const buffer = Buffer.from(await file.arrayBuffer())
+    const mimeType = (file.type || "").split(";")[0].trim().toLowerCase() || file.type
 
     await s3Breaker.execute(() =>
       withS3Retry(() =>
@@ -69,7 +70,7 @@ export class S3StorageProvider implements StorageProvider {
           Bucket: this.bucket,
           Key: key,
           Body: buffer,
-          ContentType: file.type,
+          ContentType: mimeType,
         }))
       )
     )
@@ -77,7 +78,7 @@ export class S3StorageProvider implements StorageProvider {
     return {
       path: key,
       fileName,
-      mimeType: file.type,
+      mimeType,
       size: file.size,
     }
   }

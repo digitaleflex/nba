@@ -33,10 +33,11 @@ export class LocalStorageProvider implements StorageProvider {
     const buffer = Buffer.from(await file.arrayBuffer())
     await writeFile(filePath, buffer)
 
+    const mimeType = (file.type || "").split(";")[0].trim().toLowerCase() || file.type
     return {
       path: `${subDir}/${fileName}`,
       fileName,
-      mimeType: file.type,
+      mimeType,
       size: file.size,
     }
   }

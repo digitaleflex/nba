@@ -34,9 +34,12 @@ export async function POST(req: NextRequest) {
     if (!file) {
       return NextResponse.json({ error: "Fichier requis" }, { status: 400 })
     }
-    if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+
+    const rawMime = file.type || ""
+    const mime = rawMime.split(";")[0].trim().toLowerCase()
+    if (!ALLOWED_MIME_TYPES.includes(mime)) {
       return NextResponse.json(
-        { error: `Type non autorisé (${file.type}). Images, audio ou vidéo uniquement.` },
+        { error: `Type non autorisé (${rawMime || "inconnu"}). Images, audio ou vidéo uniquement.` },
         { status: 400 }
       )
     }
