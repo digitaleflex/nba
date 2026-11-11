@@ -4,8 +4,7 @@
 > **Périmètre** : code source actuel, schéma Prisma, routes API et dossier produit.
 > **Chiffres d'usage** : dossier de septembre 2026 (81 utilisateurs en production, 8 releases, 913 commits).
 > **Nom interne** : NeverBrokeAgain (NBA). **Nom commercial** : SignauxX.
-> **Support de présentation** : `SIGNAUXX-DECK.html` (16 slides, navigation clavier) et `SIGNAUXX-DECK.pdf` (version PDF prête à projeter).
-> **Version WhatsApp** : `SIGNAUXX-WHATSAPP.txt` (4 messages prêts à copier-coller, centrés trader).
+> **Support de présentation** : retiré du dépôt de code (conservé hors dépôt).
 
 ### Comment utiliser ce document
 
