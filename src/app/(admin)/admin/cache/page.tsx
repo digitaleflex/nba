@@ -6,6 +6,8 @@ import {
   CardContent,
   Badge,
   cn,
+  Page,
+  PageHeader,
 } from "@nba/design-system"
 import {
   Database,
@@ -112,12 +114,12 @@ export default function CacheStatusPage() {
   const totalWaiting = queues.reduce((s, q) => s + q.waiting, 0)
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold tracking-tight">Cache &amp; Services</h1>
+    <Page gap={6}>
+      <PageHeader
+        title="Cache & Services"
+        description="Surveillance du cache Redis, files d'attente et workers en temps réel."
+        actions={
+          <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <Badge
               variant="outline"
               className={cn(
@@ -133,23 +135,18 @@ export default function CacheStatusPage() {
               />
               {pulse ? "Actualisé" : "Temps réel"}
             </Badge>
+            <RefreshCw className="size-3" />
+            <span>Auto-refresh 15s</span>
+            {lastUpdate && <span>· MAJ {timeAgo(lastUpdate.toISOString())}</span>}
+            <button
+              onClick={fetchData}
+              className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-xs hover:bg-muted/50 min-h-[32px]"
+            >
+              Rafraîchir
+            </button>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">
-            Surveillance du cache Redis, files d&apos;attente et workers en temps réel.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-          <RefreshCw className="size-3" />
-          <span>Auto-refresh 15s</span>
-          {lastUpdate && <span>· MAJ {timeAgo(lastUpdate.toISOString())}</span>}
-          <button
-            onClick={fetchData}
-            className="ml-1 rounded border border-border bg-card/40 px-2 py-1 text-xs hover:bg-muted/50 min-h-[32px]"
-          >
-            Rafraîchir
-          </button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <Card className="border-rose-500/30 bg-rose-500/5">
@@ -388,7 +385,7 @@ export default function CacheStatusPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </Page>
   )
 }
 

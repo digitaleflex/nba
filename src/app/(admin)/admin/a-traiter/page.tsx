@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Loader2, Inbox, UserPlus, FileCheck, Link2, Bug, MessageCircle, PartyPopper, ArrowRight } from "lucide-react"
-import { Card, CardContent } from "@nba/design-system"
+import { Card, CardContent, Page, PageHeader } from "@nba/design-system"
 
 interface Summary {
   requests: number
@@ -35,18 +35,13 @@ export default function ATraiterPage() {
   }, [])
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Inbox className="size-5 text-primary" />
-          À traiter
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          {loading ? "Chargement…" : data && data.total > 0
+    <Page maxWidth="4xl" className="p-6" gap={6}>
+      <PageHeader
+        title="À traiter"
+        description={loading ? "Chargement…" : data && data.total > 0
             ? `${data.total} élément${data.total > 1 ? "s" : ""} en attente d'une action`
             : "Rien en attente. Belle journée."}
-        </p>
-      </div>
+      />
 
       {loading ? (
         <div className="py-16 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
@@ -89,6 +84,6 @@ export default function ATraiterPage() {
           })}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

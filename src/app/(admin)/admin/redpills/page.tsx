@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { Card, CardContent, Input, Button, Badge } from "@nba/design-system"
+import { Card, CardContent, Input, Button, Badge, Page, PageHeader } from "@nba/design-system"
 import { Loader2, Plus, Pencil, Trash2, Flame, Upload, Mic, Video } from "lucide-react"
 import { VoiceRecorder } from "./components/voice-recorder"
 import { VideoRecorder } from "./components/video-recorder"
@@ -208,16 +208,11 @@ export default function AdminRedpillsPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6 space-y-6">
-      <div>
-        <h1 className="text-xl font-bold tracking-tight flex items-center gap-2">
-          <Flame className="size-5 text-orange-500" />
-          Redpills d&apos;Emerson
-        </h1>
-        <p className="text-xs text-muted-foreground mt-1">
-          Publie : texte motivation + note vocale (audio) + image. Vidéo : champ prévu, bientôt.
-        </p>
-      </div>
+    <Page maxWidth="4xl" className="p-6" gap={6}>
+      <PageHeader
+        title="Redpills d'Emerson"
+        description="Publie : texte motivation + note vocale (audio) + image. Vidéo : champ prévu, bientôt."
+      />
 
       {error && (
         <p role="alert" className="text-xs text-rose-600 border border-rose-500/30 bg-rose-500/5 rounded-lg px-4 py-3">
@@ -547,6 +542,6 @@ export default function AdminRedpillsPage() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

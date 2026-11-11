@@ -6,7 +6,7 @@ import { authClient } from "@nba/lib/auth-client"
 import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
-import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
+import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, Page, PageHeader } from "@nba/design-system"
 import { MessageSquare, Loader2, Search, Plus, X, Circle, Send, ShieldAlert } from "lucide-react"
 import { toast } from "sonner"
 
@@ -471,32 +471,30 @@ export default function AdminMessagesPage() {
   const selected = conversations.find((c) => c.id === selectedId) ?? null
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Discutez directement avec les membres
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex items-center gap-1.5 text-xs ${status === "connected" ? "text-success" : "text-muted-foreground"}`}
-          >
-            <Circle className={`size-2 ${status === "connected" ? "fill-success" : "fill-muted-foreground"}`} />
-            {status === "connected" ? "Temps réel" : "Hors ligne"}
-          </span>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2">
-            <Plus className="size-4" /> Nouveau message
-          </Button>
-          <Button variant="outline" onClick={() => { setModerationOpen(true); loadReports() }} className="gap-2">
-            <ShieldAlert className="size-4" /> Modération
-            {reports.length > 0 && (
-              <span className="ml-1 rounded-full bg-destructive px-1.5 text-xs text-destructive-foreground">{reports.length}</span>
-            )}
-          </Button>
-        </div>
-      </div>
+    <Page gap={4}>
+      <PageHeader
+        title="Messages"
+        description="Discutez directement avec les membres"
+        actions={
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex items-center gap-1.5 text-xs ${status === "connected" ? "text-success" : "text-muted-foreground"}`}
+            >
+              <Circle className={`size-2 ${status === "connected" ? "fill-success" : "fill-muted-foreground"}`} />
+              {status === "connected" ? "Temps réel" : "Hors ligne"}
+            </span>
+            <Button onClick={() => setPickerOpen(true)} className="gap-2">
+              <Plus className="size-4" /> Nouveau message
+            </Button>
+            <Button variant="outline" onClick={() => { setModerationOpen(true); loadReports() }} className="gap-2">
+              <ShieldAlert className="size-4" /> Modération
+              {reports.length > 0 && (
+                <span className="ml-1 rounded-full bg-destructive px-1.5 text-xs text-destructive-foreground">{reports.length}</span>
+              )}
+            </Button>
+          </div>
+        }
+      />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -772,6 +770,6 @@ export default function AdminMessagesPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   )
 }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, Button, Badge, cn } from "@nba/design-system"
+import { Card, CardContent, Button, Badge, cn, Page, PageHeader } from "@nba/design-system"
 import { MessageCircle, Loader2, Clock, Mail, ChevronLeft, Send, CheckCircle2, AlertCircle, Circle } from "lucide-react"
 import { toast } from "sonner"
 
@@ -189,15 +189,11 @@ export default function AdminSupportPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between border-b border-border pb-5">
-        <div>
-          <h1 className="text-xl font-bold tracking-tight text-foreground">Support</h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            {openCount} ticket{openCount !== 1 ? "s" : ""} ouvert{openCount !== 1 ? "s" : ""} — Messages des membres.
-          </p>
-        </div>
-      </div>
+    <Page gap={6}>
+      <PageHeader
+        title="Support"
+        description={`${openCount} ticket${openCount !== 1 ? "s" : ""} ouvert${openCount !== 1 ? "s" : ""} — Messages des membres.`}
+      />
 
       {loading ? (
         <div className="flex items-center justify-center py-20"><Loader2 className="size-6 animate-spin text-primary" /></div>
@@ -265,6 +261,6 @@ export default function AdminSupportPage() {
           })}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

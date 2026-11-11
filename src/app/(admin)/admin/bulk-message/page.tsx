@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Card, CardContent, Button, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle } from "@nba/design-system"
+import { Card, CardContent, Button, Badge, Checkbox, Dialog, DialogContent, DialogHeader, DialogTitle, Page, PageHeader } from "@nba/design-system"
 import { readBatchStream } from "@nba/lib/batch-stream"
 import { Send, Loader2, Users, ChevronDown, Eye, AlertTriangle, CheckCircle2, Mail, XCircle } from "lucide-react"
 
@@ -119,16 +119,11 @@ export default function BulkMessagePage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 py-6 px-4">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-          <Mail className="size-6 text-primary" />
-          Messagerie groupée
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Envoyez un message privé individuel à tous les membres approuvés de vos groupes.
-        </p>
-      </div>
+    <Page className="max-w-3xl mx-auto py-6 px-4" gap={6}>
+      <PageHeader
+        title="Messagerie groupée"
+        description="Envoyez un message privé individuel à tous les membres approuvés de vos groupes."
+      />
 
       {/* Result screen */}
       {result && (
@@ -325,6 +320,6 @@ export default function BulkMessagePage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   )
 }

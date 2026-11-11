@@ -19,7 +19,7 @@ import type { PerUser, SignalRow, UserSignalCompact } from "./types"
 import { logger } from "@nba/lib/logger"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
-import { cn } from "@nba/design-system"
+import { cn, Page, PageHeader } from "@nba/design-system"
 
 const log = logger.child({ module: "admin-tracker" })
 
@@ -309,20 +309,19 @@ export default async function SignalTrackerPage({
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header — always visible */}
-      <div>
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold tracking-tight">Tracker de délivrabilité</h1>
-          <span className="inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
-            <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
-            Temps réel
-          </span>
-          <div className="ml-auto flex items-center gap-2">
+    <Page gap={6}>
+      <PageHeader
+        title="Tracker de délivrabilité"
+        actions={
+          <>
+            <span className="inline-flex items-center rounded-full bg-success/10 px-2.5 py-0.5 text-xs font-medium text-success">
+              <span className="mr-1.5 h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+              Temps réel
+            </span>
             <LiveRefresh />
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       <TrackerTabs
         dashboard={
@@ -523,7 +522,7 @@ export default async function SignalTrackerPage({
           </>
         }
       />
-    </div>
+    </Page>
   )
 }
 
