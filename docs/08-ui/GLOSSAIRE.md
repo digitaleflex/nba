@@ -21,11 +21,11 @@
 |---|---|---|
 | `dashboard/journal/components/trade-list.tsx:116` | Essaie d'autres termes de recherche. / Enregistre ton premier trade… | Essayez d'autres termes de recherche. / Enregistrez votre premier trade… |
 | `dashboard/journal/components/stats-dashboard.tsx:73` | Impossible de charger tes statistiques. | Impossible de charger vos statistiques. |
-| `dashboard/journal/components/reflections-tab.tsx:53` | Donne une note à ta journée | Donnez une note à votre journée |
-| `…/reflections-tab.tsx:129` | Qu'as-tu appris aujourd'hui ? Qu'est-ce qui s'est bien/mal passé ? | Qu'avez-vous appris aujourd'hui ? Qu'est-ce qui s'est bien ou mal passé ? |
-| `…/reflections-tab.tsx:169` | Prends 2 minutes chaque jour pour noter ton état d'esprit… | Prenez 2 minutes chaque jour pour noter votre état d'esprit… |
+| `dashboard/journal/components/reflections-tab.tsx:54` | Donne une note à ta journée | Donnez une note à votre journée |
+| `…/reflections-tab.tsx:130` | Qu'as-tu appris aujourd'hui ? Qu'est-ce qui s'est bien/mal passé ? | Qu'avez-vous appris aujourd'hui ? Qu'est-ce qui s'est bien ou mal passé ? |
+| `…/reflections-tab.tsx:170` | Prends 2 minutes chaque jour pour noter ton état d'esprit… | Prenez 2 minutes chaque jour pour noter votre état d'esprit… |
 | `dashboard/page.tsx:85-86` | Enregistre une entrée / Note ton état d'esprit | Enregistrer une entrée / Noter votre état d'esprit |
-| `dashboard/journal/page.tsx:187` | Suis tes trades, analyse ta performance, maîtrise tes émotions | Suivez vos trades, analysez votre performance, maîtrisez vos émotions |
+| `dashboard/journal/page.tsx:197` | Suis tes trades, analyse ta performance, maîtrise tes émotions | Suivez vos trades, analysez votre performance, maîtrisez vos émotions |
 | `dashboard/support/page.tsx:78` | Décris ton problème ou ta question… | Décrivez votre problème ou votre question… |
 | `dashboard/redpills/components/redpills-view.tsx:183,196` | Tu es à jour. Reviens demain… / Reviens bientôt. | Vous êtes à jour. Revenez demain… / Revenez bientôt. |
 | `dashboard/messages/page.tsx:522-523` | Contacte le support… / ta recherche | Contactez le support… / votre recherche |
