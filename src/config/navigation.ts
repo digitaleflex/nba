@@ -82,7 +82,7 @@ const dashboardMobile: NavItem[] = [
   {
     id: "dashboard",
     href: "/dashboard",
-    label: "Tableau",
+    label: "Tableau de bord",
     icon: LayoutDashboard,
     isActive: (pathname) => pathname === "/dashboard",
   },
@@ -114,14 +114,14 @@ const dashboardMobile: NavItem[] = [
   {
     id: "lot",
     href: "/dashboard/lot",
-    label: "Calculateur",
+    label: "Calculateur de lot",
     icon: LineChart,
     isActive: (pathname) => pathname.startsWith("/dashboard/lot"),
   },
   {
     id: "verification",
     href: "/dashboard/verification",
-    label: "Onboarding",
+    label: "Vérification",
     icon: Shield,
     isActive: (pathname) =>
       pathname.startsWith("/dashboard/verification") || pathname.startsWith("/onboarding"),
@@ -145,14 +145,14 @@ const dashboardMobile: NavItem[] = [
   {
     id: "notifications",
     href: "/dashboard/notifications",
-    label: "Notifs",
+    label: "Notifications",
     icon: Bell,
     isActive: (pathname) => pathname.startsWith("/dashboard/notifications"),
   },
   {
     id: "subscription",
     href: "/dashboard/subscription",
-    label: "Offre",
+    label: "Abonnement",
     icon: CreditCard,
     isActive: (pathname) => pathname === "/dashboard/subscription",
   },
@@ -176,7 +176,7 @@ const dashboardSidebar: NavItem[] = [
   {
     id: "signals",
     href: "/dashboard/signals",
-    label: "Mes Signaux",
+    label: "Signaux",
     icon: TrendingUp,
     isActive: (pathname) =>
       (pathname === "/dashboard/signals" ||
@@ -222,7 +222,7 @@ const dashboardSidebar: NavItem[] = [
   {
     id: "subscription",
     href: "/dashboard/subscription",
-    label: "Mon abonnement",
+    label: "Abonnement",
     icon: CreditCard,
     isActive: (pathname) => pathname === "/dashboard/subscription",
   },
@@ -381,7 +381,7 @@ const adminSidebarSections: NavSection[] = [
       adminTabLink("dashboard", LayoutDashboard, "pilotage"),
       adminPageLink("tracker", "/admin/tracker", "Tracker", Radar, "pilotage",
         (pathname) => pathname.startsWith("/admin/tracker")),
-      adminPageLink("coaching", "/admin/coaching", "Coaching", BookOpen, "pilotage",
+      adminPageLink("coaching", "/admin/coaching", "Journaux des membres", BookOpen, "pilotage",
         (pathname) => pathname === "/admin/coaching"),
       adminTabLink("analytics", LineChart, "pilotage"),
       adminTabLink("revenue", CreditCard, "pilotage"),

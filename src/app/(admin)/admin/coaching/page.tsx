@@ -186,7 +186,7 @@ export default function CoachingPage() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold tracking-tight">Journaux de trading</h1>
+          <h1 className="text-xl font-bold tracking-tight">Journaux des membres</h1>
           <p className="text-xs text-muted-foreground mt-1">
             {members ? `${filtered.length} membre(s) avec au moins un trade` : ""}
           </p>

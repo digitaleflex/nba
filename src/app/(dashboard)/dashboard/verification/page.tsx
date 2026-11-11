@@ -57,7 +57,7 @@ export default function VerificationPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
             <Shield className="size-6 text-primary" />
-            Centre de vérification
+            Vérification
           </h1>
         </div>
         <Card className="border-destructive/30">
@@ -87,7 +87,7 @@ export default function VerificationPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <Shield className="size-6 text-primary" />
-          Centre de vérification
+          Vérification
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
           Gérez et suivez le statut de validation de votre compte NeverBrokeAgain.
