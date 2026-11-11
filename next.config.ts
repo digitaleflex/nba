@@ -3,6 +3,10 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  transpilePackages: ["@nba/design-system"],
+  experimental: {
+    optimizePackageImports: ["lucide-react", "recharts", "@base-ui/react"],
+  },
   images: {
     // Les images sont servies via /api/files/* (proxy interne) — on bypass l'optimizer Next.js
     // pour éviter les erreurs 400 sur les chemins locaux
