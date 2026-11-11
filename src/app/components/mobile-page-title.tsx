@@ -22,7 +22,6 @@ const ADMIN_TABS: Record<string, string> = {
 
 const ADMIN_PATHS: Record<string, string> = {
   "/admin/tracker": "Tracker",
-  "/admin/control-room": "Control Room",
   "/admin/messages": "Messages",
   "/admin/webhooks": "Webhooks",
   "/admin/support": "Support",

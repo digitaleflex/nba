@@ -45,7 +45,7 @@ const ACTIONS: PaletteActionResult[] = [
   { type: "action", id: "act:view-moderation", title: "Voir la modération", subtitle: "Auditer", href: "/admin?tab=moderation" },
   { type: "action", id: "act:view-security", title: "Voir la sécurité", subtitle: "Auditer", href: "/admin?tab=security" },
   { type: "action", id: "act:view-tracker", title: "Ouvrir le tracker", subtitle: "Surveiller", href: "/admin/tracker" },
-  { type: "action", id: "act:view-control-room", title: "Ouvrir le control room", subtitle: "Surveiller", href: "/admin/control-room" },
+  { type: "action", id: "act:view-dashboard", title: "Ouvrir le pilotage", subtitle: "Pilotage", href: "/admin?tab=dashboard" },
   { type: "action", id: "act:view-analytics", title: "Voir les analytics", subtitle: "Surveiller", href: "/admin?tab=analytics" },
   { type: "action", id: "act:view-dashboard", title: "Tableau de bord", subtitle: "Surveiller", href: "/admin?tab=dashboard", shortcut: "G" },
 ]

@@ -199,10 +199,6 @@ async function processDeliveryEvent(args: {
   } else if (isStale && !isTerminalNegative) {
     // Event non-terminal mais obsolete : on stocke dans email_events
     // (deja fait) mais on ne touche pas au statut.
-    // Log debug pour visibilite.
-    console.log(
-      `[resend-webhook] Out-of-order event ignored: type=${type} eventTs=${eventTs.toISOString()} lastEventAt=${delivery.lastEventAt?.toISOString()}`,
-    )
   } else if (type === "email.delivered" && isStale) {
     // Cas particulier : delivered en retard alors qu'on a deja un statut final negatif
     // On met a jour lastEventAt mais on ne change pas le statut.

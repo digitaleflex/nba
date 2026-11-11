@@ -55,13 +55,6 @@ const PATH_MAPPINGS: PathMapping[] = [
     ],
   },
   {
-    pattern: /^\/admin\/control-room$/,
-    segments: () => [
-      { label: "Console Admin", href: "/admin" },
-      { label: "Control Room" },
-    ],
-  },
-  {
     pattern: /^\/admin\/messages$/,
     segments: () => [
       { label: "Console Admin", href: "/admin" },

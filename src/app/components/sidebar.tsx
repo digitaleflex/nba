@@ -8,9 +8,11 @@ import { Button, cn } from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useLogout } from "@nba/hooks/use-logout"
 import {
+  badgeForNavItem,
   getSidebarSections,
   getSuperAdminSections,
   isNavItemActive,
+  type NavBadgeCounts,
   type NavSpace,
   type UserRole,
 } from "@nba/config/navigation"
@@ -73,11 +75,12 @@ export function Sidebar({ space, user }: SidebarProps) {
   const superAdminSections = space === "admin" && user.role === "SUPER_ADMIN"
     ? getSuperAdminSections()
     : []
-  const isMessagesLink = (href: string) =>
-    href === "/dashboard/messages" || href === "/admin/messages"
 
   const messagesBadge =
     unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
+  const reviewBadge =
+    pendingReview > 0 ? (pendingReview > 9 ? "9+" : String(pendingReview)) : null
+  const counts: NavBadgeCounts = { messages: messagesBadge, pendingReview: reviewBadge }
 
   const showAdminSwitch = space === "dashboard" && (user.role === "ADMIN" || user.role === "SUPER_ADMIN")
 
@@ -122,21 +125,12 @@ export function Sidebar({ space, user }: SidebarProps) {
               {!isCollapsed && section.label && (
                 <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
                   {section.label}
-                  {section.id === "a-traiter" && (
-                    <span className="inline-flex min-w-4 h-4 items-center justify-center">
-                      {pendingReview > 0 && (
-                        <span className="inline-flex min-w-4 h-4 px-1 items-center justify-center rounded-full bg-primary text-primary-foreground text-[9px] font-bold tabular-nums">
-                          {pendingReview > 9 ? "9+" : pendingReview}
-                        </span>
-                      )}
-                    </span>
-                  )}
                 </p>
               )}
               {section.items.map((link) => {
                 const Icon = link.icon
                 const isActive = isNavItemActive(link, pathname, searchParams)
-                const showBadge = isMessagesLink(link.href) && !!messagesBadge
+                const itemBadge = badgeForNavItem(link.badge, counts)
                 return (
                   <Link
                     key={link.id}
@@ -162,22 +156,22 @@ export function Sidebar({ space, user }: SidebarProps) {
                           isActive ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
                         )}
                       />
-                      {showBadge && isCollapsed && (
+                      {itemBadge != null && isCollapsed && (
                         <span className="absolute -top-1 -right-1 size-2 rounded-full bg-primary ring-2 ring-card" />
                       )}
                     </span>
                     {!isCollapsed && (
                       <span className="truncate flex items-center gap-2">
                         {link.label}
-                        {showBadge && (
+                        {itemBadge != null && (
                           <motion.span
-                            key={messagesBadge}
+                            key={itemBadge}
                             initial={{ scale: reduce ? 1 : 1.5 }}
                             animate={{ scale: 1 }}
                             transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
                             className="inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold tabular-nums"
                           >
-                            {messagesBadge}
+                            {itemBadge}
                           </motion.span>
                         )}
                       </span>

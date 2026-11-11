@@ -43,8 +43,15 @@ function buildCsp(nonce: string): string {
   const isDev = process.env.NODE_ENV === "development";
   return [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    // Pas de 'strict-dynamic' : aucun script CDN tiers n'est utilisé, et il
+    // désactive la allowlist 'self'. Les scripts inline émis par Next.js
+    // portent le nonce (via l'en-tête x-nonce).
+    `script-src 'self' 'nonce-${nonce}'${isDev ? " 'unsafe-eval'" : ""}`,
+    // Pas de nonce ici : 'unsafe-inline' est ignoré par les navigateurs dès
+    // qu'un nonce est présent dans la directive, et les libs (recharts,
+    // radix, driver.js) injectent des styles au runtime qui ne peuvent pas
+    // porter le nonce → styles bloqués, UI cassée.
+    "style-src 'self' 'unsafe-inline'",
     "img-src 'self' blob: data: https:",
     "font-src 'self' data:",
     "connect-src 'self' https://api.resend.com",

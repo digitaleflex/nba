@@ -88,14 +88,6 @@ export const ADMIN_CONTEXTS: AdminContextDef[] = [
   },
 ]
 
-const TAB_CONTEXT: Record<string, AdminContextId> = Object.fromEntries(
-  ADMIN_CONTEXTS.flatMap((c) => c.tabs.map((t) => [t.value, c.id]))
-)
-
-export function getContextForTab(tab: string | null): AdminContextId {
-  return (tab && TAB_CONTEXT[tab]) || "surveiller"
-}
-
 export function getTabLabel(tab: string): string {
   for (const c of ADMIN_CONTEXTS) {
     const found = c.tabs.find((t) => t.value === tab)

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { Home } from "lucide-react"
 import {
+  badgeForNavItem,
   NAVIGATION,
   filterNavItems,
   getMobileNavItems,
@@ -98,5 +99,37 @@ describe("navigation config", () => {
     expect(allIds).not.toContain("queues")
     expect(allIds).not.toContain("settings")
     expect(allIds).not.toContain("crons")
+  })
+
+  it("active « À traiter » en mobile sur les onglets requests/kyc/broker/bugs", () => {
+    const item = NAVIGATION.admin.mobile.find((i) => i.id === "a-traiter")
+    expect(item).toBeDefined()
+    for (const tab of ["requests", "kyc", "broker", "bugs"]) {
+      expect(isNavItemActive(item!, "/admin", new URLSearchParams(`?tab=${tab}`))).toBe(true)
+    }
+    // Chemin dédié conservé.
+    expect(isNavItemActive(item!, "/admin/a-traiter", new URLSearchParams())).toBe(true)
+  })
+
+  it("n'active pas « À traiter » en mobile sur les autres onglets", () => {
+    const item = NAVIGATION.admin.mobile.find((i) => i.id === "a-traiter")
+    expect(item).toBeDefined()
+    expect(isNavItemActive(item!, "/admin", new URLSearchParams("?tab=dashboard"))).toBe(false)
+    expect(isNavItemActive(item!, "/admin", new URLSearchParams("?tab=membres"))).toBe(false)
+    expect(isNavItemActive(item!, "/admin", new URLSearchParams())).toBe(false)
+  })
+
+  it("badgeForNavItem retourne null sans badge", () => {
+    expect(badgeForNavItem(undefined, { messages: "9+" })).toBeNull()
+  })
+
+  it("badgeForNavItem retourne la valeur formatée pour messages", () => {
+    expect(badgeForNavItem("messages", { messages: "9+" })).toBe("9+")
+    expect(badgeForNavItem("messages", { messages: null })).toBeNull()
+  })
+
+  it("badgeForNavItem retourne null pour une clé inconnue", () => {
+    // Clé hors contrat (ancien badge supprimé du type) : aucun badge affiché.
+    expect(badgeForNavItem("pendingRequests" as never, { messages: "9+" })).toBeNull()
   })
 })

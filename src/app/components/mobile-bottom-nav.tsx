@@ -9,8 +9,10 @@ import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useCommandPalette } from "@nba/components/command-palette"
 import { useLogout } from "@nba/hooks/use-logout"
 import {
+  badgeForNavItem,
   getMobileNavItems,
   isNavItemActive,
+  type NavBadgeCounts,
   type NavSpace,
   type UserRole,
 } from "@nba/config/navigation"
@@ -34,20 +36,10 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { logout } = useLogout()
   const { unreadTotal } = useMessagingUnread()
   const reduce = useReducedMotion()
-  const [pendingRequests, setPendingRequests] = useState(0)
   const [pendingReview, setPendingReview] = useState(0)
   useEffect(() => {
     if (space !== "admin") return
     const controller = new AbortController()
-    fetch("/api/admin/access-requests?status=PENDING", { signal: controller.signal })
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d: { total?: number; requests?: unknown[] } | { length: number }[] | null) => {
-        if (!d) return
-        if (Array.isArray(d)) { setPendingRequests(d.length); return }
-        if (d.total != null) setPendingRequests(d.total)
-        else if (Array.isArray(d.requests)) setPendingRequests(d.requests.length)
-      })
-      .catch(() => {})
     fetch("/api/admin/review/summary", { signal: controller.signal })
       .then((r) => (r.ok ? r.json() : null))
       .then((d: { total?: number } | null) => {
@@ -61,14 +53,9 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { confirm, node } = useConfirm()
 
   const messagesBadge = unreadTotal > 0 ? (unreadTotal > 9 ? "9+" : String(unreadTotal)) : null
-  const requestsBadge =
-    pendingRequests > 0 ? (pendingRequests > 9 ? "9+" : String(pendingRequests)) : null
-
-  function badgeFor(item: (typeof links)[number]): string | null {
-    if (item.badge === "messages" && messagesBadge) return messagesBadge
-    if (item.badge === "pendingRequests" && requestsBadge) return requestsBadge
-    if (item.badge === "pendingReview" && pendingReview > 0) return pendingReview > 9 ? "9+" : String(pendingReview)
-    return null
+  const counts: NavBadgeCounts = {
+    messages: messagesBadge,
+    pendingReview: pendingReview > 0 ? (pendingReview > 9 ? "9+" : String(pendingReview)) : null,
   }
 
   return (
@@ -77,7 +64,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
         {links.map((link) => {
           const Icon = link.icon
           const isActive = isNavItemActive(link, pathname, searchParams)
-          const badge = badgeFor(link)
+          const badge = badgeForNavItem(link.badge, counts)
 
           return (
             <Link

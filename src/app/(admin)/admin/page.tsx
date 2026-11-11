@@ -27,7 +27,6 @@ import { UsersTab } from "./features/UsersTab"
 import { MembresTab } from "./features/MembresTab"
 import { NotificationsTab } from "./features/NotificationsTab"
 import { ModerationTab } from "./features/ModerationTab"
-import { FormationTab } from "./features/FormationTab"
 import { DevicesTab } from "./features/DevicesTab"
 import { CronsTab } from "./features/CronsTab"
 import { AdminTools } from "./components/admin-tools"
@@ -545,10 +544,6 @@ function AdminConsoleContent() {
 
         {activeTab === "bugs" && (
           <BugsTab cachedGet={cachedGet} />
-        )}
-
-        {activeTab === "formation" && (
-          <FormationTab />
         )}
 
         {activeTab === "devices" && (

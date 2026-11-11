@@ -7,8 +7,6 @@ import {
   Database,
   FileCheck,
   Flame,
-  Gauge,
-  GraduationCap,
   Inbox,
   LayoutDashboard,
   LineChart,
@@ -43,7 +41,7 @@ export interface NavItem {
   /** Rôles requis pour afficher l'item. Si vide, visible par tous. */
   requiredRoles?: UserRole[]
   /** Clé de badge à afficher (géré par les composants consommateurs). */
-  badge?: "messages" | "pendingKyc" | "pendingRequests" | "pendingReview"
+  badge?: "messages" | "pendingReview"
   /** Fonction personnalisée pour déterminer si l'item est actif. */
   isActive?: (pathname: string, searchParams: URLSearchParams) => boolean
   /** Identifiant de section pour le regroupement (sidebar/menu). */
@@ -55,6 +53,26 @@ export interface NavSection {
   label: string
   items: NavItem[]
   badge?: number
+}
+
+/** Compteurs de badges déjà formatés ("9+" etc.) ou `null` si rien à afficher. */
+export interface NavBadgeCounts {
+  messages?: string | null
+  pendingReview?: string | null
+}
+
+/**
+ * Résout le badge à afficher pour un item de navigation.
+ * Retourne la valeur formatée ou `null` (badge absent ou clé inconnue).
+ */
+export function badgeForNavItem(
+  badge: NavItem["badge"],
+  counts: NavBadgeCounts,
+): string | null {
+  if (!badge) return null
+  if (badge === "messages") return counts.messages ?? null
+  if (badge === "pendingReview") return counts.pendingReview ?? null
+  return null
 }
 
 const dashboardMobile: NavItem[] = [
@@ -269,13 +287,15 @@ function adminTabLabel(value: string): string {
   return value
 }
 
-function adminTabLink(value: string, icon: LucideIcon, section: string): NavItem {
+function adminTabLink(value: string, icon: LucideIcon, section: string, requiredRoles?: UserRole[]): NavItem {
   return {
     id: value,
     href: `/admin?tab=${value}`,
     label: adminTabLabel(value),
     icon,
     section,
+    // Pas de restriction par défaut : les autres appels restent inchangés.
+    ...(requiredRoles ? { requiredRoles } : {}),
     isActive: (pathname: string, searchParams: URLSearchParams) =>
       pathname === "/admin" && (searchParams.get("tab") ?? "dashboard") === value,
   }
@@ -323,7 +343,6 @@ const adminSidebarSections: NavSection[] = [
       adminTabLink("signals", Radio, "contenus"),
       adminPageLink("redpills", "/admin/redpills", "Redpills d'Emerson", Flame, "contenus",
         (pathname) => pathname === "/admin/redpills"),
-      adminTabLink("formation", GraduationCap, "contenus"),
       adminTabLink("notifications", Bell, "contenus"),
       adminTabLink("emails", Mail, "contenus"),
       adminPageLink("messages", "/admin/messages", "Messages", MessageCircle, "contenus",
@@ -337,8 +356,6 @@ const adminSidebarSections: NavSection[] = [
     label: "Pilotage",
     items: [
       adminTabLink("dashboard", LayoutDashboard, "pilotage"),
-      adminPageLink("control-room", "/admin/control-room", "Control Room", Gauge, "pilotage",
-        (pathname) => pathname === "/admin/control-room"),
       adminPageLink("tracker", "/admin/tracker", "Tracker", Radar, "pilotage",
         (pathname) => pathname.startsWith("/admin/tracker")),
       adminPageLink("coaching", "/admin/coaching", "Coaching", BookOpen, "pilotage",
@@ -369,7 +386,11 @@ const adminMobile: NavItem[] = [
     icon: Inbox,
     section: "a-traiter",
     badge: "pendingReview",
-    isActive: (pathname) => pathname.startsWith("/admin/a-traiter"),
+    // Actif sur la page dédiée ou sur les onglets ?tab= du rayon (requests, kyc, broker, bugs).
+    isActive: (pathname, searchParams) =>
+      pathname.startsWith("/admin/a-traiter") ||
+      (pathname === "/admin" &&
+        ["requests", "kyc", "broker", "bugs"].includes(searchParams.get("tab") ?? "")),
   },
   {
     id: "membres",
@@ -386,7 +407,7 @@ const adminMobile: NavItem[] = [
     icon: Radio,
     section: "contenus",
     isActive: (pathname, searchParams) =>
-      pathname === "/admin" && ["signals", "formation", "notifications", "emails"].includes(searchParams.get("tab") ?? "") ||
+      (pathname === "/admin" && ["signals", "notifications", "emails"].includes(searchParams.get("tab") ?? "")) ||
       ["/admin/redpills", "/admin/messages", "/admin/bulk-message"].some((p) => pathname.startsWith(p)),
   },
   {
@@ -396,7 +417,7 @@ const adminMobile: NavItem[] = [
     icon: LayoutDashboard,
     section: "pilotage",
     isActive: (pathname, searchParams) =>
-      pathname === "/admin" && ["dashboard", "analytics", "revenue"].includes(searchParams.get("tab") ?? "dashboard") ||
+      (pathname === "/admin" && ["dashboard", "analytics", "revenue"].includes(searchParams.get("tab") ?? "dashboard")) ||
       ["/admin/control-room", "/admin/tracker", "/admin/coaching"].some((p) => pathname.startsWith(p)),
   },
   {
@@ -406,7 +427,7 @@ const adminMobile: NavItem[] = [
     icon: ShieldCheck,
     section: "securite",
     isActive: (pathname, searchParams) =>
-      pathname === "/admin" && ["security", "fraud", "devices", "moderation"].includes(searchParams.get("tab") ?? "") ||
+      (pathname === "/admin" && ["security", "fraud", "devices", "moderation"].includes(searchParams.get("tab") ?? "")) ||
       pathname.startsWith("/admin/audit"),
   },
 ]
@@ -421,8 +442,8 @@ export function getSuperAdminSections(): NavSection[] {
       id: "systeme",
       label: "Système",
       items: [
-        adminTabLink("settings", Settings, "systeme"),
-        adminTabLink("crons", Timer, "systeme"),
+        adminTabLink("settings", Settings, "systeme", ["SUPER_ADMIN"]),
+        adminTabLink("crons", Timer, "systeme", ["SUPER_ADMIN"]),
         ...(adminStandaloneLinks["systeme"] || []),
       ],
     },
