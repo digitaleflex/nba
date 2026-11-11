@@ -89,7 +89,17 @@ const dashboardMobile: NavItem[] = [
     label: "Signaux",
     icon: TrendingUp,
     isActive: (pathname) =>
-      pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+      (pathname === "/dashboard/signals" ||
+        (pathname.startsWith("/dashboard/signals/") &&
+          !pathname.startsWith("/dashboard/signals/tracking"))) ||
+      pathname.startsWith("/signals"),
+  },
+  {
+    id: "tracking",
+    href: "/dashboard/signals/tracking",
+    label: "Tracking",
+    icon: LineChart,
+    isActive: (pathname) => pathname.startsWith("/dashboard/signals/tracking"),
   },
   {
     id: "journal",
@@ -166,7 +176,17 @@ const dashboardSidebar: NavItem[] = [
     label: "Mes Signaux",
     icon: TrendingUp,
     isActive: (pathname) =>
-      pathname.startsWith("/dashboard/signals") || pathname.startsWith("/signals"),
+      (pathname === "/dashboard/signals" ||
+        (pathname.startsWith("/dashboard/signals/") &&
+          !pathname.startsWith("/dashboard/signals/tracking"))) ||
+      pathname.startsWith("/signals"),
+  },
+  {
+    id: "tracking",
+    href: "/dashboard/signals/tracking",
+    label: "Tracking",
+    icon: LineChart,
+    isActive: (pathname) => pathname.startsWith("/dashboard/signals/tracking"),
   },
   {
     id: "journal",

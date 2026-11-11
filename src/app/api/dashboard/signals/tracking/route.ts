@@ -11,27 +11,99 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const days = Math.min(90, Math.max(7, parseInt(searchParams.get("days") || "30")))
 
-    const since = new Date()
-    since.setHours(0, 0, 0, 0)
-    since.setDate(since.getDate() - (days - 1))
+    const now = new Date()
+    const since = new Date(
+      Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - (days - 1), 0, 0, 0, 0),
+    )
 
-    const [takens, published] = await Promise.all([
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        isActive: true,
+        role: { select: { name: true } },
+        signalsAccessOverride: true,
+      },
+    })
+
+    if (!user || !user.isActive) {
+      return NextResponse.json({
+        days,
+        totalPris: 0,
+        totalRecus: 0,
+        joursAvecTrade: 0,
+        couvertureGlobale: 0,
+        series: [],
+        takenSignals: [],
+      })
+    }
+
+    const isAdmin = user.role.name === "ADMIN" || user.role.name === "SUPER_ADMIN"
+
+    let activePlanIds: string[] = []
+    if (!isAdmin && !user.signalsAccessOverride) {
+      const approved = await prisma.accessRequest.findMany({
+        where: { userId, status: "APPROVED" },
+        select: { planId: true },
+      })
+      activePlanIds = approved.map((r) => r.planId)
+      if (activePlanIds.length === 0) {
+        return NextResponse.json({
+          days,
+          totalPris: 0,
+          totalRecus: 0,
+          joursAvecTrade: 0,
+          couvertureGlobale: 0,
+          series: [],
+          takenSignals: [],
+        })
+      }
+    }
+
+    // Signaux effectivement reçus par l'utilisateur (notification existante).
+    const notifications = await prisma.notification.findMany({
+      where: { userId, type: "SIGNAL", createdAt: { gte: since } },
+      select: { data: true },
+    })
+    const receivedSignalIds = new Set<string>()
+    for (const n of notifications) {
+      const sid = (n.data as Record<string, unknown> | null)?.signalId
+      if (typeof sid === "string") receivedSignalIds.add(sid)
+    }
+
+    const publishedWhere: Record<string, unknown> = {
+      status: "PUBLISHED",
+      deletedAt: null,
+      publishedAt: { gte: since },
+    }
+    if (!isAdmin && !user.signalsAccessOverride) {
+      publishedWhere.audience = { some: { planId: { in: activePlanIds } } }
+    }
+    if (receivedSignalIds.size > 0) {
+      publishedWhere.id = { in: Array.from(receivedSignalIds) }
+    } else {
+      publishedWhere.id = { in: [] }
+    }
+
+    const [takens, published, trades] = await Promise.all([
       prisma.signalTaken.findMany({
         where: { userId, tradedAt: { gte: since } },
         select: { signalId: true, tradedAt: true },
         orderBy: { tradedAt: "asc" },
       }),
       prisma.signal.findMany({
-        where: { status: "PUBLISHED", deletedAt: null, publishedAt: { gte: since } },
+        where: publishedWhere,
         select: { id: true, publishedAt: true },
+      }),
+      prisma.trade.findMany({
+        where: { userId, signalId: { not: null } },
+        select: { signalId: true, result: true, pnl: true },
       }),
     ])
 
-    // Index jours YYYY-MM-DD
+    // Index jours YYYY-MM-DD (UTC)
     const dayKeys: string[] = []
     for (let i = 0; i < days; i++) {
-      const d = new Date(since)
-      d.setDate(d.getDate() + i)
+      const d = new Date(since.getTime() + i * 24 * 60 * 60 * 1000)
       dayKeys.push(d.toISOString().slice(0, 10))
     }
 
@@ -60,6 +132,14 @@ export async function GET(req: NextRequest) {
       }
     })
 
+    const tradesBySignal = new Map<string, { result: string; pnl: number }>()
+    for (const tr of trades) {
+      if (!tr.signalId) continue
+      if (!tradesBySignal.has(tr.signalId)) {
+        tradesBySignal.set(tr.signalId, { result: tr.result, pnl: Number(tr.pnl) })
+      }
+    }
+
     const totalPris = takens.length
     const totalRecus = published.length
     const joursAvecTrade = series.filter((s) => s.pris > 0).length
@@ -71,6 +151,11 @@ export async function GET(req: NextRequest) {
       joursAvecTrade,
       couvertureGlobale: totalRecus > 0 ? Math.round((totalPris / totalRecus) * 100) : 0,
       series,
+      takenSignals: takens.map((t) => ({
+        signalId: t.signalId,
+        tradedAt: t.tradedAt.toISOString(),
+        trade: tradesBySignal.get(t.signalId) ?? null,
+      })),
     })
   } catch (error) {
     return handleAuthError(error)
