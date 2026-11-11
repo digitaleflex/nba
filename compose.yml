@@ -93,8 +93,12 @@ services:
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.interval=30s"
       - "traefik.http.services.nba-app.loadbalancer.healthcheck.timeout=3s"
       # Routeur principal de l'app (port 3000)
+      # Le conteneur est sur 2 réseaux (nba + proxy) : sans ce label, Traefik
+      # peut choisir le réseau interne et ne jamais joindre l'app (404).
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.nba-app.rule=Host(`access.signauxx.com`)"
-      - "traefik.http.routers.nba-app.priority=1"
+      # Priorité > catch-all@file (priority 1, HostRegexp `.+`) qui renvoie 404.
+      - "traefik.http.routers.nba-app.priority=10"
       - "traefik.http.routers.nba-app.service=nba-app"
       - "traefik.http.routers.nba-app.entrypoints=websecure"
       - "traefik.http.routers.nba-app.tls=true"
@@ -212,6 +216,7 @@ services:
       start_period: 10s
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
       - "traefik.http.routers.nba-bull.rule=Host(`access.signauxx.com`) && PathPrefix(`/admin/queues`)"
       - "traefik.http.routers.nba-bull.priority=150"
       - "traefik.http.routers.nba-bull.entrypoints=websecure"
