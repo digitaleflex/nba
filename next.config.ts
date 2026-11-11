@@ -65,11 +65,11 @@ export default withSentryConfig(nextConfig, {
   // https://docs.sentry.io/platforms/javascript/guides/nextjs/manual-setup/
 
   // Upload a larger set of source maps for prettier stack traces (increases build time)
-  widenClientFileUpload: true,
+  widenClientFileUpload: !!process.env.CI,
 
   // Automatically annotate React components to show their names in breadcrumbs and session replay
   reactComponentAnnotation: {
-    enabled: true,
+    enabled: !!process.env.CI,
   },
 
   // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers
