@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import { Loader2, RefreshCw, TriangleAlert } from "lucide-react"
 import { Button, Chart } from "@nba/design-system"
+import { formatDayLabel } from "@nba/lib/format-date"
 import { EvolutionChart, type EvolutionSeries } from "./evolution-chart"
 
 interface EvolutionData {
@@ -95,6 +96,26 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
 
   if (!stats) return <p className="text-sm text-muted-foreground text-center py-16">Aucune donnée.</p>
 
+  // La série `pnlCum` du serveur est déjà cumulée ; repli sur un cumul client
+  // si elle est absente (par ex. réponse partielle).
+  const pnlCumulative = (() => {
+    const serverSeries = stats.evolution?.series.find(s => s.key === "pnlCum")
+    if (serverSeries && stats.evolution && serverSeries.values.length > 0) {
+      return serverSeries.values.map((value, i) => ({
+        date: stats.evolution!.labels[i] ?? "",
+        value,
+      }))
+    }
+    let running = 0
+    return stats.byDay
+      .slice()
+      .reverse()
+      .map(d => {
+        running += d.pnl
+        return { date: d.date, value: Math.round(running * 100) / 100 }
+      })
+  })()
+
   return (
     <div className="space-y-6">
       {/* Évolution du trader (multi-paramètres) */}
@@ -139,7 +160,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
       <div className="rounded-lg border bg-card p-4">
         <h3 className="text-sm font-semibold mb-3">📐 Métriques de risque</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <RiskMetric label="Drawdown max" value={`${stats.riskMetrics.maxDrawdown.toFixed(0)}€`} tone={stats.riskMetrics.maxDrawdown > 0 ? "rose" : "neutral"} />
+          <RiskMetric label="Drawdown max" value={`${stats.riskMetrics.maxDrawdown.toFixed(0)}€`} tone={Number.isFinite(stats.riskMetrics.maxDrawdown) && stats.riskMetrics.maxDrawdown > 0 ? "rose" : "neutral"} />
           <RiskMetric label="Expectancy" value={`${stats.riskMetrics.expectancy.toFixed(2)}R`} tone={stats.riskMetrics.expectancy >= 0 ? "emerald" : "rose"} />
           <RiskMetric label="Profit factor" value={stats.riskMetrics.profitFactor === Infinity ? "∞" : stats.riskMetrics.profitFactor.toFixed(2)} tone={stats.riskMetrics.profitFactor >= 1 ? "emerald" : "rose"} />
           <RiskMetric label="Gain moyen" value={`${stats.riskMetrics.avgWinner.toFixed(0)}€`} tone="emerald" />
@@ -148,16 +169,16 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
         </div>
       </div>
 
-      {/* Graphique PnL cumulé */}
-      {stats.byDay.length > 1 && (
+      {/* Graphique PnL cumulé — vraie somme cumulée (cf. TECH-04) */}
+      {pnlCumulative.length > 1 && (
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-sm font-semibold mb-3">📈 PnL cumulé</h3>
           <Chart
             type="line"
-            data={stats.byDay.slice().reverse().map(d => ({
-              label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
-              value: d.pnl,
-              color: d.pnl >= 0 ? "emerald" as const : "rose" as const,
+            data={pnlCumulative.map(d => ({
+              label: formatDayLabel(d.date),
+              value: d.value,
+              color: d.value >= 0 ? "emerald" as const : "rose" as const,
             }))}
             height={180}
           />
@@ -172,7 +193,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
             <Chart
               type="bar"
               data={stats.byDay.slice(0, 14).reverse().map(d => ({
-                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                label: formatDayLabel(d.date),
                 value: d.wins,
                 color: "emerald" as const,
               }))}
@@ -182,7 +203,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
             <Chart
               type="bar"
               data={stats.byDay.slice(0, 14).reverse().map(d => ({
-                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                label: formatDayLabel(d.date),
                 value: d.count - d.wins,
                 color: "rose" as const,
               }))}
