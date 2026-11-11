@@ -157,7 +157,10 @@ export default function JournalPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
   useDetectTimezone()
-  const initialTab = (searchParams.get("tab") || "trades") as TabId
+  const rawTab = searchParams.get("tab")
+  const initialTab: TabId = (TABS as readonly { id: TabId }[]).some((t) => t.id === rawTab)
+    ? (rawTab as TabId)
+    : "trades"
 
   const [activeTab, setActiveTab] = useState<TabId>(initialTab)
   const [formOpen, setFormOpen] = useState(false)
@@ -165,9 +168,16 @@ export default function JournalPage() {
   const [refreshKey, setRefreshKey] = useState(0)
 
   useEffect(() => {
-    const tab = searchParams.get("tab") as TabId
-    if (tab) setActiveTab(tab)
-  }, [searchParams])
+    const tab = searchParams.get("tab")
+    if (tab && (TABS as readonly { id: string }[]).some((t) => t.id === tab)) {
+      setActiveTab(tab as TabId)
+    }
+    // ?new=trade → ouvre le formulaire (lien rapide du dashboard)
+    if (searchParams.get("new") === "trade") {
+      openNewTrade(searchParams.get("signalId") ?? undefined)
+      router.replace("/dashboard/journal", { scroll: false })
+    }
+  }, [searchParams, router])
 
   const switchTab = useCallback((tab: TabId) => {
     setActiveTab(tab)
@@ -180,7 +190,7 @@ export default function JournalPage() {
   }, [])
 
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
+    <div id="journal" className="space-y-6 pb-20 md:pb-0">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Journal de trading</h1>

@@ -83,7 +83,7 @@ export default async function DashboardPage() {
 
   const quickActions = [
     { href: "/dashboard/journal?new=trade", label: "Nouveau trade", icon: Plus, desc: "Enregistre une entrée" },
-    { href: "/dashboard/journal", label: "Réflexion du jour", icon: PenLine, desc: "Note ton état d'esprit" },
+    { href: "/dashboard/journal?tab=reflections", label: "Réflexion du jour", icon: PenLine, desc: "Note ton état d'esprit" },
     { href: "/dashboard/signals", label: "Voir les signaux", icon: Radio, desc: "Le flux du jour" },
     { href: "/dashboard/journal", label: "Mon journal", icon: BookOpen, desc: "Historique & stats" },
   ]
