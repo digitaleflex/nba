@@ -518,8 +518,8 @@ export function SignalsView() {
             <div className="space-y-1.5">
               <h3 className="font-semibold text-warning">Aucun abonnement actif</h3>
               <p className="text-sm text-muted-foreground">
-                Vous n'avez actuellement accès à aucun groupe de diffusion.
-                Complétez votre parcours ou contactez l'administration.
+                Tu n'as actuellement accès à aucun groupe de diffusion.
+                Complète ton parcours ou contacte l'administration.
               </p>
             </div>
             <Link href="/onboarding">
@@ -532,8 +532,8 @@ export function SignalsView() {
           icon={Radio}
           title={searchQuery ? "Aucun résultat" : "Aucun signal disponible"}
           description={searchQuery
-            ? "Aucun signal ne correspond à votre recherche."
-            : "Aucun signal n'a encore été publié pour vos groupes. En attendant, explorez votre journal de trading."}
+            ? "Aucun signal ne correspond à ta recherche."
+            : "Aucun signal n'a encore été publié pour tes groupes. En attendant, explore ton journal de trading."}
           action={searchQuery ? undefined : { label: "Découvrir le Journal", onClick: () => window.location.href = "/dashboard/journal" }}
         />
       ) : (

@@ -112,7 +112,7 @@ export function ReportBugDialog({ className, variant = "ghost", size, label, onO
             <Bug className="size-4 text-primary" /> Signaler un bug
           </DialogTitle>
           <DialogDescription>
-            Décrivez le problème rencontré. Votre navigateur et la page sont capturés automatiquement pour nous aider.
+            Décris le problème rencontré. Ton navigateur et la page sont capturés automatiquement pour nous aider.
           </DialogDescription>
         </DialogHeader>
 
@@ -123,7 +123,7 @@ export function ReportBugDialog({ className, variant = "ghost", size, label, onO
             </div>
             <p className="font-semibold text-foreground">Signalement envoyé !</p>
             <p className="text-sm text-muted-foreground">
-              Merci pour votre retour. Notre équipe va examiner ce bug.
+              Merci pour ton retour. Notre équipe va examiner ce bug.
             </p>
             <Button variant="outline" size="sm" className="cursor-pointer" onClick={() => setOpen(false)}>Fermer</Button>
           </div>
@@ -147,7 +147,7 @@ export function ReportBugDialog({ className, variant = "ghost", size, label, onO
               <textarea
                 id="bug-desc"
                 className="w-full p-2.5 text-sm rounded-lg border border-border bg-background text-foreground outline-none focus:border-primary/50 resize-y min-h-24"
-                placeholder="Ce qui s'est passé, ce que vous attendiez…"
+                placeholder="Ce qui s'est passé, ce que tu attendais…"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 maxLength={3000}

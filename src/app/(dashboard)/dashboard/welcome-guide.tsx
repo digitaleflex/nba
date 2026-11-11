@@ -19,7 +19,7 @@ export function WelcomeGuide() {
           popover: {
             title: "Signaux en direct",
             description:
-              "Recevez en temps réel les signaux de trading de vos groupes. Chaque signal est analysé et noté par la communauté.",
+              "Reçois en temps réel les signaux de trading de tes groupes. Chaque signal est analysé et noté par la communauté.",
             side: "right",
             align: "start",
           },
@@ -29,7 +29,7 @@ export function WelcomeGuide() {
           popover: {
             title: "Journal de trading",
             description:
-              "Enregistrez chaque trade, suivez vos performances et analysez vos décisions pour progresser.",
+              "Enregistre chaque trade, suis tes performances et analyse tes décisions pour progresser.",
             side: "right",
             align: "start",
           },
@@ -39,7 +39,7 @@ export function WelcomeGuide() {
           popover: {
             title: "Support & Messages",
             description:
-              "Contactez notre équipe support et suivez l'état de vos demandes.",
+              "Contacte notre équipe support et suis l'état de tes demandes.",
             side: "right",
             align: "start",
           },
@@ -47,9 +47,9 @@ export function WelcomeGuide() {
         {
           element: "#profile-nav",
           popover: {
-            title: "Votre profil",
+            title: "Ton profil",
             description:
-              "Personnalisez votre profil, gérez votre abonnement et suivez votre progression.",
+              "Personnalise ton profil, gère ton abonnement et suis ta progression.",
             side: "bottom",
             align: "start",
           },

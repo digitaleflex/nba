@@ -65,7 +65,7 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
       const perm = await Notification.requestPermission()
       setPermission(perm)
       if (perm !== "granted") {
-        toast.error("Veuillez autoriser les notifications dans les paramètres de votre navigateur.")
+        toast.error("Veuillez autoriser les notifications dans les paramètres de ton navigateur.")
         setLoading(false)
         return
       }
@@ -111,7 +111,7 @@ export function PushNotificationToggle({ compact = false }: { compact?: boolean 
       }
     } catch (err) {
       console.error("Push subscription failed:", err)
-      toast.error("Impossible d'activer les notifications. Vérifiez que votre navigateur supporte les notifications push.")
+      toast.error("Impossible d'activer les notifications. Vérifie que ton navigateur supporte les notifications push.")
     } finally {
       setLoading(false)
     }

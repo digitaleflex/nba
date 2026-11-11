@@ -23,12 +23,12 @@ export function NoAccessView() {
             Accès aux Signaux
           </h2>
           <p className="text-muted-foreground max-w-md mb-8 text-sm md:text-base">
-            Vous n'avez pas encore accès aux signaux de trading. Faites une demande d'accès pour commencer à recevoir les signaux en temps réel.
+            Tu n'as pas encore accès aux signaux de trading. Fais une demande d'accès pour commencer à recevoir les signaux en temps réel.
           </p>
 
           <Link href="/dashboard/subscription">
             <Button size="lg" className="w-full sm:w-auto text-base gap-2">
-              Faire votre demande d'accès
+              Faire ta demande d'accès
               <ArrowRight className="w-4 h-4" />
             </Button>
           </Link>

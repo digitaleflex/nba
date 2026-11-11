@@ -90,7 +90,7 @@ export default function VerificationPage() {
           Vérification
         </h1>
         <p className="text-sm text-muted-foreground mt-1">
-          Gérez et suivez le statut de validation de votre compte NeverBrokeAgain.
+          Gère et suis le statut de validation de ton compte NeverBrokeAgain.
         </p>
       </div>
 
@@ -173,7 +173,7 @@ export default function VerificationPage() {
             {isKycApproved ? (
               <div className="flex items-center gap-2 text-xs text-emerald-500 font-medium bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10 animate-in fade-in duration-200">
                 <CheckCircle2 className="size-4 shrink-0" />
-                <span>Vos documents d'identité ont été approuvés par nos services.</span>
+                <span>Tes documents d'identité ont été approuvés par nos services.</span>
               </div>
             ) : isKycPending ? (
               <div className="flex items-center gap-2 text-xs text-amber-500 font-medium bg-amber-500/5 p-3 rounded-lg border border-amber-500/10 animate-in fade-in duration-200">
@@ -211,7 +211,7 @@ export default function VerificationPage() {
                   <h3 className="font-bold text-foreground">2. Compte Broker</h3>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Lier et valider votre compte de trading broker actif.
+                  Lier et valider ton compte de trading broker actif.
                 </p>
               </div>
 
@@ -243,7 +243,7 @@ export default function VerificationPage() {
             {isBrokerApproved ? (
               <div className="flex items-center gap-2 text-xs text-emerald-500 font-medium bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10 animate-in fade-in duration-200">
                 <CheckCircle2 className="size-4 shrink-0" />
-                <span>Votre compte Broker a été connecté et validé avec succès.</span>
+                <span>Ton compte Broker a été connecté et validé avec succès.</span>
               </div>
             ) : isBrokerPending ? (
               <div className="flex items-center gap-2 text-xs text-amber-500 font-medium bg-amber-500/5 p-3 rounded-lg border border-amber-500/10 animate-in fade-in duration-200">

@@ -468,7 +468,7 @@ export default function MessagesPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Vos conversations avec l&apos;équipe NeverBrokeAgain
+            Tes conversations avec l&apos;équipe NeverBrokeAgain
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -715,7 +715,7 @@ export default function MessagesPage() {
                   value={newText}
                   onChange={(e) => setNewText(e.target.value)}
                   rows={3}
-                  placeholder="Votre message..."
+                  placeholder="Ton message..."
                   className="w-full resize-none rounded-xl border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary/50"
                 />
                 <div className="flex justify-end gap-2">

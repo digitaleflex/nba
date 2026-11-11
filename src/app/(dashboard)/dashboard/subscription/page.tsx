@@ -65,7 +65,7 @@ export default function SubscriptionPage() {
       .then((d) => setAccessRequests(Array.isArray(d.requests) ? d.requests : []))
       .catch((err) => {
         setError(getErrorMessage(err))
-        toast.error("Impossible de charger vos abonnements.")
+        toast.error("Impossible de charger tes abonnements.")
       })
       .finally(() => setLoading(false))
   }, [])
@@ -127,7 +127,7 @@ export default function SubscriptionPage() {
     <div className="space-y-6 max-w-3xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
-        <p className="text-sm text-muted-foreground">Gérez votre accès aux signaux premium</p>
+        <p className="text-sm text-muted-foreground">Gère ton accès aux signaux premium</p>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════
@@ -139,7 +139,7 @@ export default function SubscriptionPage() {
             <Clock className="size-5 text-destructive mt-0.5 shrink-0" />
             <div className="space-y-1">
               <p className="font-bold text-destructive">
-                Votre abonnement a expiré
+                Ton abonnement a expiré
               </p>
               <p className="text-sm text-foreground/80">
                 Accès au plan <strong>{currentPlan!.plan.name}</strong> expiré le{" "}
@@ -149,7 +149,7 @@ export default function SubscriptionPage() {
                 )}
               </p>
               <p className="text-sm text-muted-foreground">
-                Vos signaux ne sont plus diffusés. Renouvelez pour retrouver l&apos;accès immédiatement.
+                Tes signaux ne sont plus diffusés. Renouvelle pour retrouver l&apos;accès immédiatement.
               </p>
             </div>
           </div>
@@ -173,7 +173,7 @@ export default function SubscriptionPage() {
             <div className="space-y-1">
               <p className="font-bold text-foreground">Bienvenue sur SignauxX</p>
               <p className="text-sm text-muted-foreground">
-                Choisissez un plan ci-dessous pour recevoir nos signaux premium dans votre groupe Telegram.
+                Choisis un plan ci-dessous pour recevoir nos signaux premium dans ton groupe Telegram.
               </p>
             </div>
           </div>
@@ -188,7 +188,7 @@ export default function SubscriptionPage() {
             <div>
               <p className="font-bold text-amber-700">Demande en cours de traitement</p>
               <p className="text-sm text-muted-foreground">
-                Votre demande d&apos;accès est en cours de validation par un administrateur.
+                Ta demande d&apos;accès est en cours de validation par un administrateur.
               </p>
             </div>
           </div>

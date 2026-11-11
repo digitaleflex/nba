@@ -200,7 +200,7 @@ export default async function SignalDetailPage({ params }: { params: Promise<{ i
           {signal?.audience && signal.audience.length > 0 && (
             <div className="border-t border-border/20 pt-4 space-y-2">
               <h4 className="text-xs font-semibold text-muted-foreground">
-                {isUserAdmin ? "Groupes ciblés" : "Votre section"}
+                {isUserAdmin ? "Groupes ciblés" : "Ta section"}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {signal.audience
