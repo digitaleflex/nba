@@ -23,7 +23,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
             Une erreur inattendue est survenue de notre côté. Pas d&rsquo;inquiétude, vos données sont en sécurité. Nous rétablissons l&rsquo;accès automatiquement.
           </p>
           {error.digest && (
-            <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+            <p className="text-xs text-muted-foreground mt-3 font-mono">
               Code d&rsquo;erreur : {error.digest}
             </p>
           )}

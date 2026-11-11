@@ -328,14 +328,14 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
             <div className="pt-4 grid grid-cols-2 gap-3 text-center">
               <div>
                 <p className="text-xl font-bold tabular-nums text-foreground flex items-center justify-center gap-1">
-                  <Laptop className="size-4 text-muted-foreground/60" />
+                  <Laptop className="size-4 text-muted-foreground" />
                   {data.infra.devices}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Appareils enregistrés</p>
               </div>
               <div>
                 <p className="text-xl font-bold tabular-nums text-foreground flex items-center justify-center gap-1">
-                  <Radio className="size-4 text-muted-foreground/60" />
+                  <Radio className="size-4 text-muted-foreground" />
                   {data.infra.activeSessions}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Sessions actives</p>

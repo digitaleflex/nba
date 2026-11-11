@@ -45,7 +45,7 @@ export function StepIndicator({
                   "text-xs font-medium truncate hidden sm:inline transition-colors",
                   isCurrent && "text-foreground",
                   isCompleted && "text-muted-foreground",
-                  isUpcoming && "text-muted-foreground/50",
+                  isUpcoming && "text-muted-foreground",
                 )}
               >
                 {step.label}

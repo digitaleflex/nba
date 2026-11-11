@@ -29,7 +29,7 @@ export default function GlobalError({
                 Une erreur critique est survenue. Pas d&rsquo;inquiétude, aucune donnée n&rsquo;a été perdue.
               </p>
               {error.digest && (
-                <p className="text-xs text-muted-foreground/60 mt-3 font-mono">
+                <p className="text-xs text-muted-foreground mt-3 font-mono">
                   Code d&rsquo;erreur : {error.digest}
                 </p>
               )}

@@ -245,7 +245,7 @@ function RecipientDetails({ users }: { users: PerUser[] }) {
           <div key={`plan-${plan}`} className="px-4 py-2 bg-muted/20 text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <User className="size-3" />
             {plan}
-            <span className="font-normal text-muted-foreground/60">({planUsers.length})</span>
+            <span className="font-normal text-muted-foreground">({planUsers.length})</span>
           </div>,
           ...planUsers.map((u, i) => (
             <div key={`${u.email}-${i}`} className="px-4 py-3 space-y-1.5">
@@ -291,7 +291,7 @@ function RecipientDetails({ users }: { users: PerUser[] }) {
                   <span className="inline-flex items-center gap-1.5">
                     <User className="size-3" />
                     {plan}
-                    <span className="font-normal text-muted-foreground/60">({planUsers.length})</span>
+                    <span className="font-normal text-muted-foreground">({planUsers.length})</span>
                   </span>
                 </td>
               </tr>,

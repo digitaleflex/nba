@@ -42,7 +42,7 @@ export function StepService({ plans, selectedPlan, onSelectPlan, onNext }: StepS
                   {plan.description && (
                     <Tooltip>
                       <TooltipTrigger>
-                        <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground" />
+                        <HelpCircle className="size-3.5 text-muted-foreground hover:text-foreground" />
                       </TooltipTrigger>
                       <TooltipContent>{plan.description}</TooltipContent>
                     </Tooltip>
@@ -66,7 +66,7 @@ export function StepService({ plans, selectedPlan, onSelectPlan, onNext }: StepS
               <p className="text-xs text-muted-foreground">Service sélectionné</p>
               <p className="font-medium text-foreground">{currentPlan.name}</p>
               {currentPlan.description && (
-                <p className="text-xs text-muted-foreground/80 mt-0.5">{currentPlan.description}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{currentPlan.description}</p>
               )}
             </div>
             <Check className="size-4 text-primary" />

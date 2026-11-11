@@ -77,7 +77,7 @@ export default function ATraiterPage() {
                       <p className="text-[11px] text-muted-foreground truncate">{q.desc}</p>
                     </div>
                     <div className="flex items-center gap-1.5 shrink-0">
-                      <span className={`text-lg font-extrabold tabular-nums ${count > 0 ? "text-primary" : "text-muted-foreground/50"}`}>
+                      <span className={`text-lg font-extrabold tabular-nums ${count > 0 ? "text-primary" : "text-muted-foreground"}`}>
                         {count}
                       </span>
                       <ArrowRight className="size-4 text-muted-foreground" />

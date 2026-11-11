@@ -77,7 +77,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
           >
             <span className="size-2 rounded-full" style={{ backgroundColor: s.color ?? COLORS[i % COLORS.length] }} />
             {s.label}
-            {s.unit && <span className="text-muted-foreground/70">({s.unit})</span>}
+            {s.unit && <span className="text-muted-foreground">({s.unit})</span>}
           </button>
         ))}
       </div>
@@ -116,7 +116,7 @@ export function EvolutionChart({ labels, series, height = 220 }: EvolutionChartP
                       stroke="currentColor"
                       strokeWidth={0.3}
                       strokeDasharray="2 2"
-                      className="text-muted-foreground/40"
+                      className="text-muted-foreground"
                     />
                   )}
                   {groupSeries.map((s, si) => {

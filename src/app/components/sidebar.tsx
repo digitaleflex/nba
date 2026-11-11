@@ -123,7 +123,7 @@ export function Sidebar({ space, user }: SidebarProps) {
           {sections.map((section, sectionIdx) => (
             <div key={section.id} aria-labelledby={isCollapsed ? undefined : `section-${section.id}`} className={cn("space-y-1", sectionIdx > 0 && !isCollapsed && "pt-2")}>
               {!isCollapsed && section.label && (
-                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground/50">
+                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
                   {section.label}
                 </p>
               )}
@@ -152,7 +152,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                       <Icon
                         className={cn(
                           "size-5 transition-transform duration-200 group-hover:scale-105",
-                          isActive ? "text-primary-foreground" : "text-muted-foreground/85 group-hover:text-foreground"
+                          isActive ? "text-primary-foreground" : "text-muted-foreground group-hover:text-foreground"
                         )}
                       />
                       {itemBadge != null && isCollapsed && (
@@ -210,7 +210,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                       <Icon
                         className={cn(
                           "size-5 transition-transform duration-200 group-hover:scale-105",
-                          isActive ? "text-warning" : "text-muted-foreground/85"
+                          isActive ? "text-warning" : "text-muted-foreground"
                         )}
                       />
                     </span>
@@ -231,7 +231,7 @@ export function Sidebar({ space, user }: SidebarProps) {
               )}
               title={isCollapsed ? "Accéder à l'Admin" : undefined}
             >
-              <Shield className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
+              <Shield className="size-5 text-muted-foreground group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
               {!isCollapsed && <span>Accéder à l&apos;Admin</span>}
             </Link>
           )}
@@ -246,7 +246,7 @@ export function Sidebar({ space, user }: SidebarProps) {
               )}
               title={isCollapsed ? "Retour au Dashboard" : undefined}
             >
-              <LayoutDashboard className="size-5 text-muted-foreground/80 group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
+              <LayoutDashboard className="size-5 text-muted-foreground group-hover:text-primary transition-transform duration-200 group-hover:scale-105" />
               {!isCollapsed && <span>Retour au Dashboard</span>}
             </Link>
           )}

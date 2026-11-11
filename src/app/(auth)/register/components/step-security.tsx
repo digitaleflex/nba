@@ -42,7 +42,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
         tooltip={
           <Tooltip>
             <TooltipTrigger>
-              <HelpCircle className="size-3.5 text-muted-foreground/70 hover:text-foreground cursor-help" />
+              <HelpCircle className="size-3.5 text-muted-foreground hover:text-foreground cursor-help" />
             </TooltipTrigger>
             <TooltipContent>
               Utilisez au moins {MIN_PASSWORD_LENGTH} caractères avec majuscule, minuscule, chiffre et caractère spécial pour sécuriser votre compte.
@@ -79,7 +79,7 @@ export function StepSecurity({ password, onChangePassword, confirmPassword, onCh
                 style={{ width: `${(strength.score / 5) * 100}%` }}
               />
             </div>
-            <p className="text-xs text-muted-foreground/80 min-h-4 transition-opacity">
+            <p className="text-xs text-muted-foreground min-h-4 transition-opacity">
               {strength.feedback}
             </p>
           </div>

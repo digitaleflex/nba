@@ -34,7 +34,7 @@ export function InfoTooltip({
               type="button"
               aria-label="Explication"
               title={typeof content === "string" ? content : undefined}
-              className="inline-flex items-center text-muted-foreground/70 hover:text-foreground transition-colors align-middle"
+              className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors align-middle"
             />
           }
         >

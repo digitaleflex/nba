@@ -98,17 +98,17 @@ export default function AdminSupportPage() {
                <h1 className="text-lg font-bold text-foreground">{d.subject as string || selected.title}</h1>
               <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-2">
                 <span className="font-semibold text-foreground/80">{selected.user?.name || "Inconnu"}</span>
-                <span className="text-muted-foreground/60">·</span>
+                <span className="text-muted-foreground">·</span>
                 <a href={`/admin?tab=members&search=${selected.user?.email}`} className="hover:text-foreground transition-colors underline underline-offset-2 decoration-dotted">
                   {selected.user?.email || ""}
                 </a>
                 {selected.user?.id && (
                   <>
-                    <span className="text-muted-foreground/60">·</span>
+                    <span className="text-muted-foreground">·</span>
                     <code className="text-xs bg-accent/30 px-1.5 py-0.5 rounded font-mono">{selected.user.id.slice(0, 8)}…</code>
                   </>
                 )}
-                <span className="text-muted-foreground/60">·</span>
+                <span className="text-muted-foreground">·</span>
                 <span>{formatDate(selected.createdAt)}</span>
               </p>
             </div>
@@ -238,10 +238,10 @@ export default function AdminSupportPage() {
                         </div>
                          <p className="text-xs text-muted-foreground truncate flex items-center gap-1.5">
                           <span className="font-medium">{ticket.user?.name || "Inconnu"}</span>
-                          <span className="text-muted-foreground/50">·</span>
+                          <span className="text-muted-foreground">·</span>
                           <span>{ticket.user?.email || ""}</span>
                           {ticket.user?.id && (
-                            <code className="text-xs bg-accent/30 px-1 py-0.5 rounded font-mono text-muted-foreground/70">
+                            <code className="text-xs bg-accent/30 px-1 py-0.5 rounded font-mono text-muted-foreground">
                               #{ticket.user.id.slice(0, 8)}
                             </code>
                           )}

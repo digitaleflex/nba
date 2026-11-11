@@ -124,10 +124,10 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
                     {t}
                   </span>
                 ))}
-                {trade.tags.length > 3 && <span className="text-[10px] text-muted-foreground/60">+{trade.tags.length - 3}</span>}
+                {trade.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{trade.tags.length - 3}</span>}
               </span>
             )}
-            <span className="text-muted-foreground/60 ml-auto shrink-0">{formatDate(trade.tradedAt)}</span>
+            <span className="text-muted-foreground ml-auto shrink-0">{formatDate(trade.tradedAt)}</span>
           </div>
 
           {trade.note && (
@@ -136,7 +136,7 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
         </div>
 
         <div className="flex flex-col gap-1">
-          <button onClick={handleDelete} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground/60 hover:text-rose-500 hover:bg-rose-500/10 transition-colors" aria-label="Supprimer ce trade">
+          <button onClick={handleDelete} className="size-10 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors" aria-label="Supprimer ce trade">
             <Trash2 className="size-4" />
           </button>
         </div>

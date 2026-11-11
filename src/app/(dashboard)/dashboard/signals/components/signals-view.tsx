@@ -166,8 +166,8 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
               {signal.imageUrls.length > 2 && (
                 <div className="flex items-center justify-center aspect-video w-24 sm:w-28 shrink-0 rounded-lg border border-border/60 bg-muted/30">
                   <div className="text-center">
-                    <ImageIcon className="size-4 mx-auto text-muted-foreground/60" />
-                    <span className="text-[10px] text-muted-foreground/60 font-medium">+{signal.imageUrls.length - 2}</span>
+                    <ImageIcon className="size-4 mx-auto text-muted-foreground" />
+                    <span className="text-[10px] text-muted-foreground font-medium">+{signal.imageUrls.length - 2}</span>
                   </div>
                 </div>
               )}
@@ -545,7 +545,7 @@ export function SignalsView() {
                   {group}
                 </h2>
                 <div className="flex-1 h-px bg-border/60" />
-                <span className="text-xs text-muted-foreground/60">{sigs.length} signal{sigs.length > 1 ? "s" : ""}</span>
+                <span className="text-xs text-muted-foreground">{sigs.length} signal{sigs.length > 1 ? "s" : ""}</span>
               </div>
               <div className="grid gap-3">
                 {sigs.map((sig) => (

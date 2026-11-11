@@ -148,14 +148,14 @@ export function ReflectionsTab() {
                 <span className="text-xs text-muted-foreground">{new Date(r.date).toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}</span>
                 <div className="flex gap-0.5">
                   {Array.from({ length: 10 }, (_, i) => (
-                    <Star key={i} className={cn("size-3", i < r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground/20")} />
+                    <Star key={i} className={cn("size-3", i < r.rating ? "fill-amber-400 text-amber-400" : "text-muted-foreground")} />
                   ))}
                 </div>
                 {r.mood && <span className="text-lg">{MOODS.find(m => m.value === r.mood)?.emoji}</span>}
                 <span className="text-xs text-muted-foreground ml-auto">{r.tradeCount} trades</span>
               </div>
               {r.note && <p className="text-xs text-muted-foreground line-clamp-3">{r.note}</p>}
-              <div className="flex gap-3 text-xs text-muted-foreground/60 mt-1">
+              <div className="flex gap-3 text-xs text-muted-foreground mt-1">
                 <span>{r.wins}W {r.losses}L</span>
                 {r.totalPnl && <span className={Number(r.totalPnl) >= 0 ? "text-emerald-400" : "text-rose-400"}>{Number(r.totalPnl) >= 0 ? "+" : ""}{Number(r.totalPnl).toFixed(0)}€</span>}
               </div>
