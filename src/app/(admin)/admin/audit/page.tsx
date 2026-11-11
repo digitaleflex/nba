@@ -524,6 +524,7 @@ export default function AuditCenterPage() {
             <button onClick={fetchLogs}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-border/50 hover:bg-muted/50 transition-colors"
               title="Rafraîchir"
+              aria-label="Rafraîchir"
             >
               <RefreshCw className="size-3.5" />
             </button>
@@ -621,6 +622,7 @@ export default function AuditCenterPage() {
             />
           </div>
           <select
+            aria-label="Filtre action"
             value={actionFilter}
             onChange={(e) => updateParams({ action: e.target.value || null, page: "1" })}
             className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
@@ -631,6 +633,7 @@ export default function AuditCenterPage() {
             ))}
           </select>
           <select
+            aria-label="Filtre ressource"
             value={resourceTypeFilter}
             onChange={(e) => updateParams({ resourceType: e.target.value || null, page: "1" })}
             className="h-10 rounded-lg border border-border/50 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
@@ -717,6 +720,7 @@ export default function AuditCenterPage() {
             <label className="text-xs text-muted-foreground shrink-0">Du</label>
             <input
               type="date"
+              aria-label="Date de début"
               value={startDate}
               onChange={(e) => updateParams({ startDate: e.target.value || null, page: "1" })}
               className="h-9 rounded-lg border border-border/50 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
@@ -724,12 +728,14 @@ export default function AuditCenterPage() {
             <label className="text-xs text-muted-foreground shrink-0">Au</label>
             <input
               type="date"
+              aria-label="Date de fin"
               value={endDate}
               onChange={(e) => updateParams({ endDate: e.target.value || null, page: "1" })}
               className="h-9 rounded-lg border border-border/50 bg-background px-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
           <select
+            aria-label="Filtre gravité"
             value={severityFilter}
             onChange={(e) => updateParams({ severity: e.target.value || null, page: "1" })}
             className="h-9 rounded-lg border border-border/50 bg-background px-3 text-xs focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none cursor-pointer"
@@ -748,7 +754,7 @@ export default function AuditCenterPage() {
           {activeChips.map((chip, i) => (
             <span key={i} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium">
               {chip.label}
-              <button onClick={chip.onRemove} className="hover:text-primary/70"><X className="size-3" /></button>
+              <button onClick={chip.onRemove} aria-label="Retirer le filtre" className="hover:text-primary/70"><X className="size-3" /></button>
             </span>
           ))}
         </div>

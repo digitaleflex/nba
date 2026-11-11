@@ -161,6 +161,7 @@ export default function AdminSupportPage() {
                 />
                 <div className="flex items-center gap-3">
                   <select
+                    aria-label="Statut du ticket"
                     className="text-xs rounded-lg border border-border bg-background px-3 py-1.5 text-foreground cursor-pointer"
                     value={nextStatus}
                     onChange={(e) => setNextStatus(e.target.value)}

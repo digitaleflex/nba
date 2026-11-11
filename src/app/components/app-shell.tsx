@@ -28,7 +28,7 @@ export function AppShell({ space, user, desktopHeader, desktopSubheader, mobileH
         <div className="flex min-h-dvh flex-col md:flex-row overflow-x-hidden">
           <Sidebar space={space} user={user} />
 
-          <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0">
+          <div className="flex flex-1 flex-col overflow-y-auto pb-[calc(4rem+env(safe-area-inset-bottom))] md:pb-0" role="region" aria-label="Contenu défilant">
             {desktopHeader}
             {desktopSubheader}
             {mobileHeader}

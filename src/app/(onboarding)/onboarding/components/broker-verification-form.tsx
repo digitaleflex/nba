@@ -92,6 +92,7 @@ export function BrokerVerificationForm({
             <div className="space-y-1.5">
               <label className="text-sm font-medium text-foreground">Nom du broker</label>
               <select
+                aria-label="Nom du broker"
                 value={brokerName}
                 onChange={(e) => setBrokerName(e.target.value)}
                 required

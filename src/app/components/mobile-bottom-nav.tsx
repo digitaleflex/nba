@@ -60,7 +60,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
 
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/85 backdrop-blur-lg px-1 select-none" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <nav className="flex h-16 items-center justify-around overflow-x-auto no-scrollbar">
+      <nav className="flex h-16 items-center justify-around overflow-x-auto no-scrollbar" role="region" aria-label="Contenu défilant">
         {links.map((link) => {
           const Icon = link.icon
           const isActive = isNavItemActive(link, pathname, searchParams)

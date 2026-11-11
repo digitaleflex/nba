@@ -74,7 +74,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
         <DualRender
           desktop={
             <Card className="border-border/60 bg-card shadow-sm">
-              <div className="overflow-x-auto">
+              <div className="overflow-x-auto" role="region" aria-label="Contenu défilant">
             <table className="admin-table w-full min-w-[680px] text-xs text-left">
               <thead>
                 <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">

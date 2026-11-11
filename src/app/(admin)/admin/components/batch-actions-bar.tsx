@@ -202,6 +202,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
             {plans.length > 0 && (
               <div className="flex items-center gap-1">
                 <select
+                  aria-label="Assigner un plan"
                   value={assignPlanId}
                   onChange={(e) => setAssignPlanId(e.target.value)}
                   className="text-xs border border-border rounded-md bg-background px-2 py-1 text-foreground outline-none focus:border-primary/50 cursor-pointer max-w-[130px] truncate"
@@ -238,6 +239,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
             <button
               onClick={onClear}
               disabled={loading !== null}
+              aria-label="Désélectionner tout"
               className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors disabled:opacity-50 cursor-pointer"
               title="Désélectionner tout"
             >
@@ -288,7 +290,7 @@ export function BatchActionsBar({ selectedIds, onClear, onSuccess, plans = [] }:
                       <span>{dialogResult.failed} erreur{dialogResult.failed > 1 ? "s" : ""}</span>
                     </div>
                     {dialogResult.errors && (
-                      <div className="max-h-24 overflow-y-auto space-y-0.5">
+                      <div className="max-h-24 overflow-y-auto space-y-0.5" role="region" aria-label="Contenu défilant">
                         {dialogResult.errors.slice(0, 5).map((e, i) => (
                           <p key={i} className="text-xs text-muted-foreground pl-6">
                             {e.id.slice(0, 8)}... — {e.error}

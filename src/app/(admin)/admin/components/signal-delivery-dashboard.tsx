@@ -203,7 +203,7 @@ export function SignalDeliveryDashboard({ signalId }: { signalId: string }) {
             Échecs de livraison {report.failures.length >= 50 ? "(50 premiers)" : ""}
             <InfoTooltip content="Liste des envois en erreur, avec l'email du membre et le motif renvoyé par le prestataire. Sert au support pour relancer ou corriger un abonnement." />
           </span>
-          <div className="max-h-40 overflow-y-auto rounded-xl border divide-y">
+          <div className="max-h-40 overflow-y-auto rounded-xl border divide-y" role="region" aria-label="Contenu défilant">
             {report.failures.map((f, idx) => (
               <div key={idx} className="flex items-start justify-between gap-2 p-2 text-xs">
                 <div className="min-w-0">

@@ -443,7 +443,7 @@ function AdminConsoleContent() {
         {/* MOBILE SUB-NAVIGATION (horizontal scroll, hidden on md+) */}
         {/* ============================================================== */}
         <div className="relative md:hidden">
-          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x">
+          <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x" role="region" aria-label="Contenu défilant">
             <div className="shrink-0 w-1" />
             {adminSections.flatMap((section, gi) => {
               const items: React.ReactNode[] = []

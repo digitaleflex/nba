@@ -234,7 +234,7 @@ export function AdminInbox() {
                 </TabsList>
               </Tabs>
             </div>
-            <div className="max-h-[60vh] overflow-y-auto p-3">
+            <div className="max-h-[60vh] overflow-y-auto p-3" role="region" aria-label="Contenu défilant">
               <InboxBody category={category} onChanged={refreshCount} />
             </div>
           </div>

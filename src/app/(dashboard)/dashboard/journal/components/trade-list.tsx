@@ -85,6 +85,7 @@ export function TradeList({ onNewTrade }: TradeListProps) {
 
         {availablePairs.length > 0 && (
           <select
+            aria-label="Filtre paire"
             value={pairFilter}
             onChange={(e) => { setPairFilter(e.target.value); setPage(1) }}
             className="rounded-lg border border-input bg-background px-3 py-2.5 text-xs min-h-[44px]"
@@ -94,6 +95,7 @@ export function TradeList({ onNewTrade }: TradeListProps) {
           </select>
         )}
         <select
+          aria-label="Filtre résultat"
           value={resultFilter}
           onChange={(e) => { setResultFilter(e.target.value); setPage(1) }}
           className="rounded-lg border border-input bg-background px-3 py-2.5 text-xs min-h-[44px]"

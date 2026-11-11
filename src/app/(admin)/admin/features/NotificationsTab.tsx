@@ -154,7 +154,7 @@ export function NotificationsTab({ cachedGet, invalidate }: NotificationsTabProp
         {loadingNotifHistory ? (
           <div className="py-8 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
         ) : notifHistory.length > 0 ? (
-          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+          <div className="space-y-2 max-h-[400px] overflow-y-auto" role="region" aria-label="Contenu défilant">
             {notifHistory.map((notif) => (
               <Card key={notif.id} className="border-border/60 bg-card shadow-sm">
                 <CardContent className="p-3">
