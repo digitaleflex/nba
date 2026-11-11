@@ -737,3 +737,25 @@ textarea,
     min-height: 42px;
   }
 }
+
+/* ─── Tableaux admin tactiles : 1re colonne figée + scroll horizontal ─── */
+.admin-table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.admin-table > thead > tr > th:first-child,
+.admin-table > tbody > tr > td:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--color-card);
+  box-shadow: 1px 0 0 var(--color-border);
+}
+.admin-table > tbody > tr > td:first-child {
+  font-weight: 600;
+}
+@media (max-width: 767px) {
+  .admin-table .hide-mobile {
+    display: none;
+  }
+}

@@ -73,7 +73,7 @@ export function EmailsTab({ cachedGet, opsData }: EmailsTabProps) {
       ) : emails.length > 0 ? (
         <Card className="border-border/60 bg-card shadow-sm">
           <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left border-collapse">
+            <table className="admin-table w-full min-w-[680px] text-xs text-left">
               <thead>
                 <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                   <th className="px-4 py-3">Utilisateur</th>

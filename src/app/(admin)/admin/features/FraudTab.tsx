@@ -205,7 +205,7 @@ export function FraudTab() {
       <Card><CardContent className="p-6 space-y-4">
         <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Evenements recents (HAUT/CRITIQUE)</h3>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="admin-table w-full min-w-[680px] text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Severite</th><th className="px-3 py-2">Utilisateur</th><th className="px-3 py-2">IP</th><th className="px-3 py-2 text-right">Action</th>
             </tr></thead>
@@ -252,7 +252,7 @@ export function FraudTab() {
           <span className="text-xs text-muted-foreground">{attempts.length} affichées / 100 max</span>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
+          <table className="admin-table w-full min-w-[680px] text-xs text-left">
             <thead><tr className="border-b text-muted-foreground uppercase tracking-wider text-xs">
               <th className="px-3 py-2">Date</th><th className="px-3 py-2">Type</th><th className="px-3 py-2">Statut</th><th className="px-3 py-2">Email</th><th className="px-3 py-2">Raison</th><th className="px-3 py-2">IP</th>
             </tr></thead>

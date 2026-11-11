@@ -478,7 +478,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
         desktop={
           <Card className="border-border/60 bg-card shadow-sm">
             <div className="overflow-x-auto md:overflow-x-visible">
-              <table className="w-full text-xs text-left border-collapse">
+              <table className="admin-table w-full min-w-[780px] text-xs text-left">
                 <thead className="sticky top-0 z-10 bg-card shadow-[0_1px_0_0_hsl(var(--border))]">
                   <tr className="border-b border-border/40 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                     <th className="px-2 py-3 w-8">
@@ -639,7 +639,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                             {m.emailStatus === "BOUNCED" || m.emailStatus === "INVALID" ? (
                               <button
                                 onClick={() => updateMember(m.id, { emailStatus: "OK" })}
-                                className="p-1.5 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+                                className="p-1.5 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
                                 title="Réinitialiser le statut d'email du membre (peux être nécessaire après le rebond de l'email)"
                                 aria-label="Réinitialiser le statut d'email pour réparation"
                               >
@@ -657,7 +657,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                                 })
                               }}
                               disabled={updating === m.email}
-                              className="p-1.5 rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer disabled:opacity-50"
+                              className="p-1.5 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-rose-400 hover:text-rose-500 hover:bg-rose-500/10 transition-all cursor-pointer disabled:opacity-50"
                               title="Bannir et blacklisted L'utilisateur. Supprime également le compte de manière permanente"
                               aria-label={`Bannir ${m.email} et blacklisted`}
                             >
@@ -675,7 +675,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
                                   const menu = e.currentTarget.nextElementSibling as HTMLElement
                                   if (menu) menu.classList.toggle("hidden")
                                 }}
-                                className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+                                className="p-1.5 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
                                 title="Plus d'actions disponibles sur ce membre"
                                 aria-label="Plus d'actions pour le membre"
                               >
@@ -767,7 +767,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             <button
               onClick={() => setPage(Math.max(1, page - 1))}
               disabled={page <= 1}
-              className="p-1.5 rounded-lg border border-border disabled:opacity-30 hover:bg-muted/50 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg border border-border disabled:opacity-30 hover:bg-muted/50 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronLeft className="size-4" />
             </button>
@@ -775,7 +775,7 @@ export function MembresTab({ cachedGet, invalidate }: MembresTabProps) {
             <button
               onClick={() => setPage(Math.min(totalPages, page + 1))}
               disabled={page >= totalPages}
-              className="p-1.5 rounded-lg border border-border disabled:opacity-30 hover:bg-muted/50 transition-colors cursor-pointer disabled:cursor-not-allowed"
+              className="p-1.5 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg border border-border disabled:opacity-30 hover:bg-muted/50 transition-colors cursor-pointer disabled:cursor-not-allowed"
             >
               <ChevronRight className="size-4" />
             </button>
@@ -862,7 +862,7 @@ function MemberCard({
           {m.emailStatus === "BOUNCED" || m.emailStatus === "INVALID" ? (
             <button
               onClick={() => onUpdate(m.id, { emailStatus: "OK" })}
-              className="p-2 rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
+              className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-amber-500 hover:text-amber-600 hover:bg-amber-500/10 transition-all cursor-pointer"
               aria-label="Réinitialiser le statut d'email"
             >
               <Mail className="size-3.5" />
@@ -870,7 +870,7 @@ function MemberCard({
           ) : null}
           <button
             onClick={() => onUpdate(m.id, { isActive: !m.isActive })}
-            className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+            className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
             aria-label={m.isActive ? "Désactiver" : "Activer"}
           >
             {m.isActive ? <ToggleRight className="size-3.5" /> : <ToggleLeft className="size-3.5" />}
@@ -878,7 +878,7 @@ function MemberCard({
           <div className="relative">
             <button
               onClick={() => setMenuOpen(!menuOpen)}
-              className="p-2 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
+              className="p-2 min-h-[40px] min-w-[40px] inline-flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all cursor-pointer"
               aria-label="Plus d'actions"
             >
               <MoreHorizontal className="size-3.5" />

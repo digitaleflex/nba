@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Search, Loader2 } from "lucide-react"
-import { Card, Badge, Button, Input, cn, EmptyState } from "@nba/design-system"
+import { Card, CardContent, Badge, Button, Input, cn, EmptyState, DualRender } from "@nba/design-system"
 import { Member, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import { trackSearch } from "../lib/track-search"
@@ -80,9 +80,11 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
         </Button>
       </div>
 
-      <Card className="border-border/60 bg-card shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
+      <DualRender
+        desktop={
+          <Card className="border-border/60 bg-card shadow-sm">
+            <div className="overflow-x-auto">
+          <table className="admin-table w-full min-w-[720px] text-xs text-left">
             <thead>
               <tr className="border-b border-border/40 bg-card/30 text-muted-foreground font-bold uppercase tracking-wider text-xs">
                 <th className="px-6 py-3">Utilisateur</th>
@@ -148,9 +150,53 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                 </tr>
               )}
             </tbody>
-          </table>
-        </div>
-      </Card>
+              </table>
+            </div>
+          </Card>
+        }
+        mobile={
+          <div className="space-y-3 md:hidden">
+            {loadingMembers ? (
+              <div className="py-12 flex justify-center"><Loader2 className="animate-spin text-primary" /></div>
+            ) : membersError ? (
+              <p role="alert" className="text-xs text-rose-600 text-center py-8">Erreur de chargement. <button className="underline cursor-pointer min-h-[44px] px-2" onClick={fetchMembers}>Réessayer</button></p>
+            ) : members.length === 0 ? (
+              <EmptyState icon={Search} title="Aucun membre trouvé" description="Essayez de modifier votre recherche." />
+            ) : (
+              members.map((member) => (
+                <Card key={member.id} className="border-border/60 bg-card shadow-sm">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="size-10 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary shrink-0">
+                        {(member.name || member.email || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="font-semibold truncate">{member.name || "—"}</p>
+                        <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                      </div>
+                      <Badge variant="outline" className={cn(member.isActive ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" : "bg-rose-500/10 text-rose-600 border-rose-500/20")}>
+                        {member.isActive ? "Actif" : "Suspendu"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="font-medium">{member.role?.name}</span>
+                      <span aria-hidden="true">·</span>
+                      <Badge variant="outline" className="text-[9px] border-border py-0.5 px-2">{member.onboardingStatus}</Badge>
+                    </div>
+                    <Button
+                      variant="outline"
+                      className="w-full min-h-[44px] text-sm"
+                      onClick={() => onOpenPanel({ title: "Détails Utilisateur", type: "user", data: member })}
+                    >
+                      Voir la fiche
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </div>
+        }
+      />
     </div>
   )
 }
