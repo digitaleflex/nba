@@ -2,10 +2,11 @@
 
 ## Getting Started
 
-1. Read [ENGINEERING_HANDBOOK.md](./ENGINEERING_HANDBOOK.md) completely.
-2. Follow the reading path for your role.
-3. Set up your development environment.
-4. Pick a task from the backlog.
+1. Read [docs/ENGINEERING_HANDBOOK.md](./docs/ENGINEERING_HANDBOOK.md) completely.
+2. Read [docs/05-development/AGENT_RUNBOOK.md](./docs/05-development/AGENT_RUNBOOK.md) (local setup, checks, critical rules).
+3. Follow the reading path for your role.
+4. Set up your development environment: `bash scripts/dev/setup-local.sh`.
+5. Pick a task from the backlog (see `docs/audits/CARTE_DES_CHANTIERS_2026-11.md`).
 
 ## Development Process
 
