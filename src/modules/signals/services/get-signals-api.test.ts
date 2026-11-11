@@ -25,6 +25,9 @@ vi.mock("@nba/lib/db", () => ({
     signalArchive: {
       findMany: vi.fn(),
     },
+    signalTaken: {
+      findMany: vi.fn(),
+    },
     subscriptionPlan: {
       findMany: vi.fn(),
     },
@@ -109,6 +112,7 @@ describe("getSignalsApi", () => {
     vi.mocked(prisma.signalRead.count).mockResolvedValue(0)
     vi.mocked(prisma.signalFavorite.findMany).mockResolvedValue([])
     vi.mocked(prisma.signalArchive.findMany).mockResolvedValue([])
+    vi.mocked(prisma.signalTaken.findMany).mockResolvedValue([])
 
     const result = await getSignalsApi({})
     expect(result.signals).toHaveLength(1)
@@ -144,6 +148,7 @@ describe("getSignalsApi", () => {
     vi.mocked(prisma.signalRead.count).mockResolvedValue(0)
     vi.mocked(prisma.signalFavorite.findMany).mockResolvedValue([])
     vi.mocked(prisma.signalArchive.findMany).mockResolvedValue([])
+    vi.mocked(prisma.signalTaken.findMany).mockResolvedValue([])
 
     const result = await getSignalsApi({})
     expect(result.signals).toHaveLength(1)
