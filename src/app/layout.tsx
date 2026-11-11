@@ -68,6 +68,10 @@ export default async function RootLayout({
   // CSP avec nonce exige un rendu dynamique : attendre la requête courante
   // pour que Next.js puisse injecter le nonce dans les <script>/<style> inline.
   await connection();
+
+  // Le nonce posé par src/middleware.ts (en-tête x-nonce) doit être transmis
+  // aux scripts inline que l'on contrôle nous-mêmes — notamment celui de
+  // next-themes (anti-flash), sinon la CSP le bloque.
   const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
@@ -89,7 +93,7 @@ export default async function RootLayout({
           strategy="afterInteractive"
           nonce={nonce}
         />
-        <ThemeProvider>
+        <ThemeProvider nonce={nonce}>
           <OfflineBanner />
           <Suspense fallback={null}>
             <TopLoader />

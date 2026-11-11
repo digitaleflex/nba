@@ -31,7 +31,12 @@ const nextConfig: NextConfig = {
           { key: "X-Frame-Options", value: "DENY" },
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          // ⚠️ microphone et caméra DOIVENT être autorisés pour l'origine :
+          // /dashboard/redpills et /admin/redpills enregistrent de la voix et
+          // de la vidéo. Les bloquer ici rendait l'enregistreur muet (le
+          // navigateur refuse getUserMedia avant même la demande). Les
+          // iframes tierces restent bloquées grâce à (self).
+          { key: "Permissions-Policy", value: "camera=(self), microphone=(self), geolocation=()" },
           { key: "Alt-Svc", value: 'h2c=":443"; ma=1' },
         ],
       },
