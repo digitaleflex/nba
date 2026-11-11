@@ -40,10 +40,13 @@ export async function POST(req: NextRequest) {
   try {
     const session = await requireAdmin()
     const body = await req.json()
-    const { title, content, audioUrl, imageUrl, videoUrl, isPublished } = body ?? {}
+    const { title, content, audioUrl, imageUrl, videoUrl, format, series, episode, isPublished } = body ?? {}
 
     if (!title || typeof title !== "string" || !title.trim()) {
       return NextResponse.json({ error: "Le titre est requis" }, { status: 400 })
+    }
+    if (format !== undefined && !["TEXT","IMAGE","AUDIO","VIDEO","MIXED"].includes(format)) {
+      return NextResponse.json({ error: "Format invalide" }, { status: 400 })
     }
 
     const redpill = await prisma.redpill.create({
@@ -53,6 +56,9 @@ export async function POST(req: NextRequest) {
         audioUrl: typeof audioUrl === "string" && audioUrl.trim() ? audioUrl.trim() : null,
         imageUrl: typeof imageUrl === "string" && imageUrl.trim() ? imageUrl.trim() : null,
         videoUrl: typeof videoUrl === "string" && videoUrl.trim() ? videoUrl.trim() : null,
+        format: typeof format === "string" ? format : "MIXED",
+        series: typeof series === "string" && series.trim() ? series.trim() : null,
+        episode: Number.isInteger(episode) && episode > 0 ? episode : null,
         isPublished: isPublished !== false,
         createdBy: session.user.id,
       },

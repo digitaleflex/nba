@@ -1158,6 +1158,9 @@ model Redpill {
   audioUrl    String?  @map("audio_url")
   imageUrl    String?  @map("image_url")
   videoUrl    String?  @map("video_url")
+  format      String   @default("MIXED") // TEXT | IMAGE | AUDIO | VIDEO | MIXED
+  series      String?  // nom de la série (ex : "Discipline 7 jours")
+  episode     Int?     // numéro d'épisode dans la série
   isPublished Boolean  @default(true) @map("is_published")
   publishedAt DateTime @default(now()) @map("published_at")
   createdBy   String   @map("created_by") @db.Uuid

@@ -14,7 +14,11 @@ export async function PUT(
     await requireAdmin()
     const { id } = await params
     const body = await req.json()
-    const { title, content, audioUrl, imageUrl, videoUrl, isPublished } = body ?? {}
+    const { title, content, audioUrl, imageUrl, videoUrl, format, series, episode, isPublished } = body ?? {}
+
+    if (format !== undefined && !["TEXT","IMAGE","AUDIO","VIDEO","MIXED"].includes(format)) {
+      return NextResponse.json({ error: "Format invalide" }, { status: 400 })
+    }
 
     const clean = (v: unknown) =>
       typeof v === "string" && v.trim() ? v.trim() : v === null ? null : undefined
@@ -27,6 +31,9 @@ export async function PUT(
         ...(audioUrl !== undefined ? { audioUrl: clean(audioUrl) ?? null } : {}),
         ...(imageUrl !== undefined ? { imageUrl: clean(imageUrl) ?? null } : {}),
         ...(videoUrl !== undefined ? { videoUrl: clean(videoUrl) ?? null } : {}),
+        ...(format !== undefined ? { format } : {}),
+        ...(series !== undefined ? { series: typeof series === "string" && series.trim() ? series.trim() : null } : {}),
+        ...(episode !== undefined ? { episode: Number.isInteger(episode) && episode > 0 ? episode : null } : {}),
         ...(typeof isPublished === "boolean" ? { isPublished } : {}),
       },
     })

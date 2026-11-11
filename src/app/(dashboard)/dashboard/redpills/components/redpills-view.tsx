@@ -11,8 +11,18 @@ interface RedpillData {
   audioUrl: string | null
   imageUrl: string | null
   videoUrl: string | null
+  format: string | null
+  series: string | null
+  episode: number | null
   publishedAt: string
   read: boolean
+}
+
+const FORMAT_LABEL: Record<string, string> = {
+  TEXT: "📝 Texte",
+  IMAGE: "🖼️ Image",
+  AUDIO: "🎙️ Audio",
+  VIDEO: "🎬 Vidéo",
 }
 
 function fileSrc(url: string): string {
@@ -30,9 +40,17 @@ function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string)
         </div>
       )}
       <CardContent className="p-4 sm:p-5 space-y-3">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
           <Flame className="size-3.5 text-orange-500 shrink-0" />
           <span className="font-semibold text-foreground">{pill.title}</span>
+          {pill.format && FORMAT_LABEL[pill.format] && (
+            <Badge variant="outline" className="text-[10px]">{FORMAT_LABEL[pill.format]}</Badge>
+          )}
+          {pill.series && (
+            <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
+              📚 {pill.series}{pill.episode != null ? ` · ép. ${pill.episode}` : ""}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
           <Clock className="size-3.5 shrink-0" />
