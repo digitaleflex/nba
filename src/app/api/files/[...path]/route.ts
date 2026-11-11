@@ -198,13 +198,17 @@ export async function GET(
     const { stream, size, mimeType } = await storage.read(actualFilePath)
     
     let contentType = mimeType ?? "application/octet-stream"
+    if (contentType.includes(";")) contentType = contentType.split(";")[0].trim().toLowerCase()
     if (!mimeType) {
       if (actualFilePath.endsWith(".jpg") || actualFilePath.endsWith(".jpeg")) contentType = "image/jpeg"
       else if (actualFilePath.endsWith(".png")) contentType = "image/png"
       else if (actualFilePath.endsWith(".webp")) contentType = "image/webp"
       else if (actualFilePath.endsWith(".pdf")) contentType = "application/pdf"
       else if (actualFilePath.endsWith(".mp4")) contentType = "video/mp4"
-      else if (actualFilePath.endsWith(".webm")) contentType = "video/webm"
+      else if (actualFilePath.endsWith(".webm")) {
+        // Redpill voice notes are commonly stored as .webm audio; prefer audio/webm there.
+        contentType = category === "redpills" ? "audio/webm" : "video/webm"
+      }
       else if (actualFilePath.endsWith(".mp3")) contentType = "audio/mpeg"
       else if (actualFilePath.endsWith(".wav")) contentType = "audio/wav"
       else if (actualFilePath.endsWith(".ogg") || actualFilePath.endsWith(".oga")) contentType = "audio/ogg"

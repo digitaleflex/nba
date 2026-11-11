@@ -94,7 +94,8 @@ export function VideoRecorder({ onDone, onCancel }: VideoRecorderProps) {
         if (e.data.size > 0) chunksRef.current.push(e.data)
       }
       rec.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "video/webm" })
+        const mime = rec.mimeType?.split(";")[0]?.trim().toLowerCase() || "video/webm"
+        const blob = new Blob(chunksRef.current, { type: mime })
         setRecording(false)
         if (blob.size > 0) onDone(blob)
         else setError("Enregistrement vide, réessaie.")

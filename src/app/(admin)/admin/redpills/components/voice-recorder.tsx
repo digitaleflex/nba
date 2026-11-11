@@ -79,7 +79,8 @@ export function VoiceRecorder({ onDone, onCancel }: VoiceRecorderProps) {
         if (e.data.size > 0) chunksRef.current.push(e.data)
       }
       rec.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: rec.mimeType || "audio/webm" })
+        const mime = rec.mimeType?.split(";")[0]?.trim().toLowerCase() || "audio/webm"
+        const blob = new Blob(chunksRef.current, { type: mime })
         stopAll()
         setRecording(false)
         if (blob.size > 0) onDone(blob)

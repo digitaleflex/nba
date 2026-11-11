@@ -95,8 +95,13 @@ export default function AdminRedpillsPage() {
   async function handleUpload(file: File, kind: "audio" | "image" | "video") {
     setUploading(kind === "video" ? "video" : kind)
     try {
+      const normalizedType = file.type?.split(";")[0]?.trim().toLowerCase()
+      const uploadFile =
+        normalizedType && normalizedType !== file.type
+          ? new File([file], file.name, { type: normalizedType })
+          : file
       const fd = new FormData()
-      fd.append("file", file)
+      fd.append("file", uploadFile)
       const res = await fetch("/api/admin/redpills/upload", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Upload échoué")
@@ -110,13 +115,14 @@ export default function AdminRedpillsPage() {
 
   async function handleRecordedVideo(blob: Blob) {
     setShowVideoRecorder(false)
-    const ext = blob.type.includes("mp4") ? "mp4" : "webm"
+    const mime = (blob.type?.split(";")[0]?.trim().toLowerCase() || "video/webm")
+    const ext = mime.includes("mp4") ? "mp4" : "webm"
     const url = URL.createObjectURL(blob)
     setRecordedVideoUrl(url)
     setUploading("video")
     try {
       const fd = new FormData()
-      fd.append("file", new File([blob], `video.${ext}`, { type: blob.type }))
+      fd.append("file", new File([blob], `video.${ext}`, { type: mime }))
       const res = await fetch("/api/admin/redpills/upload", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Upload échoué")
@@ -130,13 +136,14 @@ export default function AdminRedpillsPage() {
 
   async function handleRecorded(blob: Blob) {
     setShowRecorder(false)
-    const ext = blob.type.includes("mp4") ? "m4a" : blob.type.includes("ogg") ? "ogg" : "webm"
+    const mime = (blob.type?.split(";")[0]?.trim().toLowerCase() || "audio/webm")
+    const ext = mime.includes("mp4") ? "m4a" : mime.includes("ogg") ? "ogg" : "webm"
     const url = URL.createObjectURL(blob)
     setRecordedUrl(url)
     setUploading("audio")
     try {
       const fd = new FormData()
-      fd.append("file", new File([blob], `note-vocale.${ext}`, { type: blob.type }))
+      fd.append("file", new File([blob], `note-vocale.${ext}`, { type: mime }))
       const res = await fetch("/api/admin/redpills/upload", { method: "POST", body: fd })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || "Upload échoué")
