@@ -59,6 +59,14 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
             <button
               type="button"
               onClick={() => toggle(r.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault()
+                  toggle(r.id)
+                }
+              }}
+              role="button"
+              tabIndex={0}
               aria-expanded={isExpanded}
               className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors select-none text-left"
             >
@@ -109,6 +117,15 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
               <button
                 type="button"
                 onClick={() => setContentOpenId(isContentOpen ? null : r.id)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault()
+                    setContentOpenId(isContentOpen ? null : r.id)
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-expanded={isContentOpen}
                 className="w-full flex items-center gap-2 px-4 py-1.5 text-xs text-muted-foreground hover:bg-muted/20 transition-colors cursor-pointer"
               >
                 {isContentOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
