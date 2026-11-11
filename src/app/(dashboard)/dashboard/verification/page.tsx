@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, Button, Badge } from "@nba/design-system"
+import {Card, CardContent, Button, Badge, Page, PageHeader} from "@nba/design-system"
 import { Shield, FileText, CheckCircle2, AlertTriangle, Clock, Link2, Loader2, ArrowRight, AlertCircle } from "lucide-react"
 import { StepKyc } from "../../../(onboarding)/onboarding/components/step-kyc"
 import { StepBroker } from "../../../(onboarding)/onboarding/components/step-broker"
@@ -53,13 +53,8 @@ export default function VerificationPage() {
 
   if (error) {
     return (
-      <div className="space-y-8 max-w-4xl mx-auto">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-            <Shield className="size-6 text-primary" />
-            Vérification
-          </h1>
-        </div>
+      <Page maxWidth="4xl" gap={8}>
+        <PageHeader title="Vérification" />
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
@@ -68,7 +63,7 @@ export default function VerificationPage() {
             <Button variant="outline" size="sm" onClick={fetchState}>Réessayer</Button>
           </CardContent>
         </Card>
-      </div>
+      </Page>
     )
   }
 
@@ -83,16 +78,11 @@ export default function VerificationPage() {
   const hasBroker = !!state.brokerStatus
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
-          <Shield className="size-6 text-primary" />
-          Vérification
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Gère et suis le statut de validation de ton compte NeverBrokeAgain.
-        </p>
-      </div>
+    <Page maxWidth="4xl" gap={8} className="animate-in fade-in duration-500">
+      <PageHeader
+        title="Vérification"
+        description="Gère et suis le statut de validation de ton compte NeverBrokeAgain."
+      />
 
       {/* Global Status Overview */}
       <Card className="relative overflow-hidden bg-card/40 border border-border/50">
@@ -271,6 +261,6 @@ export default function VerificationPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </Page>
   )
 }

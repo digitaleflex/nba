@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
+import {Card, CardContent, Button, Input, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Page, PageHeader} from "@nba/design-system"
 import { PasswordField } from "@nba/app/components/password-field"
 import {
   User, Mail, Phone, Globe, Loader2, Check, AlertCircle,
@@ -247,8 +247,8 @@ export default function ProfilePage() {
 
   if (error && !profile) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
+      <Page gap={6}>
+        <PageHeader title="Profil" />
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
@@ -256,16 +256,16 @@ export default function ProfilePage() {
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>
-      </div>
+      </Page>
     )
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Profil</h1>
-        <p className="text-sm text-muted-foreground">Gère tes informations personnelles et la sécurité de ton compte</p>
-      </div>
+    <Page maxWidth="2xl" gap={6}>
+      <PageHeader
+        title="Profil"
+        description="Gère tes informations personnelles et la sécurité de ton compte"
+      />
 
       {/* Profile Info Card */}
       <Card>
@@ -630,6 +630,6 @@ export default function ProfilePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   )
 }

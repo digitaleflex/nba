@@ -6,7 +6,7 @@ import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { plainPreview } from "@nba/lib/markdown"
 import { MessageComposer, type SendPayload } from "@nba/components/message-composer"
 import { ChatMessage, type ChatMessageData, type QuotedRef } from "@nba/components/chat-message"
-import { Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState } from "@nba/design-system"
+import {Card, CardContent, Input, Button, Avatar, AvatarFallback, Badge, Dialog, DialogContent, DialogHeader, DialogTitle, EmptyState, Page, PageHeader} from "@nba/design-system"
 import { MessageSquare, Loader2, Search, Plus, X, Circle, Send, ArrowLeft, ChevronLeft } from "lucide-react"
 import { toast } from "sonner"
 
@@ -463,26 +463,24 @@ export default function MessagesPage() {
   const online = status === "connected"
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Messages</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Tes conversations avec l&apos;équipe NeverBrokeAgain
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <span
-            className={`flex items-center gap-1.5 text-xs ${online ? "text-success" : "text-muted-foreground"}`}
-          >
-            <Circle className={`size-2 ${online ? "fill-success" : "fill-muted-foreground"}`} />
-            {online ? "Temps réel" : "Hors ligne"}
-          </span>
-          <Button onClick={() => setPickerOpen(true)} className="gap-2">
-            <Plus className="size-4" /> Nouveau message
-          </Button>
-        </div>
-      </div>
+    <Page gap={4}>
+      <PageHeader
+        title="Messages"
+        description="Tes conversations avec l'équipe NeverBrokeAgain"
+        actions={
+          <div className="flex items-center gap-3">
+            <span
+              className={`flex items-center gap-1.5 text-xs ${online ? "text-success" : "text-muted-foreground"}`}
+            >
+              <Circle className={`size-2 ${online ? "fill-success" : "fill-muted-foreground"}`} />
+              {online ? "Temps réel" : "Hors ligne"}
+            </span>
+            <Button onClick={() => setPickerOpen(true)} className="gap-2">
+              <Plus className="size-4" /> Nouveau message
+            </Button>
+          </div>
+        }
+      />
 
       <Card className="overflow-hidden">
         <CardContent className="p-0">
@@ -731,6 +729,6 @@ export default function MessagesPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </Page>
   )
 }
