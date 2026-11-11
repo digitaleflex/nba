@@ -4,10 +4,12 @@ import { useActionState } from "react"
 import { toast } from "sonner"
 import { RotateCw } from "lucide-react"
 
-export function RetryButton({ serverAction }: { serverAction: () => Promise<{ count: number }> }) {
+export function RetryButton({ serverAction }: { serverAction: () => Promise<{ count: number; error?: string }> }) {
   const [, action, pending] = useActionState(async () => {
     const result = await serverAction()
-    if (result && result.count > 0) {
+    if (result?.error) {
+      toast.error(result.error)
+    } else if (result && result.count > 0) {
       toast.success(`${result.count} job${result.count > 1 ? "s" : ""} relancé${result.count > 1 ? "s" : ""}`)
     } else {
       toast.info("Aucun job en échec")

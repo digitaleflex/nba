@@ -12,10 +12,14 @@ import { SignalTableClient } from "./signal-table-client"
 import { UserTimeline } from "./user-timeline"
 import { RetryButton } from "./retry-button"
 import { TrackerTabs } from "./tracker-tabs"
-import IORedis from "ioredis"
+import { getRedisConnection, retryFailedJobs, signalDistributionQueue } from "@nba/lib/queue"
+import { requireRole } from "@nba/lib/auth-utils"
+import { logger } from "@nba/lib/logger"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
 import { cn } from "@nba/design-system"
+
+const log = logger.child({ module: "admin-tracker" })
 
 const RECENT_SIGNALS = 12
 
@@ -73,6 +77,56 @@ function snippet(content: string): string {
 
 export const dynamic = "force-dynamic"
 
+interface WorkerHealth {
+  signalWorker: string
+  notifWorker: string
+  pendingJobs: number
+}
+
+/**
+ * Santé des workers + nombre de jobs en attente.
+ *
+ * ⚠️ On passe par l'API BullMQ (`getJobCounts`) et non par les clés Redis
+ * internes : dans BullMQ v5 la file `wait` est une LIST, donc `ZCARD` renvoyait
+ * toujours 0 (WRONGTYPE avalé) et le compteur était faux en permanence.
+ */
+async function getWorkerHealth(): Promise<WorkerHealth> {
+  const health: WorkerHealth = {
+    signalWorker: "inconnu",
+    notifWorker: "inconnu",
+    pendingJobs: 0,
+  }
+
+  if (process.env.QUEUE_ENABLED === "false" || !process.env.REDIS_URL) {
+    return { ...health, signalWorker: "désactivé", notifWorker: "désactivé" }
+  }
+
+  try {
+    const counts = await signalDistributionQueue.getJobCounts("waiting", "delayed", "paused")
+    health.pendingJobs = (counts.waiting ?? 0) + (counts.delayed ?? 0) + (counts.paused ?? 0)
+  } catch (err) {
+    log.warn({ err }, "Impossible de lire les compteurs de la file signal-distribution")
+  }
+
+  try {
+    const redis = getRedisConnection()
+    if (redis) {
+      // La clé `meta` est créée par le worker à son démarrage : sa présence est
+      // le seul signal fiable « worker vivant » exposé par BullMQ.
+      const [sigMeta, notifMeta] = await Promise.all([
+        redis.hget("bull:signal-distribution:meta", "version"),
+        redis.hget("bull:notification-delivery:meta", "version"),
+      ])
+      health.signalWorker = sigMeta ? "actif" : "inactif"
+      health.notifWorker = notifMeta ? "actif" : "inactif"
+    }
+  } catch (err) {
+    log.warn({ err }, "Impossible de lire l'état des workers")
+  }
+
+  return health
+}
+
 export default async function SignalTrackerPage({
   searchParams: sp,
 }: {
@@ -113,25 +167,8 @@ export default async function SignalTrackerPage({
     },
   })
 
-  // Worker health check
-  let workerHealth = { signalWorker: "inconnu", notifWorker: "inconnu", pendingJobs: 0 }
-  try {
-    const redisUrl = process.env.REDIS_URL
-    if (redisUrl) {
-      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
-      const [sigMeta, notifMeta, pendingSig] = await Promise.all([
-        r.hget("bull:signal-distribution:meta", "version").catch(() => null),
-        r.hget("bull:notification-delivery:meta", "version").catch(() => null),
-        r.zcard("bull:signal-distribution:wait").catch(() => 0),
-      ])
-      workerHealth = {
-        signalWorker: sigMeta ? "actif" : "inactif",
-        notifWorker: notifMeta ? "actif" : "inactif",
-        pendingJobs: pendingSig,
-      }
-      await r.quit()
-    }
-  } catch {} // Redis indisponible, on ignore
+  // Worker health check — via l'API BullMQ, jamais via les clés internes.
+  const workerHealth = await getWorkerHealth()
 
   const rows: SignalRow[] = []
   const allExternalIds: string[] = []
@@ -325,24 +362,28 @@ export default async function SignalTrackerPage({
   }
   const users = Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 
-  async function handleRetryAll() {
+  async function handleRetryAll(): Promise<{ count: number; error?: string }> {
     "use server"
-    let count = 0
     try {
-      const redisUrl = process.env.REDIS_URL
-      if (!redisUrl) return { count: 0 }
-      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
-      const failed = await r.zrange("bull:signal-distribution:failed", 0, -1)
-      count = failed.length
-      for (const id of failed) {
-        await r.zrem("bull:signal-distribution:failed", id)
-        await r.zadd("bull:signal-distribution:wait", Date.now(), id)
-        await r.hdel("bull:signal-distribution:" + id, "failedReason", "finishedOn", "processedOn", "stacktrace")
-      }
-      await r.quit()
-    } catch {}
-    revalidatePath("/admin/tracker")
-    return { count }
+      await requireRole(["ADMIN", "SUPER_ADMIN"])
+    } catch (err) {
+      log.warn({ err }, "Retry de jobs refusé : rôle insuffisant")
+      return { count: 0, error: "Action réservée aux administrateurs." }
+    }
+
+    if (process.env.QUEUE_ENABLED === "false" || !process.env.REDIS_URL) {
+      return { count: 0, error: "La file d'attente est désactivée." }
+    }
+
+    try {
+      const count = await retryFailedJobs(signalDistributionQueue)
+
+      revalidatePath("/admin/tracker")
+      return { count }
+    } catch (err) {
+      log.error({ err }, "Échec de la relance des jobs de distribution")
+      return { count: 0, error: "Impossible de relancer les jobs. Vérifie Redis/BullMQ." }
+    }
   }
 
   return (

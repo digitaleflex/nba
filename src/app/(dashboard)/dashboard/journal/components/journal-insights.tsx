@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "@nba/design-system"
-import { Sparkles, Loader2, Target, TrendingUp, TriangleAlert } from "lucide-react"
+import { Card, CardContent, Button } from "@nba/design-system"
+import { Sparkles, Loader2, Target, TrendingUp, TriangleAlert, RefreshCw } from "lucide-react"
 
 interface Insights {
   count: number
@@ -16,14 +16,35 @@ interface Insights {
 export function JournalInsights() {
   const [data, setData] = useState<Insights | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
-    fetch("/api/dashboard/journal/insights?days=30")
-      .then((r) => r.json())
-      .then(setData)
-      .catch(() => setData(null))
-      .finally(() => setLoading(false))
-  }, [])
+    const controller = new AbortController()
+
+    fetch("/api/dashboard/journal/insights?days=30", { signal: controller.signal })
+      .then(async (res) => {
+        // Ne jamais passer une réponse d'erreur au rendu : `{ error }` n'a pas
+        // de `strengths` → crash React (cf. TECH-03).
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        return (await res.json()) as Insights
+      })
+      .then((d) => {
+        if (!controller.signal.aborted) setData(d)
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return
+        setData(null)
+        setError("Le coach IA est momentanément indisponible.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [attempt])
 
   if (loading) {
     return (
@@ -31,6 +52,30 @@ export function JournalInsights() {
         <CardContent className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
           <Loader2 className="size-4 animate-spin text-primary" />
           Le coach analyse ton journal…
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card className="border-destructive/20 bg-destructive/[0.03]">
+        <CardContent className="flex flex-wrap items-center gap-3 py-4 text-sm">
+          <TriangleAlert className="size-4 shrink-0 text-destructive" />
+          <span className="text-muted-foreground">{error}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setLoading(true)
+              setError(null)
+              setAttempt((a) => a + 1)
+            }}
+            className="ml-auto"
+          >
+            <RefreshCw className="size-3.5" />
+            Réessayer
+          </Button>
         </CardContent>
       </Card>
     )

@@ -1,9 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
-import { Chart } from "@nba/design-system"
-import type { ChartDatum } from "@nba/design-system"
+import { Loader2, RefreshCw, TriangleAlert } from "lucide-react"
+import { Button, Chart } from "@nba/design-system"
 import { EvolutionChart, type EvolutionSeries } from "./evolution-chart"
 
 interface EvolutionData {
@@ -48,17 +47,52 @@ const PERIODS = [
 export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const [period, setPeriod] = useState("all")
 
   useEffect(() => {
-    setLoading(true)
-    fetch(`/api/dashboard/journal/stats?period=${period}`)
-      .then(r => r.json())
-      .then(d => setStats(d))
-      .finally(() => setLoading(false))
-  }, [period, refreshKey])
+    const controller = new AbortController()
+
+    fetch(`/api/dashboard/journal/stats?period=${period}`, { signal: controller.signal })
+      .then(async (res) => {
+        // Une réponse `{ error }` n'a pas la forme de `Stats` → crash au rendu
+        // (`stats.byDay.length`, cf. TECH-03). On valide donc le statut HTTP.
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        return (await res.json()) as Stats
+      })
+      .then((d) => {
+        if (!controller.signal.aborted) setStats(d)
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return
+        setStats(null)
+        setError("Impossible de charger tes statistiques.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [period, refreshKey, attempt])
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-6 animate-spin text-primary" /></div>
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <TriangleAlert className="size-6 text-destructive" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); setAttempt((a) => a + 1) }}>
+          <RefreshCw className="size-3.5" />
+          Réessayer
+        </Button>
+      </div>
+    )
+  }
+
   if (!stats) return <p className="text-sm text-muted-foreground text-center py-16">Aucune donnée.</p>
 
   return (
@@ -79,7 +113,11 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
         {PERIODS.map(p => (
           <button
             key={p.value}
-            onClick={() => setPeriod(p.value)}
+            onClick={() => {
+              setLoading(true)
+              setError(null)
+              setPeriod(p.value)
+            }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               period === p.value ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:text-foreground"
             }`}
