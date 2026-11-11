@@ -76,7 +76,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
             </Button>
           </DialogHeader>
 
-          <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          <nav aria-label="Navigation" className="flex-1 overflow-y-auto p-3 space-y-1">
             {space === "admin" ? (
               (() => {
                 const sections = [
@@ -99,7 +99,6 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                       return (
                         <Link
                           key={link.id}
-                          id={link.id}
                           href={link.href}
                           onClick={() => setOpen(false)}
                           aria-current={isActive ? "page" : undefined}
@@ -125,7 +124,6 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                 return (
                   <Link
                     key={link.id}
-                    id={link.id}
                     href={link.href}
                     onClick={() => setOpen(false)}
                     aria-current={isActive ? "page" : undefined}

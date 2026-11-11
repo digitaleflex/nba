@@ -15,16 +15,16 @@ const ADMIN_TABS: Record<string, string> = {
   settings: "Paramètres",
   audit: "Audit",
   moderation: "Modération",
-  users: "Utilisateurs",
+  users: "Comptes",
   membres: "Membres",
   notifications: "Notifications",
 }
 
 const ADMIN_PATHS: Record<string, string> = {
   "/admin/tracker": "Tracker",
-  "/admin/messages": "Messages",
+  "/admin/messages": "Messagerie",
   "/admin/webhooks": "Webhooks",
-  "/admin/support": "Support",
+  "/admin/support": "Support client",
 }
 
 export function MobilePageTitle() {
