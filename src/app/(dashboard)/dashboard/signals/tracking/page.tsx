@@ -14,7 +14,7 @@ import {
   BarChart,
   Bar,
 } from "recharts"
-import { Card, CardContent } from "@nba/design-system"
+import {Card, CardContent, Page, PageHeader} from "@nba/design-system"
 
 interface DayPoint {
   day: string
@@ -71,7 +71,7 @@ export default function SignalTrackingPage() {
   }, [days])
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <Page maxWidth="4xl" gap={6}>
       <Link
         href="/dashboard/signals"
         className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors min-h-[44px] py-2 -ml-2 px-2 rounded-lg"
@@ -80,9 +80,9 @@ export default function SignalTrackingPage() {
         Retour aux signaux
       </Link>
 
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl font-bold tracking-tight">Mon tracking — signaux tradés</h1>
-        <div className="flex gap-1.5">
+      <PageHeader
+        title="Mon tracking — signaux tradés"
+        actions={<div className="flex gap-1.5">
           {[14, 30, 60].map((d) => (
             <button
               key={d}
@@ -97,7 +97,7 @@ export default function SignalTrackingPage() {
             </button>
           ))}
         </div>
-      </div>
+      } />
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -203,6 +203,6 @@ export default function SignalTrackingPage() {
           )}
         </>
       )}
-    </div>
+    </Page>
   )
 }

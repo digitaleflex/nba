@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@nba/design-system"
+import {Card, CardContent, Page, PageHeader} from "@nba/design-system"
 import { LotCalculatorFull } from "@nba/components/lot-calculator"
 
 export default async function LotPage({

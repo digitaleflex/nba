@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from "react"
 import Link from "next/link"
 import { motion } from "motion/react"
-import { Card, CardContent, Badge, Input, Button, cn, EmptyState } from "@nba/design-system"
+import {Card, CardContent, Badge, Input, Button, cn, EmptyState, Page, PageHeader} from "@nba/design-system"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import { ArrowRight } from "lucide-react"
 import {
@@ -370,10 +370,8 @@ export function SignalsView() {
 
   if (error && signals.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Signaux</h1>
-        </div>
+      <Page gap={6}>
+        <PageHeader title="Signaux" />
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
@@ -384,16 +382,16 @@ export function SignalsView() {
             </Button>
           </CardContent>
         </Card>
-      </div>
+      </Page>
     )
   }
 
   return (
-    <div className="space-y-6">
+    <Page gap={6}>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            Signaux
+        <PageHeader
+          title="Signaux"
+          actions={
             <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <span className={cn(
                 "inline-block h-2 w-2 rounded-full",
@@ -401,8 +399,8 @@ export function SignalsView() {
               )} />
               {status === "connected" ? "En direct" : "Connexion…"}
             </span>
-          </h1>
-        </div>
+          }
+        />
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
@@ -583,7 +581,7 @@ export function SignalsView() {
         onFilterChange={setActiveFilter}
         group={summary?.group}
       />
-    </div>
+    </Page>
   )
 }
 

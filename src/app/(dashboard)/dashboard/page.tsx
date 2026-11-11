@@ -2,7 +2,7 @@ import Link from "next/link"
 import { redirect } from "next/navigation"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
-import { Card, CardContent, Button, cn } from "@nba/design-system"
+import {Card, CardContent, Button, cn, Page, PageHeader} from "@nba/design-system"
 import { DashboardKpis } from "./components/dashboard-kpis"
 import { PushNotificationPrompt } from "@nba/components/push-notification-prompt"
 import {

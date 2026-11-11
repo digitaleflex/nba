@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState, useCallback, useRef } from "react"
-import { Card, CardContent, Button, EmptyState, Skeleton, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@nba/design-system"
+import {Card, CardContent, Button, EmptyState, Skeleton, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, Page, PageHeader} from "@nba/design-system"
 import {
   BellOff,
   BellRing,
@@ -302,10 +302,8 @@ export default function NotificationsPage() {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-        </div>
+      <Page gap={6}>
+        <PageHeader title="Notifications" />
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Info className="size-10 text-destructive" />
@@ -313,7 +311,7 @@ export default function NotificationsPage() {
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>
-      </div>
+      </Page>
     )
   }
 
@@ -364,29 +362,27 @@ export default function NotificationsPage() {
   const PermIcon = permConfig.icon
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Notifications</h1>
-          <p className="text-sm text-muted-foreground">
-            {unreadCount > 0
-              ? `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`
-              : "Tout est à jour"}
-          </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {unreadCount > 0 && (
-            <Button variant="outline" size="sm" onClick={markAllAsRead}>
-              <CheckCheck className="size-4 mr-1.5" />
-              Tout marquer lu
+    <Page maxWidth="2xl" gap={6}>
+      <PageHeader
+        title="Notifications"
+        description={unreadCount > 0
+          ? `${unreadCount} notification${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""}`
+          : "Tout est à jour"}
+        actions={
+          <div className="flex items-center gap-2 shrink-0">
+            {unreadCount > 0 && (
+              <Button variant="outline" size="sm" onClick={markAllAsRead}>
+                <CheckCheck className="size-4 mr-1.5" />
+                Tout marquer lu
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setPrefsOpen(true)}>
+              <Settings2 className="size-4 mr-1.5" />
+              Préférences
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={() => setPrefsOpen(true)}>
-            <Settings2 className="size-4 mr-1.5" />
-            Préférences
-          </Button>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       {/* ── Autorisation navigateur (section cool) ── */}
       <Card className={`border ${permConfig.bg}`}>
@@ -706,6 +702,6 @@ export default function NotificationsPage() {
           )}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

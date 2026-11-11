@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Card, CardContent, Button } from "@nba/design-system"
+import {Card, CardContent, Button, Page, PageHeader} from "@nba/design-system"
 import {
   Check, Loader2, AlertCircle, Calendar, RefreshCw, MessageCircle,
   Clock, ArrowRight, Zap,
@@ -80,8 +80,8 @@ export default function SubscriptionPage() {
 
   if (error) {
     return (
-      <div className="space-y-6">
-        <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
+      <Page gap={6}>
+        <PageHeader title="Abonnement" />
         <Card className="border-destructive/30">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <AlertCircle className="size-10 text-destructive" />
@@ -89,7 +89,7 @@ export default function SubscriptionPage() {
             <Button variant="outline" size="sm" onClick={() => window.location.reload()}>Réessayer</Button>
           </CardContent>
         </Card>
-      </div>
+      </Page>
     )
   }
 
@@ -124,11 +124,11 @@ export default function SubscriptionPage() {
     }, [] as AccessRequest[])
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Abonnement</h1>
-        <p className="text-sm text-muted-foreground">Gère ton accès aux signaux premium</p>
-      </div>
+    <Page maxWidth="4xl" gap={6}>
+      <PageHeader
+        title="Abonnement"
+        description="Gère ton accès aux signaux premium"
+      />
 
       {/* ══════════════════════════════════════════════════════════════
           BANNIÈRE D'URGENCE — expiration ou inactivité
@@ -375,7 +375,7 @@ export default function SubscriptionPage() {
           </CardContent>
         </Card>
       )}
-    </div>
+    </Page>
   )
 }
 

@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useRef, useState } from "react"
-import { Card, CardContent, Badge, Button, EmptyState } from "@nba/design-system"
+import {Card, CardContent, Badge, Button, EmptyState, Page, PageHeader} from "@nba/design-system"
 import { Flame, Loader2, Clock, RefreshCw, Volume2 } from "lucide-react"
 
 interface RedpillData {
@@ -177,24 +177,19 @@ export function RedpillsView() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <Flame className="size-6 text-orange-500" />
-            Redpills d'Emerson
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {unreadCount > 0
-              ? `${unreadCount} pilule${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""} — la motivation d'Emerson`
-              : "Tu es à jour. Reviens demain pour la prochaine pilule."}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={fetchPills}>
-          <RefreshCw className="size-4 mr-1.5" />
-          Actualiser
-        </Button>
-      </div>
+    <Page gap={6}>
+      <PageHeader
+        title="Redpills d'Emerson"
+        description={unreadCount > 0
+          ? `${unreadCount} pilule${unreadCount > 1 ? "s" : ""} non lue${unreadCount > 1 ? "s" : ""} — la motivation d'Emerson`
+          : "Tu es à jour. Reviens demain pour la prochaine pilule."}
+        actions={
+          <Button variant="outline" size="sm" onClick={fetchPills}>
+            <RefreshCw className="size-4 mr-1.5" />
+            Actualiser
+          </Button>
+        }
+      />
 
       {pills.length === 0 ? (
         <EmptyState
@@ -209,6 +204,6 @@ export function RedpillsView() {
           ))}
         </div>
       )}
-    </div>
+    </Page>
   )
 }

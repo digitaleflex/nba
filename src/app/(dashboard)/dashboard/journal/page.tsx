@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 
 export const dynamic = "force-dynamic"
 import { BookOpen, TrendingUp, PenLine, Play, Square, Loader2, Clock } from "lucide-react"
-import { cn, Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@nba/design-system"
+import {cn, Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, Page, PageHeader} from "@nba/design-system"
 import { toast } from "sonner"
 
 import { TradeList } from "./components/trade-list"
@@ -190,16 +190,12 @@ export default function JournalPage() {
   }, [])
 
   return (
-    <div id="journal" className="space-y-6 pb-20 md:pb-0">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Journal</h1>
-          <p className="text-sm text-muted-foreground">Suis tes trades, analyse ta performance, maîtrise tes émotions.</p>
-        </div>
-        <div className="relative">
-          <MissionsPanel />
-        </div>
-      </div>
+    <Page className="pb-20 md:pb-0" gap={6}>
+      <PageHeader
+        title="Journal"
+        description="Suis tes trades, analyse ta performance, maîtrise tes émotions."
+        actions={<div className="relative"><MissionsPanel /></div>}
+      />
 
       <FirstTradeGuide />
       <StatsGuide />
@@ -254,6 +250,6 @@ export default function JournalPage() {
           }}
         />
       )}
-    </div>
+    </Page>
   )
 }
