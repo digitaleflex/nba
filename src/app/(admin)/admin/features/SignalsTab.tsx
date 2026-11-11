@@ -280,7 +280,7 @@ export function SignalsTab({ cachedGet, invalidate, onOpenPanel }: SignalsTabPro
                             </div>
                           ))}
                           {imageCount > 3 && (
-                            <div className="size-10 rounded-lg border bg-muted flex items-center justify-center text-[10px] text-muted-foreground font-bold shrink-0">
+                            <div className="size-10 rounded-lg border bg-muted flex items-center justify-center text-xs text-muted-foreground font-bold shrink-0">
                               +{imageCount - 3}
                             </div>
                           )}

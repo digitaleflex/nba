@@ -277,7 +277,7 @@ function SysHealth({ label, healthy, okText = "En ligne", failText = "Échec" }:
         <Badge
           variant="outline"
           className={cn(
-            "text-[9px] py-0 px-1.5 mt-0.5",
+            "text-xs py-0 px-1.5 mt-0.5",
             healthy
               ? "text-success bg-success/5 border-success/20"
               : "text-destructive bg-destructive/5 border-destructive/20"

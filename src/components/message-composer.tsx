@@ -207,7 +207,7 @@ export function MessageComposer({
         <div className="mb-2 flex items-center gap-2 rounded-xl border-l-2 border-primary bg-muted/40 px-3 py-2">
           <Quote className="size-4 text-primary shrink-0" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-medium text-primary">{quotedMessage.senderName}</p>
+            <p className="text-xs font-medium text-primary">{quotedMessage.senderName}</p>
             <p className="text-xs text-muted-foreground truncate">{quotedMessage.preview}</p>
           </div>
           <button
@@ -231,7 +231,7 @@ export function MessageComposer({
           )}
           <div className="min-w-0 flex-1">
             <p className="text-xs font-medium truncate">{pending.name || (isImage ? "Image" : "Vidéo")}</p>
-            <p className="text-[10px] text-muted-foreground">Prêt à envoyer</p>
+            <p className="text-xs text-muted-foreground">Prêt à envoyer</p>
           </div>
           <button
             type="button"
@@ -320,7 +320,7 @@ export function MessageComposer({
       </div>
 
       {restored && text && (
-        <p className="text-[11px] text-muted-foreground mb-2">Brouillon restauré</p>
+        <p className="text-xs text-muted-foreground mb-2">Brouillon restauré</p>
       )}
       <div className="flex items-end gap-2">
         <textarea

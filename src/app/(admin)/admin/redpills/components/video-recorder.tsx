@@ -151,7 +151,7 @@ export function VideoRecorder({ onDone, onCancel }: VideoRecorderProps) {
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-rose-500 opacity-75" />
                   <span className="relative inline-flex size-2 rounded-full bg-rose-500" />
                 </span>
-                <span className="text-[11px] font-mono font-bold text-white tabular-nums">{formatTime(seconds)}</span>
+                <span className="text-xs font-mono font-bold text-white tabular-nums">{formatTime(seconds)}</span>
               </div>
             )}
           </div>

@@ -82,7 +82,7 @@ export function StepAudience({
                   <Checkbox checked={isSelected} onCheckedChange={() => {}} />
                   <span>{plan.name}</span>
                 </div>
-                <Badge variant="outline" className="text-[9px] font-normal border-border/80 bg-background/50">
+                <Badge variant="outline" className="text-xs font-normal border-border/80 bg-background/50">
                   {(() => {
                     const count = plan._count?.accessRequests ?? plan._count?.users
                     return count !== undefined ? `${count} membre${count > 1 ? "s" : ""}` : "— membres"

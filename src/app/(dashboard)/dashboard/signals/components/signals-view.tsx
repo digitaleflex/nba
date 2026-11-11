@@ -121,7 +121,7 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
       )}>
         {!signal.read && (
           <div className="absolute right-3 top-3 z-10">
-            <Badge variant="default" className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5 animate-[bounce_1s_ease-in-out_infinite]">
+            <Badge variant="default" className="bg-primary text-primary-foreground text-xs tracking-wider font-bold uppercase px-2 py-0.5 animate-[bounce_1s_ease-in-out_infinite]">
               Nouveau
             </Badge>
           </div>
@@ -137,7 +137,7 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
             </div>
             <div className="flex items-center gap-1.5">
               {signal.taken && (
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5">
+                <span className="text-xs font-bold text-emerald-700 bg-emerald-100 rounded-full px-2 py-0.5">
                   Tradé ✓
                 </span>
               )}
@@ -167,7 +167,7 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
                 <div className="flex items-center justify-center aspect-video w-24 sm:w-28 shrink-0 rounded-lg border border-border/60 bg-muted/30">
                   <div className="text-center">
                     <ImageIcon className="size-4 mx-auto text-muted-foreground" />
-                    <span className="text-[10px] text-muted-foreground font-medium">+{signal.imageUrls.length - 2}</span>
+                    <span className="text-xs text-muted-foreground font-medium">+{signal.imageUrls.length - 2}</span>
                   </div>
                 </div>
               )}
@@ -187,7 +187,7 @@ function SignalCard({ signal, justArrived }: { signal: SignalData; justArrived?:
           )}
 
           {!signal.read && (
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-primary animate-[fadeIn_0.5s_ease-in] group-hover:gap-2 transition-all">
+            <div className="flex items-center gap-1.5 text-xs font-medium text-primary animate-[fadeIn_0.5s_ease-in] group-hover:gap-2 transition-all">
               Cliquez pour voir le détail
               <ArrowRight className="size-3.5 animate-[bounce_1s_ease-in-out_infinite]" />
             </div>
@@ -394,7 +394,7 @@ export function SignalsView() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             Signaux
-            <span className="flex items-center gap-1.5 text-[11px] font-medium text-muted-foreground">
+            <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
               <span className={cn(
                 "inline-block h-2 w-2 rounded-full",
                 status === "connected" ? "bg-emerald-400 animate-pulse" : "bg-neutral-500"
@@ -413,7 +413,7 @@ export function SignalsView() {
             <SlidersHorizontal className="size-4 mr-1.5" />
             Filtres
             {activeFilter !== "all" && (
-              <span className="ml-1.5 size-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+              <span className="ml-1.5 size-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
                 1
               </span>
             )}

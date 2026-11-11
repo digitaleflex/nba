@@ -316,7 +316,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
   function FieldError({ error }: { error?: string }) {
     if (!error) return null
     return (
-      <p className="text-[11px] text-rose-400 mt-1 flex items-center gap-1">
+      <p className="text-xs text-rose-400 mt-1 flex items-center gap-1">
         <AlertTriangle className="size-3 shrink-0" />
         {error}
       </p>
@@ -604,7 +604,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
       {!disablePrice && (
         <div className="grid grid-cols-3 gap-2">
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
-            <span className="text-[10px] text-muted-foreground uppercase">PnL net</span>
+            <span className="text-xs text-muted-foreground uppercase">PnL net</span>
             <span className={cn("text-sm font-mono font-bold", pnl >= 0 ? "text-emerald-400" : "text-rose-400")}>
               {pnl.toFixed(2)}€
             </span>
@@ -612,14 +612,14 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
             <Tooltip>
               <TooltipTrigger>
-                <span className="text-[10px] text-muted-foreground uppercase cursor-help">R:R</span>
+                <span className="text-xs text-muted-foreground uppercase cursor-help">R:R</span>
               </TooltipTrigger>
               <TooltipContent side="top">Risk/Reward : combien tu risques vs combien tu espères gagner.</TooltipContent>
             </Tooltip>
             <span className="text-sm font-mono font-bold">{rr ?? "—"}</span>
           </div>
           <div className="flex flex-col items-center justify-center rounded-lg bg-muted/30 p-2">
-            <span className="text-[10px] text-muted-foreground uppercase">Contract</span>
+            <span className="text-xs text-muted-foreground uppercase">Contract</span>
             <span className="text-sm font-mono font-bold">{contractSize.toLocaleString()}</span>
           </div>
         </div>
@@ -646,7 +646,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
               )}
             >
               <span className="text-xl">{m.emoji}</span>
-              <span className="text-[9px] text-muted-foreground">{m.label}</span>
+              <span className="text-xs text-muted-foreground">{m.label}</span>
             </button>
           ))}
         </div>
@@ -716,7 +716,7 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
             </div>
           )}
         </div>
-        {tags.length >= 10 && <p className="text-[11px] text-amber-400 mt-1">Maximum 10 tags atteint</p>}
+        {tags.length >= 10 && <p className="text-xs text-amber-400 mt-1">Maximum 10 tags atteint</p>}
       </div>
 
       <div>
@@ -728,11 +728,11 @@ export function TradeForm({ signalId, onClose, onSaved }: TradeFormProps) {
           className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm placeholder:text-muted-foreground resize-none h-24"
           maxLength={500}
         />
-        {note.length > 450 && <p className="text-[11px] text-muted-foreground mt-1">{note.length}/500</p>}
+        {note.length > 450 && <p className="text-xs text-muted-foreground mt-1">{note.length}/500</p>}
       </div>
 
       {savedAt && (
-        <p className="text-[10px] text-muted-foreground flex items-center gap-1">
+        <p className="text-xs text-muted-foreground flex items-center gap-1">
           <FileText className="size-3" />
           Sauvegardé {new Date(savedAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </p>

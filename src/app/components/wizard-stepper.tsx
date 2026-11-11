@@ -45,7 +45,7 @@ export function WizardStepper({ steps, currentStep, onStepClick }: WizardStepper
               )}
             </button>
             <span
-              className={`text-[10px] sm:text-xs transition-colors duration-200 ${
+              className={`text-xs sm:text-xs transition-colors duration-200 ${
                 isActive ? "font-medium text-foreground" : "text-muted-foreground"
               } ${isFuture ? "hidden sm:inline" : ""}`}
             >

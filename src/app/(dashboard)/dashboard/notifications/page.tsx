@@ -515,7 +515,7 @@ export default function NotificationsPage() {
                     <Volume2 className="size-3.5 shrink-0" />
                     <div className="min-w-0">
                       <div className="font-semibold">{s.label}</div>
-                      <div className="text-[10px] opacity-70 truncate">{s.desc}</div>
+                      <div className="text-xs opacity-70 truncate">{s.desc}</div>
                     </div>
                   </button>
                 ))}
@@ -532,7 +532,7 @@ export default function NotificationsPage() {
                   <div key={key} className="flex items-center justify-between gap-2 py-1.5">
                     <div className="min-w-0">
                       <p className="text-xs font-medium">{label}</p>
-                      <p className="text-[10px] text-muted-foreground">{desc}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
                     </div>
                     <select
                       value={soundsByType[key] ?? selectedSound}
@@ -583,7 +583,7 @@ export default function NotificationsPage() {
                   <label key={key} className="flex items-center justify-between py-2.5 px-3 rounded-lg hover:bg-muted/30 transition-colors cursor-pointer">
                     <div className="min-w-0 mr-3">
                       <p className="text-xs font-medium text-foreground">{label}</p>
-                      <p className="text-[10px] text-muted-foreground">{desc}</p>
+                      <p className="text-xs text-muted-foreground">{desc}</p>
                     </div>
                     <div
                       role="switch"

@@ -613,7 +613,7 @@ export default function MessagesPage() {
                         return (
                           <Fragment key={m.id}>
                             {showDay && (
-                              <div className="text-center text-[11px] text-muted-foreground my-2">
+                              <div className="text-center text-xs text-muted-foreground my-2">
                                 {formatDay(m.createdAt)}
                               </div>
                             )}

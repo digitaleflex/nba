@@ -80,7 +80,7 @@ export function AdminRecents({ onNavigate, onOpenPanel }: AdminRecentsProps) {
                 </button>
                 <div className="flex items-center gap-1 shrink-0 ml-2">
                   {user.alertCount > 0 && (
-                    <span className="size-5 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold">
+                    <span className="size-5 rounded-full bg-red-500 text-white text-xs flex items-center justify-center font-bold">
                       {user.alertCount}
                     </span>
                   )}

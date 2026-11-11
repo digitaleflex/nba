@@ -112,7 +112,7 @@ export function Sidebar({ space, user }: SidebarProps) {
             )}
           </Link>
           {!isCollapsed && space === "admin" && (
-            <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-[9px] font-bold text-primary uppercase tracking-wider shrink-0">
+            <span className="rounded-full bg-primary/10 border border-primary/20 px-2 py-0.5 text-xs font-bold text-primary uppercase tracking-wider shrink-0">
               Admin
             </span>
           )}
@@ -123,7 +123,7 @@ export function Sidebar({ space, user }: SidebarProps) {
           {sections.map((section, sectionIdx) => (
             <div key={section.id} aria-labelledby={isCollapsed ? undefined : `section-${section.id}`} className={cn("space-y-1", sectionIdx > 0 && !isCollapsed && "pt-2")}>
               {!isCollapsed && section.label && (
-                <p className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-muted-foreground">
+                <p className="flex items-center gap-2 px-3 text-xs uppercase font-bold tracking-widest text-muted-foreground">
                   {section.label}
                 </p>
               )}
@@ -168,7 +168,7 @@ export function Sidebar({ space, user }: SidebarProps) {
                             initial={{ scale: reduce ? 1 : 1.5 }}
                             animate={{ scale: 1 }}
                             transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
-                            className="inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-[10px] font-bold tabular-nums"
+                            className="inline-flex min-w-5 h-5 px-1.5 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-bold tabular-nums"
                           >
                             {itemBadge}
                           </motion.span>
@@ -184,7 +184,7 @@ export function Sidebar({ space, user }: SidebarProps) {
           {superAdminSections.map((section) => (
             <div key={section.id} aria-labelledby={isCollapsed ? undefined : `section-${section.id}`} className={cn("space-y-1", !isCollapsed && "pt-2")}>
               {!isCollapsed && (
-                <h2 id={`section-${section.id}`} className="flex items-center gap-2 px-3 text-[10px] uppercase font-bold tracking-widest text-warning/60">
+                <h2 id={`section-${section.id}`} className="flex items-center gap-2 px-3 text-xs uppercase font-bold tracking-widest text-warning/60">
                   <Shield className="size-3" />
                   {section.label}
                 </h2>
@@ -281,7 +281,7 @@ export function Sidebar({ space, user }: SidebarProps) {
             {!isCollapsed && (
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold truncate text-foreground leading-none">{user.name}</p>
-                <p className="text-[10px] truncate text-muted-foreground mt-1">{user.email}</p>
+                <p className="text-xs truncate text-muted-foreground mt-1">{user.email}</p>
               </div>
             )}
           </div>

@@ -90,7 +90,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                   if (sectionLinks.length === 0) return []
                   return [
                     si > 0 ? <div key={`sep-${si}`} className="h-3" /> : null,
-                    <p key={`h-${si}`} className="px-3 pt-1 pb-1 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <p key={`h-${si}`} className="px-3 pt-1 pb-1 text-xs font-bold text-muted-foreground uppercase tracking-wider">
                       {section.label}
                     </p>,
                     ...sectionLinks.map((link) => {
@@ -180,7 +180,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-xs font-bold truncate text-foreground">{user.name}</p>
-                <p className="text-[10px] truncate text-muted-foreground">{user.email}</p>
+                <p className="text-xs truncate text-muted-foreground">{user.email}</p>
               </div>
               <PushNotificationToggle compact />
             </div>

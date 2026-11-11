@@ -23,7 +23,7 @@ export function MessageBadge() {
           initial={{ scale: reduce ? 1 : 1.5 }}
           animate={{ scale: 1 }}
           transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
-          className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground leading-none"
+          className="absolute -top-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground leading-none"
         >
           {unreadTotal > 9 ? "9+" : unreadTotal}
         </motion.span>

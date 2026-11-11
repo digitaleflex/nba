@@ -127,7 +127,7 @@ export function BrokerVerificationForm({
                   </li>
                 ))}
               </ul>
-              <p className="text-[10px] text-muted-foreground mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Formats autorisés : MP4, WebM | Taille max : 50 Mo
               </p>
             </div>

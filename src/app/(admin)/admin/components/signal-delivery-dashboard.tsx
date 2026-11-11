@@ -258,7 +258,7 @@ function Metric({
       >
         {value}
       </p>
-      <p className="flex items-center justify-center gap-1 text-[9px] uppercase text-muted-foreground mt-0.5">
+      <p className="flex items-center justify-center gap-1 text-xs uppercase text-muted-foreground mt-0.5">
         {label}
         {tip && <InfoTooltip content={tip} />}
       </p>

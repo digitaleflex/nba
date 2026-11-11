@@ -78,7 +78,7 @@ export function PasswordField({
         )}
       </div>
       {error && (
-        <p className="text-[11px] text-destructive mt-1" role="alert">{error}</p>
+        <p className="text-xs text-destructive mt-1" role="alert">{error}</p>
       )}
     </div>
   )

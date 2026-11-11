@@ -210,7 +210,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p className="text-2xl font-bold tabular-nums text-foreground">{data.totalMembers}</p>
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">Membres</p>
+                <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">Membres</p>
               </div>
               <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 pt-1">
                 {data.membersBreakdown.map((s, i) => (
@@ -241,7 +241,7 @@ export function AnalyticsTab({ cachedGet }: AnalyticsTabProps) {
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <p className="text-2xl font-bold tabular-nums text-success">{data.kyc.verifiedPct}%</p>
-                <p className="text-[10px] uppercase font-bold tracking-widest text-muted-foreground">vérifiés</p>
+                <p className="text-xs uppercase font-bold tracking-widest text-muted-foreground">vérifiés</p>
               </div>
             </div>
             <div className="grid grid-cols-3 gap-3 pt-2 text-center border-t border-border/40 mt-2">

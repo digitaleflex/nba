@@ -106,12 +106,12 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
               <span className="flex items-center gap-1">
                 {MOOD_EMOJI[trade.mood] ?? trade.mood}
                 {trade.confidence ? (
-                  <span className="text-[10px]">{'★'.repeat(trade.confidence)}{'☆'.repeat(5 - trade.confidence)}</span>
+                  <span className="text-xs">{'★'.repeat(trade.confidence)}{'☆'.repeat(5 - trade.confidence)}</span>
                 ) : null}
               </span>
             )}
             {(trade.strategy || trade.setupType) && (
-              <span className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
                 {trade.strategy && <span className="rounded-full bg-muted px-1.5 py-0.5">{trade.strategy}</span>}
                 {trade.setupType && <span className="rounded-full bg-muted px-1.5 py-0.5">{trade.setupType}</span>}
               </span>
@@ -119,12 +119,12 @@ export function TradeCard({ trade, onDelete }: { trade: Trade; onDelete: () => v
             {trade.tags && trade.tags.length > 0 && (
               <span className="flex items-center gap-1">
                 {trade.tags.slice(0, 3).map(t => (
-                  <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-primary/5 px-1.5 py-0.5 text-[10px] text-primary/70">
+                  <span key={t} className="inline-flex items-center gap-0.5 rounded-full bg-primary/5 px-1.5 py-0.5 text-xs text-primary/70">
                     <Tag className="size-2.5" />
                     {t}
                   </span>
                 ))}
-                {trade.tags.length > 3 && <span className="text-[10px] text-muted-foreground">+{trade.tags.length - 3}</span>}
+                {trade.tags.length > 3 && <span className="text-xs text-muted-foreground">+{trade.tags.length - 3}</span>}
               </span>
             )}
             <span className="text-muted-foreground ml-auto shrink-0">{formatDate(trade.tradedAt)}</span>

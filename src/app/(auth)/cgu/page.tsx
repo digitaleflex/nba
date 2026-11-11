@@ -13,7 +13,7 @@ export default function CguPage() {
           <FileText className="size-5 text-primary" />
           <h1 className="text-2xl font-bold tracking-tight">Conditions Générales d&apos;Utilisation</h1>
         </div>
-        <Badge variant="outline" className="ml-2 text-[10px]">CGU</Badge>
+        <Badge variant="outline" className="ml-2 text-xs">CGU</Badge>
       </div>
 
       <Card className="border-border/50">

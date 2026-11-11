@@ -55,7 +55,7 @@ function EmptyState({ text }: { text: string }) {
   return (
     <div className="flex h-full min-h-[160px] w-full flex-col items-center justify-center gap-2 text-center text-muted-foreground">
       <span className="size-8 rounded-full bg-muted/60" />
-      <p className="text-[11px]">{text}</p>
+      <p className="text-xs">{text}</p>
     </div>
   )
 }
@@ -65,7 +65,7 @@ function Tooltip({ datum, children, isMobile }: { datum: ChartDatum; children: R
   return (
     <Popover>
       <PopoverTrigger className="flex-1 cursor-pointer outline-none">{children}</PopoverTrigger>
-      <PopoverContent className="w-auto px-3 py-2 text-[11px]" side="top">
+      <PopoverContent className="w-auto px-3 py-2 text-xs" side="top">
         <div className="flex items-center gap-2">
           <span className={cn("size-2 rounded-full", COLOR_DOT[resolveColor(datum.color)])} />
           <span className="font-semibold text-foreground">{datum.label}</span>
@@ -104,12 +104,12 @@ export function Chart({ type, data, className, emptyText = "Pas assez de donnée
                   onClick={() => isMobile && setActive(d)}
                   className="flex w-full flex-col items-center gap-2"
                 >
-                  <span className="text-[10px] font-bold text-foreground">{d.value}</span>
+                  <span className="text-xs font-bold text-foreground">{d.value}</span>
                   <div
                     style={{ height: `${Math.max(4, pct * 0.8)}%` }}
                     className={cn("w-full max-w-[28px] rounded-t-xs transition-all", COLOR_BAR[resolveColor(d.color)])}
                   />
-                  <span className="max-w-full truncate text-[9px] font-semibold text-muted-foreground">{d.label}</span>
+                  <span className="max-w-full truncate text-xs font-semibold text-muted-foreground">{d.label}</span>
                 </div>
               </Tooltip>
             )
@@ -129,11 +129,11 @@ export function Chart({ type, data, className, emptyText = "Pas assez de donnée
                   onClick={() => isMobile && setActive(d)}
                   className="flex w-full items-center gap-3 text-left"
                 >
-                  <span className="w-40 shrink-0 truncate text-[11px] text-muted-foreground">{d.label}</span>
+                  <span className="w-40 shrink-0 truncate text-xs text-muted-foreground">{d.label}</span>
                   <div className="h-6 flex-1 overflow-hidden rounded bg-muted/40">
                     <div style={{ width: `${Math.max(2, pct)}%` }} className={cn("h-full rounded transition-all", COLOR_SOLID[resolveColor(d.color)])} />
                   </div>
-                  <span className={cn("w-12 shrink-0 text-right text-[11px] font-bold", COLOR_TEXT[resolveColor(d.color)])}>{d.value}</span>
+                  <span className={cn("w-12 shrink-0 text-right text-xs font-bold", COLOR_TEXT[resolveColor(d.color)])}>{d.value}</span>
                 </div>
               </Tooltip>
             )

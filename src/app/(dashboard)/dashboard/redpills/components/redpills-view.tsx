@@ -41,7 +41,7 @@ function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string)
     <Card className="relative overflow-hidden border-border/50">
       {!pill.read && (
         <div className="absolute right-3 top-3 z-10">
-          <Badge className="bg-primary text-primary-foreground text-[10px] tracking-wider font-bold uppercase px-2 py-0.5">
+          <Badge className="bg-primary text-primary-foreground text-xs tracking-wider font-bold uppercase px-2 py-0.5">
             Nouveau
           </Badge>
         </div>
@@ -51,10 +51,10 @@ function RedpillCard({ pill, onRead }: { pill: RedpillData; onRead: (id: string)
           <Flame className="size-3.5 text-orange-500 shrink-0" />
           <span className="font-semibold text-foreground">{pill.title}</span>
           {pill.format && FORMAT_LABEL[pill.format] && (
-            <Badge variant="outline" className="text-[10px]">{FORMAT_LABEL[pill.format]}</Badge>
+            <Badge variant="outline" className="text-xs">{FORMAT_LABEL[pill.format]}</Badge>
           )}
           {pill.series && (
-            <span className="text-[10px] font-semibold text-violet-600 dark:text-violet-400">
+            <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">
               📚 {pill.series}{pill.episode != null ? ` · ép. ${pill.episode}` : ""}
             </span>
           )}

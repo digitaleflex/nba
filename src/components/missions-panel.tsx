@@ -56,7 +56,7 @@ export function MissionsPanel() {
         <Target className="size-4" />
         Missions
         {completed > 0 && (
-          <span className="text-[10px] text-muted-foreground">{completed}/{total}</span>
+          <span className="text-xs text-muted-foreground">{completed}/{total}</span>
         )}
       </Button>
 
@@ -77,7 +77,7 @@ export function MissionsPanel() {
                     Missions J1-J6
                   </h3>
                   {allDone && (
-                    <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                    <span className="text-xs font-bold text-emerald-500 bg-emerald-500/10 px-2 py-0.5 rounded-full">
                       Complété !
                     </span>
                   )}
@@ -89,7 +89,7 @@ export function MissionsPanel() {
                       style={{ width: `${progress}%` }}
                     />
                   </div>
-                  <span className="text-[11px] text-muted-foreground tabular-nums">{progress}%</span>
+                  <span className="text-xs text-muted-foreground tabular-nums">{progress}%</span>
                 </div>
               </div>
               <div className="p-3 space-y-2 max-h-80 overflow-y-auto" role="region" aria-label="Contenu défilant">

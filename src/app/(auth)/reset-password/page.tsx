@@ -145,7 +145,7 @@ export default function ResetPasswordPage({
                   aria-invalid={touched.confirm && !!errors.confirm}
                 />
                 {touched.confirm && errors.confirm && (
-                  <p className="text-[11px] text-destructive mt-1" role="alert">{errors.confirm}</p>
+                  <p className="text-xs text-destructive mt-1" role="alert">{errors.confirm}</p>
                 )}
               </div>
               {error && (

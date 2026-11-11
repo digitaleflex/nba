@@ -273,7 +273,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-[9px] uppercase",
+                    "text-xs uppercase",
                     data.kycDocuments[0].status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                     data.kycDocuments[0].status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
                     data.kycDocuments[0].status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
@@ -289,7 +289,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                     href={`/api/files/${data.kycDocuments[0].frontFilePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
+                    className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
                   >
                     <FileText className="size-3" /> Recto
                   </a>
@@ -299,7 +299,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                     href={`/api/files/${data.kycDocuments[0].backFilePath}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
+                    className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20"
                   >
                     <FileText className="size-3" /> Verso
                   </a>
@@ -351,7 +351,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 <Badge
                   variant="outline"
                   className={cn(
-                    "text-[9px] uppercase",
+                    "text-xs uppercase",
                     data.brokerVerifications[0].status === "APPROVED" && "bg-emerald-500/10 text-emerald-600 border-emerald-500/20",
                     data.brokerVerifications[0].status === "REJECTED" && "bg-rose-500/10 text-rose-600 border-rose-500/20",
                     data.brokerVerifications[0].status === "PENDING" && "bg-amber-500/10 text-amber-600 border-amber-500/20"
@@ -366,7 +366,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                   href={`/api/files/${data.brokerVerifications[0].videoFilePath}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-[9px] text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20 w-fit"
+                  className="text-xs text-primary hover:underline flex items-center gap-1 bg-primary/5 px-2 py-1 rounded border border-primary/20 w-fit"
                 >
                   <ExternalLink className="size-3" /> Visionner la vidéo
                 </a>
@@ -429,7 +429,7 @@ export function UserPanelContent({ data, onAction }: UserPanelContentProps) {
                 <Shield className="size-3.5 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold">{role.label}</p>
-                  <p className="text-[9px] text-muted-foreground truncate">{role.description}</p>
+                  <p className="text-xs text-muted-foreground truncate">{role.description}</p>
                 </div>
                 {data.role?.name === role.name && (
                   <Check className="size-3.5 text-primary shrink-0" />
@@ -559,7 +559,7 @@ function MiniTimeline({ data }: { data: any }) {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-medium text-foreground/80">{ev.label}</p>
-                <p className="text-[9px] text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {ev.date.toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </p>
               </div>

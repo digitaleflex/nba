@@ -87,13 +87,13 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
                     initial={{ scale: reduce ? 1 : 1.5 }}
                     animate={{ scale: 1 }}
                     transition={reduce ? { duration: 0.001 } : { type: "spring", stiffness: 300, damping: 12 }}
-                    className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center ring-2 ring-card"
+                    className="absolute -top-1 -right-2 min-w-3.5 h-3.5 px-1 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center ring-2 ring-card"
                   >
                     {badge}
                   </motion.span>
                 )}
               </span>
-              <span className={cn("text-[10px] font-medium tracking-tight", isActive ? "font-bold text-primary" : "")}>
+              <span className={cn("text-xs font-medium tracking-tight", isActive ? "font-bold text-primary" : "")}>
                 {link.label}
               </span>
             </Link>
@@ -105,7 +105,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
           aria-label="Rechercher (⌘K)"
         >
           <Search className="size-5 shrink-0" />
-          <span className="text-[10px] font-medium tracking-tight">Recherche</span>
+          <span className="text-xs font-medium tracking-tight">Recherche</span>
         </button>
         <button
           onClick={() =>
@@ -120,7 +120,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
           aria-label="Déconnexion"
         >
           <LogOut className="size-5 shrink-0" />
-          <span className="text-[10px] font-medium tracking-tight">Quitter</span>
+          <span className="text-xs font-medium tracking-tight">Quitter</span>
         </button>
       </nav>
       {node}

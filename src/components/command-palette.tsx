@@ -93,7 +93,7 @@ function PaletteContent({
           aria-label="Recherche"
         />
         {loading && <Loader2 className="size-3.5 animate-spin text-muted-foreground" />}
-        <kbd className="hidden md:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-[10px] text-muted-foreground">
+        <kbd className="hidden md:inline-flex h-5 select-none items-center gap-1 rounded border border-border bg-muted px-1.5 font-mono text-xs text-muted-foreground">
           <span className="text-xs">esc</span>
         </kbd>
       </div>
@@ -109,7 +109,7 @@ function PaletteContent({
           <div className="space-y-3">
             {members.length > 0 && (
               <div>
-                <div className="flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <Users className="size-3" />
                   Membres
                 </div>
@@ -131,7 +131,7 @@ function PaletteContent({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{m.title}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{m.subtitle}</p>
+                          <p className="text-xs text-muted-foreground truncate">{m.subtitle}</p>
                         </div>
                       </button>
                     )
@@ -142,7 +142,7 @@ function PaletteContent({
 
             {signals.length > 0 && (
               <div>
-                <div className="flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <Megaphone className="size-3" />
                   Signaux
                 </div>
@@ -164,7 +164,7 @@ function PaletteContent({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{s.title}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{s.subtitle}</p>
+                          <p className="text-xs text-muted-foreground truncate">{s.subtitle}</p>
                         </div>
                       </button>
                     )
@@ -175,7 +175,7 @@ function PaletteContent({
 
             {filteredActions.length > 0 && (
               <div>
-                <div className="flex items-center gap-1.5 px-2 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                <div className="flex items-center gap-1.5 px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   <Zap className="size-3" />
                   Actions & Navigation
                 </div>
@@ -197,10 +197,10 @@ function PaletteContent({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium truncate">{a.title}</p>
-                          <p className="text-[11px] text-muted-foreground truncate">{a.subtitle}</p>
+                          <p className="text-xs text-muted-foreground truncate">{a.subtitle}</p>
                         </div>
                         {a.shortcut && (
-                          <kbd className="hidden md:inline-flex h-5 min-w-5 select-none items-center justify-center rounded border border-border bg-muted px-1 font-mono text-[10px] text-muted-foreground">
+                          <kbd className="hidden md:inline-flex h-5 min-w-5 select-none items-center justify-center rounded border border-border bg-muted px-1 font-mono text-xs text-muted-foreground">
                             {a.shortcut}
                           </kbd>
                         )}
@@ -221,7 +221,7 @@ function PaletteContent({
         )}
       </div>
 
-      <div className="hidden md:flex items-center justify-between border-t border-border px-3 py-1.5 text-[10px] text-muted-foreground">
+      <div className="hidden md:flex items-center justify-between border-t border-border px-3 py-1.5 text-xs text-muted-foreground">
         <div className="flex items-center gap-3">
           <span className="flex items-center gap-1">
             <kbd className="inline-flex h-4 select-none items-center rounded border border-border bg-muted px-1 font-mono">↑</kbd>

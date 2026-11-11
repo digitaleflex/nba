@@ -88,7 +88,7 @@ export function StepContent({
             placeholder="Collez ou rédigez votre signal ici... (ex: BUY EUR/USD, Entry, TP, SL, analyses...)"
             className="w-full min-h-[180px] max-h-[400px] p-3 text-xs leading-relaxed outline-none border-0 resize-none bg-transparent"
           />
-          <div className="px-3 py-1 bg-muted/20 text-[9px] text-right text-muted-foreground border-t">
+          <div className="px-3 py-1 bg-muted/20 text-xs text-right text-muted-foreground border-t">
             {content.length} caractères
           </div>
         </div>
@@ -137,7 +137,7 @@ export function StepContent({
       <Card className="relative overflow-hidden border border-primary/20 bg-primary/5">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
         <CardContent className="p-4 space-y-3">
-          <div className="flex items-center justify-between border-b pb-2 border-border/50 text-[9px] text-muted-foreground">
+          <div className="flex items-center justify-between border-b pb-2 border-border/50 text-xs text-muted-foreground">
             <span className="flex items-center gap-1 font-bold">
               <span className="size-1 rounded-full bg-emerald-500 animate-pulse" />
               NBA VIP

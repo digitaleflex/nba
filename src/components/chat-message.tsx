@@ -154,8 +154,8 @@ export function ChatMessage({
         >
           <Quote className="size-3 text-primary shrink-0" />
           <div className="min-w-0">
-            <p className="text-[10px] font-medium text-primary">{message.quoted.senderName}</p>
-            <p className="text-[11px] text-muted-foreground truncate">
+            <p className="text-xs font-medium text-primary">{message.quoted.senderName}</p>
+            <p className="text-xs text-muted-foreground truncate">
               {message.quoted.attachmentMime?.startsWith("image/")
                 ? "🖼️ Image"
                 : message.quoted.attachmentMime?.startsWith("video/")
@@ -187,14 +187,14 @@ export function ChatMessage({
                     setEditing(false)
                     setEditText(message.content)
                   }}
-                  className="text-[11px] text-muted-foreground hover:text-foreground"
+                  className="text-xs text-muted-foreground hover:text-foreground"
                 >
                   Annuler
                 </button>
                 <button
                   onClick={saveEdit}
                   disabled={saving || !editText.trim()}
-                  className="text-[11px] font-medium text-primary hover:underline disabled:opacity-40"
+                  className="text-xs font-medium text-primary hover:underline disabled:opacity-40"
                 >
                   {saving ? "…" : "Enregistrer"}
                 </button>
@@ -224,7 +224,7 @@ export function ChatMessage({
                 </div>
               )}
               <p
-                className={`text-[10px] mt-1 flex items-center gap-1 ${
+                className={`text-xs mt-1 flex items-center gap-1 ${
                   isMine ? "text-primary-foreground/70" : "text-muted-foreground"
                 }`}
               >
@@ -254,7 +254,7 @@ export function ChatMessage({
               <button
                 key={emoji}
                 onClick={() => toggleEmoji(emoji)}
-                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] transition-colors ${
+                className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs transition-colors ${
                   mine ? "border-primary bg-primary/15" : "border-border bg-muted/40 hover:bg-muted"
                 }`}
               >

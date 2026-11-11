@@ -84,7 +84,7 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
               {/* Plan badges with counts */}
               <div className="flex items-center gap-1.5 flex-wrap max-w-[200px]">
                 {r.planBreakdown.map((p) => (
-                  <span key={p.name} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[9px] font-medium text-primary shrink-0">
+                  <span key={p.name} className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary shrink-0">
                     {p.name}
                     <span className="text-primary/60">({p.count})</span>
                   </span>
@@ -95,15 +95,15 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
               <div className="flex items-center gap-4 text-xs tabular-nums">
                 <div className="text-right">
                   <div className="font-semibold">{r.recipients}</div>
-                  <div className="text-[9px] text-muted-foreground">Dest.</div>
+                  <div className="text-xs text-muted-foreground">Dest.</div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold">{r.emailsSent}</div>
-                  <div className="text-[9px] text-muted-foreground">Emails</div>
+                  <div className="text-xs text-muted-foreground">Emails</div>
                 </div>
                 <div className="text-right">
                   <div className="font-semibold text-success">{deliveryRate}%</div>
-                  <div className="text-[9px] text-muted-foreground">Délivrés</div>
+                  <div className="text-xs text-muted-foreground">Délivrés</div>
                 </div>
               </div>
 
@@ -145,43 +145,43 @@ export function SignalTableClient({ rows }: { rows: SignalRow[] }) {
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-px bg-border/50">
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold">{r.emailsSent}</div>
-                    <div className="text-[9px] text-muted-foreground">Emails envoyés</div>
+                    <div className="text-xs text-muted-foreground">Emails envoyés</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-success">{r.delivered}</div>
-                    <div className="text-[9px] text-muted-foreground">Délivrés</div>
+                    <div className="text-xs text-muted-foreground">Délivrés</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-info">{r.opened}</div>
-                    <div className="text-[9px] text-muted-foreground">Ouverts</div>
+                    <div className="text-xs text-muted-foreground">Ouverts</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-destructive">{r.bounced}</div>
-                    <div className="text-[9px] text-muted-foreground">Bounces</div>
+                    <div className="text-xs text-muted-foreground">Bounces</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-destructive">{r.complained}</div>
-                    <div className="text-[9px] text-muted-foreground">Plaintes</div>
+                    <div className="text-xs text-muted-foreground">Plaintes</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold">{r.pushSent}</div>
-                    <div className="text-[9px] text-muted-foreground">Push envoyés</div>
+                    <div className="text-xs text-muted-foreground">Push envoyés</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-destructive">{r.pushFailed}</div>
-                    <div className="text-[9px] text-muted-foreground">Push échoués</div>
+                    <div className="text-xs text-muted-foreground">Push échoués</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold">{r.inAppRead}</div>
-                    <div className="text-[9px] text-muted-foreground">In-app lus</div>
+                    <div className="text-xs text-muted-foreground">In-app lus</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold">{r.recipients - r.inAppRead}</div>
-                    <div className="text-[9px] text-muted-foreground">In-app non lus</div>
+                    <div className="text-xs text-muted-foreground">In-app non lus</div>
                   </div>
                   <div className="bg-card/50 px-4 py-2">
                     <div className="text-xs font-semibold text-muted-foreground">{r.unknown}</div>
-                    <div className="text-[9px] text-muted-foreground">Statut inconnu</div>
+                    <div className="text-xs text-muted-foreground">Statut inconnu</div>
                   </div>
                 </div>
 

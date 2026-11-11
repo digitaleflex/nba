@@ -30,7 +30,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
         >
           <Zap className="size-5" />
           <span className="text-xs font-semibold">Maintenant</span>
-          <span className="text-[9px] opacity-70">Envoi immédiat</span>
+          <span className="text-xs opacity-70">Envoi immédiat</span>
         </button>
         <button
           type="button"
@@ -44,7 +44,7 @@ export function StepSchedule({ scheduled, setScheduled, scheduledAt, setSchedule
         >
           <Calendar className="size-5" />
           <span className="text-xs font-semibold">Planifié</span>
-          <span className="text-[9px] opacity-70">Plus tard</span>
+          <span className="text-xs opacity-70">Plus tard</span>
         </button>
       </div>
 
