@@ -7,6 +7,13 @@ const ALLOWED_MIME_TYPES = [
   "application/pdf",
   "video/mp4",
   "video/webm",
+  // Audio — enregistreur vocal des Redpills (MediaRecorder → webm/ogg/mp4).
+  "audio/webm",
+  "audio/ogg",
+  "audio/mpeg",
+  "audio/mp4",
+  "audio/wav",
+  "audio/x-wav",
 ]
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50 MB
@@ -22,6 +29,22 @@ const MAGIC_BYTES: Record<string, Uint8Array[]> = {
     new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70]), // ftyp box large
   ],
   "video/webm": [new Uint8Array([0x1A, 0x45, 0xDF, 0xA3])],
+  // Signatures audio (cf. specs conteneurs) — un fichier qui ne matche pas est rejeté.
+  "audio/webm": [new Uint8Array([0x1A, 0x45, 0xDF, 0xA3])],
+  "audio/ogg": [new Uint8Array([0x4F, 0x67, 0x67, 0x53])], // "OggS"
+  "audio/mpeg": [
+    new Uint8Array([0x49, 0x44, 0x33]), // ID3
+    new Uint8Array([0xFF, 0xFB]),
+    new Uint8Array([0xFF, 0xF3]),
+    new Uint8Array([0xFF, 0xF2]),
+  ],
+  "audio/mp4": [
+    new Uint8Array([0x00, 0x00, 0x00, 0x18, 0x66, 0x74, 0x79, 0x70]),
+    new Uint8Array([0x00, 0x00, 0x00, 0x1C, 0x66, 0x74, 0x79, 0x70]),
+    new Uint8Array([0x00, 0x00, 0x00, 0x20, 0x66, 0x74, 0x79, 0x70]),
+  ],
+  "audio/wav": [new Uint8Array([0x52, 0x49, 0x46, 0x46])], // "RIFF"
+  "audio/x-wav": [new Uint8Array([0x52, 0x49, 0x46, 0x46])],
 }
 
 const EXT_MAP: Record<string, string> = {
@@ -31,6 +54,12 @@ const EXT_MAP: Record<string, string> = {
   "application/pdf": ".pdf",
   "video/mp4": ".mp4",
   "video/webm": ".webm",
+  "audio/webm": ".webm",
+  "audio/ogg": ".ogg",
+  "audio/mpeg": ".mp3",
+  "audio/mp4": ".m4a",
+  "audio/wav": ".wav",
+  "audio/x-wav": ".wav",
 }
 
 function validateMagicBytes(buffer: ArrayBuffer, mimeType: string): boolean {
