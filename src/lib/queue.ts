@@ -10,7 +10,7 @@ type JobLike = {
   remove: () => Promise<void>;
 };
 
-type QueueLike = {
+export type QueueLike = {
   add: (
     name: string,
     data: unknown,
@@ -20,6 +20,15 @@ type QueueLike = {
     jobs: { name: string; data: unknown; opts?: unknown }[],
   ) => Promise<{ id: string | null }[]>;
   getJob: (id: string) => Promise<JobLike | null>;
+  /** Compteurs par état (waiting, active, failed, completed, delayed, paused). */
+  getJobCounts: (...types: string[]) => Promise<Record<string, number>>;
+  /** Remet en file les jobs terminés (failed par défaut) via l'API officielle BullMQ. */
+  retryJobs: (opts?: {
+    count?: number;
+    state?: "failed" | "completed";
+    timestamp?: number;
+  }) => Promise<void>;
+  close: () => Promise<void>;
 };
 
 function createNoopQueue(queueName: string): QueueLike {
@@ -34,6 +43,15 @@ function createNoopQueue(queueName: string): QueueLike {
     },
     async getJob() {
       return null;
+    },
+    async getJobCounts() {
+      return {};
+    },
+    async retryJobs() {
+      console.warn(`[queue:${queueName}] Redis/queue désactivé, aucun job à relancer.`);
+    },
+    async close() {
+      // no-op
     },
   };
 }
@@ -90,7 +108,6 @@ function getQueue(name: string): QueueLike {
 
   if (!globalForQueues.queues[name]) {
     const connection = getRedisConnection();
-    const isNoop = !connection
 
     if (!connection) {
       globalForQueues.queues[name] = createNoopQueue(name);
@@ -120,3 +137,22 @@ export const pushDeliveryQueue = getQueue("push-delivery");
 export const deadLetterQueue = getQueue("dead-letter");
 export const recoveryQueue = getQueue("recovery");
 export { getRedisConnection, getQueue, queueEnabled };
+
+/**
+ * Relance les jobs en échec d'une file via l'API officielle BullMQ.
+ *
+ * ⚠️ Ne jamais manipuler les clés internes `bull:<queue>:wait` (LIST en v5) :
+ * l'ancien `ZADD` échouait en `WRONGTYPE` et ne relançait aucun job.
+ *
+ * @returns le nombre de jobs qui étaient en échec avant la relance.
+ */
+export async function retryFailedJobs(queue: QueueLike = signalDistributionQueue): Promise<number> {
+  const counts = await queue.getJobCounts("failed");
+  const count = counts.failed ?? 0;
+
+  if (count > 0) {
+    await queue.retryJobs({ state: "failed" });
+  }
+
+  return count;
+}

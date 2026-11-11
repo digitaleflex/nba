@@ -1,9 +1,9 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader2 } from "lucide-react"
-import { Chart } from "@nba/design-system"
-import type { ChartDatum } from "@nba/design-system"
+import { Loader2, RefreshCw, TriangleAlert } from "lucide-react"
+import { Button, Chart } from "@nba/design-system"
+import { formatDayLabel } from "@nba/lib/format-date"
 import { EvolutionChart, type EvolutionSeries } from "./evolution-chart"
 
 interface EvolutionData {
@@ -48,18 +48,73 @@ const PERIODS = [
 export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
   const [stats, setStats] = useState<Stats | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [attempt, setAttempt] = useState(0)
   const [period, setPeriod] = useState("all")
 
   useEffect(() => {
-    setLoading(true)
-    fetch(`/api/dashboard/journal/stats?period=${period}`)
-      .then(r => r.json())
-      .then(d => setStats(d))
-      .finally(() => setLoading(false))
-  }, [period, refreshKey])
+    const controller = new AbortController()
+
+    fetch(`/api/dashboard/journal/stats?period=${period}`, { signal: controller.signal })
+      .then(async (res) => {
+        // Une réponse `{ error }` n'a pas la forme de `Stats` → crash au rendu
+        // (`stats.byDay.length`, cf. TECH-03). On valide donc le statut HTTP.
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        return (await res.json()) as Stats
+      })
+      .then((d) => {
+        if (!controller.signal.aborted) setStats(d)
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return
+        setStats(null)
+        setError("Impossible de charger tes statistiques.")
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false)
+      })
+
+    return () => controller.abort()
+  }, [period, refreshKey, attempt])
 
   if (loading) return <div className="flex justify-center py-16"><Loader2 className="size-6 animate-spin text-primary" /></div>
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center gap-3 py-16 text-center">
+        <TriangleAlert className="size-6 text-destructive" />
+        <p className="text-sm text-muted-foreground">{error}</p>
+        <Button variant="outline" size="sm" onClick={() => { setLoading(true); setError(null); setAttempt((a) => a + 1) }}>
+          <RefreshCw className="size-3.5" />
+          Réessayer
+        </Button>
+      </div>
+    )
+  }
+
   if (!stats) return <p className="text-sm text-muted-foreground text-center py-16">Aucune donnée.</p>
+
+  // La série `pnlCum` du serveur est déjà cumulée ; repli sur un cumul client
+  // si elle est absente (par ex. réponse partielle).
+  const pnlCumulative = (() => {
+    const serverSeries = stats.evolution?.series.find(s => s.key === "pnlCum")
+    if (serverSeries && stats.evolution && serverSeries.values.length > 0) {
+      return serverSeries.values.map((value, i) => ({
+        date: stats.evolution!.labels[i] ?? "",
+        value,
+      }))
+    }
+    let running = 0
+    return stats.byDay
+      .slice()
+      .reverse()
+      .map(d => {
+        running += d.pnl
+        return { date: d.date, value: Math.round(running * 100) / 100 }
+      })
+  })()
 
   return (
     <div className="space-y-6">
@@ -79,7 +134,11 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
         {PERIODS.map(p => (
           <button
             key={p.value}
-            onClick={() => setPeriod(p.value)}
+            onClick={() => {
+              setLoading(true)
+              setError(null)
+              setPeriod(p.value)
+            }}
             className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
               period === p.value ? "bg-primary text-primary-foreground" : "bg-muted/50 text-muted-foreground hover:text-foreground"
             }`}
@@ -101,7 +160,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
       <div className="rounded-lg border bg-card p-4">
         <h3 className="text-sm font-semibold mb-3">📐 Métriques de risque</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <RiskMetric label="Drawdown max" value={`${stats.riskMetrics.maxDrawdown.toFixed(0)}€`} tone={stats.riskMetrics.maxDrawdown > 0 ? "rose" : "neutral"} />
+          <RiskMetric label="Drawdown max" value={`${stats.riskMetrics.maxDrawdown.toFixed(0)}€`} tone={Number.isFinite(stats.riskMetrics.maxDrawdown) && stats.riskMetrics.maxDrawdown > 0 ? "rose" : "neutral"} />
           <RiskMetric label="Expectancy" value={`${stats.riskMetrics.expectancy.toFixed(2)}R`} tone={stats.riskMetrics.expectancy >= 0 ? "emerald" : "rose"} />
           <RiskMetric label="Profit factor" value={stats.riskMetrics.profitFactor === Infinity ? "∞" : stats.riskMetrics.profitFactor.toFixed(2)} tone={stats.riskMetrics.profitFactor >= 1 ? "emerald" : "rose"} />
           <RiskMetric label="Gain moyen" value={`${stats.riskMetrics.avgWinner.toFixed(0)}€`} tone="emerald" />
@@ -110,16 +169,16 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
         </div>
       </div>
 
-      {/* Graphique PnL cumulé */}
-      {stats.byDay.length > 1 && (
+      {/* Graphique PnL cumulé — vraie somme cumulée (cf. TECH-04) */}
+      {pnlCumulative.length > 1 && (
         <div className="rounded-lg border bg-card p-4">
           <h3 className="text-sm font-semibold mb-3">📈 PnL cumulé</h3>
           <Chart
             type="line"
-            data={stats.byDay.slice().reverse().map(d => ({
-              label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
-              value: d.pnl,
-              color: d.pnl >= 0 ? "emerald" as const : "rose" as const,
+            data={pnlCumulative.map(d => ({
+              label: formatDayLabel(d.date),
+              value: d.value,
+              color: d.value >= 0 ? "emerald" as const : "rose" as const,
             }))}
             height={180}
           />
@@ -134,7 +193,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
             <Chart
               type="bar"
               data={stats.byDay.slice(0, 14).reverse().map(d => ({
-                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                label: formatDayLabel(d.date),
                 value: d.wins,
                 color: "emerald" as const,
               }))}
@@ -144,7 +203,7 @@ export function StatsDashboard({ refreshKey = 0 }: { refreshKey?: number }) {
             <Chart
               type="bar"
               data={stats.byDay.slice(0, 14).reverse().map(d => ({
-                label: new Date(d.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }),
+                label: formatDayLabel(d.date),
                 value: d.count - d.wins,
                 color: "rose" as const,
               }))}

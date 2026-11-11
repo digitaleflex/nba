@@ -1,70 +1,29 @@
 import { prisma } from "@nba/lib/db"
-import {
-  getResendStatusMap,
-  getLatestEventMap,
-  classifyResendStatus,
-  classifyByEventType,
-  type ResendEmailStatus,
-  type DeliveryBucket,
-} from "@nba/lib/services/resend-delivery"
+import type { Prisma } from "@nba/generated/prisma/client"
 import { LiveRefresh } from "./live-refresh"
 import { SignalTableClient } from "./signal-table-client"
 import { UserTimeline } from "./user-timeline"
 import { RetryButton } from "./retry-button"
 import { TrackerTabs } from "./tracker-tabs"
-import IORedis from "ioredis"
+import { getRedisConnection, retryFailedJobs, signalDistributionQueue } from "@nba/lib/queue"
+import {
+  addDeliveryMetrics,
+  computeDeliveryRates,
+  emptyDeliveryMetrics,
+  type DeliveryMetrics,
+  type DeliveryBucket,
+} from "@nba/lib/services/delivery-metrics"
+import { requireRole } from "@nba/lib/auth-utils"
+import { loadRecipients } from "./tracker-data"
+import type { PerUser, SignalRow, UserSignalCompact } from "./types"
+import { logger } from "@nba/lib/logger"
 import Link from "next/link"
 import { revalidatePath } from "next/cache"
 import { cn } from "@nba/design-system"
 
-const RECENT_SIGNALS = 12
+const log = logger.child({ module: "admin-tracker" })
 
-interface UserSignalCompact {
-  signalId: string
-  signalTitle: string
-  publishedAt: string
-  plans: string
-  plan: string
-  emailBucket: string
-  emailEvent: string | null
-  pushStatus: string | null
-  inAppRead: boolean
-}
-
-interface PerUser {
-  email: string
-  name: string
-  externalId: string | null
-  emailBucket: string
-  emailEvent: string | null
-  pushStatus: string | null
-  inAppRead: boolean
-  plan: string
-}
-
-interface SignalRow {
-  id: string
-  title: string
-  content: string
-  author: string
-  publishedAt: Date | null
-  plans: string
-  planBreakdown: { name: string; count: number }[]
-  hasImages: boolean
-  recipients: number
-  inAppRead: number
-  emailsSent: number
-  delivered: number
-  bounced: number
-  complained: number
-  opened: number
-  pending: number
-  failed: number
-  unknown: number
-  pushSent: number
-  pushFailed: number
-  perUser: PerUser[]
-}
+const PAGE_SIZE = 12
 
 function snippet(content: string): string {
   const text = content.replace(/[#*_`>\-]/g, " ").replace(/\s+/g, " ").trim()
@@ -73,10 +32,60 @@ function snippet(content: string): string {
 
 export const dynamic = "force-dynamic"
 
+interface WorkerHealth {
+  signalWorker: string
+  notifWorker: string
+  pendingJobs: number
+}
+
+/**
+ * Santé des workers + nombre de jobs en attente.
+ *
+ * ⚠️ On passe par l'API BullMQ (`getJobCounts`) et non par les clés Redis
+ * internes : dans BullMQ v5 la file `wait` est une LIST, donc `ZCARD` renvoyait
+ * toujours 0 (WRONGTYPE avalé) et le compteur était faux en permanence.
+ */
+async function getWorkerHealth(): Promise<WorkerHealth> {
+  const health: WorkerHealth = {
+    signalWorker: "inconnu",
+    notifWorker: "inconnu",
+    pendingJobs: 0,
+  }
+
+  if (process.env.QUEUE_ENABLED === "false" || !process.env.REDIS_URL) {
+    return { ...health, signalWorker: "désactivé", notifWorker: "désactivé" }
+  }
+
+  try {
+    const counts = await signalDistributionQueue.getJobCounts("waiting", "delayed", "paused")
+    health.pendingJobs = (counts.waiting ?? 0) + (counts.delayed ?? 0) + (counts.paused ?? 0)
+  } catch (err) {
+    log.warn({ err }, "Impossible de lire les compteurs de la file signal-distribution")
+  }
+
+  try {
+    const redis = getRedisConnection()
+    if (redis) {
+      // La clé `meta` est créée par le worker à son démarrage : sa présence est
+      // le seul signal fiable « worker vivant » exposé par BullMQ.
+      const [sigMeta, notifMeta] = await Promise.all([
+        redis.hget("bull:signal-distribution:meta", "version"),
+        redis.hget("bull:notification-delivery:meta", "version"),
+      ])
+      health.signalWorker = sigMeta ? "actif" : "inactif"
+      health.notifWorker = notifMeta ? "actif" : "inactif"
+    }
+  } catch (err) {
+    log.warn({ err }, "Impossible de lire l'état des workers")
+  }
+
+  return health
+}
+
 export default async function SignalTrackerPage({
   searchParams: sp,
 }: {
-  searchParams: Promise<{ q?: string; status?: string; range?: string }>
+  searchParams: Promise<{ q?: string; status?: string; range?: string; page?: string }>
 }) {
   const searchParams = await sp
   const query = searchParams.q?.toLowerCase() ?? ""
@@ -85,8 +94,9 @@ export default async function SignalTrackerPage({
     : range === "7d" ? 7 * 24 * 60 * 60 * 1000
     : range === "30d" ? 30 * 24 * 60 * 60 * 1000
     : 0
+  const requestedPage = Math.max(1, Number.parseInt(searchParams.page ?? "1", 10) || 1)
 
-  const where: any = { status: "PUBLISHED", deletedAt: null }
+  const where: Prisma.SignalWhereInput = { status: "PUBLISHED", deletedAt: null }
   if (query) {
     where.content = { contains: query, mode: "insensitive" }
   }
@@ -94,10 +104,17 @@ export default async function SignalTrackerPage({
     where.publishedAt = { gte: new Date(Date.now() - rangeMs) }
   }
 
+  // Le count permet de borner la page demandée (URL ?page=999) sans
+  // renvoyer une page vide.
+  const signalTotal = await prisma.signal.count({ where })
+  const totalPages = Math.max(1, Math.ceil(signalTotal / PAGE_SIZE))
+  const page = Math.min(requestedPage, totalPages)
+
   const signals = await prisma.signal.findMany({
     where,
     orderBy: { publishedAt: "desc" },
-    take: RECENT_SIGNALS,
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     select: {
       id: true,
       content: true,
@@ -113,173 +130,113 @@ export default async function SignalTrackerPage({
     },
   })
 
-  // Worker health check
-  let workerHealth = { signalWorker: "inconnu", notifWorker: "inconnu", pendingJobs: 0 }
-  try {
-    const redisUrl = process.env.REDIS_URL
-    if (redisUrl) {
-      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
-      const [sigMeta, notifMeta, pendingSig] = await Promise.all([
-        r.hget("bull:signal-distribution:meta", "version").catch(() => null),
-        r.hget("bull:notification-delivery:meta", "version").catch(() => null),
-        r.zcard("bull:signal-distribution:wait").catch(() => 0),
-      ])
-      workerHealth = {
-        signalWorker: sigMeta ? "actif" : "inactif",
-        notifWorker: notifMeta ? "actif" : "inactif",
-        pendingJobs: pendingSig,
-      }
-      await r.quit()
-    }
-  } catch {} // Redis indisponible, on ignore
+  // Lien de pagination en conservant les filtres actifs.
+  const pageHref = (target: number) => {
+    const params = new URLSearchParams()
+    if (query) params.set("q", query)
+    if (range !== "7d") params.set("range", range)
+    if (target > 1) params.set("page", String(target))
+    const qs = params.toString()
+    return `/admin/tracker${qs ? `?${qs}` : ""}`
+  }
+
+  // Worker health check — via l'API BullMQ, jamais via les clés internes.
+  const workerHealth = await getWorkerHealth()
+
+  // Charge les destinataires de tous les signaux de la page en 2 requêtes
+  // (au lieu de 2 par signal) — cf. tracker-data.ts.
+  const recipientsBySignal = await loadRecipients(
+    signals.map((signal) => ({
+      id: signal.id,
+      planIds: signal.audience.map((a) => a.plan.id),
+      planNames: signal.audience.map((a) => a.plan.name),
+    })),
+  )
 
   const rows: SignalRow[] = []
-  const allExternalIds: string[] = []
 
   for (const signal of signals) {
-    const notifications = await prisma.notification.findMany({
-      where: {
-        type: "SIGNAL",
-        data: { path: ["signalId"], equals: signal.id },
-      },
-      select: {
-        isRead: true,
-        userId: true,
-        user: { select: { id: true, email: true, name: true } },
-        deliveries: { select: { channel: true, status: true, externalId: true } },
-      },
-    })
+    const perUser = recipientsBySignal.get(signal.id) ?? []
 
-    const planIds = signal.audience.map((a: any) => a.plan.id ?? a.planId)
-    const userIds = notifications.map((n) => n.userId)
-    const accessRequests = userIds.length > 0
-      ? await prisma.accessRequest.findMany({
-          where: { userId: { in: userIds }, planId: { in: planIds }, status: "APPROVED" },
-          select: { userId: true, plan: { select: { name: true } } },
-        })
-      : []
-    const userPlanMap = new Map<string, string>()
-    for (const ar of accessRequests) {
-      if (!userPlanMap.has(ar.userId)) {
-        userPlanMap.set(ar.userId, ar.plan.name)
-      }
-    }
-
-    const perUser: PerUser[] = []
-    for (const n of notifications) {
-      const emailDelivery = n.deliveries.find((d) => d.channel === "EMAIL")
-      const pushDelivery = n.deliveries.find((d) => d.channel === "PUSH")
-      const externalId = emailDelivery?.externalId ?? null
-      if (externalId) allExternalIds.push(externalId)
-      perUser.push({
-        email: n.user?.email ?? "inconnu",
-        name: n.user?.name ?? "inconnu",
-        externalId,
-        plan: userPlanMap.get(n.userId) || signal.audience.map((a: any) => a.plan.name).join(", "),
-        emailBucket: "unknown",
-        emailEvent: null,
-        pushStatus: pushDelivery
-          ? pushDelivery.status === "SENT"
-            ? "envoyé"
-            : pushDelivery.status === "FAILED"
-              ? "échoué"
-              : pushDelivery.status
-          : null,
-        inAppRead: n.isRead,
-      })
-    }
-
-    const emailsSent = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "EMAIL").length,
-      0,
-    )
-    const pushSent = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "SENT").length,
-      0,
-    )
-    const pushFailed = notifications.reduce(
-      (s, n) => s + n.deliveries.filter((d) => d.channel === "PUSH" && d.status === "FAILED").length,
-      0,
-    )
+    const pushSent = perUser.filter((u) => u.pushStatus === "envoyé").length
+    const pushFailed = perUser.filter((u) => u.pushStatus === "échoué").length
 
     const planCount = new Map<string, number>()
     for (const u of perUser) {
       planCount.set(u.plan, (planCount.get(u.plan) ?? 0) + 1)
     }
-    const planBreakdown = signal.audience.map((a: any) => ({
+    const planBreakdown = signal.audience.map((a) => ({
       name: a.plan.name,
       count: planCount.get(a.plan.name) ?? 0,
     }))
+
+    const metrics = emptyDeliveryMetrics()
+    for (const u of perUser) {
+      addDeliveryMetrics(metrics, {
+        hasEmail: u.hasEmail,
+        dbStatus: u.emailStatus,
+        externalId: u.externalId,
+        bucket: u.emailBucket as DeliveryBucket,
+      })
+    }
 
     rows.push({
       id: signal.id,
       title: snippet(signal.content),
       content: signal.content,
-      author: (signal as any).creator?.name || "Inconnu",
+      author: signal.creator?.name || "Inconnu",
       publishedAt: signal.publishedAt,
-      plans: signal.audience.map((a: any) => a.plan.name).join(", ") || "—",
+      plans: signal.audience.map((a) => a.plan.name).join(", ") || "—",
       planBreakdown,
-      hasImages: !!(signal as any).imageUrl || ((signal as any).imageUrls?.length ?? 0) > 0,
-      recipients: notifications.length,
-      inAppRead: notifications.filter((n) => n.isRead).length,
-      emailsSent,
-      delivered: 0,
-      bounced: 0,
-      complained: 0,
-      opened: 0,
-      pending: 0,
-      failed: 0,
-      unknown: 0,
+      hasImages: !!signal.imageUrl || (Array.isArray(signal.imageUrls) && signal.imageUrls.length > 0),
+      recipients: perUser.length,
+      inAppRead: perUser.filter((u) => u.inAppRead).length,
+      emailsSent: metrics.sent,
+      delivered: metrics.delivered,
+      bounced: metrics.bounced,
+      complained: metrics.complained,
+      opened: metrics.opened,
+      pending: metrics.pending,
+      failed: metrics.failed,
+      unknown: metrics.unknown,
       pushSent,
       pushFailed,
-      perUser,
+      perUserCount: perUser.length,
     })
-  }
-
-  const eventMap = await getLatestEventMap(allExternalIds)
-  const statusMap = await getResendStatusMap(allExternalIds)
-
-  for (const row of rows) {
-    for (const u of row.perUser) {
-      let bucket: DeliveryBucket
-      let event: string | null
-      if (u.externalId && eventMap.has(u.externalId)) {
-        const evt = eventMap.get(u.externalId)
-        bucket = classifyByEventType(evt)
-        event = evt ?? "en attente Resend"
-      } else if (u.externalId) {
-        const status: ResendEmailStatus | null = statusMap.get(u.externalId) ?? null
-        bucket = classifyResendStatus(status)
-        event = status?.last_event ?? "en attente Resend"
-      } else {
-        bucket = "unknown"
-        event = "pas d'email"
-      }
-      u.emailBucket = bucket
-      u.emailEvent = event
-      row[bucket] = (row[bucket] ?? 0) + 1
-    }
   }
 
   const totals = rows.reduce(
     (acc, r) => {
       acc.recipients += r.recipients
       acc.inAppRead += r.inAppRead
-      acc.emailsSent += r.emailsSent
+      acc.sent += r.emailsSent
       acc.delivered += r.delivered
       acc.bounced += r.bounced
       acc.complained += r.complained
       acc.opened += r.opened
+      acc.pending += r.pending
+      acc.failed += r.failed
+      acc.unknown += r.unknown
       acc.pushSent += r.pushSent
       acc.pushFailed += r.pushFailed
       return acc
     },
-    { recipients: 0, inAppRead: 0, emailsSent: 0, delivered: 0, bounced: 0, complained: 0, opened: 0, pushSent: 0, pushFailed: 0 },
+    {
+      recipients: 0,
+      inAppRead: 0,
+      ...emptyDeliveryMetrics(),
+      pushSent: 0,
+      pushFailed: 0,
+    },
   )
 
-  const deliveryRate = totals.emailsSent > 0 ? Math.round((totals.delivered / totals.emailsSent) * 100) : 0
-  const bounceRate = totals.emailsSent > 0 ? Math.round((totals.bounced / totals.emailsSent) * 100) : 0
-  const openRate = totals.delivered > 0 ? Math.round((totals.opened / totals.delivered) * 100) : 0
+  const { deliveryRate, openRate, bounceRate } = computeDeliveryRates(totals)
+
+  // Part rapportée au total envoyé — pour que les barres de l'entonnoir soient
+  // comparables entre elles (le taux d'ouverture, lui, reste calculé sur les
+  // délivrés dans les KPI).
+  const shareOfSent = (n: number) =>
+    totals.sent > 0 ? Math.min(100, Math.round((n / totals.sent) * 100)) : 0
 
   // Alerts
   const alerts: { type: "error" | "warning"; message: string }[] = []
@@ -288,24 +245,26 @@ export default async function SignalTrackerPage({
   if (bounceRate > 5) alerts.push({ type: "warning", message: `Taux de bounce élevé (${bounceRate} %) — vérifiez la qualité des emails` })
   if (workerHealth.pendingJobs > 10) alerts.push({ type: "warning", message: `${workerHealth.pendingJobs} jobs en attente dans la file signaux` })
 
-  // Per-plan aggregate stats
-  const planStats = new Map<string, { users: number; delivered: number; bounced: number; opened: number; sent: number }>()
+  // Per-plan aggregate stats — même agrégateur que les lignes et les totaux.
+  const planStats = new Map<string, { users: number; metrics: DeliveryMetrics }>()
   for (const row of rows) {
-    for (const u of row.perUser) {
-      if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, delivered: 0, bounced: 0, opened: 0, sent: 0 })
+    for (const u of recipientsBySignal.get(row.id) ?? []) {
+      if (!planStats.has(u.plan)) planStats.set(u.plan, { users: 0, metrics: emptyDeliveryMetrics() })
       const s = planStats.get(u.plan)!
       s.users++
-      if (u.emailBucket === "delivered") s.delivered++
-      else if (u.emailBucket === "bounced") s.bounced++
-      else if (u.emailBucket === "opened") s.opened++
-      if (u.emailBucket !== "unknown" && u.emailBucket !== "pas d'email") s.sent++
+      addDeliveryMetrics(s.metrics, {
+        hasEmail: u.hasEmail,
+        dbStatus: u.emailStatus,
+        externalId: u.externalId,
+        bucket: u.emailBucket as DeliveryBucket,
+      })
     }
   }
 
   // Build per-user timeline data (aggregate all signals per user)
   const userMap = new Map<string, { id: string; name: string; email: string; signals: UserSignalCompact[] }>()
   for (const row of rows) {
-    for (const u of row.perUser) {
+    for (const u of recipientsBySignal.get(row.id) ?? []) {
       const key = u.email
       if (!userMap.has(key)) {
         userMap.set(key, { id: key, name: u.name, email: u.email, signals: [] })
@@ -313,7 +272,7 @@ export default async function SignalTrackerPage({
       userMap.get(key)!.signals.push({
         signalId: row.id,
         signalTitle: row.title,
-        publishedAt: row.publishedAt?.toISOString() ?? "",
+        publishedAt: row.publishedAt instanceof Date ? row.publishedAt.toISOString() : (row.publishedAt ?? ""),
         plans: row.plans,
         plan: u.plan,
         emailBucket: u.emailBucket,
@@ -325,24 +284,28 @@ export default async function SignalTrackerPage({
   }
   const users = Array.from(userMap.values()).sort((a, b) => a.name.localeCompare(b.name))
 
-  async function handleRetryAll() {
+  async function handleRetryAll(): Promise<{ count: number; error?: string }> {
     "use server"
-    let count = 0
     try {
-      const redisUrl = process.env.REDIS_URL
-      if (!redisUrl) return { count: 0 }
-      const r = new IORedis(redisUrl, { maxRetriesPerRequest: null } as any)
-      const failed = await r.zrange("bull:signal-distribution:failed", 0, -1)
-      count = failed.length
-      for (const id of failed) {
-        await r.zrem("bull:signal-distribution:failed", id)
-        await r.zadd("bull:signal-distribution:wait", Date.now(), id)
-        await r.hdel("bull:signal-distribution:" + id, "failedReason", "finishedOn", "processedOn", "stacktrace")
-      }
-      await r.quit()
-    } catch {}
-    revalidatePath("/admin/tracker")
-    return { count }
+      await requireRole(["ADMIN", "SUPER_ADMIN"])
+    } catch (err) {
+      log.warn({ err }, "Retry de jobs refusé : rôle insuffisant")
+      return { count: 0, error: "Action réservée aux administrateurs." }
+    }
+
+    if (process.env.QUEUE_ENABLED === "false" || !process.env.REDIS_URL) {
+      return { count: 0, error: "La file d'attente est désactivée." }
+    }
+
+    try {
+      const count = await retryFailedJobs(signalDistributionQueue)
+
+      revalidatePath("/admin/tracker")
+      return { count }
+    } catch (err) {
+      log.error({ err }, "Échec de la relance des jobs de distribution")
+      return { count: 0, error: "Impossible de relancer les jobs. Vérifie Redis/BullMQ." }
+    }
   }
 
   return (
@@ -369,7 +332,7 @@ export default async function SignalTrackerPage({
               <WorkerKpi label="Worker signaux" value={workerHealth.signalWorker} />
               <WorkerKpi label="Worker emails" value={workerHealth.notifWorker} />
               <WorkerKpi label="Jobs en attente" value={String(workerHealth.pendingJobs)} />
-              <WorkerKpi label="Signaux analysés" value={String(rows.length)} />
+              <WorkerKpi label="Signaux analysés" value={String(signalTotal)} />
             </div>
 
             {/* Alerts */}
@@ -395,7 +358,7 @@ export default async function SignalTrackerPage({
             {/* KPIs — top 4 toujours visibles, reste toggleable sur mobile */}
             <MobileKpis
               items={[
-                { label: "Signaux", value: rows.length },
+                { label: "Signaux", value: signalTotal },
                 { label: "Destinataires", value: totals.recipients },
                 { label: "Délivrés", value: totals.delivered, tone: "success" },
                 { label: "Taux délivrabilité", value: deliveryRate, suffix: "%", tone: deliveryRate >= 95 ? "success" : deliveryRate >= 80 ? "info" : "danger" },
@@ -403,7 +366,7 @@ export default async function SignalTrackerPage({
                 { label: "Bounces", value: totals.bounced, tone: "danger" },
                 { label: "Taux de bounce", value: bounceRate, suffix: "%", tone: bounceRate <= 2 ? "success" : bounceRate <= 5 ? "info" : "danger" },
                 { label: "Plaintes", value: totals.complained, tone: "danger" },
-                { label: "Emails envoyés", value: totals.emailsSent },
+                { label: "Emails envoyés", value: totals.sent },
                 { label: "Ouverts", value: totals.opened, tone: "info" },
                 { label: "In-app lus", value: totals.inAppRead, tone: "info" },
                 { label: "Push envoyés", value: totals.pushSent },
@@ -412,13 +375,13 @@ export default async function SignalTrackerPage({
             />
 
             {/* Delivery funnel */}
-            {totals.emailsSent > 0 && (
+            {totals.sent > 0 && (
               <div className="rounded-xl border border-border bg-card p-4 space-y-3">
                 <h3 className="text-sm font-semibold">Entonnoir de livraison</h3>
                 <div className="space-y-2">
-                  <FunnelBar label="Emails envoyés" value={totals.emailsSent} pct={100} color="bg-primary" />
+                  <FunnelBar label="Emails envoyés" value={totals.sent} pct={100} color="bg-primary" />
                   <FunnelBar label="Délivrés" value={totals.delivered} pct={deliveryRate} color="bg-success" />
-                  <FunnelBar label="Ouverts" value={totals.opened} pct={openRate} color="bg-info" />
+                  <FunnelBar label="Ouverts" value={totals.opened} pct={shareOfSent(totals.opened)} color="bg-info" />
                   <FunnelBar label="Bounces" value={totals.bounced} pct={bounceRate} color="bg-destructive" />
                 </div>
               </div>
@@ -432,12 +395,12 @@ export default async function SignalTrackerPage({
                 </div>
                 <div className="divide-y divide-border/50">
                   {Array.from(planStats.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([plan, s]) => {
-                    const planDeliveryRate = s.sent > 0 ? Math.round((s.delivered / s.sent) * 100) : 0
+                    const { deliveryRate: planDeliveryRate } = computeDeliveryRates(s.metrics)
                     return (
                       <div key={plan} className="flex items-center justify-between px-4 py-3">
                         <div className="min-w-0">
                           <div className="text-sm font-medium truncate">{plan}</div>
-                          <div className="text-xs text-muted-foreground">{s.users} utilisateurs · {s.sent} emails</div>
+                          <div className="text-xs text-muted-foreground">{s.users} utilisateurs · {s.metrics.sent} emails</div>
                         </div>
                         <div className="flex items-center gap-3 text-xs tabular-nums">
                           <span className={cn("font-semibold", planDeliveryRate >= 95 ? "text-success" : planDeliveryRate >= 80 ? "text-info" : "text-destructive")}>
@@ -511,9 +474,47 @@ export default async function SignalTrackerPage({
             <SignalTableClient
               rows={rows.map((r) => ({
                 ...r,
-                publishedAt: r.publishedAt?.toISOString() ?? null,
+                publishedAt:
+                  r.publishedAt instanceof Date
+                    ? r.publishedAt.toISOString()
+                    : (r.publishedAt ?? null),
               }))}
             />
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between gap-3 text-xs">
+                <span className="text-muted-foreground">
+                  Page {page} / {totalPages} · {signalTotal} signaux
+                </span>
+                <div className="flex items-center gap-2">
+                  <Link
+                    href={pageHref(page - 1)}
+                    aria-disabled={page <= 1}
+                    className={cn(
+                      "h-8 rounded-lg border border-border px-3 inline-flex items-center",
+                      page <= 1
+                        ? "pointer-events-none opacity-40"
+                        : "hover:bg-muted/50",
+                    )}
+                  >
+                    Précédent
+                  </Link>
+                  <Link
+                    href={pageHref(page + 1)}
+                    aria-disabled={page >= totalPages}
+                    className={cn(
+                      "h-8 rounded-lg border border-border px-3 inline-flex items-center",
+                      page >= totalPages
+                        ? "pointer-events-none opacity-40"
+                        : "hover:bg-muted/50",
+                    )}
+                  >
+                    Suivant
+                  </Link>
+                </div>
+              </div>
+            )}
           </>
         }
         timeline={
