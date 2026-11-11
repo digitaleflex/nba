@@ -41,15 +41,27 @@ describe("navigation config", () => {
     expect(items.some((i) => i.id === "admin")).toBe(true)
   })
 
-  it("retourne 4 contextes admin en mobile", () => {
+  it("retourne 5 contextes admin en mobile", () => {
     const items = getMobileNavItems("admin", "ADMIN")
-    expect(items.map((i) => i.id)).toEqual(["surveiller", "decider", "communiquer", "auditer"])
+    expect(items.map((i) => i.id)).toEqual([
+      "a-traiter",
+      "membres",
+      "contenus",
+      "pilotage",
+      "securite",
+    ])
   })
 
   it("retourne les sections admin pour la sidebar", () => {
     const sections = getSidebarSections("admin", "ADMIN")
-    expect(sections.length).toBe(4)
-    expect(sections.map((s) => s.id)).toEqual(["surveiller", "decider", "communiquer", "auditer"])
+    expect(sections.length).toBe(5)
+    expect(sections.map((s) => s.id)).toEqual([
+      "a-traiter",
+      "membres",
+      "contenus",
+      "pilotage",
+      "securite",
+    ])
   })
 
   it("détecte l'active state par pathname", () => {
@@ -78,9 +90,17 @@ describe("navigation config", () => {
     expect(isNavItemActive(dashboard!, "/admin", new URLSearchParams())).toBe(true)
   })
 
-  it("retourne 5 contextes admin en mobile pour un SUPER_ADMIN (Système inclus)", () => {
+  // La barre du bas reste à 5 contextes pour tous : « Système » est injecté
+  // dans le drawer mobile (mobile-menu) et la sidebar, pas dans la bottom bar.
+  it("retourne les mêmes 5 contextes en mobile pour un SUPER_ADMIN", () => {
     const items = getMobileNavItems("admin", "SUPER_ADMIN")
-    expect(items.map((i) => i.id)).toEqual(["surveiller", "decider", "communiquer", "auditer", "systeme"])
+    expect(items.map((i) => i.id)).toEqual([
+      "a-traiter",
+      "membres",
+      "contenus",
+      "pilotage",
+      "securite",
+    ])
   })
 
   it("expose la section Système au SUPER_ADMIN avec ses tabs et ses liens standalone", () => {
