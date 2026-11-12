@@ -15,6 +15,7 @@ import {
 } from "@nba/lib/services/delivery-metrics"
 import { requireRole } from "@nba/lib/auth-utils"
 import { loadRecipients } from "./tracker-data"
+import { getPushReach, type PushReach } from "@nba/lib/services/push-reach"
 import type { PerUser, SignalRow, UserSignalCompact } from "./types"
 import { logger } from "@nba/lib/logger"
 import Link from "next/link"
@@ -145,6 +146,8 @@ export default async function SignalTrackerPage({
 
   // Charge les destinataires de tous les signaux de la page en 2 requêtes
   // (au lieu de 2 par signal) — cf. tracker-data.ts.
+  const pushReach: PushReach | null = await getPushReach().catch(() => null)
+
   const recipientsBySignal = await loadRecipients(
     signals.map((signal) => ({
       id: signal.id,
@@ -370,6 +373,9 @@ export default async function SignalTrackerPage({
                 { label: "In-app lus", value: totals.inAppRead, tone: "info" },
                 { label: "Push envoyés", value: totals.pushSent },
                 { label: "Push échoués", value: totals.pushFailed, tone: "danger" },
+                ...(pushReach
+                  ? [{ label: `Joignables en push (${pushReach.reachable}/${pushReach.total} · iOS ${pushReach.byPlatform.ios}, Android ${pushReach.byPlatform.android}, bureau ${pushReach.byPlatform.desktop})`, value: pushReach.rate, suffix: "%", tone: (pushReach.rate >= 70 ? "success" : pushReach.rate >= 50 ? "info" : "danger") as "success" | "info" | "danger" }]
+                  : []),
               ]}
             />
 
