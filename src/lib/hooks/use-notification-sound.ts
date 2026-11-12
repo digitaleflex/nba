@@ -85,7 +85,17 @@ export function useNotificationSound() {
     window.addEventListener("nba:sound-changed", onSoundChanged)
     window.addEventListener("storage", onStorage)
 
+    const onSwMessage = (e: MessageEvent) => {
+      if (e.data?.type === "PLAY_ALERT") {
+        play()
+      }
+    }
+    if (navigator.serviceWorker) {
+      navigator.serviceWorker.addEventListener("message", onSwMessage)
+    }
+
     return () => {
+      if (navigator.serviceWorker) navigator.serviceWorker.removeEventListener("message", onSwMessage)
       if (howlRef.current) howlRef.current.unload()
       window.removeEventListener("nba:sound-changed", onSoundChanged)
       window.removeEventListener("storage", onStorage)

@@ -6,6 +6,7 @@ import { User, Bell } from "lucide-react"
 import { AppShell } from "@nba/app/components/app-shell"
 import { MobileMenu } from "@nba/app/components/mobile-menu"
 import { NotificationBell } from "@nba/components/notification-bell"
+import { PushStatusChip } from "@nba/components/push-status-chip"
 import { MessageBadge } from "@nba/components/message-badge"
 import { ReportBugDialog } from "@nba/components/report-bug-dialog"
 import { WelcomeGuide } from "./dashboard/welcome-guide"
@@ -39,6 +40,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <ReportBugDialog variant="ghost" size="icon-sm" />
         <MessageBadge />
         <NotificationBell />
+        <PushStatusChip />
         <Link
           id="profile-nav"
           href="/dashboard/profile"

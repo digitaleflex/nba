@@ -6,6 +6,7 @@ import { Search, Bell, CheckSquare, User, Loader2, ArrowRight } from "lucide-rea
 import { cn } from "@nba/design-system"
 import { PushAlertsCard } from "@nba/components/push-alerts-card"
 import { NotificationBell } from "@nba/components/notification-bell"
+import { PushStatusChip } from "@nba/components/push-status-chip"
 import { AdminInbox } from "./admin-inbox"
 
 interface SearchResults {
@@ -142,6 +143,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
           <AdminInbox />
 
           <NotificationBell />
+          <PushStatusChip />
 
           <PushAlertsCard variant="compact" />
 
