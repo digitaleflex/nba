@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.4.0";
+const SW_VERSION = "2.5.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -97,6 +97,27 @@ self.addEventListener("push", (event) => {
       vibrate: [200, 100, 200],
     }),
   );
+});
+
+
+// Changement d'abonnement push (renouvellement/invalide par le navigateur) :
+// on réabonne et on met à jour le serveur.
+self.addEventListener("pushsubscriptionchange", (event) => {
+  event.waitUntil((async () => {
+    try {
+      const reg = self.registration;
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: event.oldSubscription?.options?.applicationServerKey });
+      const json = sub.toJSON();
+      await fetch("/api/push/subscribe", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ endpoint: json.endpoint, keys: json.keys, userAgent: self.navigator?.userAgent || "" }),
+      });
+    } catch (e) {
+      // silencieux : le hook côté app réparera à la prochaine ouverture
+    }
+  })());
 });
 
 // Click sur notification

@@ -20,6 +20,13 @@ export function loadServiceWorker() {
   const handlers: Record<string, Handler> = {}
   const shown: ShownNotification[] = []
   const opened: string[] = []
+  const subscribed: any[] = []
+  const fetchCalls: { url: string; init: any }[] = []
+
+  const fakeSub = {
+    endpoint: "https://push/new-endpoint",
+    toJSON: () => ({ endpoint: "https://push/new-endpoint", keys: { p256dh: "p", auth: "a" } }),
+  }
 
   const self = {
     addEventListener: (type: string, fn: Handler) => { handlers[type] = fn },
@@ -28,8 +35,12 @@ export function loadServiceWorker() {
         shown.push({ title, options })
         return Promise.resolve()
       },
+      pushManager: {
+        subscribe: async () => fakeSub,
+      },
     },
     skipWaiting: () => Promise.resolve(),
+    navigator: { userAgent: "test-agent" },
   }
   const sandbox = createContext({
     self,
@@ -40,6 +51,7 @@ export function loadServiceWorker() {
       matchAll: async () => [],
       openWindow: async (url: string) => { opened.push(url) },
     },
+    fetch: async (url: string, init?: any) => { fetchCalls.push({ url, init }); return { ok: true, status: 200 } },
     Promise,
   })
   runInContext(code, sandbox)
@@ -66,5 +78,15 @@ export function loadServiceWorker() {
     await pending
   }
 
-  return { shown, opened, push, pushJson, pushText, click, handlers }
+  /** Simule un changement d'abonnement push. */
+  async function subscriptionChange(oldEndpoint?: string) {
+    let pending: Promise<unknown> | undefined
+    handlers.pushsubscriptionchange({
+      oldSubscription: oldEndpoint ? { endpoint: oldEndpoint, options: { applicationServerKey: null } } : null,
+      waitUntil: (p: Promise<unknown>) => { pending = p },
+    })
+    await pending
+  }
+
+  return { shown, opened, fetchCalls, push, pushJson, pushText, click, subscriptionChange, handlers }
 }

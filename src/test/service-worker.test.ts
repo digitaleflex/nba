@@ -51,4 +51,13 @@ describe("public/sw.js — affichage des notifications push", () => {
     await sw.click("/dashboard/signals/abc")
     expect(sw.opened).toEqual(["/dashboard/signals/abc"])
   })
+
+  it("reabonne et POST le nouvel endpoint sur pushsubscriptionchange (PUSH-2c #387)", async () => {
+    const sw = loadServiceWorker()
+    await sw.subscriptionChange()
+    expect(sw.fetchCalls.some((c) => c.url === "/api/push/subscribe" && c.init?.method === "POST")).toBe(true)
+    const call = sw.fetchCalls.find((c) => c.url === "/api/push/subscribe")!
+    const body = JSON.parse(call.init.body)
+    expect(body.endpoint).toBe("https://push/new-endpoint")
+  })
 })
