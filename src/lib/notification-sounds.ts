@@ -5,7 +5,7 @@ export interface NotificationSoundOption {
 }
 
 // Source unique de vérité pour les sons de notification.
-// Les fichiers correspondants existent dans /public/sounds/<id>.wav
+// Les fichiers correspondants existent dans /public/sounds/<id>.mp3
 export const NOTIFICATION_SOUNDS: NotificationSoundOption[] = [
   { id: "default", label: "Classique", desc: "Double ding clair" },
   { id: "chime", label: "Douce", desc: "Carillon 3 notes" },

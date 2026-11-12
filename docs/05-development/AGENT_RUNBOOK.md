@@ -56,7 +56,7 @@ pnpm lint               # NON BLOQUANT (continue-on-error) mais ne doit pas AJOU
 
 Faits à connaître sur la CI :
 - `pnpm lint` compte environ 580 erreurs **préexistantes** (surtout `no-explicit-any`). Elles ne bloquent pas la CI : ne les « corrigez » pas dans une PR sans rapport, mais n'en ajoutez pas.
-- Le job **« Security Scan + SBOM » est rouge de façon chronique** (`Path does not exist: trivy-results.sarif`, étape d'envoi du rapport). Ce n'est pas un défaut de votre PR : il l'était déjà en août. Il ne bloque pas la fusion.
+- Le job **« Security Scan + SBOM »** construit l'image, la scanne avec Trivy et publie le rapport en artefact `trivy-sarif` + résumé du job (réparé par la PR #391). Il ne bloque pas la fusion tant que Trivy n'est pas configuré en mode bloquant ; l'envoi vers l'onglet Sécurité de GitHub exige que « Code scanning » soit activé dans les réglages du dépôt.
 - Un test marqué `it.fails(...)` documente un **bug connu** : quand vous le corrigez, le test passe au rouge ; retirez alors `.fails`.
 
 ---
@@ -121,7 +121,7 @@ Pour tester le **service worker** sans navigateur : `src/test/sw-harness.ts` cha
 - **Dossier `.next`** : peut peser plusieurs Go et laisser des types périmés → `rm -rf .next` en cas d'erreur étrange.
 - **`createAdmin.ts`** crée un compte **SUPER_ADMIN** (même pour un membre : le script de démo corrige ensuite le rôle). Il se termine désormais proprement.
 - **Service worker** : un seul fichier `public/sw.js` pour tout. Les chantiers PUSH-1, PUSH-2 et PUSH-4 le modifient : ordre imposé par la carte. Incrémentez `SW_VERSION` à chaque changement.
-- **Sons** : `public/sounds/*.wav` (17 fichiers, 3,4 Mo) ; le catalogue est dans `src/lib/notification-sounds.ts` ; le hook est `src/lib/hooks/use-notification-sound.ts`.
+- **Sons** : `public/sounds/*.mp3` (17 fichiers, 284 Ko, mono, −16 LUFS) ; le catalogue est dans `src/lib/notification-sounds.ts` ; le hook est `src/lib/hooks/use-notification-sound.ts`.
 - **Migrations** : `prisma/migrations` ne s'applique pas sur une base vide (voir règle n° 7). Toute nouvelle migration doit s'appliquer sur la base de production existante.
 - **Production** : l'application tourne derrière Traefik ; le worker (`workers/queue.ts`) est un processus séparé (service `worker` dans `compose.yml`). Un changement qui touche l'envoi de push/e-mails doit être pensé pour **les deux** processus.
 

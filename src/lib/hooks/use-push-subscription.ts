@@ -55,7 +55,7 @@ export function usePushSubscription(): UsePushSubscriptionResult {
       const res = await fetch("/api/push/vapid-key")
       if (!res.ok) return null
       const data = await res.json()
-      vapidKeyRef.current = data?.publicKey ?? null
+      vapidKeyRef.current = data?.key ?? data?.publicKey ?? null
       return vapidKeyRef.current
     } catch {
       return null

@@ -1,4 +1,5 @@
 import { prisma, withRetryTransaction } from "@nba/lib/db"
+import { shouldMuteNow } from "@nba/lib/quiet-hours"
 import { sendEmail, verificationEmail, welcomeEmail, resetPasswordEmail, emailOtp } from "@nba/lib/email"
 import { getQueue } from "@nba/lib/queue"
 import { logger } from "@nba/lib/logger"
@@ -33,19 +34,6 @@ async function getUserPrefs(userId: string): Promise<Record<string, boolean>> {
 
 export { getUserPrefs }
 
-function isInQuietHours(prefs: Record<string, any>): boolean {
-  const qh = prefs.quietHours
-  if (!qh || !qh.start || !qh.end) return false
-  const now = new Date()
-  const current = now.getHours() * 60 + now.getMinutes()
-  const [sh, sm] = qh.start.split(":").map(Number)
-  const [eh, em] = qh.end.split(":").map(Number)
-  const start = sh * 60 + sm
-  const end = eh * 60 + em
-  if (start <= end) return current >= start && current < end
-  return current >= start || current < end
-}
-
 interface NotifyParams {
   userId: string
   type: NotificationType
@@ -68,7 +56,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   // Ne pas créer de notification pour un utilisateur suspendu
   const user = await prisma.user.findUnique({
     where: { id: params.userId },
-    select: { isActive: true },
+    select: { isActive: true, timezone: true },
   })
   if (!user?.isActive) {
     // Créer la notification in-app quand même (pour audit trail) mais ne pas la distribuer
@@ -103,7 +91,7 @@ export async function notify(params: NotifyParams): Promise<{ id: string }> {
   const typeEnabled = (prefs as Record<string, boolean | undefined>)[prefKey] !== false
 
   if (typeEnabled) {
-    const inQuietHours = isInQuietHours(prefs)
+    const inQuietHours = shouldMuteNow(prefs as any, params.type === "SIGNAL", user.timezone)
 
     if (!inQuietHours) {
       const pushPromise = (async () => {
