@@ -441,7 +441,7 @@ const adminMobile: NavItem[] = [
     section: "pilotage",
     isActive: (pathname, searchParams) =>
       (pathname === "/admin" && ["dashboard", "analytics", "revenue"].includes(searchParams.get("tab") ?? "dashboard")) ||
-      ["/admin/control-room", "/admin/tracker", "/admin/coaching"].some((p) => pathname.startsWith(p)),
+      ["/admin/tracker", "/admin/coaching"].some((p) => pathname.startsWith(p)),
   },
   {
     id: "securite",

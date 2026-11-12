@@ -9,6 +9,7 @@ import {
   Page,
   PageHeader,
 } from "@nba/design-system"
+import { AdminTools } from "../components/admin-tools"
 import {
   Database,
   Activity,
@@ -385,6 +386,16 @@ export default function CacheStatusPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* Actions de maintenance */}
+      <Card className="border-border bg-card/30">
+        <CardContent className="p-5 space-y-3">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Actions de maintenance
+          </h2>
+          <AdminTools />
+        </CardContent>
+      </Card>
     </Page>
   )
 }

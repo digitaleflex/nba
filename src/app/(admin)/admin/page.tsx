@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, Suspense, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import dynamic from "next/dynamic"
 import { Loader2 } from "lucide-react"
-import { Card, cn } from "@nba/design-system"
+import { Card, cn, EmptyState } from "@nba/design-system"
 import { toast } from "sonner"
 import { useAdminRole } from "./role-context"
 import { Settings } from "lucide-react"
@@ -29,7 +29,6 @@ import { NotificationsTab } from "./features/NotificationsTab"
 import { ModerationTab } from "./features/ModerationTab"
 import { DevicesTab } from "./features/DevicesTab"
 import { CronsTab } from "./features/CronsTab"
-import { AdminTools } from "./components/admin-tools"
 
 import { OpenPanelArgs, RegisterRefetch } from "./features/types"
 import { getTabLabel } from "./admin-context"
@@ -445,34 +444,22 @@ function AdminConsoleContent() {
         <div className="relative md:hidden">
           <div className="flex overflow-x-auto flex-nowrap items-center gap-2 pb-1 scrollbar-none [-webkit-overflow-scrolling:touch] snap-x" role="region" aria-label="Contenu défilant">
             <div className="shrink-0 w-1" />
-            {adminSections.flatMap((section, gi) => {
-              const items: React.ReactNode[] = []
-              if (gi > 0) {
-                items.push(<div key={`sep-${gi}`} className="shrink-0 w-px h-5 bg-border/40 mx-1.5" />)
-              }
-              section.items.forEach((item) => {
-                const isActive = item.id === "review"
-                  ? false
-                  : item.href.startsWith("/admin?tab=")
-                    ? activeTab === item.href.split("tab=")[1]
-                    : false
-                items.push(
-                  <button key={item.id} onClick={() => router.push(item.href)}
-                    className={cn("text-xs px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", isActive ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
-                  >
-                    {item.label}
-                  </button>
-                )
-              })
-              return items
+            {(adminSections.find((s) => s.items.some((item) => item.id === activeTab))?.items ?? []).map((item) => {
+              const isActive = item.id === "review"
+                ? false
+                : item.href.startsWith("/admin?tab=")
+                  ? activeTab === item.href.split("tab=")[1]
+                  : false
+              return (
+                <button key={item.id} onClick={() => router.push(item.href)}
+                  className={cn("text-xs px-3 min-h-[30px] md:min-h-0 md:py-1.5 rounded-full border transition-colors cursor-pointer shrink-0 snap-start", isActive ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:bg-muted/50")}
+                >
+                  {item.label}
+                </button>
+              )
             })}
           </div>
         </div>
-
-        {/* ============================================================== */}
-        {/* OUTILS SUPER-ADMIN (toujours visibles) */}
-        {/* ============================================================== */}
-        <AdminTools />
 
         <div key={activeTab} className="animate-fade-in">
         {/* ============================================================== */}
@@ -528,6 +515,9 @@ function AdminConsoleContent() {
           <FraudTab />
         )}
 
+        {activeTab === "moderation" && (
+          <ModerationTab />
+        )}
         {activeTab === "emails" && (
           <EmailsTab cachedGet={cachedGet} opsData={opsData} />
         )}
@@ -554,6 +544,10 @@ function AdminConsoleContent() {
           isSuperAdmin
             ? <CronsTab />
             : <LockedMessage title="Cron Jobs" desc="La gestion des tâches planifiées est réservée au SUPER_ADMIN." />
+        )}
+
+        {!["dashboard","users","membres","requests","signals","kyc","broker","revenue","analytics","security","fraud","emails","settings","notifications","bugs","devices","crons","moderation"].includes(activeTab) && (
+          <EmptyState icon={Settings} title="Onglet inconnu" description="Cet onglet n'existe pas ou n'est plus disponible." />
         )}
 
       </div>
