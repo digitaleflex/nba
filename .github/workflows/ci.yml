@@ -81,6 +81,9 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      # Requis par github/codeql-action/upload-sarif sur un dépôt privé : il lit le run courant
+      # (GET /actions/runs/{id}). Sans cela : "Resource not accessible by integration".
+      actions: read
     steps:
       - uses: actions/checkout@v4
       # Sans Buildx, le pilote Docker par défaut refuse `cache-to: type=gha`
