@@ -387,6 +387,9 @@ export default function NotificationsPage() {
 
       {/* ── Autorisation navigateur ── */}
       <PushAlertsCard variant="full" />
+      <div className="text-xs text-muted-foreground">
+        <Link href="/dashboard/notifications/devices" className="underline hover:text-foreground">Mes appareils d'alerte</Link>
+      </div>
 
       <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" role="region" aria-label="Contenu défilant">
