@@ -67,15 +67,36 @@ export default function VerificationPage() {
     )
   }
 
-  const isKycApproved = state.kycStatus === "APPROVED"
-  const isKycPending = state.kycStatus === "PENDING"
-  const isKycRejected = state.kycStatus === "REJECTED"
-  const hasKyc = !!state.kycStatus
+  const kycState = (state.kycStatus ?? "NOT_SUBMITTED") as
+    | "NOT_SUBMITTED"
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+  const isKycApproved = kycState === "APPROVED"
+  const isKycPending = kycState === "PENDING"
+  const isKycRejected = kycState === "REJECTED"
+  const hasKyc = kycState !== "NOT_SUBMITTED"
 
-  const isBrokerApproved = state.brokerStatus === "APPROVED"
-  const isBrokerPending = state.brokerStatus === "PENDING"
-  const isBrokerRejected = state.brokerStatus === "REJECTED"
-  const hasBroker = !!state.brokerStatus
+  const brokerState = (state.brokerStatus ?? "NOT_SUBMITTED") as
+    | "NOT_SUBMITTED"
+    | "PENDING"
+    | "APPROVED"
+    | "REJECTED"
+  const isBrokerApproved = brokerState === "APPROVED"
+  const isBrokerPending = brokerState === "PENDING"
+  const isBrokerRejected = brokerState === "REJECTED"
+  const hasBroker = brokerState !== "NOT_SUBMITTED"
+
+  // Progression calculée sur les étapes réelles (statuts KYC / Broker),
+  // pas uniquement sur onboardingStatus. 100 % uniquement si tout est validé.
+  const stepWeight = (status: string) =>
+    status === "APPROVED" ? 1 : status === "PENDING" ? 0.5 : 0
+  const allStepsDone = isKycApproved && isBrokerApproved
+  const progress = allStepsDone
+    ? 100
+    : Math.round(
+        ((stepWeight(kycState) + stepWeight(brokerState)) / 2) * 100,
+      )
 
   return (
     <Page maxWidth="4xl" gap={8} className="animate-in fade-in duration-500">
@@ -91,29 +112,29 @@ export default function VerificationPage() {
             <span className="text-xs text-muted-foreground uppercase font-bold tracking-wider">Statut global du compte</span>
             <div className="flex items-center gap-2.5">
               <h2 className="text-lg font-bold">
-                {state.status === "ACTIVE" ? "Compte Entièrement Validé" : "Vérification Recommandée"}
+                {allStepsDone ? "Compte Entièrement Validé" : "Vérification en cours"}
               </h2>
               <Badge
                 variant="outline"
                 className={
-                  state.status === "ACTIVE"
+                  allStepsDone
                     ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
                     : "bg-amber-500/10 text-amber-400 border-amber-500/20"
                 }
               >
-                {state.status === "ACTIVE" ? "ACTIF" : "VÉRIFICATION REQUISE"}
+                {allStepsDone ? "ACTIF" : "VÉRIFICATION REQUISE"}
               </Badge>
             </div>
           </div>
           <div className="w-full sm:w-48 space-y-1.5">
             <div className="flex items-center justify-between text-xs font-semibold">
               <span className="text-muted-foreground">Progression</span>
-              <span className="text-foreground">{state.progress}%</span>
+              <span className="text-foreground">{progress}%</span>
             </div>
-            <div className="h-2 w-full bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={state.progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progression : ${state.progress}%`}>
+            <div className="h-2 w-full bg-muted rounded-full overflow-hidden" role="progressbar" aria-valuenow={progress} aria-valuemin={0} aria-valuemax={100} aria-label={`Progression : ${progress}%`}>
               <div 
                 className="h-full bg-primary rounded-full transition-all duration-500 ease-out" 
-                style={{ width: `${state.progress}%` }}
+                style={{ width: `${progress}%` }}
               />
             </div>
           </div>
@@ -128,7 +149,9 @@ export default function VerificationPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <FileText className="size-5 text-primary shrink-0" />
-                  <h3 className="font-bold text-foreground">1. Pièce d'identité (KYC)</h3>
+                  {!(activeKycSubmit || !hasKyc || isKycRejected) && (
+                    <h3 className="font-bold text-foreground">1. Vérification d'identité</h3>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Carte nationale, passeport ou permis de conduire.
@@ -170,7 +193,7 @@ export default function VerificationPage() {
                 <Clock className="size-4 shrink-0 animate-pulse" />
                 <span>Documents soumis. Validation par l'équipe d'administration en cours.</span>
               </div>
-            ) : activeKycSubmit || !hasKyc || isKycRejected ? (
+            ) : !isKycApproved && (activeKycSubmit || !hasKyc || isKycRejected) ? (
               <div className="pt-2 animate-in fade-in duration-300">
                 <StepKyc onNext={() => {
                   setActiveKycSubmit(false)
@@ -198,7 +221,9 @@ export default function VerificationPage() {
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <Link2 className="size-5 text-primary shrink-0" />
-                  <h3 className="font-bold text-foreground">2. Compte Broker</h3>
+                  {!(activeBrokerSubmit || !hasBroker || isBrokerRejected) && (
+                    <h3 className="font-bold text-foreground">2. Vérification Broker</h3>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Lier et valider ton compte de trading broker actif.
@@ -240,7 +265,7 @@ export default function VerificationPage() {
                 <Clock className="size-4 shrink-0 animate-pulse" />
                 <span>Compte soumis. Revue technique en cours par nos équipes.</span>
               </div>
-            ) : activeBrokerSubmit || !hasBroker || isBrokerRejected ? (
+            ) : !isBrokerApproved && (activeBrokerSubmit || !hasBroker || isBrokerRejected) ? (
               <div className="pt-2 animate-in fade-in duration-300">
                 <StepBroker onNext={() => {
                   setActiveBrokerSubmit(false)
