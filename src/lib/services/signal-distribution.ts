@@ -1,4 +1,5 @@
 import { prisma } from "../db"
+import { shouldMuteNow } from "@nba/lib/quiet-hours"
 import { tradingSignalEmail } from "../email"
 import { logAuditEvent } from "./audit"
 import { readFile } from "fs/promises"
@@ -145,8 +146,13 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
     const prefUsers = await prisma.user.findMany({
       where: { id: { in: page.map((m) => m.id) } },
-      select: { id: true, metadata: true },
+      select: { id: true, metadata: true, timezone: true },
     })
+    // Membres ayant demandé que les signaux respectent leurs heures de silence (D-3, option C)
+    const pushMuted = new Set(prefUsers.filter((u) => {
+      const np = ((u.metadata || {}) as Record<string, any>).notificationPrefs || {}
+      return shouldMuteNow(np, true, u.timezone)
+    }).map((u) => u.id))
     const pagePrefs = new Map(prefUsers.map((u) => {
       const meta = (u.metadata || {}) as Record<string, any>
       return [u.id, (meta.notificationPrefs || {}).signal !== false] as [string, boolean]
@@ -200,7 +206,7 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
           select: { id: true, notificationId: true },
         }),
         prisma.notificationDelivery.createManyAndReturn({
-          data: notifyUsers.map((n) => ({
+          data: notifyUsers.filter((n) => !pushMuted.has(n.userId)).map((n) => ({
             notificationId: n.id, channel: "PUSH" as const, status: "PENDING" as const,
           })),
           select: { id: true, notificationId: true },

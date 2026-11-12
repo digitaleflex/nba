@@ -1,5 +1,6 @@
 "use client"
 
+import { isInQuietHours } from "@nba/lib/quiet-hours"
 import { useCallback, useEffect, useRef } from "react"
 import { Howl } from "howler"
 
@@ -51,18 +52,6 @@ if (typeof window !== "undefined") {
   window.addEventListener("keydown", unlockOnce)
 }
 
-function inQuietHours(qh: { start: string; end: string } | null | undefined): boolean {
-  if (!qh?.start || !qh?.end) return false
-  const now = new Date()
-  const cur = now.getHours() * 60 + now.getMinutes()
-  const [sh, sm] = qh.start.split(":").map(Number)
-  const [eh, em] = qh.end.split(":").map(Number)
-  if (Number.isNaN(sh) || Number.isNaN(eh)) return false
-  const start = sh * 60 + (sm || 0)
-  const end = eh * 60 + (em || 0)
-  if (start <= end) return cur >= start && cur < end
-  return cur >= start || cur < end
-}
 
 export type AlertType = "signal" | "redpill" | "message" | "system" | string
 
@@ -107,7 +96,7 @@ export function useNotificationSound() {
 
   const shouldRing = useCallback(() => {
     if (volumeRef.current <= 0) return false
-    if (inQuietHours(quietHoursRef.current)) return false
+    if (isInQuietHours(quietHoursRef.current)) return false
     return true
   }, [])
 
