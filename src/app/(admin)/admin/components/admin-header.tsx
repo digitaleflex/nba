@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, Bell, CheckSquare, User, Loader2, ArrowRight } from "lucide-react"
 import { cn } from "@nba/design-system"
-import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { PushAlertsCard } from "@nba/components/push-alerts-card"
 import { NotificationBell } from "@nba/components/notification-bell"
 import { AdminInbox } from "./admin-inbox"
 
@@ -143,7 +143,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
           <NotificationBell />
 
-          <PushNotificationToggle compact />
+          <PushAlertsCard variant="compact" />
 
           <div className="flex items-center gap-2 pl-3 border-l border-border/60">
             <div className="flex items-center justify-center size-7 rounded-full bg-primary/10 border border-primary/20 shrink-0">

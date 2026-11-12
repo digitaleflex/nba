@@ -24,6 +24,7 @@ import {
 import Link from "next/link"
 import { toast } from "sonner"
 import { useNotificationSound } from "@nba/lib/hooks/use-notification-sound"
+import { PushAlertsCard } from "@nba/components/push-alerts-card"
 import { NOTIFICATION_SOUNDS } from "@nba/lib/notification-sounds"
 
 interface Notification {
@@ -384,57 +385,8 @@ export default function NotificationsPage() {
         }
       />
 
-      {/* ── Autorisation navigateur (section cool) ── */}
-      <Card className={`border ${permConfig.bg}`}>
-        <CardContent className="p-5">
-          <div className="flex items-start gap-4">
-            <div className="relative shrink-0">
-              <div className={`size-12 rounded-xl flex items-center justify-center ${permConfig.bg} border`}>
-                <PermIcon className={`size-6 ${permConfig.color} ${permConfig.pulse ? "animate-pulse" : ""}`} />
-              </div>
-              {permConfig.pulse && (
-                <span className="absolute -top-1 -right-1 flex size-3">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75 animate-ping" />
-                  <span className="relative inline-flex rounded-full size-3 bg-amber-500" />
-                </span>
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className={`text-sm font-semibold ${permConfig.color}`}>
-                {permConfig.title}
-              </h3>
-              <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                {permConfig.desc}
-              </p>
-              <div className="flex flex-wrap items-center gap-2 mt-3">
-                {permStatus === "default" && (
-                  <Button size="sm" onClick={requestPerm} disabled={requestingPerm}>
-                    {requestingPerm ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <BellRing className="size-3.5 mr-1.5" />}
-                    Autoriser les notifications
-                  </Button>
-                )}
-                {permStatus === "granted" && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={testNotification} disabled={testRunning}>
-                      {testRunning ? <Loader2 className="size-3.5 mr-1.5 animate-spin" /> : <TestTube2 className="size-3.5 mr-1.5" />}
-                      Tester une notification
-                    </Button>
-                    <Button size="sm" variant="ghost" onClick={testSoundOnly}>
-                      <Volume2 className="size-3.5 mr-1.5" />
-                      Tester le son
-                    </Button>
-                  </>
-                )}
-                {permStatus === "denied" && (
-                  <p className="text-xs text-muted-foreground">
-                    Pour réactiver : icône 🔒 dans la barre d&apos;adresse → Notifications → Autoriser
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* ── Autorisation navigateur ── */}
+      <PushAlertsCard variant="full" />
 
       <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
         <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto" role="region" aria-label="Contenu défilant">

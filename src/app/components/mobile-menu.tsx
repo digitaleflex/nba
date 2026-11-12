@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, Button, cn } from "@nba/design-system"
-import { PushNotificationToggle } from "@nba/components/push-notification-toggle"
+import { PushAlertsCard } from "@nba/components/push-alerts-card"
 import { useLogout } from "@nba/hooks/use-logout"
 import { ReportBugDialog } from "@nba/components/report-bug-dialog"
 import {
@@ -182,7 +182,7 @@ export function MobileMenu({ space, user }: MobileMenuProps) {
                 <p className="text-xs font-bold truncate text-foreground">{user.name}</p>
                 <p className="text-xs truncate text-muted-foreground">{user.email}</p>
               </div>
-              <PushNotificationToggle compact />
+              <PushAlertsCard variant="compact" />
             </div>
             <Button
               variant="ghost"
