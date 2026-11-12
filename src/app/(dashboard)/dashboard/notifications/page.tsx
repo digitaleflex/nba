@@ -445,6 +445,11 @@ export default function NotificationsPage() {
                 </p>
               )}
 
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                🔊 Ce son joue <strong>quand l'application est ouverte</strong>. En arrière-plan ou écran verrouillé,
+                votre téléphone utilise <strong>sa sonnerie ou sa vibration par défaut</strong>.
+              </p>
+
               {/* Volume slider */}
               <div className="flex items-center gap-3">
                 <button
