@@ -42,6 +42,7 @@ interface PushPayload {
   body: string;
   url?: string;
   icon?: string;
+  image?: string;
   tag?: string;
 }
 
@@ -63,20 +64,20 @@ function shouldDeleteSub(statusCode: number): boolean {
   return [400, 403, 404, 410, 413].includes(statusCode)
 }
 
-export async function sendPushToUser(userId: string, payload: PushPayload): Promise<{ sent: number; failed: number }> {
+export async function sendPushToUser(userId: string, payload: PushPayload): Promise<{ sent: number; failed: number; skipped?: "NOT_CONFIGURED" | "NO_SUBSCRIPTION" | "INACTIVE" }> {
   configure();
-  if (!configured) return { sent: 0, failed: 0 };
+  if (!configured) return { sent: 0, failed: 0, skipped: "NOT_CONFIGURED" };
 
   // Ne pas envoyer de push à un utilisateur suspendu
   const user = await prisma.user.findUnique({ where: { id: userId }, select: { isActive: true } });
-  if (!user?.isActive) return { sent: 0, failed: 0 };
+  if (!user?.isActive) return { sent: 0, failed: 0, skipped: "INACTIVE" };
 
   const subscriptions = await prisma.pushSubscription.findMany({
     where: { userId },
   });
 
   if (subscriptions.length === 0) {
-    return { sent: 0, failed: 0 };
+    return { sent: 0, failed: 0, skipped: "NO_SUBSCRIPTION" };
   }
 
   const jsonPayload = JSON.stringify(payload);
@@ -94,7 +95,12 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
                 endpoint: sub.endpoint,
                 keys: { p256dh: sub.p256dh, auth: sub.auth },
               },
-              jsonPayload
+              jsonPayload,
+              {
+                urgency: "high",
+                TTL: Number(process.env.PUSH_TTL_SECONDS ?? 15 * 60),
+                topic: payload.tag?.slice(0, 32),
+              },
             );
           }, 10_000),
         );

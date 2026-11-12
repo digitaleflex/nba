@@ -228,10 +228,18 @@ export async function distributeSignal(signalId: string, deps: DistributeDeps = 
 
         const pushDeliveryId = pushDeliveriesMap.get(n.id)
         if (pushDeliveryId) {
+          // Corps = première ligne non vide du signal, tronquée à 120 car.
+          // (format-agnostique ; l'enrichissement structuré viendra après D-1).
+          const firstLine = (signal.content || "")
+            .split(/\r?\n/)
+            .map((l: string) => l.trim())
+            .find((l: string) => l.length > 0) || "Un nouveau signal a été publié pour vos groupes."
+          const pushBody = firstLine.length > 120 ? firstLine.slice(0, 117) + "…" : firstLine
+          const pushImage = signal.imageUrl || (Array.isArray(signal.imageUrls) ? signal.imageUrls[0] : undefined)
           deps.enqueuePush?.(
             `push-${n.id}`,
             { deliveryId: pushDeliveryId, userId: user.id, title: "Nouveau signal de trading",
-              body: "Un nouveau signal a été publié pour vos groupes.", url: "/dashboard", tag: n.id },
+              body: pushBody, url: `/dashboard/signals/${signal.id}`, tag: n.id, image: pushImage },
             { attempts: 3, backoff: { type: "exponential", delay: 2000 } },
           ).catch((err: any) => {
             log.error({ err, userId: user.id, errorCode: "INTEGRATION_ERROR" }, "Échec mise en file push")

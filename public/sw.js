@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.3.0";
+const SW_VERSION = "2.4.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -51,41 +51,48 @@ self.addEventListener("activate", (event) => {
 
 // Push : réception des notifications push
 self.addEventListener("push", (event) => {
-  if (!event.data) return;
-
   let payload = {
     title: "Nouveau signal",
-    body: "Un nouveau contenu a été publié",
+    body: "Nouveau signal — ouvrez NBA",
     icon: "/icons/icon-192x192.png",
-    badge: "/icons/icon-192x192.png",
+    badge: "/icons/badge-96x96.png",
     url: "/dashboard/signals",
     tag: undefined,
+    image: undefined,
   };
 
-  try {
-    const data = event.data.json();
-    payload = {
-      title: data.title || payload.title,
-      body: data.body || payload.body,
-      icon: data.icon || payload.icon,
-      badge: data.badge || payload.badge,
-      url: data.url || payload.url,
-      tag: data.tag,
-    };
-  } catch {
+  if (event.data) {
     try {
-      payload.body = event.data.text();
-    } catch {}
+      const data = event.data.json();
+      payload = {
+        title: data.title || payload.title,
+        body: data.body || payload.body,
+        icon: data.icon || payload.icon,
+        badge: data.badge || payload.badge,
+        url: data.url || payload.url,
+        tag: data.tag,
+        image: data.image,
+      };
+    } catch {
+      try {
+        payload.body = event.data.text() || payload.body;
+      } catch {}
+    }
   }
 
+  // Toujours afficher une notification (iOS révoque l'abonnement si un push
+  // ne produit aucune notification visible).
+  const isMobile = /Mobi|Android|iPhone|iPad/i.test(self.navigator?.userAgent || "");
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: payload.icon,
       badge: payload.badge,
+      image: payload.image,
       data: { url: payload.url },
       tag: payload.tag,
-      requireInteraction: false,
+      renotify: !!payload.tag,
+      requireInteraction: !isMobile,
       silent: false,
       vibrate: [200, 100, 200],
     }),

@@ -916,6 +916,7 @@ enum DeliveryStatus {
   SENT
   FAILED
   BOUNCED
+  SKIPPED
 }
 
 enum EmailStatus {

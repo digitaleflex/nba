@@ -40,7 +40,7 @@ describe("public/sw.js — affichage des notifications push", () => {
   // push sans données. Sur iOS, WebKit peut révoquer l'abonnement après quelques push sans notification
   // visible. `it.fails` documente le défaut : quand il sera corrigé, ce test passera au rouge et il
   // suffira de retirer `.fails` pour transformer cette attente en garde-fou définitif.
-  it.fails("affiche une notification même pour un push SANS données (PUSH-1 #364)", async () => {
+  it("affiche une notification même pour un push SANS données (PUSH-1 #364)", async () => {
     const sw = loadServiceWorker()
     await sw.push(null)
     expect(sw.shown).toHaveLength(1)

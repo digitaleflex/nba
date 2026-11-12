@@ -260,13 +260,18 @@ export const pushDeliveryQueue = new Queue("push-delivery", { connection: connec
 const pushWorker = new Worker(
   "push-delivery",
   async (job: any) => {
-    const { deliveryId, userId, title, body, url, tag } = job.data
+    const { deliveryId, userId, title, body, url, tag, image } = job.data
     try {
-      const result = await sendPushToUser(userId, { title, body, url, tag })
-      if (result.sent > 0 || result.failed === 0) {
+      const result = await sendPushToUser(userId, { title, body, url, tag, image })
+      if (result.sent > 0) {
         await prisma.notificationDelivery.update({
           where: { id: deliveryId },
           data: { status: "SENT", sentAt: new Date() },
+        })
+      } else if (result.skipped) {
+        await prisma.notificationDelivery.update({
+          where: { id: deliveryId },
+          data: { status: "SKIPPED", errorMessage: result.skipped },
         })
       } else {
         await prisma.notificationDelivery.update({
