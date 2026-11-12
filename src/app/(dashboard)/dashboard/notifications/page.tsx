@@ -419,6 +419,13 @@ export default function NotificationsPage() {
                 </Button>
               </div>
 
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                🔊 Ce son joue <strong>quand l&apos;application est ouverte</strong>. En arrière-plan ou écran verrouillé, votre
+                téléphone utilise <strong>sa sonnerie ou sa vibration par défaut</strong>. Pour la changer : sur Android, ouvrez
+                Paramètres › Applications › (Chrome, ou NBA si l&apos;application est installée) › Notifications ; sur iPhone,
+                Réglages › Notifications › NBA › Sons. Les intitulés exacts varient selon la marque et la version.
+              </p>
+
               {soundError && (
                 <p role="alert" className="text-xs text-destructive">
                   Échec de l'enregistrement. Réessayez.
@@ -474,7 +481,7 @@ export default function NotificationsPage() {
 
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Sonneries personnalisées par alerte — sonnerie personnalisée quand l'application est ouverte
+                  Un son différent par type d'alerte (application ouverte uniquement)
                 </p>
                 {[
                   { key: "signal", label: "📈 Signaux", desc: "Nouveau signal publié" },

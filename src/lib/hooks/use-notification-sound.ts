@@ -107,7 +107,7 @@ export function useNotificationSound() {
     try {
       if (howlRef.current) howlRef.current.unload()
       const howl = new Howl({
-        src: [`/sounds/${id}.wav`],
+        src: [`/sounds/${id}.mp3`],
         volume: volumeRef.current,
         html5: false,
         onloaderror: () => {

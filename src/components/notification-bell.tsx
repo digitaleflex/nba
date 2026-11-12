@@ -57,6 +57,8 @@ export function NotificationBell() {
   const cacheRef = useRef<{ time: number; data: { notifications: Notification[]; unreadCount: number } } | null>(null);
 
   const { play: playSound, playForType, changeSound } = useNotificationSound()
+  // Évite le double son / double toast : un même identifiant peut arriver par WebSocket ET par le service worker
+  const alertedRef = useRef<Set<string>>(new Set())
 
   function soundTypeFor(type: string): string {
     const t = type.toUpperCase()
@@ -81,14 +83,18 @@ export function NotificationBell() {
       })
       if (cacheRef.current) cacheRef.current = null
       setUnreadCount((c) => c + 1)
-      playForType(soundTypeFor(n.type))
-      toast(n.title, {
-        description: n.body,
-        duration: 5000,
-        action: n.data?.linkUrl
-          ? { label: "Voir", onClick: () => window.open(n.data!.linkUrl, "_blank") }
-          : undefined,
-      })
+      const alreadyAlerted = alertedRef.current.has(n.id)
+      alertedRef.current.add(n.id)
+      if (!alreadyAlerted) {
+        playForType(soundTypeFor(n.type))
+        toast(n.title, {
+          description: n.body,
+          duration: 5000,
+          action: n.data?.linkUrl
+            ? { label: "Voir", onClick: () => window.open(n.data!.linkUrl, "_blank") }
+            : undefined,
+        })
+      }
     },
     onDisconnect: () => {
       wsActiveRef.current = false
@@ -141,6 +147,26 @@ export function NotificationBell() {
       setLoading(false);
     }
   }, [unreadCount]);
+
+  // Application ouverte : le service worker ne montre pas de notification système, il nous demande
+  // de jouer le son choisi (une seule alerte, jamais deux).
+  useEffect(() => {
+    if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return
+    const onMessage = (e: MessageEvent) => {
+      const m = e.data
+      if (!m || m.type !== "PLAY_ALERT") return
+      if (m.tag && alertedRef.current.has(m.tag)) return
+      if (m.tag) alertedRef.current.add(m.tag)
+      playForType(m.kind === "signal" ? "signal" : "system")
+      toast(m.title || "Nouvelle alerte", {
+        description: m.body,
+        duration: 5000,
+        action: m.url ? { label: "Voir", onClick: () => { window.location.href = m.url } } : undefined,
+      })
+    }
+    navigator.serviceWorker.addEventListener("message", onMessage)
+    return () => navigator.serviceWorker.removeEventListener("message", onMessage)
+  }, [playForType])
 
   // Fetch initial au mount
   useEffect(() => {

@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.5.0";
+const SW_VERSION = "2.6.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -9,11 +9,11 @@ const PRECACHE_URLS = [
   "/logo.png",
   "/icons/icon-192x192.png",
   "/icons/icon-512x512.png",
-  "/sounds/default.wav",
-  "/sounds/chime.wav",
-  "/sounds/pop.wav",
-  "/sounds/signal.wav",
-  "/sounds/urgent.wav",
+  "/sounds/default.mp3",
+  "/sounds/chime.mp3",
+  "/sounds/pop.mp3",
+  "/sounds/signal.mp3",
+  "/sounds/urgent.mp3",
 ];
 
 // Installation : précache des icônes et du manifest
@@ -84,7 +84,21 @@ self.addEventListener("push", (event) => {
   // ne produit aucune notification visible).
   const isMobile = /Mobi|Android|iPhone|iPad/i.test(self.navigator?.userAgent || "");
   event.waitUntil(
-    self.registration.showNotification(payload.title, {
+    (async () => {
+      // Application ouverte et visible : on laisse l'app jouer le son choisi (pas de notification système
+      // en double). Aucune fenêtre visible : notification système (sonnerie du téléphone).
+      const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      const visible = windows.filter((c) => c.visibilityState === "visible");
+      // iOS : un push sans notification visible peut faire révoquer l'abonnement → on affiche toujours.
+      const isIOS = /iPhone|iPad|iPod/i.test(self.navigator?.userAgent || "");
+      if (visible.length > 0 && !isIOS) {
+        const kind = /\/signals/.test(payload.url || "") ? "signal" : "default";
+        for (const c of visible) {
+          c.postMessage({ type: "PLAY_ALERT", kind, title: payload.title, body: payload.body, url: payload.url, tag: payload.tag });
+        }
+        return;
+      }
+      await self.registration.showNotification(payload.title, {
       body: payload.body,
       icon: payload.icon,
       badge: payload.badge,
@@ -94,8 +108,9 @@ self.addEventListener("push", (event) => {
       renotify: !!payload.tag,
       requireInteraction: !isMobile,
       silent: false,
-      vibrate: [200, 100, 200],
-    }),
+      vibrate: [300, 120, 300, 120, 500],
+    });
+    })(),
   );
 });
 

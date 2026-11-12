@@ -60,4 +60,24 @@ describe("public/sw.js — affichage des notifications push", () => {
     const body = JSON.parse(call.init.body)
     expect(body.endpoint).toBe("https://push/new-endpoint")
   })
+
+  it("fenêtre visible : demande à l'app de jouer le son et n'affiche PAS de notification système (#367)", async () => {
+    const messages: unknown[] = []
+    const sw = loadServiceWorker({ windows: [{ visibilityState: "visible", postMessage: (m) => messages.push(m) }] })
+    await sw.pushJson({ title: "Nouveau signal", body: "BUY XAUUSD", url: "/dashboard/signals/abc", tag: "n1" })
+    expect(sw.shown).toHaveLength(0)
+    expect(messages).toEqual([expect.objectContaining({ type: "PLAY_ALERT", kind: "signal", tag: "n1" })])
+  })
+
+  it("aucune fenêtre visible : une notification système est affichée (#367)", async () => {
+    const sw = loadServiceWorker({ windows: [{ visibilityState: "hidden", postMessage: () => {} }] })
+    await sw.pushJson({ title: "Nouveau signal", body: "b" })
+    expect(sw.shown).toHaveLength(1)
+  })
+
+  it("iOS : affiche toujours une notification, même app ouverte (risque de révocation) (#367)", async () => {
+    const sw = loadServiceWorker({ userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)", windows: [{ visibilityState: "visible", postMessage: () => {} }] })
+    await sw.pushJson({ title: "t", body: "b" })
+    expect(sw.shown).toHaveLength(1)
+  })
 })

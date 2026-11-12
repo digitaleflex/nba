@@ -15,7 +15,7 @@ export interface ShownNotification {
 
 type Handler = (event: Record<string, unknown>) => void
 
-export function loadServiceWorker() {
+export function loadServiceWorker(opts: { userAgent?: string; windows?: Array<{ visibilityState: string; postMessage: (m: unknown) => void }> } = {}) {
   const code = readFileSync(join(process.cwd(), "public/sw.js"), "utf8")
   const handlers: Record<string, Handler> = {}
   const shown: ShownNotification[] = []
@@ -40,7 +40,7 @@ export function loadServiceWorker() {
       },
     },
     skipWaiting: () => Promise.resolve(),
-    navigator: { userAgent: "test-agent" },
+    navigator: { userAgent: opts.userAgent ?? "test-agent" },
   }
   const sandbox = createContext({
     self,
@@ -48,7 +48,7 @@ export function loadServiceWorker() {
     caches: { open: async () => ({ addAll: async () => {} }), keys: async () => [], delete: async () => {} },
     clients: {
       claim: async () => {},
-      matchAll: async () => [],
+      matchAll: async () => opts.windows ?? [],
       openWindow: async (url: string) => { opened.push(url) },
     },
     fetch: async (url: string, init?: any) => { fetchCalls.push({ url, init }); return { ok: true, status: 200 } },
