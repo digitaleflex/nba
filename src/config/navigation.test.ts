@@ -5,6 +5,7 @@ import {
   NAVIGATION,
   filterNavItems,
   getMobileNavItems,
+  getMenuNavItems,
   getSidebarSections,
   getSuperAdminSections,
   isNavItemActive,
@@ -36,8 +37,8 @@ describe("navigation config", () => {
     expect(items.some((i) => i.id === "signals")).toBe(true)
   })
 
-  it("retourne le lien admin pour un admin", () => {
-    const items = getMobileNavItems("dashboard", "ADMIN")
+  it("expose le lien admin dans le menu pour un admin", () => {
+    const items = getMenuNavItems("dashboard", "ADMIN")
     expect(items.some((i) => i.id === "admin")).toBe(true)
   })
 

@@ -5,11 +5,17 @@ import Link from "next/link"
 import { usePathname, useSearchParams } from "next/navigation"
 import { motion, useReducedMotion } from "motion/react"
 import { cn } from "@nba/design-system"
+import {
+  BottomSheet,
+  BottomSheetContent,
+  BottomSheetTrigger,
+} from "@nba/design-system"
 import { useMessagingUnread } from "@nba/lib/messaging-unread"
 import { useCommandPalette } from "@nba/components/command-palette"
 import { useLogout } from "@nba/hooks/use-logout"
 import {
   badgeForNavItem,
+  getMenuNavItems,
   getMobileNavItems,
   isNavItemActive,
   type NavBadgeCounts,
@@ -17,7 +23,7 @@ import {
   type UserRole,
 } from "@nba/config/navigation"
 import { useConfirm } from "@nba/components/confirm-dialog"
-import { LogOut, Search } from "lucide-react"
+import { LogOut, MoreHorizontal, Search } from "lucide-react"
 
 interface MobileBottomNavProps {
   space: NavSpace
@@ -37,6 +43,7 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
   const { unreadTotal } = useMessagingUnread()
   const reduce = useReducedMotion()
   const [pendingReview, setPendingReview] = useState(0)
+  const [plusOpen, setPlusOpen] = useState(false)
   useEffect(() => {
     if (space !== "admin") return
     const controller = new AbortController()
@@ -58,9 +65,15 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
     pendingReview: pendingReview > 0 ? (pendingReview > 9 ? "9+" : String(pendingReview)) : null,
   }
 
+  const primaryIds = new Set(links.map((l) => l.id))
+  const restLinks =
+    space === "dashboard"
+      ? getMenuNavItems(space, user.role).filter((l) => !primaryIds.has(l.id))
+      : []
+
   return (
     <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 border-t bg-card/85 backdrop-blur-lg px-1 select-none" style={{ height: "calc(4rem + env(safe-area-inset-bottom, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      <nav className="flex h-16 items-center justify-around overflow-x-auto no-scrollbar" role="region" aria-label="Contenu défilant">
+      <nav className="flex h-16 items-center gap-1 overflow-x-auto no-scrollbar px-1" role="region" aria-label="Navigation mobile">
         {links.map((link) => {
           const Icon = link.icon
           const isActive = isNavItemActive(link, pathname, searchParams)
@@ -99,29 +112,99 @@ export function MobileBottomNav({ space, user }: MobileBottomNavProps) {
             </Link>
           )
         })}
-        <button
-          onClick={openPalette}
-          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-primary transition-colors relative shrink-0 min-w-[3.75rem]"
-          aria-label="Rechercher (⌘K)"
-        >
-          <Search className="size-5 shrink-0" />
-          <span className="text-xs font-medium tracking-tight">Recherche</span>
-        </button>
-        <button
-          onClick={() =>
-            confirm({
-              title: "Voulez-vous vous déconnecter ?",
-              description: "Vous devrez vous reconnecter pour accéder à votre compte.",
-              confirmLabel: "Se déconnecter",
-              onConfirm: logout,
-            })
-          }
-          className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-destructive transition-colors relative shrink-0 min-w-[3.75rem]"
-          aria-label="Déconnexion"
-        >
-          <LogOut className="size-5 shrink-0" />
-          <span className="text-xs font-medium tracking-tight">Quitter</span>
-        </button>
+
+        {space === "dashboard" && restLinks.length > 0 && (
+          <BottomSheet open={plusOpen} onOpenChange={setPlusOpen}>
+            <BottomSheetTrigger
+              type="button"
+              className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground hover:text-foreground transition-colors relative shrink-0 min-w-[3.75rem] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary/60"
+              aria-label="Plus"
+            >
+              <MoreHorizontal className="size-5 shrink-0" />
+              <span className="text-xs font-medium tracking-tight">Plus</span>
+            </BottomSheetTrigger>
+            <BottomSheetContent>
+              <div className="space-y-1">
+                {restLinks.map((link) => {
+                  const Icon = link.icon
+                  const isActive = isNavItemActive(link, pathname, searchParams)
+                  return (
+                    <Link
+                      key={link.id}
+                      href={link.href}
+                      onClick={() => setPlusOpen(false)}
+                      aria-current={isActive ? "page" : undefined}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px]",
+                        isActive
+                          ? "bg-primary text-primary-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                      )}
+                    >
+                      <Icon className="size-5 shrink-0" />
+                      <span>{link.label}</span>
+                    </Link>
+                  )
+                })}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlusOpen(false)
+                    openPalette()
+                  }}
+                  className="flex w-full items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px] text-muted-foreground hover:text-foreground hover:bg-muted"
+                >
+                  <Search className="size-5 shrink-0" />
+                  <span>Recherche</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPlusOpen(false)
+                    confirm({
+                      title: "Voulez-vous vous déconnecter ?",
+                      description: "Vous devrez vous reconnecter pour accéder à votre compte.",
+                      confirmLabel: "Se déconnecter",
+                      onConfirm: logout,
+                    })
+                  }}
+                  className="flex w-full items-center gap-3 px-3 py-3 text-sm font-medium rounded-xl transition-colors min-h-[44px] text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                >
+                  <LogOut className="size-5 shrink-0" />
+                  <span>Quitter</span>
+                </button>
+              </div>
+            </BottomSheetContent>
+          </BottomSheet>
+        )}
+
+        {space === "admin" && (
+          <>
+            <button
+              onClick={openPalette}
+              className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-primary transition-colors relative shrink-0 min-w-[3.75rem]"
+              aria-label="Rechercher (⌘K)"
+            >
+              <Search className="size-5 shrink-0" />
+              <span className="text-xs font-medium tracking-tight">Recherche</span>
+            </button>
+            <button
+              onClick={() =>
+                confirm({
+                  title: "Voulez-vous vous déconnecter ?",
+                  description: "Vous devrez vous reconnecter pour accéder à votre compte.",
+                  confirmLabel: "Se déconnecter",
+                  onConfirm: logout,
+                })
+              }
+              className="flex flex-col items-center justify-center flex-1 h-16 gap-1 text-muted-foreground active:text-destructive transition-colors relative shrink-0 min-w-[3.75rem]"
+              aria-label="Déconnexion"
+            >
+              <LogOut className="size-5 shrink-0" />
+              <span className="text-xs font-medium tracking-tight">Quitter</span>
+            </button>
+          </>
+        )}
       </nav>
       {node}
     </div>

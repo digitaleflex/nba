@@ -34,14 +34,14 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   }
 
   const mobileHeader = (
-    <header className="md:hidden border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between min-h-[52px]">
-      <div className="flex items-center gap-3 min-w-0">
+    <header className="md:hidden border-b bg-background/80 backdrop-blur-md sticky top-0 z-40 px-4 py-2.5 flex items-center justify-between gap-2 min-h-[52px] overflow-hidden">
+      <div className="flex items-center gap-3 min-w-0 flex-1">
         <MobileMenu space="admin" user={user} />
         <MobilePageTitle />
       </div>
-      <div className="flex items-center gap-2 ml-2">
+      <div className="flex items-center gap-2 shrink-0">
         <AdminInbox />
-        <span className="text-xs text-muted-foreground font-medium truncate hidden xs:inline">{user.name}</span>
+        <span className="text-xs text-muted-foreground font-medium truncate hidden xs:inline max-w-[8rem]">{user.name}</span>
       </div>
     </header>
   )
