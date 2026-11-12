@@ -17,6 +17,7 @@ import {
 import { AlertTriangle, ArrowUpRight } from "lucide-react"
 import { Card, CardContent, EmptyState } from "@nba/design-system"
 import type { CachedGet } from "./types"
+import { formatMoney } from "@nba/lib/format/money"
 import { StatCard, SectionTitle, TabLoading, DANGER_BOX } from "./ui"
 
 interface RevenuePlan {
@@ -47,10 +48,6 @@ const TOOLTIP_STYLE = {
   fontSize: 12,
   color: "var(--color-popover-foreground)",
   boxShadow: "0 8px 24px rgb(0 0 0 / 0.12)",
-}
-
-function formatCurrency(amount: number, currency: string) {
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency }).format(amount)
 }
 
 
@@ -105,7 +102,7 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
         <StatCard
           icon={TrendingUp}
           label="Revenu mensuel"
-          value={formatCurrency(data.totalRevenue, data.currency)}
+          value={formatMoney(data.totalRevenue, data.currency)}
           sub={`${data.totalMembers} abonné${data.totalMembers > 1 ? "s" : ""}`}
         />
         <StatCard
@@ -117,13 +114,13 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
         <StatCard
           icon={CreditCard}
           label="Prix moyen"
-          value={data.totalMembers > 0 ? formatCurrency(data.totalRevenue / data.totalMembers, data.currency) : "—"}
+          value={data.totalMembers > 0 ? formatMoney(data.totalRevenue / data.totalMembers, data.currency) : "—"}
           sub="par membre / mois"
         />
         <StatCard
           icon={Wallet}
           label="Revenu annuel estimé"
-          value={formatCurrency(data.totalRevenue * 12, data.currency)}
+          value={formatMoney(data.totalRevenue * 12, data.currency)}
           sub="projection sur 12 mois"
         />
       </div>
@@ -137,7 +134,7 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
           </span>
           <span>
             <strong className="tabular-nums">{data.atRisk.members}</strong> membre(s) —{" "}
-            <strong className="tabular-nums">{formatCurrency(data.atRisk.mrr, data.currency)}</strong>/mois sur des accès expirés encore actifs
+            <strong className="tabular-nums">{formatMoney(data.atRisk.mrr, data.currency)}</strong>/mois sur des accès expirés encore actifs
           </span>
         </div>
       )}
@@ -180,14 +177,14 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
                     formatter={(value, _name, item) => {
                       const p = item?.payload as RevenuePlan | undefined
                       if (!p) return [String(value), ""]
-                      return [`${formatCurrency(p.monthlyRevenue, p.currency)}/mois · ${p.members} membre(s)`, "Revenu"]
+                      return [`${formatMoney(p.monthlyRevenue, p.currency)}/mois · ${p.members} membre(s)`, "Revenu"]
                     }}
                   />
                   <Bar dataKey="monthlyRevenue" name="MRR" fill="#10b981" radius={[0, 6, 6, 0]} barSize={18}>
                     <LabelList
                       dataKey="monthlyRevenue"
                       position="right"
-                      formatter={(v) => formatCurrency(Number(v), data.currency)}
+                      formatter={(v) => formatMoney(Number(v), data.currency)}
                       style={{ fill: "var(--color-foreground)", fontSize: 11, fontWeight: 700 }}
                     />
                   </Bar>
@@ -221,12 +218,12 @@ export function RevenueTab({ cachedGet }: { cachedGet: CachedGet }) {
                   <div>
                     <p className="font-semibold text-foreground">{top.planName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {top.members} abonné{top.members > 1 ? "s" : ""} · {formatCurrency(top.price, top.currency)}/{top.durationDays > 30 ? "an" : "mois"}
+                      {top.members} abonné{top.members > 1 ? "s" : ""} · {formatMoney(top.price, top.currency)}/{top.durationDays > 30 ? "an" : "mois"}
                     </p>
                   </div>
                 </div>
                 <p className="text-lg font-bold text-emerald-600">
-                  {formatCurrency(top.monthlyRevenue, top.currency)}
+                  {formatMoney(top.monthlyRevenue, top.currency)}
                 </p>
               </div>
             </CardContent>

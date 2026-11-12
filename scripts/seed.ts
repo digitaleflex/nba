@@ -138,7 +138,7 @@ async function main() {
   const newPlans = PLANS.filter(p => !existingPlanNames.has(p.name))
   if (newPlans.length > 0) {
     await prisma.subscriptionPlan.createMany({
-      data: newPlans.map(p => ({ ...p, currency: "F CFA", features: [] })),
+      data: newPlans.map(p => ({ ...p, currency: "XOF", features: [] })),
     })
   }
   console.log(`  ✅ Plans: ${PLANS.length} total (${newPlans.length} added)`)
