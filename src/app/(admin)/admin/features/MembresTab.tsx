@@ -7,6 +7,7 @@ import { useConfirm } from "@nba/components/confirm-dialog"
 import { BatchActionsBar } from "../components/batch-actions-bar"
 import { toast } from "sonner"
 import { CachedGet } from "./types"
+import { ONBOARDING_STATUS_LABELS, EMAIL_STATUS_LABELS } from "@nba/lib/labels"
 import { StatusBadge, type Tone } from "./ui"
 
 interface MembresTabProps {
@@ -934,7 +935,7 @@ const EMAIL_TONES: Record<string, Tone> = { OK: "success", BOUNCED: "warning", I
 
 function EmailStatusBadge({ status }: { status: string | null | undefined }) {
   if (!status) return null
-  return <StatusBadge tone={EMAIL_TONES[status] ?? "neutral"}>{status}</StatusBadge>
+  return <StatusBadge tone={EMAIL_TONES[status] ?? "neutral"}>{EMAIL_STATUS_LABELS[status] ?? status}</StatusBadge>
 }
 
 function OnboardingBadge({ status }: { status: string | null }) {
@@ -944,7 +945,7 @@ function OnboardingBadge({ status }: { status: string | null }) {
     IN_PROGRESS: { label: "En cours", class: "bg-info/10 text-info" },
     PENDING: { label: "En attente", class: "bg-amber-500/10 text-amber-600" },
   }
-  const c = config[status] || { label: status, class: "bg-muted text-muted-foreground" }
+  const c = config[status] || { label: ONBOARDING_STATUS_LABELS[status ?? ""] ?? status ?? "—", class: "bg-muted text-muted-foreground" }
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${c.class}`}>{c.label}</span>
 }
 
