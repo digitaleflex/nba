@@ -98,13 +98,6 @@ const dashboardMobile: NavItem[] = [
       pathname.startsWith("/signals"),
   },
   {
-    id: "tracking",
-    href: "/dashboard/signals/tracking",
-    label: "Tracking",
-    icon: LineChart,
-    isActive: (pathname) => pathname.startsWith("/dashboard/signals/tracking"),
-  },
-  {
     id: "journal",
     href: "/dashboard/journal",
     label: "Journal",
@@ -112,49 +105,11 @@ const dashboardMobile: NavItem[] = [
     isActive: (pathname) => pathname.startsWith("/dashboard/journal"),
   },
   {
-    id: "lot",
-    href: "/dashboard/lot",
-    label: "Calculateur de lot",
-    icon: LineChart,
-    isActive: (pathname) => pathname.startsWith("/dashboard/lot"),
-  },
-  {
-    id: "verification",
-    href: "/dashboard/verification",
-    label: "Vérification",
-    icon: Shield,
-    isActive: (pathname) =>
-      pathname.startsWith("/dashboard/verification") || pathname.startsWith("/onboarding"),
-  },
-  {
-    id: "admin",
-    href: "/admin",
-    label: "Admin",
-    icon: ShieldCheck,
-    requiredRoles: ["ADMIN", "SUPER_ADMIN"],
-    isActive: (pathname) => pathname.startsWith("/admin"),
-  },
-  {
-    id: "messages",
-    href: "/dashboard/messages",
-    label: "Messages",
-    icon: MessageCircle,
-    badge: "messages",
-    isActive: (pathname) => pathname.startsWith("/dashboard/messages"),
-  },
-  {
-    id: "notifications",
-    href: "/dashboard/notifications",
-    label: "Notifications",
-    icon: Bell,
-    isActive: (pathname) => pathname.startsWith("/dashboard/notifications"),
-  },
-  {
-    id: "subscription",
-    href: "/dashboard/subscription",
-    label: "Abonnement",
-    icon: CreditCard,
-    isActive: (pathname) => pathname === "/dashboard/subscription",
+    id: "redpills",
+    href: "/dashboard/redpills",
+    label: "Redpills",
+    icon: Flame,
+    isActive: (pathname) => pathname.startsWith("/dashboard/redpills"),
   },
   {
     id: "profile",
@@ -254,6 +209,14 @@ const dashboardMenu: NavItem[] = [
     ...item,
     label: item.label.replace("Mes ", "").replace("Mon ", ""),
   })),
+  {
+    id: "admin",
+    href: "/admin",
+    label: "Admin",
+    icon: ShieldCheck,
+    requiredRoles: ["ADMIN", "SUPER_ADMIN"],
+    isActive: (pathname) => pathname.startsWith("/admin"),
+  },
 ]
 
 // Liens standalone par ancienne section (conservés pour getSuperAdminSections).
