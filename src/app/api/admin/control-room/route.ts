@@ -103,6 +103,8 @@ export async function GET() {
           prisma.kycDocument.count({ where: { status: "PENDING" } }),
         ])
 
+        const pushReachableMembers = (await prisma.pushSubscription.groupBy({ by: ["userId"], where: { user: { isActive: true, deletedAt: null } } })).length
+
         // Funnel email sur 7j
         const delivered = recentEmailEvents.filter((e) => e.type === "email.delivered").length
         const opened = recentEmailEvents.filter((e) => e.type === "email.opened").length
@@ -251,6 +253,7 @@ export async function GET() {
             webhook: webhookConfigured ? "healthy" : "warning",
             storage: storageHealthy ? "healthy" : "warning",
             pushSubs: pushSubsCount,
+            pushReachableMembers: pushReachableMembers,
           },
           dangerZone: {
             bannedCount: (await getBannedList()).length,

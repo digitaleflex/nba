@@ -3,6 +3,7 @@ import { prisma } from "@nba/lib/db"
 import { requireActiveUser, handleAuthError } from "@nba/lib/auth-utils"
 import { rateLimitMiddleware } from "@nba/lib/rate-limit"
 import { validateOrThrow, pushSubscribeSchema, pushUnsubscribeSchema } from "@nba/lib/validations"
+import { parseUserAgent } from "@nba/lib/ua-parser"
 
 const pushSubscribeRateLimit = rateLimitMiddleware({ window: 60, max: 10 })
 
@@ -21,6 +22,10 @@ export async function POST(req: NextRequest) {
 
     const body = validateOrThrow(pushSubscribeSchema, await req.json())
     const userAgent = body.userAgent || req.headers.get("user-agent") || undefined
+    const parsed = parseUserAgent(userAgent)
+    const platform = /iPhone|iPad|iPod/i.test(userAgent || "") ? "ios" : /Android/i.test(userAgent || "") ? "android" : "desktop"
+    const browser = parsed.browser
+    const standalone = /standalone/i.test(req.headers.get("sec-ch-ua") || "")
 
     // Upsert : si l'endpoint existe déjà (autre user ou même user), on met à jour
     const existing = await prisma.pushSubscription.findUnique({
@@ -37,6 +42,9 @@ export async function POST(req: NextRequest) {
             p256dh: body.keys.p256dh,
             auth: body.keys.auth,
             userAgent,
+            platform,
+            browser,
+            standalone,
           },
         })
       } else {
@@ -47,6 +55,9 @@ export async function POST(req: NextRequest) {
             p256dh: body.keys.p256dh,
             auth: body.keys.auth,
             userAgent,
+            platform,
+            browser,
+            standalone,
           },
         })
       }
@@ -58,6 +69,9 @@ export async function POST(req: NextRequest) {
           p256dh: body.keys.p256dh,
           auth: body.keys.auth,
           userAgent,
+          platform,
+          browser,
+          standalone,
         },
       })
     }

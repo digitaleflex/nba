@@ -105,12 +105,18 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           }, 10_000),
         );
         sent++;
+        await prisma.pushSubscription.update({ where: { id: sub.id }, data: { lastSuccessAt: new Date(), failureCount: 0, lastErrorCode: null } }).catch(() => {})
       } catch (err: any) {
         failed++;
         const code = err.statusCode || 0
         errors[code] = (errors[code] || 0) + 1
 
-        if (shouldDeleteSub(code)) {
+        // Suivi observabilité (PUSH-3) : enregistrer l'échec sans supprimer
+        // l'abonnement pour une panne passagère.
+        await prisma.pushSubscription.update({ where: { id: sub.id }, data: { lastFailureAt: new Date(), lastErrorCode: code || null, failureCount: { increment: 1 } } }).catch(() => {})
+
+        const shouldDelete = [400, 401, 403, 404, 410, 413].includes(code)
+        if (shouldDelete) {
           await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
             log.warn({ err, subscriptionId: sub.id, errorCode: "DATABASE_ERROR" }, "Failed to delete expired push subscription")
           });
@@ -120,11 +126,7 @@ export async function sendPushToUser(userId: string, payload: PushPayload): Prom
           const prev = errorCounters.get(key)
           const nextCount = (prev?.count ?? 0) + 1
           errorCounters.set(key, { count: nextCount, expiresAt: Date.now() + ERROR_COUNTER_TTL })
-          if (nextCount >= 3) {
-            await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch((err) => {
-              log.warn({ err, subscriptionId: sub.id, errorCode: "DATABASE_ERROR" }, "Failed to delete unreliable push subscription")
-            });
-          }
+          // Ne supprimer qu'après N jours sans succès : ici on garde l'abonnement.
         }
       }
     })
