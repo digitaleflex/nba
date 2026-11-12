@@ -85,6 +85,10 @@ export default function NotificationsPage() {
   const [prefs, setPrefs] = useState<Record<string, boolean>>({})
   const [prefsLoaded, setPrefsLoaded] = useState(false)
   const [prefsSaving, setPrefsSaving] = useState(false)
+  // Heures de silence (#368) : plage dans le fuseau du profil ; les signaux sonnent sauf demande contraire
+  const [quietEnabled, setQuietEnabled] = useState(false)
+  const [quietStart, setQuietStart] = useState("22:00")
+  const [quietEnd, setQuietEnd] = useState("07:00")
 
   const [permStatus, setPermStatus] = useState<NotificationPermission | "unsupported" | "unknown">("unknown")
   const [requestingPerm, setRequestingPerm] = useState(false)
@@ -97,6 +101,11 @@ export default function NotificationsPage() {
         setSelectedSound(data.sound)
         setSoundsByType(data.soundsByType || {})
         setPrefs(data.prefs || {})
+        if (data.quietHours?.start && data.quietHours?.end) {
+          setQuietEnabled(true)
+          setQuietStart(data.quietHours.start)
+          setQuietEnd(data.quietHours.end)
+        }
         setSoundLoaded(true)
         setPrefsLoaded(true)
       })
@@ -156,7 +165,11 @@ export default function NotificationsPage() {
       const res = await fetch("/api/dashboard/notification-preferences", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prefs }),
+        body: JSON.stringify({
+          // L'API n'accepte que des booléens : on écarte soundsByType / quietHours stockés dans le même objet
+          prefs: Object.fromEntries(Object.entries(prefs).filter(([, v]) => typeof v === "boolean")),
+          quietHours: quietEnabled ? { start: quietStart, end: quietEnd } : null,
+        }),
       })
       if (!res.ok) throw new Error("failed")
     } catch {
@@ -388,7 +401,7 @@ export default function NotificationsPage() {
       {/* ── Autorisation navigateur ── */}
       <PushAlertsCard variant="full" />
       <div className="text-xs text-muted-foreground">
-        <Link href="/dashboard/notifications/devices" className="underline hover:text-foreground">Mes appareils d'alerte</Link>
+        <Link href="/dashboard/notifications/devices" className="underline hover:text-foreground">Mes appareils d&apos;alerte</Link>
       </div>
 
       <Dialog open={prefsOpen} onOpenChange={setPrefsOpen}>
@@ -428,7 +441,7 @@ export default function NotificationsPage() {
 
               {soundError && (
                 <p role="alert" className="text-xs text-destructive">
-                  Échec de l'enregistrement. Réessayez.
+                  Échec de l&apos;enregistrement. Réessayez.
                 </p>
               )}
 
@@ -481,7 +494,7 @@ export default function NotificationsPage() {
 
               <div className="space-y-2 border-t pt-3">
                 <p className="text-xs font-semibold text-muted-foreground">
-                  Un son différent par type d'alerte (application ouverte uniquement)
+                  Un son différent par type d&apos;alerte (application ouverte uniquement)
                 </p>
                 {[
                   { key: "signal", label: "📈 Signaux", desc: "Nouveau signal publié" },
@@ -561,6 +574,43 @@ export default function NotificationsPage() {
                     </div>
                   </label>
                 ))}
+              </div>
+
+              {/* ── Heures de silence ── */}
+              <div className="space-y-3 border-t pt-4">
+                <h2 className="text-sm font-semibold">Heures de silence</h2>
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" checked={quietEnabled} onChange={(e) => setQuietEnabled(e.target.checked)} className="size-4 accent-primary" />
+                  Ne pas être dérangé pendant une plage horaire
+                </label>
+                {quietEnabled && (
+                  <div className="flex flex-wrap items-center gap-3 text-sm">
+                    <label className="flex items-center gap-2">
+                      De
+                      <input type="time" value={quietStart} onChange={(e) => setQuietStart(e.target.value)} className="h-11 rounded-md border border-border bg-background px-2" />
+                    </label>
+                    <label className="flex items-center gap-2">
+                      à
+                      <input type="time" value={quietEnd} onChange={(e) => setQuietEnd(e.target.value)} className="h-11 rounded-md border border-border bg-background px-2" />
+                    </label>
+                  </div>
+                )}
+                <label className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={prefs.signalsRespectQuietHours === true}
+                    disabled={!quietEnabled}
+                    onChange={(e) => setPrefs((prev) => ({ ...prev, signalsRespectQuietHours: e.target.checked }))}
+                    className="size-4 mt-0.5 accent-primary"
+                  />
+                  <span>
+                    Respecter mes heures de silence aussi pour les signaux
+                    <span className="block text-xs text-muted-foreground">
+                      Décoché par défaut : un signal vous alerte toujours, même la nuit, pour ne pas manquer une opportunité.
+                      Les autres notifications respectent la plage choisie (heure de votre profil).
+                    </span>
+                  </span>
+                </label>
               </div>
             </div>
           )}

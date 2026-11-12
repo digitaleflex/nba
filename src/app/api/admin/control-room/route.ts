@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getPushReach } from "@nba/lib/services/push-reach"
 import { getServerSession } from "@nba/lib/get-session"
 import { prisma } from "@nba/lib/db"
 import { getCached } from "@nba/lib/cache"
@@ -194,6 +195,13 @@ export async function GET() {
           alerts.push({
             level: "warn",
             message: `${pushFailedLast24h} push web échoué(s) sur 24h`,
+          })
+        }
+        const pushReach = await getPushReach().catch(() => null)
+        if (pushReach && pushReach.total >= 5 && pushReach.rate < 50) {
+          alerts.push({
+            level: "warn",
+            message: `Seulement ${pushReach.rate} % des membres sont joignables en push (${pushReach.reachable}/${pushReach.total})`,
           })
         }
         if (!webhookConfigured) {
