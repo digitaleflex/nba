@@ -6,6 +6,7 @@ import { Card, CardContent, Badge, Button, Input, cn, EmptyState, DualRender } f
 import { Member, CachedGet, OpenPanel, RegisterRefetch } from "./types"
 import { useDebouncedValue } from "@nba/design-system/hooks/use-debounced-value"
 import { trackSearch } from "../lib/track-search"
+import { ROLE_LABELS, ONBOARDING_STATUS_LABELS } from "@nba/lib/labels"
 
 interface UsersTabProps {
   cachedGet: CachedGet
@@ -118,11 +119,11 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-semibold text-muted-foreground">{member.role?.name}</td>
+                    <td className="px-6 py-4 font-semibold text-muted-foreground">{ROLE_LABELS[member.role?.name ?? ""] ?? member.role?.name ?? "—"}</td>
                     <td className="px-6 py-4 text-muted-foreground">{member.phone || "—"}</td>
                     <td className="px-6 py-4">
                       <Badge variant="outline" className="text-xs border-border py-0.5 px-2">
-                        {member.onboardingStatus}
+                        {ONBOARDING_STATUS_LABELS[member.onboardingStatus ?? ""] ?? member.onboardingStatus ?? "—"}
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
@@ -179,9 +180,9 @@ export function UsersTab({ cachedGet, onOpenPanel, registerRefetch, initialSearc
                       </Badge>
                     </div>
                     <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <span className="font-medium">{member.role?.name}</span>
+                      <span className="font-medium">{ROLE_LABELS[member.role?.name ?? ""] ?? member.role?.name ?? "—"}</span>
                       <span aria-hidden="true">·</span>
-                      <Badge variant="outline" className="text-xs border-border py-0.5 px-2">{member.onboardingStatus}</Badge>
+                      <Badge variant="outline" className="text-xs border-border py-0.5 px-2">{ONBOARDING_STATUS_LABELS[member.onboardingStatus ?? ""] ?? member.onboardingStatus ?? "—"}</Badge>
                     </div>
                     <Button
                       variant="outline"
