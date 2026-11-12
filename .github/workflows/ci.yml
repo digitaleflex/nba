@@ -107,8 +107,30 @@ jobs:
           format: sarif
           output: trivy-results.sarif
           severity: HIGH,CRITICAL
+      # Rapport toujours disponible, même sans Code scanning (fonction payante sur dépôt privé).
+      - if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: trivy-sarif
+          path: trivy-results.sarif
+          retention-days: 30
+          if-no-files-found: warn
+      - if: always()
+        name: Résumé du scan Trivy
+        run: |
+          if [ -f trivy-results.sarif ]; then
+            {
+              echo "### Trivy — vulnérabilités HIGH/CRITICAL de l'image"
+              echo "Total : $(jq '[.runs[].results[]?] | length' trivy-results.sarif)"
+              jq -r '[.runs[].results[]?] | group_by(.level) | map("- \(.[0].level) : \(length)") | .[]' trivy-results.sarif
+              echo "Rapport complet : artefact \`trivy-sarif\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+      # Envoi vers l'onglet Security > Code scanning. Échoue ("Code scanning is not enabled")
+      # tant que la fonction n'est pas activée dans les paramètres du dépôt : non bloquant.
       - if: always()
         uses: github/codeql-action/upload-sarif@v4
+        continue-on-error: true
         with:
           sarif_file: trivy-results.sarif
       - uses: aquasecurity/trivy-action@v0.36.0
