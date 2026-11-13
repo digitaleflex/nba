@@ -20,6 +20,7 @@ export function loadServiceWorker(opts: { userAgent?: string; windows?: Array<{ 
   const handlers: Record<string, Handler> = {}
   const shown: ShownNotification[] = []
   const opened: string[] = []
+  const badgeCalls: number[] = []
   const subscribed: any[] = []
   const fetchCalls: { url: string; init: any }[] = []
 
@@ -40,7 +41,7 @@ export function loadServiceWorker(opts: { userAgent?: string; windows?: Array<{ 
       },
     },
     skipWaiting: () => Promise.resolve(),
-    navigator: { userAgent: opts.userAgent ?? "test-agent" },
+    navigator: { userAgent: opts.userAgent ?? "test-agent", setAppBadge: async () => { badgeCalls.push(1) } },
   }
   const sandbox = createContext({
     self,
@@ -88,5 +89,5 @@ export function loadServiceWorker(opts: { userAgent?: string; windows?: Array<{ 
     await pending
   }
 
-  return { shown, opened, fetchCalls, push, pushJson, pushText, click, subscriptionChange, handlers }
+  return { badgeCalls, shown, opened, fetchCalls, push, pushJson, pushText, click, subscriptionChange, handlers }
 }

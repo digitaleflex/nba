@@ -168,6 +168,17 @@ export function NotificationBell() {
     return () => navigator.serviceWorker.removeEventListener("message", onMessage)
   }, [playForType])
 
+  // Badge de l'icône (application installée) : nombre de notifications non lues
+  useEffect(() => {
+    const nav = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+    try {
+      if (unreadCount > 0) void nav.setAppBadge?.(unreadCount)?.catch?.(() => {})
+      else void nav.clearAppBadge?.()?.catch?.(() => {})
+    } catch {
+      // API non disponible : sans conséquence
+    }
+  }, [unreadCount])
+
   // Fetch initial au mount
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect

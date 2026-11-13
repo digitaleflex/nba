@@ -80,4 +80,10 @@ describe("public/sw.js — affichage des notifications push", () => {
     await sw.pushJson({ title: "t", body: "b" })
     expect(sw.shown).toHaveLength(1)
   })
+
+  it("pose un badge sur l'icône à la réception d'un push (application installée)", async () => {
+    const sw = loadServiceWorker()
+    await sw.pushJson({ title: "Nouveau signal", body: "b" })
+    expect(sw.badgeCalls.length).toBeGreaterThan(0)
+  })
 })

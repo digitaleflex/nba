@@ -6,6 +6,7 @@ import {
   Bell, BellOff, Smartphone, CheckCircle2, AlertTriangle, Loader2, Send, RefreshCw,
 } from "lucide-react"
 import { usePushSubscription } from "@nba/lib/hooks/use-push-subscription"
+import { phoneGuide } from "@nba/lib/push-phone-guide"
 
 interface PushAlertsCardProps {
   variant?: "banner" | "compact" | "full"
@@ -39,6 +40,23 @@ export function PushAlertsCard({ variant = "full" }: PushAlertsCardProps) {
   }, [sendTest])
 
   const compact = variant === "compact"
+  const guide = typeof navigator === "undefined" ? null : phoneGuide(navigator.userAgent)
+  const guideBlock = guide && (
+    <div className="space-y-1.5">
+      <Button size="sm" variant="ghost" className="px-0 h-auto text-xs underline underline-offset-2" onClick={() => setShowHelp((v) => !v)} aria-expanded={showHelp}>
+        {showHelp ? "Masquer les réglages du téléphone" : "Ne manquez aucun signal : réglages du téléphone"}
+      </Button>
+      {showHelp && (
+        <div className="text-xs text-muted-foreground space-y-1">
+          <p className="font-medium text-foreground">{guide.title}</p>
+          <ol className="list-decimal pl-5 space-y-0.5">
+            {guide.steps.map((step) => <li key={step}>{step}</li>)}
+          </ol>
+          <p>Les intitulés exacts varient selon la marque et la version du système.</p>
+        </div>
+      )}
+    </div>
+  )
 
   if (state === "unsupported") {
     return (
@@ -131,6 +149,7 @@ export function PushAlertsCard({ variant = "full" }: PushAlertsCardProps) {
                 </ul>
               </div>
             ) : null}
+            {guideBlock}
             <Button size="sm" variant="ghost" onClick={() => void disable()}>
               Désactiver
             </Button>

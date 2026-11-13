@@ -1,5 +1,5 @@
 // Service Worker — Notifications push + précache des assets PWA (pas de cache offline)
-const SW_VERSION = "2.6.0";
+const SW_VERSION = "2.7.0";
 const SW_LOG_PREFIX = `[SW v${SW_VERSION}]`;
 const CACHE_NAME = `nba-static-v${SW_VERSION}`;
 
@@ -89,6 +89,8 @@ self.addEventListener("push", (event) => {
       // en double). Aucune fenêtre visible : notification système (sonnerie du téléphone).
       const windows = await clients.matchAll({ type: "window", includeUncontrolled: true });
       const visible = windows.filter((c) => c.visibilityState === "visible");
+      // Badge de l'icône : un point/chiffre tant que l'app n'a pas été ouverte (effacé par l'app)
+      try { if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(); } catch (e) {}
       // iOS : un push sans notification visible peut faire révoquer l'abonnement → on affiche toujours.
       const isIOS = /iPhone|iPad|iPod/i.test(self.navigator?.userAgent || "");
       if (visible.length > 0 && !isIOS) {
